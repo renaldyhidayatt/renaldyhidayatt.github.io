@@ -49,10 +49,10 @@ function App() {
           <div className="design right">
             <div className="background"></div>
             <div className="portfolio__container">
-              <h3>New Django</h3>
-              <p>An impressive website for any kind of News</p>
+              <h3>Ecommerce React</h3>
+              <p> Ecommerce Fastapi react with Payment gateway </p>
               <div className="image">
-                <img src="./assets/po2.png" alt="" />
+                <img src="./assets/po3.png" alt="fastapi" />
               </div>
             </div>
           </div>
