@@ -1,15 +1,21 @@
 {
   "files": {
-    "main.css": "/static/css/main.c69aae83.css",
-    "main.js": "/static/js/main.c18cbc7a.js",
-    "static/js/787.78ad0a3d.chunk.js": "/static/js/787.78ad0a3d.chunk.js",
+    "main.css": "/static/css/main.3ddbea09.css",
+    "main.js": "/static/js/main.2862a7a6.js",
+    "static/js/787.5242c071.chunk.js": "/static/js/787.5242c071.chunk.js",
+    "static/media/Fastapi.png": "/static/media/Fastapi.30be275110634ca3d16c.png",
+    "static/media/Golang.png": "/static/media/Golang.7993b04a25ce5393ad89.png",
+    "static/media/react.png": "/static/media/react.0cf951a69d8e58f83f9d.png",
+    "static/media/node.png": "/static/media/node.952a9ea986dcfa5229ad.png",
+    "static/media/Django.png": "/static/media/Django.4c399895f677cd3bfbc8.png",
+    "static/media/javascript.png": "/static/media/javascript.1ccd6ef9bb1f9c84ef00.png",
     "index.html": "/index.html",
-    "main.c69aae83.css.map": "/static/css/main.c69aae83.css.map",
-    "main.c18cbc7a.js.map": "/static/js/main.c18cbc7a.js.map",
-    "787.78ad0a3d.chunk.js.map": "/static/js/787.78ad0a3d.chunk.js.map"
+    "main.3ddbea09.css.map": "/static/css/main.3ddbea09.css.map",
+    "main.2862a7a6.js.map": "/static/js/main.2862a7a6.js.map",
+    "787.5242c071.chunk.js.map": "/static/js/787.5242c071.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.c69aae83.css",
-    "static/js/main.c18cbc7a.js"
+    "static/css/main.3ddbea09.css",
+    "static/js/main.2862a7a6.js"
   ]
 }
