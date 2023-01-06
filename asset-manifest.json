@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.3ddbea09.css",
-    "main.js": "/static/js/main.670fa0b5.js",
+    "main.css": "/static/css/main.576a5ec8.css",
+    "main.js": "/static/js/main.de6cbeba.js",
     "static/js/787.5242c071.chunk.js": "/static/js/787.5242c071.chunk.js",
     "static/media/Fastapi.png": "/static/media/Fastapi.30be275110634ca3d16c.png",
     "static/media/Golang.png": "/static/media/Golang.7993b04a25ce5393ad89.png",
@@ -10,12 +10,12 @@
     "static/media/Django.png": "/static/media/Django.4c399895f677cd3bfbc8.png",
     "static/media/javascript.png": "/static/media/javascript.1ccd6ef9bb1f9c84ef00.png",
     "index.html": "/index.html",
-    "main.3ddbea09.css.map": "/static/css/main.3ddbea09.css.map",
-    "main.670fa0b5.js.map": "/static/js/main.670fa0b5.js.map",
+    "main.576a5ec8.css.map": "/static/css/main.576a5ec8.css.map",
+    "main.de6cbeba.js.map": "/static/js/main.de6cbeba.js.map",
     "787.5242c071.chunk.js.map": "/static/js/787.5242c071.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.3ddbea09.css",
-    "static/js/main.670fa0b5.js"
+    "static/css/main.576a5ec8.css",
+    "static/js/main.de6cbeba.js"
   ]
 }
