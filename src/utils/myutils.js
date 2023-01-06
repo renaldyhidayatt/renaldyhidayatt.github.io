@@ -6,6 +6,7 @@ import TypescriptImg from '../assets/ts.png';
 import JavascriptImg from '../assets/javascript.png';
 import NodejsImg from '../assets/node.png';
 import ReactImg from '../assets/react.png';
+import JavaImg from '../assets/java.png';
 
 const myskill = [
   {
@@ -39,6 +40,10 @@ const myskill = [
   {
     image: ReactImg,
     name: 'React js',
+  },
+  {
+    image: JavaImg,
+    name: 'Java',
   },
 ];
 
