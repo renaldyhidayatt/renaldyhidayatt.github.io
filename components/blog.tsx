@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { allPosts } from '../.contentlayer/generated';
+import Image from 'next/image';
 
 interface Post {
   _id: string;
@@ -24,8 +25,8 @@ const MyBlogComponent: React.FC<BlogProps> = ({ posts }) => {
         >
           <Link href={post.slug}>
             <div className="block hover:opacity-80 transition duration-300">
-              <img
-                src={post.image}
+              <Image
+                src={post.image!}
                 alt={post.title}
                 className="w-full h-48 object-cover"
               />

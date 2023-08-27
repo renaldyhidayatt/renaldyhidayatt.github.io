@@ -1,4 +1,5 @@
 import { myportofolio } from '@/utils/myutils';
+import Image from 'next/image';
 import React from 'react';
 
 const Portfolio = () => {
@@ -17,7 +18,7 @@ const Portfolio = () => {
               key={index}
               className="bg-white dark:bg-[#1c1d1f] rounded-lg shadow-lg overflow-hidden"
             >
-              <img
+              <Image
                 src={project.image}
                 alt={project.title}
                 className="w-full h-48 object-cover"

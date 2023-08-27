@@ -1,5 +1,6 @@
 import React from 'react';
 import { myskill } from '../utils/myutils';
+import Image from 'next/image';
 
 const Skills = () => {
   return (
@@ -13,7 +14,7 @@ const Skills = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center py-8">
         {myskill.map((item) => (
           <div className="shadow-md hover:scale-110 duration-500">
-            <img className="w-20 mx-auto" src={item.image} alt="HTML icon" />
+            <Image className="w-20 mx-auto" src={item.image} alt="HTML icon" />
             <p className="my-4">{item.name}</p>
           </div>
         ))}
