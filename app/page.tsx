@@ -12,8 +12,8 @@ export default function Home() {
               Renaldy Hidayat
             </h2>
             <h3 className="text-2xl py-2 text-[#585a5c] dark:text-slate-200 md:text-3xl text-[#8892b0]'">
-              I'll be improve learning the backend, machine learning, and a
-              little bit of the frontend.
+              I&apos;ll be improving my learning in backend, machine learning,
+              and a little bit of frontend.
             </h3>
           </div>
         </div>

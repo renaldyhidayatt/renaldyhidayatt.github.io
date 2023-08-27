@@ -49,7 +49,7 @@ export default async function TagsPage({ params }: TagsPageProps) {
           <p className="text-4xl font-bold inline border-b-4 text-gray-900 dark:text-slate-200 border-blue-700">
             Tags
           </p>
-          <p className="py-6"> Posts tagged with "{slug}"</p>
+          <p className="py-6"> Posts tagged with &quot;{slug}&quot;</p>
         </div>
 
         <MyBlogComponent posts={posts} />

@@ -43,11 +43,8 @@ const MyBlogComponent: React.FC<BlogProps> = ({ posts }) => {
             {post.tags && (
               <div className="mt-2">
                 {post.tags.map((tag) => (
-                  <Link href={`/tags/${tag}`}>
-                    <span
-                      key={tag}
-                      className="inline-block bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm py-1 px-2 rounded-full mr-2"
-                    >
+                  <Link href={`/tags/${tag}`} key={tag}>
+                    <span className="inline-block bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm py-1 px-2 rounded-full mr-2">
                       {tag}
                     </span>
                   </Link>
