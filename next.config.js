@@ -5,7 +5,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   output: 'export',
-  basePath: '/renaldyhidayatt.github.io',
+  basePath: '/github-pages',
   images: {
     unoptimized: true,
   },
