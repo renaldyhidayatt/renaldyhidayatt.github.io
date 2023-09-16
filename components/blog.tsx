@@ -28,6 +28,8 @@ const MyBlogComponent: React.FC<BlogProps> = ({ posts }) => {
               <Image
                 src={post.image!}
                 alt={post.title}
+                width={500} // Ubah sesuai dengan lebar gambar yang sesuai
+                height={300} // Ubah sesuai dengan tinggi gambar yang sesuai
                 className="w-full h-48 object-cover"
               />
             </div>

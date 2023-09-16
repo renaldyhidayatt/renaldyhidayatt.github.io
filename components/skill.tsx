@@ -17,7 +17,13 @@ const Skills = () => {
             key={item.name}
             className="shadow-md hover:scale-110 duration-500"
           >
-            <Image className="w-20 mx-auto" src={item.image} alt="HTML icon" />
+            <Image
+              className="w-20 mx-auto"
+              src={item.image}
+              alt={`${item.name} icon`}
+              width={item.width}
+              height={item.height}
+            />
             <p className="my-4">{item.name}</p>
           </div>
         ))}

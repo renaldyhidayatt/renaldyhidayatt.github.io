@@ -2,38 +2,56 @@ const myskill = [
   {
     image: '/images/skills/Python.png',
     name: 'Python',
+    width: 100, // Tambahkan lebar gambar di sini
+    height: 100, // Tambahkan tinggi gambar di sini
   },
   {
     image: '/images/skills/Django.png',
     name: 'Django',
+    width: 100,
+    height: 100,
   },
   {
     image: '/images/skills/Fastapi.png',
     name: 'Fastapi',
+    width: 100,
+    height: 100,
   },
   {
     image: '/images/skills/Golang.png',
     name: 'Golang',
+    width: 100,
+    height: 100,
   },
   {
     image: '/images/skills/javascript.png',
     name: 'Javascript',
+    width: 100,
+    height: 100,
   },
   {
     image: '/images/skills/ts.png',
     name: 'Typescript',
+    width: 100,
+    height: 100,
   },
   {
     image: '/images/skills/node.png',
     name: 'Node Js',
+    width: 100,
+    height: 100,
   },
   {
     image: '/images/skills/react.png',
     name: 'React js',
+    width: 100,
+    height: 100,
   },
   {
     image: '/images/skills/java.png',
     name: 'Java',
+    width: 100,
+    height: 100,
   },
 ];
 
