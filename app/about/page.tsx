@@ -1,10 +1,11 @@
 import React from 'react';
+import Image from 'next/image';
 
 const About = () => {
   return (
     <div className="max-w-6xl mx-auto p-4 mt-10">
       <div className="mt-16 flex flex-col items-center">
-        <img
+        <Image
           src="https://avatars.githubusercontent.com/u/46998157?v=4"
           alt="Your Profile Image"
           className="w-32 h-32 rounded-full mb-4"
