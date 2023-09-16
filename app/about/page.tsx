@@ -23,12 +23,12 @@ const About = () => {
           About Me
         </h2>
         <p className="text-gray-900 dark:text-slate-200 text-lg leading-7">
-          I'm a Computer Science candidate at Nusa Mandiri University, and I'm
-          deeply passionate about programming. My journey in the world of
-          technology has been an exciting adventure, driven by the endless
-          opportunities for learning. Whether it's exploring cutting-edge
+          I&apos;m a Computer Science candidate at Nusa Mandiri University, and
+          I&apos;m deeply passionate about programming. My journey in the world
+          of technology has been an exciting adventure, driven by the endless
+          opportunities for learning. Whether it&apos;s exploring cutting-edge
           programming languages, leveraging groundbreaking frameworks, or
-          applying technology in innovative ways, I'm always up for the
+          applying technology in innovative ways, I&apos;m always up for the
           challenge. Staying updated with the latest developments is a priority,
           as I strive to incorporate them into my work.
         </p>
