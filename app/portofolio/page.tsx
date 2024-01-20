@@ -20,6 +20,8 @@ const Portfolio = () => {
             >
               <Image
                 src={project.image}
+                width={project.width}
+                height={project.height}
                 alt={project.title}
                 className="w-full h-48 object-cover"
               />

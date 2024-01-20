@@ -2,7 +2,7 @@
 
 import posts__leetcode__helloMdx from './posts__leetcode__hello.mdx.json' assert { type: 'json' }
 import posts__python__helloMdx from './posts__python__hello.mdx.json' assert { type: 'json' }
-import posts__rust__hello_rustMdx from './posts__rust__hello_rust.mdx.json' assert { type: 'json' }
 import posts__python__mathematics_for_aiMdx from './posts__python__mathematics_for_ai.mdx.json' assert { type: 'json' }
+import posts__rust__hello_rustMdx from './posts__rust__hello_rust.mdx.json' assert { type: 'json' }
 
-export const allPosts = [posts__leetcode__helloMdx, posts__python__helloMdx, posts__rust__hello_rustMdx, posts__python__mathematics_for_aiMdx]
+export const allPosts = [posts__leetcode__helloMdx, posts__python__helloMdx, posts__python__mathematics_for_aiMdx, posts__rust__hello_rustMdx]

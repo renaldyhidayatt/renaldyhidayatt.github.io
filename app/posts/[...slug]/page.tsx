@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { allPosts } from 'contentlayer/generated';
+import { format } from 'date-fns';
 
 import { Metadata } from 'next';
 import { Mdx } from '@/components/mdx-components';
@@ -50,6 +51,10 @@ export default async function PostPage({ params }: PostProps) {
     notFound();
   }
 
+  const formattedDate = post.date
+    ? format(new Date(post.date), 'MMMM dd, yyyy')
+    : null;
+
   return (
     <div className="max-w-2xl mx-auto py-10 px-4 ">
       <article className="py-6 my-12 prose dark:prose-invert">
@@ -64,12 +69,17 @@ export default async function PostPage({ params }: PostProps) {
             </Link>
           ))}
         </div>
-
+        {formattedDate && (
+          <div className="mb-4">
+            <strong>Date:</strong> {formattedDate}
+          </div>
+        )}
         {post.description && (
           <p className="text-xl mt-0 text-slate-700 dark:text-slate-200">
             {post.description}
           </p>
         )}
+
         <hr className="my-4" />
         <Mdx code={post.body.code} />
       </article>
