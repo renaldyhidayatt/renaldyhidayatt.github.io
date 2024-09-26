@@ -1,29 +1,38 @@
-import React from 'react';
-import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { siteConfig } from "@/config/site";
+import { Metadata } from "next";
 
-const About = () => {
+export const metadata: Metadata = {
+  title: "About Me",
+  description: "Information about me",
+};
+
+export default async function AboutPage() {
   return (
-    <div className="max-w-6xl mx-auto p-4 mt-10">
-      <div className="mt-16 flex flex-col items-center">
-        <Image
-          src="https://avatars.githubusercontent.com/u/46998157?v=4"
-          alt="Your Profile Image"
-          className="w-32 h-32 rounded-full mb-4"
-        />
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
-          Renaldy Hidayat
-        </h1>
-        <p className="text-gray-700 dark:text-slate-300 text-xl mb-8">
-          Computer Science student passionate about programming.
-        </p>
+    <div className="container max-w-6xl py-6 lg:py-10 bg-background text-foreground">
+      <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between md:gap-8">
+        <div className="flex-1 space-x-4">
+          <h1 className="inline-block font-black text-4xl lg:text-5xl">
+            About Me
+          </h1>
+        </div>
       </div>
-
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-slate-200 mb-3">
-          About Me
-        </h2>
-        <p className="text-gray-900 dark:text-slate-200 text-lg leading-7">
-          I&apos;m a Computer Science candidate at Nusa Mandiri University, and
+      <hr className="my-8 border-border" />
+      <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+        <div className="min-w-48 max-w-48 flex flex-col gap-2">
+          <Avatar className="h-48 w-48">
+            <AvatarImage src="https://avatars.githubusercontent.com/u/46998157?v=4" alt={siteConfig.author} />
+            <AvatarFallback>JC</AvatarFallback>
+          </Avatar>
+          <h2 className="text-2xl font-bold text-center text-foreground">
+            {siteConfig.author}
+          </h2>
+          <p className="text-muted-foreground text-center">
+            Software Developer
+          </p>
+        </div>
+        <p className="text-muted-foreground text-lg py-4">
+        I&apos;m a Computer Science candidate at Nusa Mandiri University, and
           I&apos;m deeply passionate about programming. My journey in the world
           of technology has been an exciting adventure, driven by the endless
           opportunities for learning. Whether it&apos;s exploring cutting-edge
@@ -31,9 +40,8 @@ const About = () => {
           applying technology in innovative ways, I&apos;m always up for the
           challenge. Staying updated with the latest developments is a priority,
           as I strive to incorporate them into my work.
-        </p>
 
-        <p className="text-gray-900 dark:text-slate-200 text-lg leading-7 mt-4">
+          <br /> <br />
           My dedication to turning hobbies into meaningful projects is a source
           of fulfillment. It allows me to merge creativity with technical
           expertise. Crafting web applications and developing software solutions
@@ -47,6 +55,5 @@ const About = () => {
       </div>
     </div>
   );
-};
+}
 
-export default About;
