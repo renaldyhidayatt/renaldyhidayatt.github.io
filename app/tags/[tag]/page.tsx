@@ -1,4 +1,4 @@
-import { posts } from "#site/content";
+import { posts } from "@/.velite";
 import { PostItem } from "@/components/post-item";
 import { Tag } from "@/components/tag";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

@@ -1,5 +1,5 @@
 import { sortPosts } from "@/lib/utils";
-import { posts } from "#site/content";
+import { posts } from "@/.velite";
 import { PostItem } from "@/components/post-item";
 
 export default function Home() {

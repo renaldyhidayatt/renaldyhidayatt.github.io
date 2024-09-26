@@ -1,4 +1,4 @@
-import { posts } from "#site/content";
+import { posts } from "@/.velite";
 import { MDXContent } from "@/components/mdx-components";
 import { notFound } from "next/navigation";
 
