@@ -4,7 +4,7 @@ import { build } from "velite";
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  // output: "export",
+  output: "export",
   images: {
     unoptimized: true,
   },
