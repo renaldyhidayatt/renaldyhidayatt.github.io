@@ -2,9 +2,11 @@ import { build } from "velite";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export", // Enable static HTML export
+  reactStrictMode: true,
+  swcMinify: true,
+  // output: "export",
   images: {
-    unoptimized: true, // Disable Next.js image optimization
+    unoptimized: true,
   },
   webpack: (config) => {
     config.plugins.push(new VeliteWebpackPlugin());
@@ -14,7 +16,7 @@ const nextConfig = {
 
 class VeliteWebpackPlugin {
   static started = false;
-  
+
   constructor(/** @type {import('velite').Options} */ options = {}) {
     this.options = options;
   }
