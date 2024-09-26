@@ -1,11 +1,11 @@
 import { build } from "velite";
 
 /** @type {import('next').NextConfig} */
-export default {
-  // othor next config here...
-  output: 'export',
+const nextConfig = {
+  // other next config here...
+  output: "export", // Enable static HTML export
   images: {
-    unoptimized: true,
+    unoptimized: true, // If you're not optimizing images
   },
   webpack: (config) => {
     config.plugins.push(new VeliteWebpackPlugin());
@@ -31,3 +31,5 @@ class VeliteWebpackPlugin {
     });
   }
 }
+
+export default nextConfig;
