@@ -5,6 +5,7 @@ import { Tag } from "@/components/tag";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAllTags, sortPosts, sortTagsByCount } from "@/lib/utils";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "My blog",
@@ -14,13 +15,13 @@ export const metadata: Metadata = {
 const POSTS_PER_PAGE = 5;
 
 interface BlogPageProps {
-  searchParams: {
+  params: {
     page?: string;
   };
 }
 
-export default async function BlogPage({ searchParams }: BlogPageProps) {
-  const currentPage = Number(searchParams?.page) || 1;
+export default async function BlogPage({ params }: BlogPageProps) {
+  const currentPage = Number(params.page) || 1;
   const sortedPosts = sortPosts(posts.filter((post) => post.published));
   const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
 
@@ -48,7 +49,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
       <div className="grid grid-cols-12 gap-3 mt-8">
         <div className="col-span-12 col-start-1 sm:col-span-8">
           <hr />
-          {displayPosts?.length > 0 ? (
+          {displayPosts.length > 0 ? (
             <ul className="flex flex-col">
               {displayPosts.map((post) => {
                 const { slug, date, title, description, tags } = post;
@@ -68,10 +69,14 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           ) : (
             <p>Nothing to see here yet</p>
           )}
-          <QueryPagination
-            totalPages={totalPages}
-            className="justify-end mt-4"
-          />
+
+          {/* Wrap Pagination in Suspense */}
+          <Suspense fallback={<div>Loading pagination...</div>}>
+            <QueryPagination
+              totalPages={totalPages}
+              className="justify-end mt-4"
+            />
+          </Suspense>
         </div>
         <Card className="col-span-12 row-start-3 h-fit sm:col-span-4 sm:col-start-9 sm:row-start-1">
           <CardHeader>
@@ -80,7 +85,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2 text-[#585a5c] dark:text-slate-200">
-            {sortedTags?.map((tag) => (
+            {sortedTags.map((tag) => (
               <Tag tag={tag} key={tag} count={tags[tag]} />
             ))}
           </CardContent>
