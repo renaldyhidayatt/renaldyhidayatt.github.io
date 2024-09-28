@@ -3,6 +3,7 @@ title: Median of Two Sorted Arrays
 description: Solve the "Median of Two Sorted Arrays" problem efficiently using binary search in Go.
 tags: ["leetcode", "golang", "algorithms"]
 date: "2024-09-28"
+published: true
 ---
 
 ## Problem Statement
@@ -10,17 +11,18 @@ date: "2024-09-28"
 Given two sorted arrays `nums1` and `nums2` of size `m` and `n` respectively, return the **median** of the two sorted arrays. The overall run-time complexity should be O(log (m+n)).
 
 ### Example 1:
-
-- **Input**: `nums1 = [1, 3]`, `nums2 = [2]`
-- **Output**: `2.00000`
-- **Explanation**: Merged array = `[1, 2, 3]`, and the median is `2`.
-
+```plaintext
+Input: `nums1 = [1, 3]`, `nums2 = [2]`
+Output: `2.00000`
+Explanation: Merged array = `[1, 2, 3]`, and the median is `2`.
+```
 ### Example 2:
 
-- **Input**: `nums1 = [1, 2]`, `nums2 = [3, 4]`
-- **Output**: `2.50000`
-- **Explanation**: Merged array = `[1, 2, 3, 4]`, and the median is `(2 + 3) / 2 = 2.5`.
-
+```plaintext
+Input: `nums1 = [1, 2]`, `nums2 = [3, 4]`
+Output: `2.50000`
+Explanation: Merged array = `[1, 2, 3, 4]`, and the median is `(2 + 3) / 2 = 2.5`.
+```
 ## Approach
 
 To solve the problem in O(log(m+n)) time complexity, we can avoid merging the two arrays and instead perform a **binary search**. The key idea is to partition the arrays such that the left half contains smaller or equal elements, and the right half contains larger elements.

@@ -41,10 +41,15 @@ export function sortTagsByCount(tags: Record<string, number>) {
   return Object.keys(tags).sort((a, b) => tags[b] - tags[a])
 }
 
-export function getPostsByTagSlug(posts: Array<Post>, tag: string) {
-  return posts.filter(post => {
-    if (!post.tags) return false
-    const slugifiedTags = post.tags.map(tag => slug(tag))
-    return slugifiedTags.includes(tag)
-  })
+export function getPostsByTagSlug(posts: Array<Post>, tag: string, page: number, perPage: number) {
+  const filteredPosts = posts.filter(post => {
+    if (!post.tags) return false;
+    const slugifiedTags = post.tags.map(tag => slug(tag));
+    return slugifiedTags.includes(tag);
+  });
+  
+  const start = (page - 1) * perPage;
+  const end = start + perPage;
+  
+  return filteredPosts.slice(start, end);
 }
