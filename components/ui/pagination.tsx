@@ -53,8 +53,8 @@ const PaginationLink = ({
         size,
       }),
       isActive
-        ? "bg-[rgb(124,58,237)] text-white font-bold border border-[rgb(124,58,237)]"
-        : "bg-white text-[rgb(124,58,237)] hover:bg-[rgb(104,50,210)]",
+        ? "bg-[rgb(124,58,237)] text-white font-bold border border-[rgb(124,58,237)] dark:bg-[rgb(124,58,237)] dark:text-white dark:border border-[rgb(124,58,237)]"
+        : "bg-white text-[rgb(124,58,237)] hover:bg-[rgb(104,50,210)] dark:bg-gray-800 dark:text-[rgb(124,58,237)] dark:hover:bg-gray-700",
       className
     )}
     {...props}

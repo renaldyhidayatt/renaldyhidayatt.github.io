@@ -42,14 +42,18 @@ export function sortTagsByCount(tags: Record<string, number>) {
 }
 
 export function getPostsByTagSlug(posts: Array<Post>, tag: string, page: number, perPage: number) {
+  const slugifiedTag = slug(tag); // Normalize the incoming tag
   const filteredPosts = posts.filter(post => {
     if (!post.tags) return false;
-    const slugifiedTags = post.tags.map(tag => slug(tag));
-    return slugifiedTags.includes(tag);
+    const slugifiedTags = post.tags.map(t => slug(t)); // Ensure tags are slugified for comparison
+    return slugifiedTags.includes(slugifiedTag);
   });
   
   const start = (page - 1) * perPage;
   const end = start + perPage;
   
+  console.log("Filtered Posts for Tag:", slugifiedTag, filteredPosts); // Debugging output
+  
   return filteredPosts.slice(start, end);
 }
+
