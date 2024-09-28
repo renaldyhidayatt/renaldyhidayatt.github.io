@@ -1,17 +1,17 @@
-"use client"; 
+"use client";
 
 import { myportofolio } from "@/lib/myporto";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { QueryPagination } from "@/components/query-pagination";  
+import { QueryPagination } from "@/components/query-pagination";
 
 const ITEMS_PER_PAGE = 6;
 
-const Portfolio = () => {
+const PortfolioContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -36,7 +36,9 @@ const Portfolio = () => {
   };
 
   const truncateDescription = (description: string) => {
-    return description.length > 100 ? description.slice(0, 100) + "..." : description;
+    return description.length > 100
+      ? description.slice(0, 100) + "..."
+      : description;
   };
 
   const handlePageChange = (page: number) => {
@@ -56,7 +58,6 @@ const Portfolio = () => {
         </p>
       </div>
 
-     
       <div className="mb-6">
         <input
           type="text"
@@ -105,13 +106,21 @@ const Portfolio = () => {
 
       <div className="flex justify-center mt-6">
         <QueryPagination
-          currentPage={currentPage}
           totalPages={totalPages}
+          currentPage={currentPage}
           onPageChange={handlePageChange}
           className="justify-end mt-4"
         />
       </div>
     </div>
+  );
+};
+
+const Portfolio = () => {
+  return (
+    <Suspense fallback={<div>Loading portfolio...</div>}>
+      <PortfolioContent />
+    </Suspense>
   );
 };
 
