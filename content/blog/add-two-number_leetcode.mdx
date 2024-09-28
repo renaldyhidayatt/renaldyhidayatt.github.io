@@ -1,0 +1,125 @@
+---
+title: Add Two Numbers
+description: Solve the "Add Two Numbers" problem efficiently using linked lists in Go.
+tags: ["leetcode", "golang", "algorithms"]
+date: "2024-09-28"
+---
+
+## Problem Statement
+
+You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.
+
+You may assume the two numbers do not contain any leading zero, except the number 0 itself.
+
+### Example 1:
+```plaintext
+Input:  l1 = [2,4,3], l2 = [5,6,4]  
+Output:  [7,0,8]  
+Explanation:  342 + 465 = 807.
+```
+
+### Example 2:
+```plaintext
+Input:  l1 = [0], l2 = [0]  
+Output: [0]
+```
+
+
+### Example 3:
+
+```plaintext
+Input: l1 = [9,9,9,9,9,9,9], l2 = [9,9,9,9]  
+Output: [8,9,9,9,0,0,0,1]
+```
+
+### Constraints:
+- The number of nodes in each linked list is in the range [1, 100].
+- `0 <= Node.val <= 9`
+- It is guaranteed that the list represents a number that does not have leading zeros.
+
+## Approach
+
+We will use a linked list to simulate the addition of two numbers, digit by digit, from the least significant to the most significant (reverse order). At each step, we add the corresponding digits and carry, if any.
+
+### Algorithm
+
+1. Initialize a dummy head node to simplify the process of building the result linked list.
+2. Iterate over both linked lists simultaneously, adding corresponding digits and the carry.
+3. If one linked list is shorter, treat missing nodes as zeros.
+4. If there is a remaining carry after both linked lists are exhausted, add it as a new node.
+5. Return the next node of the dummy head as the result linked list.
+
+### Flowchart
+![Flowchart of Add Two Algorithm](/leetcode/add_two.png)
+
+
+### Implementation in Go
+
+```go
+// ListNode defines a linked list node
+// AddTwoNumbers adds two numbers represented by two linked lists.
+// Each linked list stores digits in reverse order, and the function
+// returns the sum as a linked list, also in reverse order.
+func AddTwoNumbers(l1 *ListNode, l2 *ListNode) *ListNode {
+    // Create a dummy node to simplify the logic of appending nodes to the result list.
+    head := &ListNode{Val: 0}
+    
+    // Initialize variables: 
+    // - n1 and n2 are the digits from the two linked lists.
+    // - carry holds any value that "carries over" to the next digit.
+    // - current is a pointer used to build the result list.
+    n1, n2, carry, current := 0, 0, 0, head
+
+    // Continue looping while there are still nodes in either l1 or l2, 
+    // or if there's still a carry to process (e.g., when adding two 9s).
+    for l1 != nil || l2 != nil || carry != 0 {
+        // Get the value from the current node of l1, if it exists. 
+        // Otherwise, set n1 to 0.
+        if l1 != nil {
+            n1 = l1.Val
+            l1 = l1.Next // Move to the next node in l1.
+        } else {
+            n1 = 0
+        }
+
+        // Get the value from the current node of l2, if it exists. 
+        // Otherwise, set n2 to 0.
+        if l2 != nil {
+            n2 = l2.Val
+            l2 = l2.Next // Move to the next node in l2.
+        } else {
+            n2 = 0
+        }
+
+        // Create a new node for the result linked list.
+        // The value of this node is the sum of n1, n2, and carry, modulo 10.
+        // This handles cases where the sum exceeds 9 (e.g., 5 + 6 = 11, so we store 1 and carry 1).
+        current.Next = &ListNode{Val: (n1 + n2 + carry) % 10}
+        
+        // Move the current pointer to the next node in the result list.
+        current = current.Next
+        
+        // Update the carry for the next iteration.
+        // If the sum of n1, n2, and carry is 10 or greater, carry will be 1.
+        // Otherwise, carry will be 0.
+        carry = (n1 + n2 + carry) / 10
+    }
+
+    // Return the result linked list, starting from head.Next.
+    // head is just a dummy node used to simplify the logic, so we skip it.
+    return head.Next
+}
+```
+
+### Explanation
+- Initialize Variables: We initialize a dummy head node, which simplifies appending new nodes to the result list. Variables n1, n2, and carry are used to store values from the linked lists and any carry-over during addition.
+- Iterating Through Lists: We loop until all nodes in both lists are processed and the carry is zero. At each iteration, we extract values from the lists or use 0 if a list is exhausted. Then, we compute the sum and update the carry for the next iteration.
+- Return the Result: After processing all digits, we return the result list starting from head.Next (since head is a dummy node).
+
+### Time and Space Complexity
+- Time Complexity: O(n), where n is the maximum number of nodes in the two linked lists. We iterate through all nodes once.
+- Space Complexity: O(n) as well, since we are creating a new linked list of size proportional to the input size.
+
+
+## Conclusion
+This solution demonstrates an efficient way to add two numbers represented as linked lists. By utilizing a dummy head node and handling the carry correctly, we can maintain a clean and readable implementation. The time and space complexity is linear, making this approach optimal for this problem.

@@ -79,6 +79,11 @@ export default async function PostPage({ params }: PostPageProps) {
           <Tag tag={tag} key={tag} />
         ))}
       </div>
+      {post.date && (
+        <p className="text-sm text-muted-foreground mb-2">
+          Published on {new Date(post.date).toLocaleDateString()}
+        </p>
+      )}
       {post.description ? (
         <p className="text-xl mt-0 text-muted-foreground">{post.description}</p>
       ) : null}
