@@ -1,0 +1,72 @@
+---
+title: Weather Forecast
+description: Solve the "Weather Forecast" problem efficiently in Go.
+tags: ["leetcode", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Weather Forecast
+
+In this article, we will solve the **Weather Forecast** problem using Go. This problem involves creating a simple weather forecasting system that stores and returns information about the weather conditions in a specified city. Let's walk through the solution.
+
+## Problem Statement
+
+The goal is to create a small package in Go that:
+
+1. **Stores the current weather condition** for a given city.
+2. **Forecasts the weather** by accepting the city and its weather condition and returns a formatted string.
+3. Updates the current location and weather condition every time a new forecast is provided.
+
+## Approach
+
+We'll define two variables:
+- `CurrentLocation`: to store the city for which the weather forecast is being made.
+- `CurrentCondition`: to store the current weather condition for the city.
+
+Then, we implement a `Forecast` function that takes two arguments, the `city` and the `condition`, updates the variables, and returns a formatted string with the forecast.
+
+### Algorithm
+
+1. **Store the current location**: When a forecast is requested, update the `CurrentLocation` to the provided city.
+2. **Store the current condition**: Update the `CurrentCondition` to the provided weather condition.
+3. **Return the formatted forecast**: Concatenate the city and condition into a meaningful string and return it.
+
+### Implementation in Go
+
+Here is the Go code implementation for the Weather Forecast problem:
+
+```go
+// Package weather provides functions and variables for forecasting weather conditions in various cities of Goblinocus.
+// It includes the ability to store and retrieve information about the current weather condition and location.
+package weather
+
+// CurrentCondition stores the current weather condition of a city.
+var CurrentCondition string
+
+// CurrentLocation stores the current location for which weather information is being forecasted.
+var CurrentLocation string
+
+// Forecast returns a string representing the forecasted weather condition for a given city.
+// It updates the CurrentLocation and CurrentCondition variables with the provided city and weather condition,
+// and then returns a string containing the location and its current weather condition.
+func Forecast(city, condition string) string {
+    CurrentLocation, CurrentCondition = city, condition
+    return CurrentLocation + " - current weather condition: " + CurrentCondition
+}
+
+```
+
+### Explanation
+
+- **CurrentCondition**: This variable stores the weather condition of the currently forecasted city.
+- **CurrentLocation**: This variable stores the city for which the weather condition is forecasted.
+- **Forecast Function**: The Forecast function updates the CurrentLocation and CurrentCondition based on the provided arguments and returns a formatted string in the format "City - current weather condition: Condition".
+
+
+### Time and Space Complexity
+    - **Time Complexity**: The time complexity of the Forecast function is O(1). Updating the variables and returning the formatted string both take constant time.
+
+    - **Space Complexity**: The space complexity is O(1) as well, since we are only storing two strings (the city and the weather condition), and no additional data structures are required.
+
+## Conclusion
+The **Weather Forecast** problem demonstrates a simple yet effective way to track weather conditions for different cities. By utilizing Go's global variables, we are able to store and update the current weather data efficiently. 

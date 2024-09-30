@@ -5,6 +5,22 @@ tags: ["leetcode", "golang", "algorithms"]
 date: "2024-09-28"
 ---
 
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+   - [TypeScript](#implementation-in-typescript)
+   - [Python](#implementation-in-python)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+
 ## Problem Statement
 
 Given an integer `x`, return `true` if `x` is a palindrome, and `false` otherwise.
@@ -39,7 +55,10 @@ A palindrome is a number that reads the same forward and backward. For example, 
    - Reverse the second half of the integer and compare it to the first half. If they are equal, then the number is a palindrome.
    - For instance, for `x = 121`, after reversing the last half (`21` becomes `12`), it can be compared with the first half.
 
+
 ### Implementation in Go
+
+Here is the Go implementation of the solution:
 
 ```go
 package main
@@ -67,6 +86,89 @@ func main() {
     fmt.Println(isPalindrome(10))   // Output: false
 }
 
+```
+
+### Implementation in Java
+
+Here is the Java implementation of the solution:
+
+```java
+public class PalindromeNumber {
+
+    public boolean isPalindrome(int x) {
+        // Negative numbers and multiples of 10 that are not 0 are not palindromes
+        if (x < 0 || (x % 10 == 0 && x != 0)) {
+            return false;
+        }
+
+        int revertedNumber = 0;
+        while (x > revertedNumber) {
+            revertedNumber = revertedNumber * 10 + x % 10;
+            x /= 10;
+        }
+
+        // Check if the number is equal to the reverted number or its truncated version (for odd length)
+        return x == revertedNumber || x == revertedNumber / 10;
+    }
+
+    public static void main(String[] args) {
+        PalindromeNumber pn = new PalindromeNumber();
+        System.out.println(pn.isPalindrome(121));   // Output: true
+        System.out.println(pn.isPalindrome(-121));  // Output: false
+        System.out.println(pn.isPalindrome(10));    // Output: false
+    }
+}
+```
+
+### Implementation in Typescript
+
+Here is the Typescript implementation of the solution:
+
+```typescript
+function isPalindrome(x: number): boolean {
+    // Negative numbers and multiples of 10 that are not 0 are not palindromes
+    if (x < 0 || (x % 10 === 0 && x !== 0)) {
+        return false;
+    }
+
+    let revertedNumber = 0;
+    while (x > revertedNumber) {
+        revertedNumber = revertedNumber * 10 + x % 10;
+        x = Math.floor(x / 10);  // Truncate the number
+    }
+
+    // Check if the number is equal to the reverted number or its truncated version (for odd length)
+    return x === revertedNumber || x === Math.floor(revertedNumber / 10);
+}
+
+// Example usage
+console.log(isPalindrome(121));    // Output: true
+console.log(isPalindrome(-121));   // Output: false
+console.log(isPalindrome(10));     // Output: false
+```
+
+### Implementation in Python
+
+Here is the Python implementation of the solution:
+
+```python
+def is_palindrome(x: int) -> bool:
+    # Negative numbers and multiples of 10 that are not 0 are not palindromes
+    if x < 0 or (x % 10 == 0 and x != 0):
+        return False
+
+    reverted_number = 0
+    while x > reverted_number:
+        reverted_number = reverted_number * 10 + x % 10
+        x //= 10  # Floor division
+
+    # Check if the number is equal to the reverted number or its truncated version (for odd length)
+    return x == reverted_number or x == reverted_number // 10
+
+# Example usage
+print(is_palindrome(121))    # Output: True
+print(is_palindrome(-121))   # Output: False
+print(is_palindrome(10))     # Output: False
 ```
 
 ### Explanation

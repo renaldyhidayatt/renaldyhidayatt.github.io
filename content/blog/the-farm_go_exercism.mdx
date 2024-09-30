@@ -1,0 +1,119 @@
+---
+title: The Farm
+description: Solve the The Farm problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# The Farm
+
+In the **The Farm** problem, we are tasked with simulating a system where we calculate the amount of food that should be given to a group of cows based on various factors. The implementation should also handle errors, especially when there are invalid inputs such as a negative number of cows or errors related to calculating the fodder.
+
+## Problem Statement
+
+The main requirements are:
+1. Calculate the food per cow based on the total available food and the number of cows.
+2. Ensure that the input for cows is valid (e.g., cows cannot be negative).
+3. Handle any errors that occur in the process, particularly when invalid cow counts or food amounts are encountered.
+
+## Approach
+
+The problem is primarily solved through careful input validation, error handling, and proper calculation of the food per cow. The solution follows a modular approach with each function responsible for specific tasks like validating input, performing calculations, and handling errors.
+
+### Algorithm
+
+1. **InvalidCowsError**: A custom error is implemented to handle situations where the number of cows is invalid. This includes negative cows or zero cows, with custom error messages.
+   
+2. **DivideFood**: This function performs the main calculation by dividing the total food (provided by the `FodderCalculator`) by the number of cows. If an error occurs during this calculation (e.g., due to faulty data or invalid factors), it returns an error.
+
+3. **ValidateInputAndDivideFood**: A function to ensure that input for the number of cows is valid before proceeding with food calculations.
+
+4. **ValidateNumberOfCows**: A helper function that checks if the cow count is valid, and if not, it raises the appropriate `InvalidCowsError`.
+
+### Implementation in Go
+
+```go
+package thefarm
+
+import (
+	"errors"
+	"fmt"
+)
+
+type InvalidCowsError struct {
+	deadCows int
+	message  string
+}
+
+// Error returns a string when the silly nephew counts the dead cows with bovine spongiform encephalopathy
+func (haveACow InvalidCowsError) Error() string {
+	return fmt.Sprintf("%d cows are invalid: %s", haveACow.deadCows, haveACow.message)
+}
+
+// DivideFood computes the fodder amount per cow for the given cows.
+func DivideFood(weightFodder FodderCalculator, cows int) (float64, error) {
+	// This is the happy path where there are no errors
+	if fodder, err := weightFodder.FodderAmount(cows); err == nil {
+		if fatFactor, err := weightFodder.FatteningFactor(); err == nil {
+			return fodder * fatFactor / float64(cows), nil
+		} else {
+			return 0, err
+		}
+	} else {
+		return 0, err
+	}
+}
+
+// ValidateInputAndDivideFood ensures the input is valid before calling DivideFood
+func ValidateInputAndDivideFood(weightFodder FodderCalculator, cows int) (float64, error) {
+	if cows <= 0 {
+		return 0, errors.New("invalid number of cows")
+	}
+	return DivideFood(weightFodder, cows)
+}
+
+// ValidateNumberOfCows checks the number of cows and raises appropriate errors
+func ValidateNumberOfCows(cows int) error {
+	if cows < 0 {
+		return &InvalidCowsError{cows, "there are no negative cows"}
+	}
+	if cows == 0 {
+		return &InvalidCowsError{cows, "no cows don't need food"}
+	}
+	return nil
+}
+
+```
+
+### Explanation
+    1. **InvalidCowsError**:
+
+        - This is a custom error struct that carries information about invalid cow counts. It includes fields for the number of cows and a descriptive message.
+        The Error() method formats and returns the error message for invalid cows.
+    
+    2. **DivideFood**:
+
+        - This function performs the main calculation. It calls the FodderAmount and FatteningFactor methods from the FodderCalculator interface. If both operations are successful, it divides the food amount by the number of cows and returns the result.
+        If there is an error in either step, the error is returned.
+    
+    3. **ValidateInputAndDivideFood**:
+
+        - Before performing any food calculations, this function ensures that the number of cows is valid. If the input is invalid (e.g., zero or negative cows), it returns an error.
+    
+    4. **ValidateNumberOfCows**:
+
+        - This function performs specific validations on the number of cows. It raises an InvalidCowsError if the cow count is invalid, providing detailed error messages for negative and zero cows.
+
+### Time and Space Complexity
+    
+    - #### **Time Complexity**:
+
+        - DivideFood runs in O(1) as the operations (retrieving fodder amount and fattening factor) are constant time, and the division operation is also constant time.
+        - ValidateInputAndDivideFood and ValidateNumberOfCows also run in O(1) since they only check basic conditions.
+    
+    - #### **Space Complexity**:
+
+        - The space complexity for all functions is O(1) since no additional space beyond fixed variables is used.
+
+## Conclusion
+The The Farm problem is an excellent exercise in validating input, handling errors with custom error types, and performing calculations with interfaces in Go. By structuring the solution this way, the code is both flexible and robust, capable of handling various scenarios with invalid inputs and faulty data sources efficiently.

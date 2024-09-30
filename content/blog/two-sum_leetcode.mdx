@@ -1,7 +1,7 @@
 ---
 title: Two Sum Leetcode
-description: Solve the "Two Sum" problem efficiently using hash maps in Go.
-tags: ["leetcode", "golang", "java", "typescript", "rust","algorithms"]
+description: Solve the "Two Sum" problem efficiently using hash maps with implementations in Go, Java, TypeScript, and Python.
+tags: ["leetcode", "golang", "java", "typescript", "python", "algorithms"]
 date: "2024-09-28"
 published: true
 ---
@@ -11,6 +11,22 @@ published: true
 The "Two Sum" problem is a popular coding challenge often encountered in technical interviews. The task is simple: given an array of integers `nums` and a target integer, find two numbers in `nums` such that they add up to the target. You need to return their indices, and each problem has exactly one solution.
 
 In this article, we will explore how to solve this problem efficiently using a **hash map** in Go, achieving a time complexity of **O(n)**.
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Using a Hash Map for O(n) Time Complexity](#using-a-hash-map-for-on-time-complexity)
+4. [Algorithm](#algorithm)
+5. [Flowchart](#flowchart)
+6. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+   - [TypeScript](#implementation-in-typescript)
+   - [Python](#implementation-in-python)
+7. [Explanation](#explanation)
+8. [Time and Space Complexity](#time-and-space-complexity)
+9. [Conclusion](#conclusion)
 
 ## Problem Statement
 
@@ -54,6 +70,7 @@ The brute force solution would involve a nested loop to check all pairs of numbe
 ### Flowchart
 
 ![Flowchart of Two Sum Algorithm](/leetcode/two_sum.png)
+
 
 ### Implementation in Go
 
@@ -125,20 +142,20 @@ public class TwoSum {
 
 ```typescript
 function twoSum(nums: number[], target: number): number[] {
-    const map: Map<number, number> = new Map(); // Initialize the map
+  const map: Map<number, number> = new Map(); // Initialize the map
 
-    for (let i = 0; i < nums.length; i++) {
-        const complement = target - nums[i]; // Calculate the complement
+  for (let i = 0; i < nums.length; i++) {
+    const complement = target - nums[i]; // Calculate the complement
 
-        // Check if the complement exists in the map
-        if (map.has(complement)) {
-            return [map.get(complement) as number, i]; // Return the two indices
-        }
-
-        map.set(nums[i], i); // Store the current number and its index in the map
+    // Check if the complement exists in the map
+    if (map.has(complement)) {
+      return [map.get(complement) as number, i]; // Return the two indices
     }
 
-    throw new Error("No two sum solution"); // This line won't be reached as per the problem constraints
+    map.set(nums[i], i); // Store the current number and its index in the map
+  }
+
+  throw new Error("No two sum solution"); // This line won't be reached as per the problem constraints
 }
 
 // Example usage
@@ -149,29 +166,27 @@ const result: number[] = twoSum(nums, target);
 console.log(result); // Output: [0, 1]
 ```
 
-### Implementation In Rust
+### Implementation In Python
 
-```rust
-use std::collections::HashMap;
+```python
+class Solution:
+    def twoSum(self, nums: list[int], target: int) -> list[int]:
+        # Initialize a dictionary to store numbers and their indices
+        num_map = {}
 
-impl Solution {
-    pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
-        let mut map = HashMap::new(); // Initialize the HashMap
+        # Iterate through the list with indices
+        for i, num in enumerate(nums):
+            # Calculate the complement
+            complement = target - num
 
-        for (i, &num) in nums.iter().enumerate() {
-            let another = target - num; // Calculate the complement
+            # Check if the complement exists in the map
+            if complement in num_map:
+                return [num_map[complement], i]  # Return the two indices
 
-            // Check if the complement exists in the map
-            if let Some(&idx) = map.get(&another) {
-                return vec![idx as i32, i as i32]; // Return the two indices
-            }
+            # Store the current number and its index in the map
+            num_map[num] = i
 
-            map.insert(num, i); // Store the current number and its index in the map
-        }
-
-        vec![] // Return an empty vector if no solution is found
-    }
-} // 
+        return []  # Return an empty list if no solution is found
 ```
 
 
@@ -179,10 +194,11 @@ impl Solution {
 
 - We initialize a map m where the key is the number and the value is its index.
 - For each element in nums, we compute the complement (target - nums[i]).
-If the complement is found in the map, we return the indices of the two numbers.
+  If the complement is found in the map, we return the indices of the two numbers.
 - If the complement is not found, we store the current number and its index in the map for future lookup.
 
 ### Time and Space Complexity
+
 - Time Complexity: O(n) – We only pass through the array once.
 - Space Complexity: O(n) – In the worst case, we store all the numbers in the hash map.
 

@@ -1,0 +1,112 @@
+---
+title: Party Robot!
+description: Solve the Party Robot! problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Party Robot!
+
+In this article, we will solve the "Party Robot!" problem from Exercism using Go. The problem requires creating a robot that can generate personalized welcome messages, birthday wishes, and seating assignments for a party guest.
+
+## Problem Statement
+
+The task involves implementing three functions:
+
+1. **Welcome**: Generate a simple welcome message for a guest.
+2. **HappyBirthday**: Generate a birthday message with the guest's name and age.
+3. **AssignTable**: Provide seating information, including table number, direction, distance, and seatmate information.
+
+## Approach
+
+To solve the problem, we'll follow a simple approach:
+
+1. **Welcome Function**: This function uses the guest's name to generate a personalized welcome message.
+2. **HappyBirthday Function**: This function includes the guest’s name and age in the birthday message.
+3. **AssignTable Function**: This is the most complex function, where the table number is formatted with leading zeros, the distance is formatted to one decimal place, and other details like the direction and seatmate are included.
+
+### Algorithm
+
+- For the **Welcome** function, we use Go's `fmt.Sprintf` to embed the guest's name in a welcome message.
+- The **HappyBirthday** function also utilizes `fmt.Sprintf` to include both the name and age in the message.
+- The **AssignTable** function requires:
+  - Formatting the table number with leading zeros (e.g., 003).
+  - Formatting the distance to one decimal place (e.g., 4.5 meters).
+  - Generating a multi-line string using the previously defined functions and additional information like the seatmate and table direction.
+
+### Implementation in Go
+
+```go
+package partyrobot
+
+import (
+	"fmt"
+)
+
+// Welcome returns a welcome message using the given name.
+func Welcome(name string) string {
+	return fmt.Sprintf("Welcome to my party, %s!", name)
+}
+
+// HappyBirthday returns a birthday message using the given name and age.
+func HappyBirthday(name string, age int) string {
+	return fmt.Sprintf("Happy birthday %s! You are now %d years old!", name, age)
+}
+
+// AssignTable gives directions to the new guest.
+func AssignTable(guestName string, tableNumber int, seatmate string, direction string, distance float64) string {
+	// Format the table number with leading zeroes
+	tableNumberStr := fmt.Sprintf("%03d", tableNumber)
+	// Format the distance with 1 digit precision
+	distanceFormatted := fmt.Sprintf("%.1f", distance)
+	return fmt.Sprintf("%s\nYou have been assigned to table %s. Your table is %s, exactly %s meters from here.\nYou will be sitting next to %s.",
+		Welcome(guestName), tableNumberStr, direction, distanceFormatted, seatmate)
+}
+
+```
+
+### Explanation
+
+1. **Welcome Function**:
+
+   - The Welcome function generates a simple greeting for the guest using their name. The Go fmt.Sprintf function is used to insert the guest's name into the string.
+
+   Example:
+
+   ```
+   Welcome("Alice")
+   ```
+
+2. **HappyBirthday Function**:
+
+   - The HappyBirthday function is used to generate a birthday message. It includes both the guest's name and age in the string using fmt.Sprintf.
+
+   Example:
+
+   ```
+   HappyBirthday("Alice", 30)
+   ```
+
+3. **AssignTable Function**:
+
+   - The AssignTable function handles the complex logic of seating assignment. It formats the table number to three digits (e.g., 003), formats the distance to one decimal place, and provides seating directions and information about the guest's seatmate.
+
+   Example:
+
+   ```
+   AssignTable("Charlie", 3, "Eve", "left", 4.5)
+   // "Welcome to my party, Charlie!
+   // You have been assigned to table 003. Your table is left, exactly 4.5 meters from here.
+   // You will be sitting next to Eve."
+   ```
+### Time and Space Complexity
+
+        - #### **Time Complexity**:
+            - Each function executes in O(1) time, as string formatting operations are constant and do not depend on the size of the input.
+
+        - #### **Space Complexity**:
+            - Each function also uses constant space, O(1), as we do not use any additional data structures that grow with the input.
+
+
+## Conclusion
+In this article, we implemented a solution to the "Party Robot!" problem using Go. The solution involved creating personalized welcome messages, birthday wishes, and seating assignments with formatted table numbers and distances. This problem serves as a great practice for string manipulation and formatting in Go.

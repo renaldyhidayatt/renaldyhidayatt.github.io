@@ -1,0 +1,124 @@
+---
+title: Election Day
+description: Solve the Election Day problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Election Day
+
+In the **Election Day** problem, we manage vote counts for candidates and present the results efficiently using Go. This involves working with pointers, structs, and maps to perform various operations related to vote counting.
+
+## Problem Statement
+
+The task is to:
+1. Initialize a vote counter.
+2. Extract and increment vote counts.
+3. Create and display election results.
+4. Decrement votes for a specific candidate from a map of results.
+
+## Approach
+
+The approach involves creating utility functions to manage votes using pointers and election results through structs and maps.
+
+### Algorithm
+
+1. **NewVoteCounter**:
+   - Initialize a new vote counter using a pointer to track vote changes dynamically.
+
+2. **VoteCount**:
+   - Safely extract the vote count, returning 0 if the counter is `nil`.
+
+3. **IncrementVoteCount**:
+   - Increase the vote count by a specified increment.
+
+4. **NewElectionResult**:
+   - Create a new election result using a struct containing the candidate’s name and vote count.
+
+5. **DisplayResult**:
+   - Format the election result as a string for easy display.
+
+6. **DecrementVotsesOfCandidate**:
+   - Decrease the votes of a specific candidate from a map of election results.
+
+### Implementation in Go
+
+```go
+package electionday
+
+import "fmt"
+
+// NewVoteCounter returns a new vote counter with
+// a given number of initial votes.
+func NewVoteCounter(initialVotes int) *int {
+	return &initialVotes
+}
+
+// VoteCount extracts the number of votes from a counter.
+func VoteCount(counter *int) int {
+	if counter == nil {
+		return 0
+	}
+	return *counter
+}
+
+// IncrementVoteCount increments the value in a vote counter
+func IncrementVoteCount(counter *int, increment int) {
+	*counter += increment
+}
+
+// NewElectionResult creates a new election result
+func NewElectionResult(candidateName string, votes int) *ElectionResult {
+	return &ElectionResult{Name: candidateName, Votes: votes}
+}
+
+// DisplayResult creates a message with the result to be displayed
+func DisplayResult(result *ElectionResult) string {
+	return fmt.Sprintf("%s (%d)", result.Name, result.Votes)
+}
+
+// DecrementVotesOfCandidate decrements by one the vote count of a candidate in a map
+func DecrementVotesOfCandidate(results map[string]int, candidate string) {
+	results[candidate]--
+}
+```
+
+### Explanation
+
+    1. **NewVoteCounter**:
+
+        Returns a pointer to an integer representing the initial vote count, allowing for dynamic modification of votes.
+
+    2. **VoteCount**:
+
+        Safely extracts the number of votes from the pointer. If the counter is nil, it returns 0 to avoid errors.
+
+    3. **IncrementVoteCount**:
+
+        Updates the vote counter by incrementing the value stored at the pointer location.
+
+    4. **NewElectionResult**:
+
+        Constructs a new ElectionResult struct containing the candidate’s name and vote count.
+
+    5. **DisplayResult**:
+
+        Uses fmt.Sprintf to format the result into a human-readable string.
+
+    6. **DecrementVotesOfCandidate**:
+
+        Decreases the vote count of a candidate stored in a map.
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+
+    - Each function operates in constant time O(1) as they either retrieve or update single elements in memory or a map.
+
+    - #### **Space Complexity**:
+
+    - The space complexity is O(1) for each function since they only use a fixed amount of additional memory regardless of the input size.
+
+
+## Conclusion
+The Election Day problem demonstrates how to efficiently manage votes and election results using Go. By leveraging pointers, structs, and maps, we can handle dynamic vote updates and result presentation in a clean and efficient manner.

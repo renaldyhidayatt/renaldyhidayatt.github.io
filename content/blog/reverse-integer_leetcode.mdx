@@ -6,6 +6,22 @@ date: "2024-09-28"
 published: true
 ---
 
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+   - [TypeScript](#implementation-in-typescript)
+   - [Python](#implementation-in-python)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+
 ## Problem Statement
 
 Given a signed 32-bit integer `x`, return `x` with its digits reversed. If reversing `x` causes the value to go outside the signed 32-bit integer range \([-2^{31}, 2^{31} - 1]\), then return `0`.
@@ -88,6 +104,91 @@ func main() {
 	fmt.Println(reverse(0))     // Output: 0
 }
 
+```
+
+### Implementation in Java
+
+Here's how you can implement this algorithm in Java:
+
+```java
+public class ReverseInteger {
+
+    public int reverse(int x) {
+        long res = 0;
+        
+        while (x != 0) {
+            res = res * 10 + x % 10;
+            if (res > Integer.MAX_VALUE || res < Integer.MIN_VALUE) {
+                return 0;
+            }
+            x /= 10;
+        }
+
+        return (int) res;
+    }
+
+    public static void main(String[] args) {
+        ReverseInteger ri = new ReverseInteger();
+        System.out.println(ri.reverse(123));    // Output: 321
+        System.out.println(ri.reverse(-123));   // Output: -321
+        System.out.println(ri.reverse(120));    // Output: 21
+        System.out.println(ri.reverse(0));      // Output: 0
+    }
+}
+```
+
+### Implementation in Typescript
+
+Here's how you can implement this algorithm in Typescript:
+
+```typescript
+function reverse(x: number): number {
+    let res: number = 0;
+
+    while (x !== 0) {
+        res = res * 10 + x % 10;
+
+        if (res > 2147483647 || res < -2147483648) {  // Check for 32-bit overflow
+            return 0;
+        }
+
+        x = Math.trunc(x / 10);  // Truncate towards zero
+    }
+
+    return res;
+}
+
+// Example usage
+console.log(reverse(123));    // Output: 321
+console.log(reverse(-123));   // Output: -321
+console.log(reverse(120));    // Output: 21
+console.log(reverse(0));      // Output: 0
+```
+
+### Implementation in Python
+
+Here's how you can implement this algorithm in Typescript:
+
+```python
+def reverse(x: int) -> int:
+    res = 0
+
+    while x != 0:
+        pop = x % 10 if x > 0 else x % -10
+        res = res * 10 + pop
+
+        if res > 2**31 - 1 or res < -2**31:  # Check for 32-bit overflow
+            return 0
+
+        x = int(x / 10)  # Truncate towards zero for both positive and negative numbers
+
+    return res
+
+# Example usage
+print(reverse(123))    # Output: 321
+print(reverse(-123))   # Output: -321
+print(reverse(120))    # Output: 21
+print(reverse(0))      # Output: 0
 ```
 
 ### Explanation

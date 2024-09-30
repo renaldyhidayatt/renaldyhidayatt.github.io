@@ -6,6 +6,21 @@ date: "2024-09-28"
 published: true
 ---
 
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+   - [TypeScript](#implementation-in-typescript)
+   - [Python](#implementation-in-python)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
 ## Problem Statement
 
 Given a string `s`, find the length of the longest substring without repeating characters.
@@ -66,6 +81,9 @@ We can solve this problem using the sliding window technique. The sliding window
 
 ### Implementation in Go
 
+Here is the Go implementation of the solution:
+
+
 ```go
 package main
 
@@ -108,6 +126,100 @@ func main() {
     s := "abcabcbb"
     fmt.Println(LengthOfLongestSubstring(s)) // Output: 3
 }
+```
+
+### Implementation in Java
+
+Here is the Java implementation of the solution:
+
+```java
+import java.util.HashSet;
+
+public class LongestSubstringWithoutRepeatingCharacters {
+    public static int lengthOfLongestSubstring(String s) {
+        if (s.length() == 0) return 0;
+
+        HashSet<Character> set = new HashSet<>();
+        int left = 0, right = 0, maxLength = 0;
+
+        while (right < s.length()) {
+            if (!set.contains(s.charAt(right))) {
+                set.add(s.charAt(right));
+                right++;
+                maxLength = Math.max(maxLength, right - left);
+            } else {
+                set.remove(s.charAt(left));
+                left++;
+            }
+        }
+        
+        return maxLength;
+    }
+
+    public static void main(String[] args) {
+        String s = "abcabcbb";
+        System.out.println(lengthOfLongestSubstring(s)); // Output: 3
+    }
+}
+```
+
+### Implementation in TypeScript
+
+Here is the TypeScript implementation of the solution:
+
+```typescript
+function lengthOfLongestSubstring(s: string): number {
+    if (s.length === 0) return 0;
+
+    const set = new Set<string>();
+    let left = 0, right = 0, maxLength = 0;
+
+    while (right < s.length) {
+        if (!set.has(s[right])) {
+            set.add(s[right]);
+            right++;
+            maxLength = Math.max(maxLength, right - left);
+        } else {
+            set.delete(s[left]);
+            left++;
+        }
+    }
+
+    return maxLength;
+}
+
+// Example usage
+const s: string = "abcabcbb";
+console.log(lengthOfLongestSubstring(s)); // Output: 3
+```
+
+### Implementation in Python
+
+Here is the Python implementation of the solution:
+
+```python
+def length_of_longest_substring(s: str) -> int:
+    if len(s) == 0:
+        return 0
+
+    char_set = set()
+    left = right = 0
+    max_length = 0
+
+    while right < len(s):
+        if s[right] not in char_set:
+            char_set.add(s[right])
+            right += 1
+            max_length = max(max_length, right - left)
+        else:
+            char_set.remove(s[left])
+            left += 1
+
+    return max_length
+
+# Example usage
+s = "abcabcbb"
+print(length_of_longest_substring(s))  # Output: 3
 ```
 
 ### Explanation

@@ -1,0 +1,98 @@
+---
+title: Animal Magic
+description: Solve the Animal Magic problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Animal Magic
+
+In this article, we will solve the **Animal Magic** problem, where we simulate rolling a die, generating random wand energy, and shuffling a list of animals. All of these tasks involve using randomness, which we can handle efficiently using Go’s built-in `math/rand` package.
+
+## Problem Statement
+
+You are tasked with simulating random events in a magical world:
+1. **Roll a Die**: Return a random integer between 1 and 20 (inclusive).
+2. **Generate Wand Energy**: Return a random floating-point number between 0.0 and less than 12.0.
+3. **Shuffle Animals**: Randomly shuffle a list of eight animals and return them in the new order.
+
+## Approach
+
+The core of this solution revolves around generating random numbers and manipulating slices. We'll use `rand.Seed` to ensure that our random values are different on each run and the `rand` package functions to generate the required random values.
+
+### Algorithm
+
+1. **Roll a Die**:
+   - Generate a random number between 1 and 20 by calling `rand.Intn(20)` and adding 1 to it.
+   
+2. **Generate Wand Energy**:
+   - Generate a random floating-point number between 0.0 and 12.0 by calling `rand.Float64()` (which generates a value between 0.0 and 1.0) and multiplying it by 12.
+
+3. **Shuffle Animals**:
+   - Use a predefined slice of eight animals and apply `rand.Shuffle` to rearrange the elements in a random order.
+
+### Implementation in Go
+
+```go
+package chance
+
+import (
+    "math/rand"
+    "time"
+)
+
+// RollADie returns a random int d with 1 <= d <= 20.
+func RollADie() int {
+    rand.Seed(time.Now().UnixNano()) // Seeding with current time for randomness
+    return rand.Intn(20) + 1
+}
+
+// GenerateWandEnergy returns a random float64 f with 0.0 <= f < 12.0.
+func GenerateWandEnergy() float64 {
+    rand.Seed(time.Now().UnixNano()) // Re-seeding for randomness
+    return rand.Float64() * 12.0
+}
+
+// ShuffleAnimals returns a slice with all eight animal strings in random order.
+func ShuffleAnimals() []string {
+    animals := []string{"ant", "beaver", "cat", "dog", "elephant", "fox", "giraffe", "hedgehog"}
+    rand.Seed(time.Now().UnixNano()) // Seeding to ensure shuffle randomness
+    rand.Shuffle(len(animals), func(i, j int) {
+        animals[i], animals[j] = animals[j], animals[i]
+    })
+    return animals
+}
+```
+
+### Explanation
+1. **RollADie**:
+
+    - We use rand.Intn(20) to generate a number between 0 and 19, then add 1 to get a number between 1 and 20.
+    - rand.Seed(time.Now().UnixNano()) is called to ensure that the random values change on every run by seeding the generator with the current time in nanoseconds.
+
+2. **GenerateWandEnergy**:
+
+    - We use rand.Float64() to generate a floating-point number between 0.0 and 1.0, then multiply it by 12.0 to scale it between 0.0 and less than 12.0.
+    - rand.Seed(time.Now().UnixNano()) is called here as well to ensure randomness.
+
+3. **ShuffleAnimals**:
+
+    - We use rand.Shuffle to shuffle the animal slice. This function randomly swaps elements in the slice to achieve a new random order. We again seed the random number generator for reliable randomness on every execution.
+
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+
+        - **RollADie**: O(1) as we are generating a single random number.
+        - **GenerateWandEnergy**: O(1) because it involves generating a single random floating-point number.
+        - **ShuffleAnimals**: O(n), where n is the number of animals in the list. The rand.Shuffle function iterates over the list once to shuffle it.
+
+    - #### **Space Complexity**:
+
+        - All functions have a space complexity of O(1) since we are only working with a fixed number of variables and modifying the slice in-place.
+
+
+## Conclusion
+
+We successfully implemented the Animal Magic problem by simulating randomness in Go. We utilized the math/rand package to generate random numbers and shuffle a list of animals. Using rand.Seed ensures that each run of the program generates a new set of results, giving a realistic simulation of magical randomness.
