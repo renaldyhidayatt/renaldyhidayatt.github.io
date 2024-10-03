@@ -1,0 +1,138 @@
+---
+title: Saddle Points
+description: Solve the Saddle Points problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+In a matrix, a saddle point is an element that is both the minimum in its column and the maximum in its row. This problem requires identifying all saddle points in a given matrix and returning their positions.
+
+## Approach
+
+To find saddle points in the matrix, we will:
+1. Determine the maximum values in each row.
+2. Determine the minimum values in each column.
+3. Compare the two results to identify saddle points.
+
+### Algorithm
+
+1. Parse the input string to create a matrix of integers.
+2. For each row, find the maximum value and its indices.
+3. For each column, find the minimum value.
+4. If a maximum value from a row is also the minimum value in its respective column, it is a saddle point.
+5. Return the positions of all saddle points.
+
+### Implementation in Go
+
+```go
+package matrix
+
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
+
+type Matrix [][]int
+type Pair [2]int
+
+func New(s string) (*Matrix, error) {
+	rowList := strings.Split(s, "\n")
+
+	m := make(Matrix, 0, len(rowList))
+
+	for _, rowEntry := range rowList {
+		row := strings.Fields(rowEntry)
+
+		r := make([]int, 0, len(row))
+
+		for _, element := range row {
+			e, err := strconv.Atoi(element)
+
+			if err != nil {
+				return &Matrix{}, errors.New("matrix error")
+			}
+			r = append(r, e)
+		}
+		m = append(m, r)
+	}
+
+	return &m, nil
+}
+
+func (m *Matrix) Saddle() []Pair {
+	mat := *m
+	output := []Pair{}
+
+	iRows, jCols := len(mat), len(mat[0])
+
+	if iRows == 0 || jCols == 0 {
+		return output
+	}
+
+	booleanMatrix := make(Matrix, iRows)
+
+	for i := 0; i < iRows; i++ {
+		booleanRow := make([]int, jCols)
+		booleanMatrix[i] = booleanRow
+	}
+
+	for i := 0; i < iRows; i++ {
+		row := mat[i]
+		maxValue := row[0]
+
+		for j := 1; j < jCols; j++ {
+			if row[j] > maxValue {
+				maxValue = row[j]
+			}
+		}
+
+		for j := 0; j < jCols; j++ {
+			if row[j] == maxValue {
+				booleanMatrix[i][j] = 1
+			}
+		}
+	}
+
+	for j := 0; j < jCols; j++ {
+		minValue := mat[0][j]
+
+		for i := 1; i < iRows; i++ {
+			if mat[i][j] < minValue {
+				minValue = mat[i][j]
+			}
+		}
+
+		for i := 0; i < iRows; i++ {
+			if mat[i][j] > minValue {
+				booleanMatrix[i][j] = 0
+			}
+		}
+	}
+
+	for i := 0; i < iRows; i++ {
+		for j := 0; j < jCols; j++ {
+			if booleanMatrix[i][j] == 1 {
+				saddle := Pair{i + 1, j + 1}
+				output = append(output, saddle)
+			}
+		}
+	}
+
+	return output
+}
+```
+
+### Explanation
+    - The New function creates a new matrix from the input string, parsing rows and converting elements to integers.
+    - The Saddle method processes the matrix to find saddle points by first identifying maximum values in each row and minimum values in each column, using a boolean matrix to track potential saddle points.
+    - Finally, it checks for saddle points by comparing the boolean matrix and the original matrix values.
+
+### Time and Space Complexity
+    - **Time Complexity**: O(n * m), where n is the number of rows and m is the number of columns. We go through the matrix several times to compute maximums and minimums.
+    - **Space Complexity**: O(n * m) for the boolean matrix used to track potential saddle points.
+
+## Conclusion
+The Saddle Points solution efficiently identifies all saddle points in a matrix by leveraging comparisons of row maximums and column minimums. This approach showcases effective use of matrix traversal and condition checking, providing a clear understanding of the concept of saddle points in a matrix.

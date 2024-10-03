@@ -1,0 +1,117 @@
+---
+title: Crypto Square
+description: Solve the Crypto Square problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Crypto Square** problem involves encoding a string into a square grid format, known as a cryptosquare. The process includes normalizing the input by removing non-alphanumeric characters, converting it to lowercase, and then arranging it into a rectangle. Finally, the encoded message is constructed by reading the characters in the rectangle column-wise.
+
+## Approach
+
+To solve the problem, we will:
+1. Normalize the input string by removing spaces and punctuation, converting all characters to lowercase.
+2. Calculate the number of columns needed for the rectangle.
+3. Construct the rectangle row by row.
+4. Transpose the rectangle to read the encoded message column by column.
+5. Return the encoded string.
+
+### Algorithm
+
+1. **Normalize Input**: Convert the input string to lowercase and filter out non-alphanumeric characters.
+2. **Calculate Column Count**: Determine the number of columns based on the length of the normalized string.
+3. **Create Rectangle**: Fill rows of the rectangle until the column count is reached.
+4. **Transpose Rectangle**: Construct the encoded message by concatenating characters column-wise.
+5. **Return Result**: Join the transposed rows with spaces and return the final encoded string.
+
+### Implementation in Go
+
+```go
+package cryptosquare
+
+import (
+	"strings"
+	"unicode"
+)
+
+// Rectangle represents a slice of strings
+type Rectangle []string
+
+// Encode takes a string and encodes it using the cryptosquare algorithm
+func Encode(pt string) string {
+	// Convert to lowercase
+	pt = strings.ToLower(pt)
+
+	// Normalize the input string
+	normalized := ""
+	for _, c := range pt {
+		if unicode.IsLetter(c) || unicode.IsDigit(c) {
+			normalized += string(c)
+		}
+	}
+
+	// Calculate the number of columns in the rectangle
+	colAmount := CalculateColumnAmount(len(normalized))
+
+	// Create the initial rectangle
+	var rectangle Rectangle
+	rowStr := ""
+	for _, c := range normalized {
+		if len(rowStr) < colAmount {
+			rowStr += string(c)
+		}
+		if len(rowStr) == colAmount {
+			rectangle = append(rectangle, rowStr)
+			rowStr = ""
+		}
+	}
+
+	// Pad the last row with spaces if necessary
+	if len(rowStr) > 0 {
+		for len(rowStr) < colAmount {
+			rowStr += " "
+		}
+		rectangle = append(rectangle, rowStr)
+	}
+
+	// Transpose the rectangle
+	var resultRectangle Rectangle
+	for colIndex := 0; colIndex < colAmount; colIndex++ {
+		resultRowStr := ""
+		for _, row := range rectangle {
+			resultRowStr += string(row[colIndex])
+		}
+		resultRectangle = append(resultRectangle, resultRowStr)
+	}
+
+	// Join the transposed rectangle into a string
+	return strings.Join(resultRectangle, " ")
+}
+
+// CalculateColumnAmount calculates the number of columns for the rectangle
+func CalculateColumnAmount(length int) int {
+	for c := 1; c <= length; c++ {
+		for r := c - 1; r <= c; r++ {
+			if r*c >= length {
+				return c
+			}
+		}
+	}
+	return -1
+}
+```
+
+### Explanation
+    - **Rectangle Struct**: A custom type representing a slice of strings for easier handling of the encoded rows.
+    - **Encode Function**: The core function that performs the normalization, rectangle creation, and transposition.
+    - **CalculateColumnAmount Function**: Computes the number of columns required based on the length of the normalized string.
+
+### Time and Space Complexity
+    - **Time Complexity**: O(n) for normalization and O(n) for constructing the rectangle and transposing it, leading to an overall complexity of O(n).
+
+    - **Space Complexity**: O(n) due to storing the normalized string and the resulting rectangle.
+
+## Conclusion
+The Crypto Square problem demonstrates the use of string manipulation and data structure handling in Go to create an encoded message format. This approach provides an efficient solution for encoding text in a cryptographic style.

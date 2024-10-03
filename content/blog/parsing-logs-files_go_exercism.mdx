@@ -28,7 +28,7 @@ We will define functions to accomplish each of the tasks mentioned above using r
 2. **SplitLogLine**: Splits a log line into parts based on specified delimiters.
 3. **CountQuotedPasswords**: Counts how many log lines contain the word "password" within quotes.
 4. **RemoveEndOfLineText**: Removes occurrences of "end-of-line" followed by digits.
-5. **TagWithUserName**: Tags lines with the username extracted from them.
+5. **TagWithUserName**: Tags lines with usernames extracted from them.
 
 ### Implementation in Go
 
@@ -89,39 +89,39 @@ func TagWithUserName(lines []string) []string {
 }
 ```
 
-Explanation
-    1. **IsValidLine**:
+### Explanation
+	- #### **IsValidLine**:
 
-        Uses a regex pattern to match lines that start with one of the log levels (TRC, DBG, INF, WRN, ERR, FTL).
+		Uses a regex pattern to match lines that start with one of the log levels (TRC, DBG, INF, WRN, ERR, FTL).
 
-    2. **SplitLogLine**:
+	- #### **SplitLogLine**:
 
-        Splits the input text by the specified delimiter pattern (<[-=~*]*>), returning an array of substrings.
-    
-    3. **CountQuotedPasswords**:
+		Splits the input text by the specified delimiter pattern , returning an array of substrings.
 
-        Uses a case-insensitive regex pattern to count how many lines contain the word "password" within quotes.
-    
-    4. **RemoveEndOfLineText**:
+	- #### **CountQuotedPasswords**:
 
-        Removes all occurrences of "end-of-line" followed by any digits from the provided text.
-    
-    5. **TagWithUserName**:
+		Uses a case-insensitive regex pattern to count how many lines contain the word "password" within quotes.
 
-        Searches for lines containing the username pattern (User <username>), and prepends it with a tag in the format [USR] <username>.
+	- #### **RemoveEndOfLineText**:
+
+		Removes all occurrences of "end-of-line" followed by any digits from the provided text.
+
+	- #### **TagWithUserName**:
+
+		Searches for lines containing the username pattern (User ), and prepends it with a tag in the format [USR] .
 
 ### Time and Space Complexity
-    - #### **Time Complexity**:
 
-        - **IsValidLine**: O(n), where n is the length of the log line.
-        - **SplitLogLine**: O(n), as it scans through the log line to split it.
-        - **CountQuotedPasswords**: O(m * n), where m is the number of lines and n is the average length of the lines, as it checks each line.
-        - **RemoveEndOfLineText**: O(n), where n is the length of the log line.
-        - **TagWithUserName**: O(m * n), similar to CountQuotedPasswords.
+#### Time Complexity:
 
-    - #### **Space Complexity**:
+	- **IsValidLine**: O(n), where n is the length of the log line.
+	- **SplitLogLine**: O(n), as it scans through the log line to split it.
+	- **CountQuotedPasswords**: O(m * n), where m is the number of lines and n is the average length of the lines, as it checks each line.
+	- **RemoveEndOfLineText**: O(n), where n is the length of the log line.
+	- **TagWithUserName**: O(m * n), similar to CountQuotedPasswords.
 
-        - All functions generally operate in O(1) additional space, except for CountQuotedPasswords and TagWithUserName, which return slices, leading to O(m) in those cases.
+#### Space Complexity:
+All functions generally operate in O(1) additional space, except for CountQuotedPasswords and TagWithUserName, which return slices, leading to O(m) in those cases.
 
 ## Conclusion
 The Parsing Log Files problem demonstrates effective log file processing using Go. By leveraging regex and efficient string manipulation techniques, we can extract and analyze critical information from logs, making this a valuable exercise in parsing and data extraction.

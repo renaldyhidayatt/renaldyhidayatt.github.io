@@ -1,0 +1,98 @@
+---
+title: Variable Length Quantity
+description: Solve the Variable Length Quantity problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Variable Length Quantity (VLQ) problem involves encoding and decoding integers using a variable-length encoding scheme. Each integer is represented in a way that allows for more efficient storage, especially for smaller values. The encoding format uses 7 bits for the value and the 8th bit as a continuation bit, indicating whether there are more bytes to follow. This scheme is commonly used in protocols and file formats to efficiently represent a series of integers.
+
+## Approach
+
+To solve the VLQ problem, we will:
+1. **Encode Integers**: Implement a function that takes a slice of unsigned 32-bit integers and encodes them into a byte array using the VLQ format.
+2. **Decode Bytes**: Create a function that decodes the byte array back into a slice of unsigned 32-bit integers, ensuring that it handles any potential errors in the encoding.
+3. **Manage Edge Cases**: Handle cases where the input is empty or where the encoded sequence is incomplete.
+
+### Algorithm
+
+1. **Encoding Algorithm**:
+   - Initialize an empty byte slice for the result.
+   - For each integer:
+     - Extract 7 bits at a time and store them in a byte.
+     - Set the continuation bit for all but the last byte.
+     - Append the resulting bytes to the result.
+
+2. **Decoding Algorithm**:
+   - Initialize an empty slice for the results and variables for the current integer.
+   - Read through the input byte slice:
+     - Extract the 7 bits and form the integer.
+     - Check the continuation bit to determine if more bytes are available.
+     - Append the complete integer to the results.
+
+### Implementation in Go
+
+```go
+package main
+
+import "errors"
+
+// EncodeVarint encodes a slice of uint32 integers into a VLQ byte array.
+func EncodeVarint(input []uint32) []byte {
+	result := []byte{}
+	for _, n := range input {
+		tmp := []byte{}
+		var b byte
+		for i := 0; ; i++ {
+			b = byte(n & 0b01111111)
+			n = n >> 7
+			if i > 0 {
+				b = b | 0b10000000
+			}
+			tmp = append([]byte{b}, tmp...)
+			if n == 0 {
+				break
+			}
+		}
+		result = append(result, tmp...)
+	}
+	return result
+}
+
+// DecodeVarint decodes a VLQ byte array into a slice of uint32 integers.
+func DecodeVarint(input []byte) ([]uint32, error) {
+	result := []uint32{}
+	var n uint32
+	i := uint32(0)
+	for _, b := range input {
+		if i > 0 {
+			n = n << 7
+		}
+		n = n | uint32(b&0b01111111)
+		i++
+		if b&0b10000000 == 0 {
+			result = append(result, n)
+			i = 0
+			n = 0
+		}
+	}
+	if i != 0 {
+		return result, errors.New("incomplete sequence")
+	}
+	return result, nil
+}
+```
+
+### Explanation
+    - **Encoding Process**: The EncodeVarint function processes each integer by repeatedly extracting 7 bits, setting the continuation bit for non-final bytes, and appending them to the result.
+    - **Decoding Process**: The DecodeVarint function reconstructs the original integers from the byte array, checking for the continuation bit to determine when to complete an integer.
+    - **Error Handling**: If there are leftover bits in the input that do not complete a valid integer, an error is returned.
+
+### Time and Space Complexity
+    - **Time Complexity**: The time complexity for both encoding and decoding is O(n), where n is the number of bytes processed. Each byte is handled a constant number of times.
+    - **Space Complexity**: The space complexity is O(m), where m is the number of encoded bytes, as the result byte slice can grow with the number of integers being processed.
+
+## Conclusion
+The Variable Length Quantity problem is efficiently solved in Go by implementing encoding and decoding functions that handle integer values with a space-efficient representation. By managing state and transitions effectively, we can ensure that our implementation is robust and handles edge cases appropriately.

@@ -1,0 +1,69 @@
+---
+title: Acronym
+description: Solve the Acronym problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Acronym** problem involves creating an acronym from a given phrase. An acronym is formed by taking the first letter of each word in a phrase and converting it to uppercase. The phrase may contain various characters, including letters, apostrophes, and spaces. Your task is to implement a function that extracts the relevant letters and forms the corresponding acronym.
+
+## Approach
+
+To solve this problem, we will utilize regular expressions to identify words in the input string. We will then collect the first letter of each word and convert them to uppercase to form the final acronym.
+
+### Algorithm
+
+1. **Regular Expression**: Use a regular expression to match words consisting of alphabetic characters and apostrophes.
+2. **Extract Words**: Find all occurrences of the pattern in the input string.
+3. **Collect Initials**: For each matched word, take the first letter.
+4. **Form Acronym**: Join the collected letters into a single string and convert it to uppercase.
+
+### Implementation in Go
+
+```go
+// This is a "stub" file.  It's a little start on your solution.
+// It's not a complete solution though; you have to write some code.
+
+// Package acronym should have a package comment that summarizes what it's about.
+// https://golang.org/doc/effective_go.html#commentary
+package acronym
+
+import (
+	"regexp"
+	"strings"
+)
+
+// Abbreviate should have a comment documenting it.
+func Abbreviate(s string) string {
+    regex := regexp.MustCompile("[A-Za-z']+")
+    words := regex.FindAllString(s, -1)
+
+    var abbr []string
+
+    for _, word := range words {
+        abbr = append(abbr, string(word[0]))
+    }
+
+    return strings.ToUpper(strings.Join(abbr, ""))
+}
+```
+
+### Explanation
+    - **Regex Pattern**: The regular expression "[A-Za-z']+" matches sequences of alphabetic characters and apostrophes. This allows us to properly extract words, including those with contractions (e.g., "it's").
+    - **Word Extraction**: The FindAllString method extracts all matching words into a slice.
+    - **Building the Acronym**: We loop through the slice of words, collect the first character of each word, and append it to the abbr slice.
+    - **Final Output**: Finally, we join the letters in the abbr slice, convert the result to uppercase, and return it.
+
+### Time and Space Complexity
+    - **Time Complexity**: O(n), where n is the length of the input string. The regex operates in linear time relative to the input size, and we traverse the list of words once.
+    - **Space Complexity**: O(m), where m is the number of words extracted from the string. The space used is proportional to the number of matches found by the regex.
+
+### Edge Cases
+    - **Empty String**: If the input string is empty, the function will return an empty string.
+    - **Single Word**: The function will correctly handle phrases with a single word, returning the uppercase first letter of that word.
+    - **Punctuation**: The regex will ignore punctuation, ensuring that only valid words contribute to the acronym.
+
+## Conclusion
+The Acronym problem is effectively solved using regular expressions to identify words and build the acronym from the first letters. The implementation is straightforward and efficiently handles various input scenarios, ensuring that the output is formatted correctly as an uppercase string.

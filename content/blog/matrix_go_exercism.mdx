@@ -1,0 +1,162 @@
+---
+title: Matrix
+description: Solve the Matrix problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Matrix problem requires implementing a matrix data structure that can:
+- Parse a string input representing a matrix of integers.
+- Provide methods to access rows and columns of the matrix.
+- Allow modification of elements within the matrix in a way that preserves the original structure.
+
+## Approach
+
+1. **Matrix Initialization**:
+   - Parse the string input into a 2D array of integers (a matrix).
+   - Ensure that all rows in the matrix are of equal length.
+
+2. **Accessing Rows and Columns**:
+   - Implement methods to return rows and columns from the matrix without modifying the underlying structure.
+
+3. **Setting Values**:
+   - Implement a method that allows setting a specific value in the matrix only if the row and column indices are valid.
+
+### Algorithm
+
+1. **New Matrix**:
+   - Split the string input by newlines to get rows.
+   - For each row, split by spaces to get individual elements and convert them to integers.
+   - Ensure all rows have the same length for a valid matrix.
+
+2. **Cols Method**:
+   - Return a new 2D array where each subarray represents a column of the original matrix.
+
+3. **Rows Method**:
+   - Return a new 2D array that represents the rows of the matrix.
+
+4. **Set Method**:
+   - Set the value of a specific element if the given row and column indices are within bounds.
+
+### Implementation in Go
+
+```go
+package matrix
+
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
+
+// Define the Matrix type here.
+
+type Matrix [][]int
+
+func New(s string) (m Matrix, err error) {
+
+	lines := strings.Split(s, "\n")
+
+	m = make([][]int, len(lines))
+
+	var rowLength int
+
+	for i, line := range lines {
+
+		unparsed := strings.Fields(line)
+
+		if i == 0 {
+			rowLength = len(unparsed)
+		}
+
+		if len(unparsed) != rowLength {
+			return nil, errors.New("")
+		}
+
+		for _, n := range unparsed {
+
+			parsed, convErr := strconv.Atoi(n)
+
+			if convErr != nil {
+				return nil, convErr
+			}
+
+			m[i] = append(m[i], parsed)
+		}
+	}
+	return
+}
+
+// Cols and Rows must return the results without affecting the matrix.
+
+func (m Matrix) Cols() (cols [][]int) {
+	cols = make([][]int, len(m[0]))
+
+	for i := range m[0] {
+		for _, r := range m {
+			cols[i] = append(cols[i], r[i])
+		}
+	}
+
+	return
+}
+
+func (m Matrix) Rows() (rows [][]int) {
+	rows = make([][]int, len(m))
+
+	for i := range rows {
+		rows[i] = append(rows[i], m[i]...)
+	}
+
+	return
+}
+
+func (m Matrix) Set(row, col, val int) bool {
+	if row < 0 || col < 0 || row >= len(m) || col >= len(m[0]) {
+		return false
+	}
+
+	m[row][col] = val
+
+	return true
+}
+```
+
+
+### Explanation
+    - **Matrix Initialization**:
+
+        - The New function splits the input string by lines to represent rows of the matrix. Each line is split by spaces to extract individual numbers, which are then converted to integers and stored in the matrix.
+        - It ensures that all rows have the same number of elements, returning an error if they do not.
+    
+    - **Cols Method**:
+
+        - This method extracts columns from the matrix. It loops through each row and collects the elements at a specific column index to form the column arrays.
+
+    - **Rows Method**:
+
+        - The Rows method simply returns the rows of the matrix. It creates a new 2D array to avoid modifying the original matrix.
+    
+    - **Set Method**:
+
+        - The Set function allows updating an element of the matrix at a specific row and column. It ensures that the indices are within the matrix's bounds before performing the update.
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+
+        - New: O(n * m) where n is the number of rows and m is the number of columns, as it processes each element.
+        - Cols and Rows: O(n * m) because they iterate over every element of the matrix to create new row and column arrays.
+        - Set: O(1) since it only accesses and modifies a single element.
+
+    - #### **Space Complexity**:
+
+        - New: O(n * m) for storing the matrix.
+        - Cols and Rows: O(n * m) for creating the new arrays of rows and columns.
+        - Set: O(1) as no additional space is needed for the operation.
+
+## Conclusion
+The solution efficiently handles the creation, access, and modification of matrix data in Go. The algorithm is designed to ensure matrix integrity while providing O(1) access for element modification and O(n * m) complexity for row and column operations.
+

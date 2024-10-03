@@ -1,0 +1,66 @@
+---
+title: Sieve
+description: Solve the Sieve problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The Sieve problem involves finding all prime numbers up to a specified limit using the Sieve of Eratosthenes algorithm. This ancient algorithm efficiently eliminates non-prime numbers from a list, allowing us to quickly identify all prime numbers within the given range.
+
+## Approach
+
+### Algorithm
+
+1. **Initialization**: Create a boolean slice called `sieve`, where each index represents whether that number is prime or not.
+2. **Mark Non-Primes**: Iterate through numbers starting from 2. For each prime number found, mark all of its multiples as non-prime.
+3. **Collect Primes**: After marking the non-prime numbers, collect all indices that remain true in the `sieve` slice, which represent prime numbers.
+
+### Implementation in Go
+
+Here is the Go implementation of the Sieve of Eratosthenes:
+
+```go
+// Package sieve provides functionality to find all prime numbers up to a given limit.
+package sieve
+
+// Sieve returns a slice of all prime numbers up to the specified limit.
+func Sieve(limit int) []int {
+	if limit < 2 {
+		return nil // No primes under 2
+	}
+
+	sieve := make([]bool, limit+1)
+	var primes []int
+
+	for i := 2; i <= limit; i++ {
+		if !sieve[i] {
+			primes = append(primes, i)
+
+			for j := i * i; j <= limit; j += i {
+				sieve[j] = true
+			}
+		}
+	}
+
+	return primes
+}
+```
+
+## Explanation
+    - **Initialization**: A boolean slice sieve is created with limit + 1 elements, all set to false initially, indicating that all numbers are potentially prime.
+    - **Outer Loop**: The outer loop iterates from 2 to limit. If a number i is found to be prime (i.e., sieve[i] is false), it is appended to the primes slice.
+    - **Inner Loop**: The inner loop marks all multiples of i, starting from i*i, as non-prime by setting the corresponding indices in the sieve slice to true.
+    - **Return Primes**: Finally, the function returns the primes slice containing all prime numbers up to the specified limit.
+
+## Time and Space Complexity
+    - #### **Time Complexity**: O(n log log n)
+
+        - This is the average time complexity of the Sieve of Eratosthenes algorithm, where n is the limit. The inner loop effectively processes each number's multiples efficiently.
+    - #### **Space Complexity**: O(n)
+
+        - The space required for the sieve slice is linear relative to the limit, as it needs to store boolean values for each number up to the limit.
+
+## Conclusion
+The Sieve of Eratosthenes is an efficient algorithm for finding all prime numbers up to a specified limit. The implementation in Go is straightforward, leveraging boolean slices to track non-prime numbers while providing a clean and efficient way to generate prime numbers. This approach is both time-efficient and space-efficient, making it suitable for large limits.

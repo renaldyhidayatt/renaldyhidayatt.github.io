@@ -1,0 +1,55 @@
+---
+title: Flatten Array
+description: Solve the Flatten Array problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+Given a nested array that may contain other arrays as elements, the goal is to "flatten" it into a single array containing all values, without any nesting. The elements inside the array can be of any type.
+
+## Approach
+
+The idea is to recursively go through the elements of the array and, if an element is itself an array, we will recursively flatten it. If it's not an array, we add it to the result.
+
+### Algorithm
+
+1. Check the type of the current element.
+   - If it is an array, iterate over its elements, recursively calling the flatten function for each.
+   - If it is a single element, append it to the resulting flattened array.
+2. Continue this process until the entire nested structure is flattened.
+   
+This recursive approach handles arrays of any depth.
+
+### Implementation in Go
+
+```go
+package flatten
+
+func Flatten(nested interface{}) []interface{} {
+	flat := make([]interface{}, 0)
+
+	switch nested.(type) {
+	case []interface{}:
+		for _, v := range nested.([]interface{}) {
+			flat = append(flat, Flatten(v)...)
+		}
+	case interface{}:
+		flat = append(flat, nested)
+	}
+	return flat
+}
+```
+
+### Explanation
+- **Base case**: If the element is not an array (interface{}), it is added directly to the flattened array.
+- **Recursive case**: If the element is an array ([]interface{}), we recursively flatten each of its elements and append the result to the final array.
+- **Result construction**: As we go through the nested structure, all elements are collected into a flat array.
+
+### Time and Space Complexity
+- **Time Complexity**: O(n), where n is the total number of elements in the nested structure. This is because each element is visited exactly once.
+- **Space Complexity**: O(n), since we are creating a new array to hold all the elements and using the recursion stack for depth-first traversal.
+
+## Conclusion
+This solution efficiently solves the problem of flattening a nested array in Go using recursion. The recursive approach is simple and elegant, allowing the function to handle arrays of arbitrary depth while maintaining linear time complexity.

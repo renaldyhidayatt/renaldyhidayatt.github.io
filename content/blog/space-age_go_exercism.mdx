@@ -1,0 +1,84 @@
+---
+title: Space Age
+description: Solve the "Space Age" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In this problem, we are tasked with calculating a person's age on different planets in the solar system based on the number of seconds they have lived. Each planet has a different orbital period, which affects how age is calculated.
+
+The goal is to create a function that takes in a person's age in seconds and a planet's name, then returns the equivalent age on that planet.
+
+### Orbital Periods
+
+The following are the orbital periods of the planets in Earth years:
+
+| Planet   | Orbital Period (Earth Years) |
+|----------|-------------------------------|
+| Mercury  | 0.2408467                     |
+| Venus    | 0.61519726                    |
+| Earth    | 1                             |
+| Mars     | 1.8808158                     |
+| Jupiter  | 11.862615                     |
+| Saturn   | 29.447498                     |
+| Uranus   | 84.016846                     |
+| Neptune  | 164.79132                     |
+
+## Approach
+
+To solve this problem, we will implement a function called `Age`. This function will:
+
+1. Convert the age in seconds to Earth years.
+2. Calculate the equivalent age on the specified planet using the planet's orbital period.
+
+### Implementation in Go
+
+Here is the Go implementation for the Space Age problem:
+
+```go
+package space
+
+// Planet type
+type Planet string
+
+// Age of person on a given planet
+func Age(seconds float64, planet Planet) float64 {
+	earthAge := seconds / 31557600
+	switch planet {
+	case "Mercury":
+		return earthAge / 0.2408467
+	case "Venus":
+		return earthAge / 0.61519726
+	case "Earth":
+		return earthAge
+	case "Mars":
+		return earthAge / 1.8808158
+	case "Jupiter":
+		return earthAge / 11.862615
+	case "Saturn":
+		return earthAge / 29.447498
+	case "Uranus":
+		return earthAge / 84.016846
+	case "Neptune":
+		return earthAge / 164.79132
+	default:
+		return -1
+	}
+}
+```
+
+### Explanation
+- **Planet Type**: We define a custom type Planet as a string to represent the different planets in our function.
+
+- **Age Function**: This function takes two parameters: the age in seconds and the planet. It first calculates the Earth age by dividing the seconds by the number of seconds in a year (approximately 31,557,600). It then uses a switch statement to determine the age on the specified planet by dividing the Earth age by the planet's orbital period.
+
+### Time and Space Complexity
+
+- **Time Complexity**: O(1), as the function performs a fixed number of operations regardless of the input size.
+
+- **Space Complexity**: O(1), since the space used by the function does not change with the size of the input; it only returns a single float value.
+
+## Conclusion
+The Space Age problem is a practical application of basic arithmetic and conditional logic in programming. By understanding the differences in planetary orbital periods, we can easily calculate a person's age on various planets. This implementation in Go is efficient and straightforward, showcasing how to handle different types and calculations effectively.

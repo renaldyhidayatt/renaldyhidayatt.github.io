@@ -1,0 +1,169 @@
+---
+title: Simple Cipher
+description: Solve the Simple Cipher problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The Simple Cipher problem involves implementing two types of ciphers: the Caesar cipher and the Vigenère cipher. The Caesar cipher shifts each letter by a fixed number of positions in the alphabet, while the Vigenère cipher uses a keyword to determine the shift for each letter in the plaintext. The goal is to encode and decode messages using these ciphers.
+
+## Approach
+
+### Algorithm
+
+1. **Caesar Cipher**:
+   - **Encoding**: Shift each letter in the input string by a specified distance. Wrap around the alphabet if the shift exceeds 'z'.
+   - **Decoding**: Shift each letter in the input string backward by the same distance.
+
+2. **Vigenère Cipher**:
+   - **Encoding**: For each letter in the input string, shift it according to the corresponding letter in the key. The key is repeated as necessary to match the length of the input.
+   - **Decoding**: Shift each letter backward based on the corresponding letter in the key.
+
+### Implementation in Go
+
+Here is the Go implementation of the Simple Cipher:
+
+```go
+// Package cipher implements simple cipher algorithms: Caesar and Vigenère ciphers.
+package cipher
+
+import (
+	"strings"
+)
+
+// Cipher interface defines methods for encoding and decoding.
+type Cipher interface {
+	Encode(input string) string
+	Decode(input string) string
+}
+
+// Define the shift and vigenere types here.
+type shift struct {
+	distance int
+}
+type vigenere struct {
+	distances []int
+}
+
+// NewCaesar creates a new Caesar cipher with a default shift of 3.
+func NewCaesar() Cipher {
+	return &shift{distance: 3}
+}
+
+// NewShift creates a new shift cipher with the given distance.
+func NewShift(distance int) Cipher {
+	if distance < -25 || distance == 0 || distance > 25 {
+		return nil
+	}
+	return &shift{distance: distance}
+}
+
+// Encode encodes the input string using the shift cipher.
+func (c shift) Encode(input string) string {
+	var sb strings.Builder
+	sb.Grow(len(input))
+	for _, r := range strings.ToLower(input) {
+		switch {
+		case r >= 'a' && r <= 'z':
+			sb.WriteRune(shiftRune(r, c.distance))
+		}
+	}
+	return sb.String()
+}
+
+// Decode decodes the input string using the shift cipher.
+func (c shift) Decode(input string) string {
+	var sb strings.Builder
+	sb.Grow(len(input))
+	for _, r := range strings.ToLower(input) {
+		switch {
+		case r >= 'a' && r <= 'z':
+			sb.WriteRune(shiftRune(r, 26-c.distance))
+		}
+	}
+	return sb.String()
+}
+
+// NewVigenere creates a new Vigenère cipher with the given key.
+func NewVigenere(key string) Cipher {
+	if key == "" {
+		return nil
+	}
+	var valid bool
+	distances := make([]int, 0, len(key))
+	for _, r := range key {
+		if r < 'a' || r > 'z' {
+			valid = false
+			break
+		}
+		if r != 'a' {
+			valid = true
+		}
+		distances = append(distances, int(r-'a'))
+	}
+	if !valid {
+		return nil
+	}
+	return &vigenere{distances: distances}
+}
+
+// Encode encodes the input string using the Vigenère cipher.
+func (v vigenere) Encode(input string) string {
+	var sb strings.Builder
+	sb.Grow(len(input))
+	var idx int
+	for _, r := range strings.ToLower(input) {
+		switch {
+		case r >= 'a' && r <= 'z':
+			sb.WriteRune(shiftRune(r, v.distances[idx%len(v.distances)]))
+			idx++
+		}
+	}
+	return sb.String()
+}
+
+// Decode decodes the input string using the Vigenère cipher.
+func (v vigenere) Decode(input string) string {
+	var sb strings.Builder
+	sb.Grow(len(input))
+	var idx int
+	for _, r := range strings.ToLower(input) {
+		switch {
+		case r >= 'a' && r <= 'z':
+			sb.WriteRune(shiftRune(r, -v.distances[idx%len(v.distances)]))
+			idx++
+		}
+	}
+	return sb.String()
+}
+
+// shiftRune shifts a rune by the specified distance.
+func shiftRune(r rune, distance int) rune {
+	if distance < 0 {
+		distance = 26 + distance
+	}
+	idx := (int(r-'a') + distance) % 26
+	return rune('a' + idx)
+}
+```
+
+### Explanation
+
+    - **Cipher Interface**: This defines the methods Encode and Decode that both cipher types will implement.
+    - **Shift Type**: Represents the Caesar cipher, with methods to encode and decode based on a specified shift distance.
+    - **Vigenere Type**: Represents the Vigenère cipher, which uses a series of shifts based on the letters in a keyword.
+    Shift Logic: The shiftRune function calculates the new position of a character based on its current position and the distance.
+
+### Time and Space Complexity
+    
+    - #### Time Complexity: O(n)
+
+        - Where n is the length of the input string. Each character is processed a constant number of times.
+    - #### **Space Complexity**: O(n)
+
+        - The space used for the output string is proportional to the size of the input string.
+
+## Conclusion
+The Simple Cipher problem can be efficiently solved using two well-defined cipher algorithms: the Caesar cipher and the Vigenère cipher. The implementation in Go provides a clean and modular design, making it easy to encode and decode messages while adhering to the rules of each cipher. This solution showcases effective string manipulation and character encoding techniques.

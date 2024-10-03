@@ -1,0 +1,122 @@
+---
+title: Minesweeper
+description: Solve the Minesweeper problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Minesweeper problem involves creating an annotated board that indicates the number of mines surrounding each cell in a grid. The grid is represented as a slice of strings, where each cell can either be empty (' ') or contain a mine ('*'). The objective is to return a new board with numbers representing the count of mines in the surrounding eight cells for each empty cell, while keeping mine cells unchanged.
+
+## Approach
+
+The approach consists of iterating through each cell in the board and checking its neighboring cells to count the number of mines. 
+
+### Algorithm
+
+1. Initialize a function `minesAt` to count the number of mines surrounding a given cell.
+2. In the `Annotate` function:
+   - Iterate through each cell in the board.
+   - If the cell is empty (' '), use `minesAt` to get the count of surrounding mines.
+   - Replace the empty cell with the corresponding number if there are any mines; otherwise, leave it as is.
+3. Construct a new annotated board with the modified values.
+
+### Implementation in Go
+
+```go
+package minesweeper
+
+// Annotate returns an annotated board
+func minesAt(board []string, row, col int) int {
+	mines := 0
+
+	nrows := len(board)
+	ncols := len(board[0])
+
+	border := row + 1
+
+	if border >= nrows {
+		border = -1
+	}
+
+	rows := [8]int{
+		row - 1,
+		row - 1,
+		row - 1,
+		row,
+		row,
+		border,
+		border,
+		border,
+	}
+
+	border = col + 1
+
+	if border >= ncols {
+		border = -1
+	}
+
+	cols := [8]int{
+		col - 1,
+		col,
+		border,
+		col - 1,
+		border,
+		col - 1,
+		col,
+		border,
+	}
+
+	for i := 0; i < 8; i++ {
+		r, c := rows[i], cols[i]
+
+		if r >= 0 && c >= 0 && board[r][c] == '*' {
+			mines++
+		}
+	}
+
+	return mines
+}
+
+func Annotate(board []string) []string {
+	nrows := len(board)
+
+	if nrows == 0 {
+		return []string{}
+	}
+
+	ncols := len(board[0])
+
+	annotation := make([]string, 0, nrows)
+
+	for r := 0; r < nrows; r++ {
+		bb := []byte(board[r])
+
+		for c := 0; c < ncols; c++ {
+			if bb[c] == ' ' {
+				mines := minesAt(board, r, c)
+
+				if mines > 0 {
+					bb[c] = '0' + byte(mines)
+				}
+			}
+		}
+
+		annotation = append(annotation, string(bb))
+	}
+
+	return annotation
+}
+```
+
+### Explanation
+    - The minesAt function calculates the number of mines surrounding a specific cell by checking all eight possible neighboring cells. It handles the edges of the board to avoid out-of-bound errors.
+    - The Annotate function constructs a new annotated board by iterating through each cell, replacing empty cells with the count of surrounding mines if applicable.
+
+### Time and Space Complexity
+    - **Time Complexity**: O(n * m), where n is the number of rows and m is the number of columns. Each cell is processed once, and checking its neighbors takes constant time.
+    - **Space Complexity**: O(n * m) for the output board that holds the annotations.
+
+### Conclusion
+The Minesweeper solution effectively processes the input board to provide an annotated output that enhances gameplay by indicating the proximity of mines. The implemented solution in Go demonstrates a clear understanding of grid manipulation and neighbor checking, providing an efficient and effective approach to the problem.

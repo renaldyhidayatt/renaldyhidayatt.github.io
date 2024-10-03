@@ -6,13 +6,14 @@ import { QueryPagination } from "@/components/query-pagination";
 import { Tag } from "@/components/tag";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAllTags, sortPosts, sortTagsByCount } from "@/lib/utils";
-import { Suspense, useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const POSTS_PER_PAGE = 5;
+const POSTS_PER_PAGE = 10; // Adjust this to 10
 
 const SearchParamsHandler = ({ setCurrentPage }: any) => {
   const searchParams = useSearchParams();
+  
   useEffect(() => {
     const page = Number(searchParams.get("page")) || 1;
     setCurrentPage(page);
@@ -31,6 +32,7 @@ export default function BlogPage() {
     () => sortPosts(posts.filter((post) => post.published)),
     []
   );
+  
   const totalPages = useMemo(
     () => Math.ceil(sortedPosts.length / POSTS_PER_PAGE),
     [sortedPosts]
@@ -39,24 +41,24 @@ export default function BlogPage() {
   const tags = useMemo(() => getAllTags(posts), []);
   const sortedTags = useMemo(() => sortTagsByCount(tags), [tags]);
 
+  // Calculate the index for the current page to slice the sorted posts
   const displayPosts = useMemo(
-    () =>
-      sortedPosts.slice(
-        POSTS_PER_PAGE * (currentPage - 1),
-        POSTS_PER_PAGE * currentPage
-      ),
+    () => sortedPosts.slice(
+      POSTS_PER_PAGE * (currentPage - 1),
+      POSTS_PER_PAGE * currentPage
+    ),
     [sortedPosts, currentPage]
   );
 
   const filteredPosts = useMemo(
-    () =>
-      displayPosts.filter((post) =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
+    () => displayPosts.filter((post) =>
+      post.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
     [displayPosts, searchTerm]
   );
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = (page: any) => {
+    // Update the URL to reflect the current page
     router.push(`?page=${page}`);
   };
 

@@ -1,0 +1,84 @@
+---
+title: House
+description: Solve the House problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The **House** problem involves recreating the cumulative "This is the House that Jack Built" song. Each verse starts with a new subject and adds a sequence of actions and subjects from the previous verses. The challenge is to generate a specific verse or the entire song programmatically.
+
+## Approach
+
+### Algorithm
+
+1. **Verse Structure**: Each verse follows a cumulative pattern where the new subject is introduced, followed by the previous subjects linked with their corresponding actions.
+
+2. **Verse Construction**: For each verse, the new subject is added at the top, and then the previous subjects and actions are appended in reverse order to maintain the cumulative structure.
+
+3. **Efficient Reuse**: The subjects and actions are stored in arrays, making it simple to retrieve the necessary parts for each verse. This eliminates repetition and ensures efficient generation of the entire song.
+
+### Implementation in Go
+
+```go
+package house
+
+import (
+	"strings"
+)
+
+var subject = []string{
+	"", "house that Jack built.", "malt", "rat", "cat", "dog", "cow with the crumpled horn",
+	"maiden all forlorn", "man all tattered and torn",
+	"priest all shaven and shorn", "rooster that crowed in the morn",
+	"farmer sowing his corn", "horse and the hound and the horn",
+}
+
+var action = []string{
+	"", "", "lay in", "ate", "killed", "worried", "tossed",
+	"milked", "kissed", "married", "woke", "kept",
+	"belonged to",
+}
+
+func Verse(v int) string {
+	verse := "This is the " + subject[v]
+
+	for i := v; i > 1; i-- {
+		verse += "\nthat " + action[i] + " the " + subject[i-1]
+	}
+
+	return verse
+}
+
+func Song() string {
+	verses := make([]string, 12)
+
+	for i := 1; i <= 12; i++ {
+		verses[i-1] = Verse(i)
+	}
+
+	return strings.Join(verses, "\n\n")
+}
+```
+
+### Explanation
+    - **Data Structure**:
+        - subject[] stores the nouns in each verse (e.g., "house", "cat", "dog").
+        - action[] stores the corresponding verbs (e.g., "lay in", "ate", "killed").
+    
+    - **Verse Function**:
+        - Verse(v int) generates a single verse. It starts with the new subject and iteratively appends the actions and subjects from previous verses in reverse order.
+
+    - **Song Function**:
+        - Song() generates the full song by constructing all 12 verses and joining them with newline characters.
+
+### Time and Space Complexity
+    - **Time Complexity**:
+        - Constructing each verse requires iterating over the previous subjects and actions, with each verse having up to 12 lines. Thus, the time complexity for generating a single verse is O(v), where v is the number of lines. For generating the entire song, the time complexity is O(1) for each verse, so the overall time complexity is O(12), which is constant.
+    - **Space Complexity**:
+        - The space complexity is also O(1) because the data structures used to store the subjects and actions are of fixed size, and the memory used for generating verses is proportional to the size of the song, which is fixed at 12 verses.
+
+## Conclusion
+The House problem demonstrates how to solve a cumulative song generation problem efficiently by structuring the repetitive elements into arrays. By storing the subjects and actions separately and using a loop to construct each verse, the solution is both clean and efficient in terms of time and space complexity.
+

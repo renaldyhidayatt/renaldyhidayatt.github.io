@@ -1,0 +1,189 @@
+---
+title: Robot Simulator
+description: Solve the Robot Simulator problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-03"
+---
+
+## Problem Statement
+
+The **Robot Simulator** problem involves creating a simulation of robots moving inside a room or a rectangular area. Each robot can take commands like turning left, right, or moving forward. The robots operate within the constraints of a grid, and collisions or boundary violations need to be handled gracefully.
+
+Given a robot’s starting position and a sequence of commands, we need to simulate its movements while considering the boundaries of the room and the presence of other robots.
+
+### Key tasks:
+- Parse and execute movement commands for a robot.
+- Ensure robots don’t collide with walls or other robots.
+- Report the final positions and orientations of robots.
+
+## Approach
+
+To solve this problem, we need to break down the behavior of the robots into modular actions like moving forward, turning left, and turning right. Additionally, the room is defined as a rectangular grid with boundaries that the robots cannot cross.
+
+We also need to manage the state of multiple robots simultaneously, ensuring that no two robots occupy the same position and that all robots follow their individual sets of commands.
+
+### Algorithm
+
+1. **Room and Boundaries**:
+   - The room is represented as a rectangle (`Rect`), with a minimum and maximum position.
+   - A robot cannot move beyond the room's boundaries, and if it attempts to do so, the movement is restricted.
+
+2. **Robot Movements**:
+   - Each robot has a position (`Pos`) and a direction (`Dir`), which indicates where the robot is facing (North, East, South, or West).
+   - Robots can turn left (`L`), turn right (`R`), or move forward (`A`).
+
+3. **Handling Multiple Robots**:
+   - Robots are identified by unique names and have a defined starting position within the room.
+   - When multiple robots are simulated, we need to ensure that no two robots occupy the same position at any point in time.
+
+4. **Command Processing**:
+   - Commands are processed asynchronously via channels, where each robot listens for its commands and executes them accordingly.
+   - The simulation ends when a robot completes its commands or if any command leads to an invalid state (e.g., collision, out-of-bounds movement).
+
+### Implementation in Go
+
+```go
+package robot
+
+import "fmt"
+
+type Action byte
+type Action3 struct {
+	name   string
+	action Action
+}
+
+const move, left, right, stop = 'A', 'L', 'R', 'S'
+const N, E, S, W Dir = 0, 1, 2, 3
+
+var directions = [...]string{"north", "east", "south", "west"}
+
+func (r Rect) contains(p Pos) bool {
+	return p.Northing <= r.Max.Northing && p.Northing >= r.Min.Northing &&
+		p.Easting <= r.Max.Easting && p.Easting >= r.Min.Easting
+}
+func (d Dir) String() string { return directions[d] }
+func (d Dir) right() Dir     { return (d + 1) % 4 }
+func (d Dir) left() Dir      { return (d + 3) % 4 }
+func Right()                 { Step1Robot.Dir = Step1Robot.right() }
+func Left()                  { Step1Robot.Dir = Step1Robot.left() }
+func Advance() {
+	p := advance(Pos{RU(Step1Robot.X), RU(Step1Robot.Y)}, Step1Robot.Dir)
+	Step1Robot.X, Step1Robot.Y = int(p.Easting), int(p.Northing)
+}
+func StartRobot(command chan Command, action chan Action) {
+	for c := range command {
+		action <- Action(c)
+	}
+	close(action)
+}
+func Room(extent Rect, robot Step2Robot, action chan Action, report chan Step2Robot) {
+	for a := range action {
+		switch a {
+		case move:
+			p := advance(robot.Pos, robot.Dir)
+			if extent.contains(p) {
+				robot.Pos = p
+			}
+		case right:
+			robot.Dir = robot.right()
+		case left:
+			robot.Dir = robot.left()
+		}
+	}
+	report <- robot
+	close(report)
+}
+
+var posMap = map[Dir]Pos{N: {0, 1}, E: {1, 0}, S: {0, -1}, W: {-1, 0}}
+
+func advance(p Pos, d Dir) Pos {
+	v := posMap[d]
+	return Pos{p.Easting + v.Easting, p.Northing + v.Northing}
+}
+func StartRobot3(name, script string, action chan Action3, _ chan string) {
+	if name == "" {
+		return
+	}
+	for _, c := range script {
+		action <- Action3{name, Action(c)}
+	}
+	action <- Action3{name, stop}
+}
+func Room3(extent Rect, robots []Step3Robot, action chan Action3, rep chan []Step3Robot, log chan string) {
+	defer close(rep)
+	positions, occupancies := map[string]Step2Robot{}, map[Pos]string{}
+	for _, r := range robots {
+		if r.Name == "" {
+			log <- "empty robot name"
+			return
+		} else if _, ok := positions[r.Name]; ok {
+			log <- fmt.Sprintf("duplicate name: %s", r.Name)
+			return
+		} else if _, ok := occupancies[r.Pos]; ok {
+			log <- fmt.Sprintf("already occupied: %v", r.Pos)
+			return
+		} else if !extent.contains(r.Pos) {
+			log <- fmt.Sprintf("%s outside room", r.Name)
+			return
+		}
+		positions[r.Name] = r.Step2Robot
+		occupancies[r.Pos] = r.Name
+	}
+	var report []Step3Robot
+	for len(positions) > 0 {
+		a := <-action
+		r, ok := positions[a.name]
+		if !ok {
+			log <- "unknown robot: " + a.name
+			return
+		}
+		switch a.action {
+		case move:
+			p := advance(r.Pos, r.Dir)
+			if !extent.contains(p) {
+				log <- "bumped into a wall at " + r.Dir.String()
+				continue
+			}
+			if occupant, occupied := occupancies[p]; occupied {
+				log <- fmt.Sprintf("%v already occupied by %s", p, occupant)
+				continue
+			}
+			delete(occupancies, r.Pos)
+			r.Pos = p
+			occupancies[r.Pos] = a.name
+		case right:
+			r.Dir = r.right()
+		case left:
+			r.Dir = r.left()
+		case stop:
+			delete(positions, a.name)
+			report = append(report, Step3Robot{a.name, r})
+			continue
+		default:
+			log <- "unknown action: " + string(a.action)
+			return
+		}
+		positions[a.name] = r
+	}
+	rep <- report
+}
+```
+
+### Time and Space Complexity
+    - **Time Complexity**:
+
+        - The time complexity is driven by the number of commands processed. If there are n commands and r robots, processing each command (like moving, turning, or stopping) involves simple checks such as boundary detection and map lookups, both of which take constant time. Therefore, the overall time complexity is O(n * r), where n is the number of commands and r is the number of robots.
+
+        - Handling collisions or checking for obstacles also happens in constant time, as it involves map lookups.
+
+    - **Space Complexity**:
+
+        - The space complexity depends on the number of robots r and the size of the room (for example, the boundaries and obstacles, if any). The maps used to store the robot's positions and occupancy status scale with the number of robots, making the space complexity O(r).
+
+        - Additionally, space is required to store the command logs and action channels, but these are relatively small compared to the space used for robot tracking.
+
+## Conclusion
+The Robot Simulator problem offers a great way to model robotic movements within a defined room while handling various commands like moving, turning, and stopping. The implementation effectively manages the state of each robot, ensuring that collisions and out-of-bound movements are prevented.
+
+By using efficient data structures like maps to store positions and directions, the solution ensures that even with multiple robots, each command is processed quickly. This design is highly modular, making it adaptable for more complex scenarios such as handling larger rooms or adding more sophisticated robot actions.

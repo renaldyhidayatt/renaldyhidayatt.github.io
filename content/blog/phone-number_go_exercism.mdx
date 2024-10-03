@@ -1,0 +1,85 @@
+---
+title: Phone Number
+description: Solve the Phone Number problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In the Phone Number problem, the goal is to take an input string representing a phone number in different formats and return a standardized 10-digit phone number. Additionally, you will extract the area code and format the number in a specific manner. Invalid phone numbers should result in an error.
+
+## Approach
+
+The approach involves:
+
+1. **Extracting Digits**: Use regular expressions to extract only the digits from the input string.
+2. **Normalization**: If the number starts with a leading '1' (common in North America), this should be removed.
+3. **Validation**: The phone number should contain exactly 10 digits after normalization. Additional checks are applied to ensure the first digit of the area code and exchange code is not '0' or '1'.
+4. **Formatting and Area Code Extraction**: Provide functions to extract the area code and format the phone number into a standardized string.
+
+### Algorithm
+
+1. Use a regular expression to match and extract all digits from the input string.
+2. If the number starts with a leading '1', remove it.
+3. Ensure that the resulting number contains exactly 10 digits and adheres to the formatting rules for a valid phone number.
+4. Return the standardized number or format it accordingly.
+
+### Implementation in Go
+
+```go
+package phonenumber
+
+import (
+	"errors"
+	"regexp"
+	"strings"
+)
+
+// Number extracts a valid 10-digit phone number from the input.
+func Number(input string) (string, error) {
+	re, _ := regexp.Compile("[0-9]+")
+	output := re.FindAllString(input, -1)
+	n := strings.Join(output, "")
+	if strings.Index(n, "1") == 0 {
+		n = n[1:]
+	}
+	if len(n) != 10 || strings.Index(n, "0") == 0 || strings.Index(n, "1") == 0 || strings.Index(n, "0") == 3 || strings.Index(n, "1") == 3 {
+		return "", errors.New("invalid phone number")
+	}
+	return n, nil
+}
+
+// AreaCode returns the area code of the given phone number.
+func AreaCode(input string) (string, error) {
+	output, err := Number(input)
+	if err != nil {
+		return "", err
+	}
+	return output[0:3], nil
+}
+
+// Format returns the phone number in a clean format: (XXX) XXX-XXXX.
+func Format(input string) (string, error) {
+	output, err := Number(input)
+	if err != nil {
+		return "", err
+	}
+	return "(" + output[0:3] + ")" + " " + output[3:6] + "-" + output[6:10], nil
+}
+```
+
+### Explanation
+- **Regular Expression**: The regular expression "[0-9]+" is used to match and extract all digit sequences from the input string. These digits are then concatenated together.
+- **Normalization**: The function checks if the number starts with a '1'. If so, the leading '1' is stripped, leaving the final 10 digits.
+- **Validation**: The code ensures that the phone number consists of exactly 10 digits. It also checks that neither the first digit of the area code nor the exchange code (i.e., the next three digits) is '0' or '1', as these are not valid in North American phone numbers.
+- **Formatting**: The Format function returns the number in a specific format (XXX) XXX-XXXX, and the AreaCode function returns just the first three digits.
+
+### Time and Space Complexity
+    - #### **Time Complexity**: O(n), where n is the number of characters in the input string. The algorithm processes each character once to extract the digits.
+
+   - #### **Space Complexity**: O(n), as the algorithm creates new strings to store the normalized phone number and the result.
+
+## Conclusion
+This Go solution for the Phone Number problem efficiently extracts, validates, and formats phone numbers according to a predefined set of rules. By using regular expressions, string manipulation, and error handling, the solution is robust and handles various input formats.
+

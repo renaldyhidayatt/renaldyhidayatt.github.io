@@ -1,0 +1,133 @@
+---
+title: Complex Number
+description: Solve the Complex Number problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Complex Number** problem involves the creation and manipulation of complex numbers. A complex number consists of a real part and an imaginary part, which can be added, subtracted, multiplied, divided, and manipulated in various ways. The challenge is to create a struct that represents a complex number and implement methods to perform these operations.
+
+## Approach
+
+To address the problem, we will define a `Number` struct that represents a complex number with its real and imaginary parts. We will then implement methods for basic arithmetic operations, as well as additional functionalities like calculating the absolute value and the complex conjugate.
+
+### Algorithm
+
+1. **Define the Complex Number Struct**:
+   - Create a struct `Number` with fields for the real and imaginary parts.
+
+2. **Implement Methods**:
+   - Implement methods for getting the real and imaginary parts.
+   - Implement methods for addition, subtraction, multiplication, and division.
+   - Implement methods for calculating the conjugate and absolute value of a complex number.
+   - Implement a method for exponentiation.
+
+### Implementation in Go
+
+```go
+package complexnumbers
+
+import "math"
+
+// Number represents a complex number.
+type Number struct {
+	re  float64 // Real part
+	img float64 // Imaginary part
+}
+
+// Real returns the real part of the complex number.
+func (n Number) Real() float64 {
+	return n.re
+}
+
+// Imaginary returns the imaginary part of the complex number.
+func (n Number) Imaginary() float64 {
+	return n.img
+}
+
+// Add adds two complex numbers.
+func (n1 Number) Add(n2 Number) Number {
+	return Number{
+		n1.re + n2.re,
+		n1.img + n2.img,
+	}
+}
+
+// Subtract subtracts the second complex number from the first.
+func (n1 Number) Subtract(n2 Number) Number {
+	return Number{
+		n1.re - n2.re,
+		n1.img - n2.img,
+	}
+}
+
+// Multiply multiplies two complex numbers.
+func (n1 Number) Multiply(n2 Number) Number {
+	return Number{
+		n1.re*n2.re - n1.img*n2.img,
+		n1.img*n2.re + n1.re*n2.img,
+	}
+}
+
+// Times scales the complex number by a real factor.
+func (n Number) Times(factor float64) Number {
+	return Number{
+		factor * n.re,
+		factor * n.img,
+	}
+}
+
+// Divide divides the first complex number by the second.
+func (n1 Number) Divide(n2 Number) Number {
+	den := n2.re*n2.re + n2.img*n2.img
+	return Number{
+		(n1.re*n2.re + n1.img*n2.img) / den,
+		(n1.img*n2.re - n1.re*n2.img) / den,
+	}
+}
+
+// Conjugate returns the complex conjugate of the number.
+func (n Number) Conjugate() Number {
+	return Number{
+		n.re,
+		-n.img,
+	}
+}
+
+// Abs returns the absolute value (magnitude) of the complex number.
+func (n Number) Abs() float64 {
+	return math.Sqrt(n.re*n.re + n.img*n.img)
+}
+
+// Exp returns the exponential of the complex number.
+func (n Number) Exp() Number {
+	return Number{
+		math.Exp(n.re) * math.Cos(n.img),
+		math.Exp(n.re) * math.Sin(n.img),
+	}
+}
+```
+
+### Explanation
+    - **Struct Definition**: The Number struct encapsulates the real and imaginary parts of a complex number, allowing for easy manipulation.
+
+    - **Methods**:
+        - **Real and Imaginary**: These methods return the respective parts of the complex number.
+        - **Add, Subtract, Multiply, Divide**: These methods implement standard arithmetic operations for complex numbers using the respective formulas.
+        - **Times**: This method scales the complex number by a real number.
+        Conjugate: This method returns the complex conjugate by negating the imaginary part.
+        - **Abs**: This method calculates the magnitude using the formula for the square root of the sum of the squares of the real and imaginary parts.
+        - **Exp**: This method computes the exponential of a complex number using Euler's formula.
+
+
+
+### Time and Space Complexity
+
+    - **Time Complexity**: All operations (addition, subtraction, multiplication, division, and calculating the absolute value) run in O(1) time, as they involve a fixed number of operations regardless of the input size.
+
+    - **Space Complexity**: O(1) for each operation, as no additional space proportional to the input is used; results are returned as new Number instances.
+
+## Conclusion
+The Complex Number implementation in Go provides a robust way to handle complex arithmetic. By encapsulating the functionality in a struct and methods, we achieve a clean and efficient solution for managing and manipulating complex numbers. This implementation can be easily extended for additional functionalities as needed.

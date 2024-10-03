@@ -1,0 +1,98 @@
+---
+title: Roman Numerals
+description: Solve the Roman Numerals problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The task is to convert an integer into its equivalent Roman numeral representation. Roman numerals are based on combinations of letters from the Latin alphabet, where each letter has a specific value. The challenge is to correctly map the integer values to their corresponding Roman numeral symbols, adhering to the rules of Roman numeral construction.
+
+The range for this problem is defined as 1 to 3999, as Roman numerals do not represent values outside this range.
+
+## Approach
+
+### Algorithm
+
+1. **Input Validation**: Check if the input number is within the range of 1 to 3999. If not, return an error.
+2. **Define Roman Numerals**: Create a list of Roman numeral symbols along with their integer values, arranged from highest to lowest.
+3. **Conversion Logic**: 
+   - Initialize an empty string to hold the result.
+   - Use a loop to iterate through the Roman numeral symbols, subtracting their values from the input number and appending the corresponding symbols to the result string until the entire number is converted.
+
+### Implementation in Go
+
+Here is the Go implementation for converting integers to Roman numerals:
+
+```go
+package romannumerals
+
+import "errors"
+
+// Roman struct represents a Roman numeral and its integer value.
+type Roman struct {
+	letters string
+	n       int
+}
+
+// ToRomanNumeral converts an integer to its Roman numeral representation.
+func ToRomanNumeral(input int) (string, error) {
+	if !(1 <= input && input < 4000) {
+		return "", errors.New("Number is out of range")
+	}
+
+	result := ""
+
+	digits := []Roman{
+		{"M", 1000},
+		{"CM", 900},
+		{"D", 500},
+		{"CD", 400},
+		{"C", 100},
+		{"XC", 90},
+		{"L", 50},
+		{"XL", 40},
+		{"X", 10},
+		{"IX", 9},
+		{"V", 5},
+		{"IV", 4},
+		{"I", 1},
+	}
+
+	left := input
+
+	for _, digit := range digits {
+		for left >= digit.n {
+			result += digit.letters
+			left -= digit.n
+		}
+	}
+
+	return result, nil
+}
+```
+
+
+
+### Explanation
+    - **Input Validation**: The function first checks if the input number is within the valid range (1 to 3999). If not, it returns an error.
+
+    - **Defining Roman Numerals**: A slice of Roman structs is created, where each struct holds a Roman numeral symbol and its corresponding integer value. This allows easy access to both the symbol and its value during conversion.
+
+### Conversion Logic:
+
+    - An empty string result is initialized to build the final Roman numeral representation.
+    - A loop iterates through the defined Roman numeral symbols. For each symbol, while the remaining value (left) is greater than or equal to the symbol's value, the symbol is appended to the result, and its - value is subtracted from left. This process continues until the input value is fully converted to Roman numerals.
+
+### Time and Space Complexity
+    - #### **Time Complexity**: O(n)
+
+        - The time complexity is O(n), where n is the number of symbols in the digits array (constant in this case). In the worst case, the loop iterates through the symbols multiple times, but the maximum number of iterations is bounded by the input value.
+
+    - #### **Space Complexity**: O(1)
+
+        - The space complexity is O(1) because the amount of space used does not grow with the size of the input. Only a fixed amount of space is used for the result string and the Roman numeral definitions.
+
+## Conclusion
+The Roman Numerals problem can be effectively solved using Go by implementing a structured approach that validates input and systematically converts integers to their Roman numeral equivalents. The algorithm leverages a simple iteration through predefined values, ensuring clarity and efficiency. With a linear time complexity and constant space usage, this solution is both optimal and straightforward for the given problem.

@@ -1,0 +1,101 @@
+---
+title: Anagram
+description: Solve the Anagram problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The Anagram problem involves determining which words from a list are anagrams of a given subject word. An anagram is a word formed by rearranging the letters of another word, using all the original letters exactly once. For example, "listen" is an anagram of "silent". The task is to return a list of all the candidates that are anagrams of the subject.
+
+## Approach
+
+### Algorithm
+
+1. **Input Validation**:
+   - Check if the length of the candidate word is the same as the subject word. If not, it cannot be an anagram.
+
+2. **Identical Check**:
+   - Use a helper function to ensure that the two words are not identical in terms of their case-insensitive representation.
+
+3. **Normalization**:
+   - Convert both the subject and candidate words to lower case, split them into individual characters, and sort the characters.
+
+4. **Comparison**:
+   - After sorting, compare the two words. If they match, the candidate is an anagram of the subject.
+
+### Implementation in Go
+
+Here is the Go implementation of the Anagram detection:
+
+```go
+// Package anagram provides functionality to detect anagrams from a list of candidates.
+package anagram
+
+import (
+	"sort"
+	"strings"
+)
+
+// Detect returns a slice of words that are anagrams of the given subject.
+func Detect(subject string, candidates []string) []string {
+	anagrams := []string{}
+
+	for _, v := range candidates {
+		if anagram(subject, v) {
+			anagrams = append(anagrams, v)
+		}
+	}
+
+	return anagrams
+}
+
+// anagram checks if two words are anagrams of each other.
+func anagram(a_word, word string) bool {
+	if len(a_word) != len(word) || identical(a_word, word) == 0 {
+		return false
+	}
+
+	noramalize := func(a string) []string {
+		x := strings.Split(strings.ToLower(a), "")
+		sort.Strings(x)
+		return x
+	}
+
+	a := noramalize(a_word)
+	b := noramalize(word)
+
+	for i, _ := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// identical checks if two words are the same, ignoring case.
+func identical(a_word, word string) int {
+	return strings.Compare(strings.ToLower(a_word), strings.ToLower(word))
+}
+```
+
+### Explanation
+
+    - **Detect Function**: This function takes a subject word and a list of candidate words. It checks each candidate to see if it's an anagram of the subject using the anagram function and collects the valid anagrams in a slice.
+
+    - **anagram Function**: This function checks if the two provided words are anagrams. It first ensures that they are not identical and then normalizes both words by sorting their letters after converting them to lower case. If the sorted letters match, they are anagrams.
+
+    - **identical Function**: This helper function compares two words in a case-insensitive manner to ensure they are not the same before proceeding to check for anagrams.
+
+### Time and Space Complexity
+    - #### **Time Complexity**: O(n * m log m)
+
+        Where n is the number of candidates and m is the length of the longest candidate word. Each comparison involves sorting, which takes O(m log m).
+    - #### **Space Complexity**: O(m)
+
+        - The space complexity primarily arises from the storage of the normalized strings used during the sorting process.
+
+## Conclusion
+The Anagram detection problem is effectively solved with a straightforward approach in Go. By implementing normalization, sorting, and comparison logic, the solution accurately identifies anagrams from a list of candidates. This implementation is efficient and handles various edge cases, ensuring that only valid anagrams are returned.

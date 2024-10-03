@@ -1,0 +1,123 @@
+---
+title: Tree Building
+description: Solve the Tree Building problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The problem is to build a tree structure from a list of records. Each record has an `ID` and a `Parent`. The `ID` represents a node in the tree, and the `Parent` indicates the parent of the node. The root node has an ID of `0` and its parent is itself.
+
+We need to construct the tree by validating that:
+- All nodes have contiguous IDs starting from `0`.
+- A valid parent-child relationship exists where a child node's `ID` is always greater than or equal to the parent, except for the root node.
+
+## Approach
+
+To solve the problem:
+1. **Input Validation**:
+   - Ensure that the record IDs are contiguous and within bounds.
+   - Validate that the parent-child relationships are correct.
+  
+2. **Tree Construction**:
+   - Use an array to store the nodes.
+   - For each node, assign its `ID` and link it to its parent node, building a hierarchy of children.
+   
+### Algorithm
+
+1. **Sort and Validate**: 
+   - First, check that the record list is valid, meaning that the IDs are in sequence starting from 0, and each node's parent is valid.
+   
+2. **Node Creation**:
+   - Create an array of `Node` objects, with each object storing its ID and a list of children.
+   
+3. **Link Nodes**:
+   - For each record, assign the child node to its parent's list of children.
+
+4. **Return Tree**:
+   - The root node is returned, which contains all the linked child nodes forming the full tree.
+
+### Implementation in Go
+
+```go
+package tree
+
+import "fmt"
+
+const rootID = 0
+
+type Record struct {
+	ID     int
+	Parent int
+}
+
+type Node struct {
+	ID       int
+	Children []*Node
+}
+
+func Build(records []Record) (*Node, error) {
+	if len(records) == 0 {
+		return nil, nil
+	}
+
+	positions := make([]int, len(records))
+
+	for i, r := range records {
+		if r.ID < rootID || r.ID >= len(records) {
+			return nil, fmt.Errorf("out of bounds record id %d", r.ID)
+		}
+		positions[r.ID] = i
+	}
+
+	nodes := make([]Node, len(records))
+
+	for i := range positions {
+		r := records[positions[i]]
+
+		if r.ID != i {
+			return nil, fmt.Errorf("non-contiguous node %d (want %d)", r.ID, i)
+		}
+
+		validParentChild := (r.ID > r.Parent) || (r.ID == rootID && r.Parent == rootID)
+
+		if !validParentChild {
+			return nil, fmt.Errorf("node %d has impossible parent %d", r.ID, r.Parent)
+		}
+
+		nodes[i].ID = i
+
+		if i != rootID {
+			p := &nodes[r.Parent]
+			p.Children = append(p.Children, &nodes[i])
+		}
+	}
+
+	return &nodes[0], nil
+}
+```
+
+### Explanation
+    - **Record Struct**: Represents the input data with an ID and a Parent to show the tree hierarchy.
+
+    - **Node Struct**: Represents the node in the tree, where ID is the node's identifier and Children is a slice of pointers to child nodes.
+
+    - **Build Function**:
+
+        - **Validation**: The function first checks for any errors such as non-contiguous IDs or invalid parent-child relationships.
+        - **Node Construction**: It then creates a list of Node objects, setting the ID of each node and linking children to their respective parents.
+        - **Root Return**: After constructing the tree, the root node is returned, which contains the full hierarchy of nodes.
+
+### Time and Space Complexity
+    - #### Time Complexity:
+
+        - O(n), where n is the number of records. Each record is processed once to build the tree.
+
+
+    - #### Space Complexity:
+
+        - O(n), where n is the number of nodes. The space is used to store the nodes and their relationships in memory.
+
+## Conclusion
+Building a tree from a set of records in Go involves careful validation of input and linking child nodes to their parents. This solution effectively handles the problem with O(n) time complexity, making it efficient even for larger inputs.

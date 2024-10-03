@@ -40,7 +40,7 @@ import "fmt"
 // Greeter interface defines the blueprint for different language greeters.
 type Greeter interface {
 	LanguageName() string
-	Greet(name string) stringItalian
+	Greet(name string) string
 }
 
 // SayHello creates a greeting message in the language provided by the Greeter.
@@ -71,6 +71,7 @@ func (p Portuguese) Greet(name string) string {
 }
 ```
 
+
 ### Explanation
     1. **Greeter Interface**:
     
@@ -83,8 +84,8 @@ func (p Portuguese) Greet(name string) string {
     3. **Italian and Portuguese Types**:
 
             - These types implement the Greeter interface. For each language, the Greet method formats the greeting appropriately for the language.
-            LanguageName for Italian returns "Italian", and Greet formats "Ciao <name>!".
-            Similarly, Portuguese returns "Portuguese" and formats "Olá <name>!".
+            LanguageName for Italian returns "Italian", and Greet formats "Ciao !".
+            Similarly, Portuguese returns "Portuguese" and formats "Olá !".
 
 ### Time and Space Complexity
     - **Time Complexity**: O(1) for both Greet and LanguageName methods, as they involve simple string operations.

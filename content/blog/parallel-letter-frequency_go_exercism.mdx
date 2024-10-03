@@ -1,0 +1,94 @@
+---
+title: Parallel Letter Frequency
+description: Solve the Parallel Letter Frequency problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The goal of this exercise is to count the frequency of each letter (rune) in a set of strings. To make the solution efficient, we will implement the counting using concurrency. This allows the frequency calculation to run in parallel, leveraging Go's goroutines.
+
+## Approach
+
+To solve this problem efficiently, we divide the input strings and calculate the frequency of letters for each string concurrently using goroutines. The results from each concurrent execution are combined to create the final frequency map.
+
+### Algorithm
+
+1. **Frequency Calculation**: 
+   - First, define a helper function `Frequency` that counts the frequency of each letter (rune) in a given string and returns it as a map (`FreqMap`).
+   
+2. **Concurrency**:
+   - Use a `ConcurrentFrequency` function to launch multiple goroutines, each responsible for computing the frequency of letters for one of the input strings.
+   - Combine the results from all the goroutines into a single frequency map.
+
+3. **Channel Communication**:
+   - Use a buffered channel to collect results from each goroutine and merge them in the main function.
+
+### Implementation in Go
+
+```go
+package letter
+
+// FreqMap records the frequency of each rune in a given text.
+type FreqMap map[rune]int
+
+// Frequency counts the frequency of each rune in a given text and returns this
+// data as a FreqMap.
+func Frequency(text string) FreqMap {
+	frequencies := FreqMap{}
+	for _, r := range text {
+		frequencies[r]++
+	}
+	return frequencies
+}
+
+// ConcurrentFrequency counts the frequency of each rune in the given strings,
+// by making use of concurrency.
+func ConcurrentFrequency(texts []string) FreqMap {
+	m := FreqMap{}
+
+	c := make(chan FreqMap, 10)
+
+	for _, s := range texts {
+		go func(s string) {
+			c <- Frequency(s)
+		}(s)
+	}
+
+	for range texts {
+		for k, v := range <-c {
+			m[k] += v
+		}
+	}
+
+	return m
+}
+```
+
+### Explanation
+    - **FreqMap**: This type alias represents a map where the keys are runes and the values represent how many times each rune occurs in the string.
+
+    - **Frequency Function**:
+
+        It takes a string, iterates over each rune, and increments the count for that rune in the FreqMap.
+    
+    - **ConcurrentFrequency Function**:
+
+        - The ConcurrentFrequency function iterates over the input strings (texts), launching a goroutine for each string that computes its letter frequency by calling Frequency.
+        - The results of each goroutine are sent through a buffered channel to the main goroutine.
+        - The main goroutine collects the results from all channels and merges them into a single frequency map.
+    
+    - **Concurrency**: The program launches multiple goroutines, with each goroutine working on a different string concurrently, making the solution faster, especially for large inputs.
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+        The time complexity of the Frequency function is O(n), where n is the length of the string being processed.
+        In the ConcurrentFrequency function, if there are m strings in total, each string is processed concurrently, so the effective time complexity becomes O(n/m) for each string, where n is the total length of all strings.
+    
+    - #### Space Complexity:
+        The space complexity is O(k), where k is the number of unique runes in the strings, as we store the frequency of each unique rune in the map.
+
+## Conclusion
+Using Go's powerful concurrency model, we can efficiently calculate letter frequencies from multiple strings by running frequency calculations in parallel. This approach significantly reduces the overall computation time when dealing with large data sets or multiple input strings.

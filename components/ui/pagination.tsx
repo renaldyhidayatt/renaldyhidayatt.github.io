@@ -34,59 +34,88 @@ const PaginationItem = React.forwardRef<
 ));
 PaginationItem.displayName = "PaginationItem";
 
-type PaginationLinkProps = {
+interface PaginationLinkProps
+  extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   isActive?: boolean;
-} & Pick<ButtonProps, "size"> &
-  React.ComponentProps<"a">;
+  size?: "icon" | "default";
+  disabled?: boolean;
+}
 
 const PaginationLink = ({
   className,
   isActive,
   size = "icon",
+  disabled = false, 
   ...props
-}: PaginationLinkProps) => (
-  <a
-    aria-current={isActive ? "page" : undefined}
-    className={cn(
-      buttonVariants({
-        variant: isActive ? "outline" : "ghost",
-        size,
-      }),
-      isActive
-        ? "bg-[rgb(124,58,237)] text-white font-bold border border-[rgb(124,58,237)] dark:bg-[rgb(124,58,237)] dark:text-white dark:border border-[rgb(124,58,237)]"
-        : "bg-white text-[rgb(124,58,237)] hover:bg-[rgb(104,50,210)] dark:bg-gray-800 dark:text-[rgb(124,58,237)] dark:hover:bg-gray-700",
-      className
-    )}
-    {...props}
-  />
-);
+}: PaginationLinkProps) => {
+  const linkClasses = cn(
+    buttonVariants({
+      variant: isActive ? "outline" : "ghost",
+      size,
+    }),
+    isActive
+      ? "bg-[rgb(124,58,237)] text-white font-bold border border-[rgb(124,58,237)] dark:bg-[rgb(124,58,237)] dark:text-white dark:border border-[rgb(124,58,237)]"
+      : "bg-white text-[rgb(124,58,237)] hover:bg-[rgb(104,50,210)] dark:bg-gray-800 dark:text-[rgb(124,58,237)] dark:hover:bg-gray-700",
+    className,
+    disabled && "cursor-not-allowed opacity-50" 
+  );
+
+  return (
+    <a
+      aria-current={isActive ? "page" : undefined}
+      className={linkClasses}
+      {...props}
+      onClick={disabled ? undefined : props.onClick}
+      tabIndex={disabled ? -1 : 0} 
+    >
+      {props.children}
+    </a>
+  );
+};
 
 PaginationLink.displayName = "PaginationLink";
 
 const PaginationPrevious = ({
   className,
+  disabled,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) => (
-  <PaginationLink
-    aria-label="Go to previous page"
-    size="default"
-    className={cn("gap-1 pl-2.5", className)}
-    {...props}
-  >
-    <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
-  </PaginationLink>
-);
+}: React.ComponentProps<typeof PaginationLink> & { disabled?: boolean }) => {
+  if (disabled) {
+    return (
+      <span
+        aria-label="Go to previous page"
+        className={cn("gap-1 pl-2.5 cursor-not-allowed opacity-50", className)}
+      >
+        <ChevronLeft className="h-4 w-4" />
+        <span>Previous</span>
+      </span>
+    );
+  }
+
+  return (
+    <PaginationLink
+      aria-label="Go to previous page"
+      size="default"
+      className={cn("gap-1 pl-2.5", className)}
+      {...props}
+    >
+      <ChevronLeft className="h-4 w-4" />
+      <span>Previous</span>
+    </PaginationLink>
+  );
+};
+
 PaginationPrevious.displayName = "PaginationPrevious";
 
 const PaginationNext = ({
   className,
+  disabled,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) => (
+}: React.ComponentProps<typeof PaginationLink> & { disabled?: boolean }) => (
   <PaginationLink
     aria-label="Go to next page"
-    size="default"
     className={cn("gap-1 pr-2.5", className)}
+    disabled={disabled}
     {...props}
   >
     <span>Next</span>

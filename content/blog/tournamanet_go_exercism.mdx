@@ -1,0 +1,218 @@
+---
+title: Tournament
+description: Solve the Tournament problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Tournament** problem requires processing match results between teams to generate a scoreboard. Each match has a host team, a guest team, and a result (win, loss, or draw). The goal is to tally the results and present them in a well-structured format, showing the number of matches played, wins, draws, losses, and points for each team.
+
+## Approach
+
+To solve this problem, we will:
+1. Define structures for `Team` and `Match`.
+2. Create a method to read match data and convert it into team statistics.
+3. Sort teams based on their points and names.
+4. Format the output to present the final standings.
+
+### Algorithm
+
+1. **Define Team and Match Structures**: Create a `Team` struct to hold team statistics and a `Match` struct to hold match results.
+2. **Read Input**: Use `LinesToArray` to read match data from input.
+3. **Convert Matches to Teams**: Implement `MatchesToTeams` to process the match results and update the team statistics.
+4. **Sort Teams**: Use a multi-sort approach based on points and names to order the teams.
+5. **Format Output**: Use `PrettyPrint` to create a formatted string representing the standings.
+
+### Implementation in Go
+
+```go
+package tournament
+
+import (
+	"bufio"
+	"errors"
+	"fmt"
+	"io"
+	"sort"
+	"strings"
+)
+
+type Team struct {
+	Name          string
+	MatchesPlayed int
+	Wins          int
+	Draws         int
+	Losses        int
+	Points        int
+}
+
+type Match struct {
+	Host   string
+	Guest  string
+	Result string
+}
+
+type lessFunc func(p1, p2 *Team) bool
+type multiSorter struct {
+	teams []Team
+	less  []lessFunc
+}
+
+func (ms *multiSorter) Sort(teams []Team) {
+	ms.teams = teams
+	sort.Sort(ms)
+}
+
+func OrderedBy(less ...lessFunc) *multiSorter {
+	return &multiSorter{
+		less: less,
+	}
+}
+
+func (ms *multiSorter) Len() int {
+	return len(ms.teams)
+}
+
+func (ms *multiSorter) Swap(i, j int) {
+	ms.teams[i], ms.teams[j] = ms.teams[j], ms.teams[i]
+}
+
+func (ms *multiSorter) Less(i, j int) bool {
+	p, q := &ms.teams[i], &ms.teams[j]
+	var k int
+	for k = 0; k < len(ms.less)-1; k++ {
+		less := ms.less[k]
+		switch {
+		case less(p, q):
+			return true
+		case less(q, p):
+			return false
+		}
+	}
+	return ms.less[k](p, q)
+}
+
+func LinesToArray(reader io.Reader) ([]string, error) {
+	var lines []string
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	return lines, nil
+}
+
+func MatchesToTeams(matches []Match) (map[string]Team, error) {
+	var teams = make(map[string]Team)
+
+	for _, m := range matches {
+		var host, guest Team
+
+		host, host_exists := teams[m.Host]
+		if !host_exists {
+			host = Team{Name: m.Host}
+		}
+
+		guest, guest_exists := teams[m.Guest]
+		if !guest_exists {
+			guest = Team{Name: m.Guest}
+		}
+
+		host.MatchesPlayed++
+		guest.MatchesPlayed++
+		if m.Result == "win" {
+			host.Wins++
+			host.Points += 3
+			guest.Losses++
+		} else if m.Result == "loss" {
+			host.Losses++
+			guest.Wins++
+			guest.Points += 3
+		} else if m.Result == "draw" {
+			host.Draws++
+			host.Points += 1
+			guest.Draws++
+			guest.Points += 1
+		} else {
+			return teams, errors.New("Invalid match")
+		}
+
+		teams[m.Host] = host
+		teams[m.Guest] = guest
+	}
+	return teams, nil
+}
+
+func ArrayToMatches(lines []string) ([]Match, error) {
+	var matches []Match
+	for _, line := range lines {
+		match := strings.Split(line, ";")
+		if len(match) != 3 {
+			return nil, errors.New("Invalid match")
+		}
+		host := match[0]
+		guest := match[1]
+		result := match[2]
+		matches = append(matches, Match{host, guest, result})
+	}
+	return matches, nil
+}
+
+func PrettyPrint(teams []Team) string {
+	table := fmt.Sprintf("%-30s | %2s | %2s | %2s | %2s | %2s\n", "Team", "MP", "W", "D", "L", "P")
+	for _, v := range teams {
+		table += fmt.Sprintf("%-30s | %2d | %2d | %2d | %2d | %2d\n", v.Name, v.MatchesPlayed, v.Wins, v.Draws, v.Losses, v.Points)
+	}
+	return table
+}
+
+func Tally(reader io.Reader, writer io.Writer) error {
+	lines, err := LinesToArray(reader)
+	if err != nil {
+		return err
+	}
+
+	matches, err := ArrayToMatches(lines)
+	if err != nil {
+		return err
+	}
+	teams, err := MatchesToTeams(matches)
+	if err != nil {
+		return err
+	}
+
+	points := func(t1, t2 *Team) bool {
+		return t1.Points > t2.Points
+	}
+
+	names := func(t1, t2 *Team) bool {
+		return t1.Name < t2.Name
+	}
+
+	var t []Team
+	for _, v := range teams {
+		t = append(t, v)
+	}
+
+	OrderedBy(points, names).Sort(t)
+	io.WriteString(writer, PrettyPrint(t))
+	return nil
+}
+```
+
+### Explanation
+    - **Team and Match Structures**: The Team struct keeps track of the team's name and their performance statistics, while the Match struct captures the details of each match.
+    - **Multi-Sorter**: The multiSorter allows sorting based on multiple criteria (points and names) using custom comparison functions.
+    - **Input Handling**: The Tally function reads match data from input, processes it, and writes the formatted standings to output.
+    - **Formatting**: The standings are presented in a structured format using PrettyPrint, displaying the performance of each team.
+
+### Time and Space Complexity
+    - **Time Complexity**: The overall time complexity for tallying the matches and sorting the teams is O(n log n), where n is the number of teams.
+    - **Space Complexity**: The space complexity is O(n) for storing the teams and matches.
+
+## Conclusion
+The Tournament problem implementation provides a clear and efficient way to manage and display tournament standings. By utilizing structs and sorting mechanisms, we can effectively process match results and produce a well-formatted output.

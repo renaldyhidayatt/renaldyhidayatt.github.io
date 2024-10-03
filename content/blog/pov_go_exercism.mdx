@@ -1,0 +1,128 @@
+---
+title: POV
+description: Solve the POV problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-03"
+---
+
+## Problem Statement
+
+The **POV** (Point of View) problem involves manipulating a tree data structure by changing the root to a specified node, making that node the new root and adjusting the tree accordingly. Additionally, it also requires finding the path between two nodes in the tree.
+
+In this problem, you are given a tree, and you need to:
+1. Reorient the tree so that a given node becomes the new root.
+2. Find the path from one node to another after the reorientation.
+
+## Approach
+
+To solve this problem, we can break it down into two parts:
+1. **Reorienting the tree**: Given a target node, we traverse the tree to find it and then restructure the tree so that this node becomes the root.
+2. **Finding the path between two nodes**: After reorienting the tree, finding the path from one node to another is straightforward by traversing the tree starting from the new root.
+
+### Algorithm
+
+#### 1. Reorienting the Tree
+The function `FromPov` starts by finding the path from the current root to the target node. Once the path is found, the tree is restructured by reversing the direction of parent-child relationships along the path.
+
+#### 2. Finding the Path
+Once the tree is reoriented, we can find the path from one node to another by traversing the tree starting from the new root. The function `PathTo` handles this by reorienting the tree first and then tracing the path.
+
+### Implementation in Go
+
+Here is the Go implementation for solving the **POV** problem:
+
+```go
+package pov
+
+type Tree struct {
+	value string
+	children  []*Tree
+}
+
+func New(value string, children ...*Tree) *Tree {
+    return &Tree{value, children}
+}
+
+func (t *Tree) Value() string {
+    return t.value
+}
+
+func (t *Tree) Children() []*Tree {
+    return t.children
+}
+
+func (t *Tree) tracePath(target string, trace []*Tree) []*Tree {
+	trace = append(trace, t)
+
+    if t.value == target { return trace }
+
+	for _, kid := range t.children {
+		result := kid.tracePath(target, trace)
+
+        if result != nil { return result }
+	}
+
+    return nil
+}
+
+func (t *Tree) FromPov(targetValue string) *Tree {
+	trace := t.tracePath(targetValue, make([]*Tree, 0, 4))
+
+	if len(trace) == 0 { return nil }
+
+	for i := len(trace) - 1; i > 0; i-- {
+		curr, parent := trace[i], trace[i-1]
+
+		for j, kid := range parent.children {
+			if kid == curr {
+				parent.children = append(parent.children[:j], parent.children[j + 1:]...)
+
+                break
+			}
+		}
+
+        curr.children = append(curr.children, parent)
+	}
+
+    return trace[len(trace) - 1]
+}
+
+func (t *Tree) PathTo(from, to string) []string {
+	fromTree := t.FromPov(from)
+
+	if fromTree == nil { return nil }
+
+	trace := fromTree.tracePath(to, make([]*Tree, 0, 4))
+	result := make([]string, 0, len(trace))
+
+	for _, tree := range trace {
+		result = append(result, tree.value)
+	}
+
+	return result
+}
+```
+
+
+### Explanation
+    - **Tree Structure**: The Tree struct represents a node in the tree, which holds a value and its children.
+
+    - **Reorienting the Tree**:
+
+        - FromPov first calls tracePath to find the path from the root to the target node.
+        After finding the path, it reverses the parent-child relationship along the path to make the target node the new root.
+    
+    - **Finding Path**:
+
+        - PathTo uses FromPov to reorient the tree to make the from node the new root.
+        - After reorienting, it calls tracePath again to trace the path from the new root (from) to the target node (to).
+
+### Time and Space Complexity
+    - **Time Complexity**:
+        - Both FromPov and PathTo traverse the tree, making the time complexity for both O(n), where n is the number of nodes in the tree. This is because in the worst case, we visit every node in the tree once during the traversal.
+    
+    - **Space Complexity**:
+        - The space complexity is O(h), where h is the height of the tree. This is due to the space required for the recursion stack when traversing the tree.
+
+## Conclusion
+The POV problem involves manipulating a tree data structure to change the point of view and finding paths between nodes. By recursively tracing paths and reorienting parent-child relationships, we can efficiently solve the problem. This Go implementation provides a clear and efficient solution to handle the problem with linear time complexity relative to the size of the tree.

@@ -1,0 +1,67 @@
+---
+title: Transpose
+description: Solve the Transpose problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Transpose problem requires transforming a matrix represented as an array of strings into its transpose. The transpose of a matrix is created by flipping it over its diagonal, turning the row indices into column indices and vice versa.
+
+## Approach
+
+To solve the Transpose problem, we will:
+1. Determine the maximum length of the input strings to define the number of rows in the transposed output.
+2. Create a new slice of strings for the transposed output.
+3. Iterate over each character in the input strings and build the transposed strings accordingly.
+
+### Algorithm
+
+1. Initialize a variable to track the maximum length of the input strings.
+2. Create a slice for the output based on the maximum length.
+3. Loop through each string in the input and each character in those strings to build the transposed output.
+4. If the current output string is shorter than the current row index, pad it with spaces.
+5. Append the character to the appropriate output string.
+
+### Implementation in Go
+
+```go
+package transpose
+
+func Transpose(input []string) []string {
+	maxLen := 0
+
+	for _, s := range input {
+		if len(s) > maxLen {
+			maxLen = len(s)
+		}
+	}
+
+	output := make([]string, maxLen)
+
+	for i, s := range input {
+		for j, c := range s {
+			for len(output[j]) < i {
+				output[j] += " "
+			}
+
+			output[j] += string(c)
+		}
+	}
+	return output
+}
+```
+
+### Explanation
+    - The Transpose function first calculates the maximum length of the strings in the input slice to determine how many rows will be in the output.
+    - It then initializes an output slice of strings with a length equal to the maximum length.
+    - The outer loop iterates through each string in the input, while the inner loop goes through each character of the current string. The characters are placed in the transposed output at the appropriate positions.
+    If necessary, spaces are added to the output to ensure the correct formatting.
+
+### Time and Space Complexity
+    - **Time Complexity**: O(n * m), where n is the number of input strings and m is the maximum length of those strings. This is due to the need to iterate through each character in the input.
+    - **Space Complexity**: O(m), where m is the maximum length of the strings in the input. This is for the output slice that holds the transposed strings.
+
+## Conclusion
+The Transpose solution efficiently transforms a matrix represented by an array of strings into its transposed form by carefully managing string lengths and character placements. This approach illustrates effective handling of strings and the manipulation of their indices to achieve the desired output.

@@ -1,0 +1,174 @@
+---
+title: Bookstore
+description: Solve the Bookstore problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-03"
+---
+
+## Problem Statement
+
+In the **Bookstore** problem, a customer is looking to buy books from a series, with five unique titles available. The bookstore offers discounts for buying multiple unique books in a single purchase. The goal is to compute the lowest possible price for a given list of books while maximizing discounts for sets of unique titles.
+
+The pricing rules are as follows:
+- A single book costs `800` units.
+- Buying two different books gets a `5%` discount.
+- Buying three different books gets a `10%` discount.
+- Buying four different books gets a `20%` discount.
+- Buying five different books gets a `25%` discount.
+
+The challenge is to determine the lowest possible price for a set of books while applying these discounts optimally.
+
+## Approach
+
+We need to partition the books into sets of unique titles that maximize the discount. For each partition, we calculate the total price and select the partition that results in the lowest price.
+
+### Algorithm
+
+1. **Distribution of Books**:
+   - We first distribute the books into groups of unique titles using a `Distrib` structure.
+   
+2. **Set Creation**:
+   - We iteratively try to create sets of unique books of size `n` (where `n` ranges from 1 to 5).
+   - The books are sorted by count to ensure that we minimize the leftover books that don’t qualify for discounts.
+
+3. **Calculate Price**:
+   - For each group of unique books, apply the appropriate discount and calculate the total price for that group.
+   - Sum up the prices of all groups to get the total cost for that configuration.
+
+4. **Find Optimal Price**:
+   - We try all possible combinations of sets and return the one with the lowest total cost.
+
+### Implementation in Go
+
+Here is the Go implementation for the **Bookstore** problem:
+
+```go
+package bookstore
+
+import (
+	"sort"
+)
+
+type Distrib [5]int
+
+const PRICE = 800
+
+func newDistrib(books []int) Distrib {
+	d := Distrib{}
+	for _, book := range books {
+		d[book-1]++
+	}
+	return d
+}
+
+func (d *Distrib) get(n int) (ret []int) {
+	var count int
+	type sortedBook struct {
+		book  int
+		count int
+	}
+	var sortedBooks []sortedBook
+
+	for k, v := range d {
+		sortedBooks = append(sortedBooks, sortedBook{book: k + 1, count: v})
+	}
+	sort.Slice(sortedBooks, func(i, j int) bool {
+		return sortedBooks[i].count > sortedBooks[j].count
+	})
+
+	for _, book := range sortedBooks {
+		if book.count > 0 {
+			ret = append(ret, book.book)
+			count++
+		}
+		if count == n {
+			break
+		}
+	}
+	if count == n {
+		for _, book := range ret {
+			d[book-1]--
+		}
+		return ret
+	}
+	return nil
+}
+
+func (d *Distrib) getAll(n int) (lol [][]int) {
+	var l []int
+	for count := n; count >= 1; count-- {
+		for {
+			if l = d.get(count); l == nil {
+				break
+			}
+			lol = append(lol, l)
+		}
+	}
+	return lol
+}
+
+func calcPrice(sets [][]int) (sum int) {
+	for _, set := range sets {
+		switch len(set) {
+		case 5:
+			sum += PRICE * 5 * 3 / 4
+		case 4:
+			sum += PRICE * 4 * 4 / 5
+		case 3:
+			sum += PRICE * 3 * 9 / 10
+		case 2:
+			sum += PRICE * 2 * 19 / 20
+		default:
+			sum += PRICE
+		}
+	}
+	return sum
+}
+
+func Cost(books []int) int {
+	var bestPrice = 99999999 
+	for count := 5; count >= 1; count-- {
+		m := newDistrib(books)
+		final := m.getAll(count)
+		price := calcPrice(final)
+		if price < bestPrice {
+			bestPrice = price
+		}
+	}
+	return bestPrice
+}
+```
+
+### Explanation
+    - **Distrib Structure**:
+
+        - The Distrib structure stores how many copies of each book exist. It allows us to efficiently access and manipulate the distribution of books as we try to form sets of unique books.
+    
+    - **Set Formation**:
+
+        - The get function tries to form a set of size n by selecting the most common books first. If a valid set is formed, the books in the set are decremented from the distribution.
+
+    - **Optimal Set Partitioning**:
+
+        - The getAll function iterates through possible set sizes, from the largest (5) to the smallest (1), and forms sets of unique books. This process ensures that we form the sets in an order that maximizes the discount.
+
+    - **Price Calculation**:
+
+        - The calcPrice function applies the correct discount based on the size of each set of unique books. It sums up the total price for all sets.
+    
+    - **Finding the Best Price**:
+
+        - The Cost function tries all possible partitions of the books into sets and selects the one that results in the lowest price. It initializes bestPrice to a high value and updates it whenever a lower price is found.
+    
+
+## Time and Space Complexity
+    - **Time Complexity**:
+
+        - The time complexity of forming sets is O(n log n) due to the sorting step, where n is the number of unique books. The process of trying different set sizes and calculating the price takes linear time relative to the number of books. Therefore, the overall complexity is O(n log n).
+    
+    - **Space Complexity**:
+
+        - The space complexity is O(n) where n is the number of books, as we store the distribution of books and the sets formed.
+
+## Conclusion
+The Bookstore problem is an optimization challenge where the goal is to minimize the total cost of purchasing books while applying discounts efficiently. By using the Distrib structure and iterating through possible partitions of books, we can solve this problem with optimal efficiency. This approach ensures that we maximize the discounts and compute the lowest possible price.

@@ -1,0 +1,130 @@
+---
+title: Run Length Encoding
+description: Solve the Run Length Encoding problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+Run Length Encoding is a simple form of data compression where runs of repeated characters are replaced with a single instance of the character followed by a count of how many times it appears. If a character appears only once, it is represented as itself. The problem also involves decoding such a compressed string back to its original form.
+
+For example:
+- Encoding: `"AAAABBBCCDAA"` becomes `"4A3B2C1D2A"`
+- Decoding: `"4A3B2C1D2A"` becomes `"AAAABBBCCDAA"`
+
+## Approach
+
+We need to implement two functions:
+1. **RunLengthEncode**: Converts the input string into a compressed, encoded format.
+2. **RunLengthDecode**: Converts the encoded string back to its original form.
+
+### Algorithm
+
+1. **RunLengthEncode**:
+   - Initialize variables to store the current character and count.
+   - Loop through the string and count consecutive occurrences of each character.
+   - Append the count followed by the character to the result string (omit count if it is 1).
+   
+2. **RunLengthDecode**:
+   - Parse the encoded string, extracting counts and characters.
+   - Reconstruct the original string by repeating each character according to its count.
+
+### Implementation in Go
+
+```go
+package encode
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"unicode"
+)
+
+// RunLengthEncode compresses a string using run-length encoding.
+func RunLengthEncode(input string) string {
+	if input == "" {
+		return ""
+	}
+
+	var encoded string
+	var current rune
+	var count int
+
+	for _, r := range input {
+		if r != current {
+			if count > 0 {
+				encoded += encode(current, count)
+			}
+			current = r
+			count = 1
+		} else {
+			count++
+		}
+	}
+	encoded += encode(current, count)
+
+	return encoded
+}
+
+func encode(r rune, count int) string {
+	if count == 1 {
+		return string(r)
+	} else {
+		return fmt.Sprintf("%d%c", count, r)
+	}
+}
+
+// RunLengthDecode decompresses a string using run-length decoding.
+func RunLengthDecode(input string) string {
+	var decoded string
+	countStr := ""
+	var count int
+
+	for _, r := range input {
+		if unicode.IsDigit(r) {
+			countStr += string(r)
+		} else {
+			if countStr == "" {
+				count = 1
+			} else {
+				count, _ = strconv.Atoi(countStr)
+			}
+			decoded += decode(r, count)
+			countStr = ""
+		}
+	}
+	return decoded
+}
+
+func decode(r rune, count int) string {
+	return strings.Repeat(string(r), count)
+}
+```
+
+### Explanation
+    - **RunLengthEncode**:
+
+        - We loop through the input string, checking consecutive characters. When a new character is encountered, we append the previous character and its count to the encoded result.
+        - The encode function formats the character and count into the appropriate form, omitting the count when it's 1.
+    
+    - **RunLengthDecode**:
+
+        - The function reads the encoded string, gathering digits as part of the count. When a non-digit character is encountered, it repeats that character according to the count found and appends it to the result.
+        - The decode function uses strings.Repeat to repeat the character for the given count.
+
+### Time and Space Complexity
+    - #### **RunLengthEncode**:
+
+        - **Time Complexity**: O(n), where n is the length of the input string. Each character is processed once.
+        - **Space Complexity**: O(n), as we store the encoded result, which is proportional to the input size.
+    
+    - #### **RunLengthDecode**:
+
+        - **Time Complexity**: O(m), where m is the length of the encoded string. Each character and digit is processed once.
+        - **Space Complexity**: O(m), as we store the decoded result.
+
+## Conclusion
+Run Length Encoding is a simple but effective way to compress repeated characters in a string. By implementing this in Go, we can efficiently handle encoding and decoding of strings. The solution has linear time complexity, making it suitable for processing large strings quickly.
+

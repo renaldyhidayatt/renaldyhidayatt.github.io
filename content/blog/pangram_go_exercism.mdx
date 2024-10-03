@@ -1,0 +1,62 @@
+---
+title: Pangram
+description: Solve the "Pangram" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+A *pangram* is a sentence that contains every letter of the alphabet at least once. The task is to write a function, `IsPangram`, that checks whether a given string is a pangram or not. 
+
+## Approach
+
+To determine if a string is a pangram, we can:
+1. Convert the string to lowercase to ensure that the case of letters doesn't matter.
+2. Iterate through all the characters from 'a' to 'z' and check if each character is present in the string.
+3. Return `false` if any letter is missing; otherwise, return `true` if all letters are found.
+
+### Algorithm
+
+1. Convert the input string to lowercase to make the check case-insensitive.
+2. For each letter in the alphabet ('a' to 'z'), check if it exists in the string.
+3. If any letter is not present, return `false`.
+4. If all letters are found, return `true`.
+
+### Implementation in Go
+
+```go
+package pangram
+
+import "strings"
+
+// IsPangram checks if the input string is a pangram.
+func IsPangram(s string) bool {
+    s = strings.ToLower(s) // Convert string to lowercase
+    for char := 'a'; char <= 'z'; char++ {
+        if !strings.ContainsRune(s, char) { // Check if the character is in the string
+            return false
+        }
+    }
+    return true
+}
+```
+
+### Explanation
+    - The IsPangram function starts by converting the input string s to lowercase using strings.ToLower. This ensures that the check is case-insensitive, meaning both 'A' and 'a' are considered the same.
+    - The function then iterates over each letter from 'a' to 'z' using a for-loop. It uses strings.ContainsRune to check if each letter is present in the string.
+    - If a letter is missing, the function immediately returns false.
+    - If all letters are found, the function returns true, confirming that the string is a pangram.
+
+### Time and Space Complexity
+    - #### Time Complexity:
+
+        - Converting the string to lowercase takes O(n), where n is the length of the string.
+        - For each letter of the alphabet (26 in total), we perform a strings.ContainsRune check, which has a time complexity of O(n) in the worst case.
+        - Therefore, the overall time complexity is O(n * 26), which simplifies to O(n).
+    - #### Space Complexity:
+
+        The space complexity is O(1) in terms of auxiliary space since we're only using a few variables and modifying the input string in place.
+
+## Conclusion
+This solution efficiently determines whether a string is a pangram by checking the presence of each letter in the alphabet. It ensures that the problem is solved in linear time relative to the size of the input string, making it well-suited for larger inputs. The use of Go's strings.ContainsRune function simplifies the process of checking for characters in the string.

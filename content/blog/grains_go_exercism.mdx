@@ -1,0 +1,73 @@
+---
+title: Grains
+description: Solve the Grains problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In the Grains problem, the task is based on an ancient story about a chessboard and grains of wheat. Starting with one grain on the first square, the number of grains doubles on each subsequent square. The goal is to calculate:
+1. How many grains are on a specific square, given its position (1 to 64).
+2. The total number of grains on the chessboard.
+
+The grain count for a square can be expressed as 2^(position-1), meaning that the number of grains on square 1 is 1, on square 2 is 2, on square 3 is 4, and so on.
+
+## Approach
+
+### Algorithm
+
+1. **Square Function**:
+   - Validate the input to ensure that the square number is between 1 and 64 (inclusive). If the number is outside this range, return an error.
+   - Use bit shifting to calculate the grains on a given square. For a given position, the number of grains is 2^(position-1), which can be computed as `1 << (position - 1)`.
+
+2. **Total Function**:
+   - The total number of grains on the chessboard is the sum of grains on all 64 squares. This is equal to 2^64 - 1, which can be computed directly using bit shifting: `1 << 64 - 1`.
+
+
+### Implementation in Go
+
+Here is the Go implementation to solve the Grains problem:
+
+```go
+package grains
+
+import "errors"
+
+// Square calculates the number of grains on the given square.
+func Square(number int) (uint64, error) {
+	if number < 1 || number > 64 {
+		return 0, errors.New("number must be between 1 and 64")
+	}
+
+	// Calculate grains using bit shifting.
+	return (1 << uint(number-1)), nil
+}
+
+// Total calculates the total number of grains on the chessboard.
+func Total() uint64 {
+	// Total grains is 2^64 - 1.
+	return 1<<64 - 1
+}
+```
+
+### Explanation
+
+- **Square Function**: 
+  - The function `Square()` checks if the input square number is between 1 and 64. If the number is valid, it uses bitwise shifting (`1 << (number-1)`) to calculate the number of grains on the given square. This operation is equivalent to computing 2^(number-1).
+  
+- **Total Function**: 
+  - The function `Total()` calculates the total number of grains on the chessboard using a similar bitwise operation. The total grains is equal to 2^64 - 1, which can be computed as `1 << 64 - 1`. This represents the sum of all grains on the 64 squares.
+
+
+### Time and Space Complexity
+
+- **Time Complexity**: O(1)
+  - The bitwise shifting operation takes constant time regardless of the input, making the time complexity for both `Square()` and `Total()` O(1).
+  
+- **Space Complexity**: O(1)
+  - Both functions only use a constant amount of space to store intermediate values and the result. Therefore, the space complexity is also O(1).
+
+## Conclusion
+
+The Grains problem can be efficiently solved using bitwise operations in Go. The `Square()` function calculates the number of grains on any given square using bit shifting, while the `Total()` function computes the total grains on the entire chessboard. Both functions have constant time and space complexity, making the solution optimal for this problem.

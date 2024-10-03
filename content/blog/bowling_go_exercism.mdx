@@ -1,0 +1,100 @@
+---
+title: Bowling
+description: Solve the Bowling problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-03"
+---
+
+## Problem Statement
+
+In the **Bowling** problem, we need to simulate scoring in a bowling game. Each game consists of 10 frames, and each frame can consist of one or two rolls, depending on whether the player hits a strike or a spare. The challenge is to accurately calculate the total score of a game, including bonuses for strikes and spares.
+
+### Key Rules:
+- **Strike**: Knocking down all 10 pins on the first roll. A player gets 10 points plus the total of the next two rolls.
+- **Spare**: Knocking down all 10 pins in two rolls. A player gets 10 points plus the total of the next roll.
+- **Open Frame**: Less than 10 pins are knocked down in two rolls. The score is simply the sum of the pins knocked down.
+
+The goal is to create a `Game` structure that allows rolling, and accurately calculates the final score after the game is complete.
+
+## Approach
+
+We solve this problem by simulating each roll and tracking the score frame by frame. When a roll happens, we check whether it’s valid based on the current state (e.g., ensuring a frame doesn’t exceed 10 pins). The game then calculates the total score after the completion of all frames.
+
+### Algorithm
+
+1. **Game Structure**: 
+   - Create a `Game` struct with a list of throws and a flag to track whether it's the first or second roll in a frame.
+   
+2. **Rolling**:
+   - Each roll is added to the list of throws, and the flag is updated.
+   - For a strike, move directly to the next frame (no second roll in the frame).
+   
+3. **Scoring**:
+   - Iterate through the list of throws frame by frame.
+   - If a strike or spare is detected, add the appropriate bonuses (next one or two throws).
+   
+4. **Error Handling**:
+   - Handle invalid rolls (e.g., rolling more pins than possible in a frame) by returning an error.
+
+### Implementation in Go
+
+```go
+package bowling
+
+import "errors"
+
+type Game struct {
+	throws   []int
+	isSecond bool
+}
+
+func NewGame() *Game { return &Game{throws: make([]int, 0, 21)} }
+
+func (g *Game) Roll(pins int) error {
+	pinsDown := 0
+	if g.isSecond {
+		pinsDown = g.throws[len(g.throws)-1]
+	}
+	if _, err := g.Score(); (err == nil) || pins < 0 || pins+pinsDown > 10 {
+		return errors.New("invalid roll")
+	}
+	g.throws, g.isSecond = append(g.throws, pins), !g.isSecond
+	if pins == 10 {
+		g.isSecond = false
+	}
+	return nil
+}
+
+func (g *Game) Score() (total int, err error) {
+	for throw, frame := 0, 0; frame < 10; throw, frame = throw+1, frame+1 {
+		if len(g.throws) <= throw+1 {
+			return 0, errors.New("not enough throws")
+		}
+		one, two := g.throws[throw], g.throws[throw+1]
+		total += one + two
+		if one == 10 || one+two == 10 {
+			if len(g.throws) <= throw+2 {
+				return 0, errors.New("not enough throws")
+			}
+			total += g.throws[throw+2]
+		}
+		if one != 10 {
+			throw++
+		}
+	}
+	return total, nil
+}
+```
+
+
+### Explanation
+    - **Game Struct**: The game is represented by a Game struct that keeps track of each roll (throws) and whether the current roll is the first or second in the frame (isSecond).
+    - **Roll Function**: This function handles each roll and ensures the roll is valid. It checks if the total pins knocked down in the frame exceed 10, and resets for a new frame if a strike occurs.
+    - **Score Function**: The scoring is done by iterating through all the rolls. For each frame, we check if it’s a strike or spare and add the appropriate bonuses. The function returns an error if there are not enough rolls to compute a valid score.
+
+### Time and Space Complexity
+    - **Time Complexity**: Calculating the score requires traversing the list of rolls once for each frame, leading to a time complexity of O(n), where n is the number of rolls (typically at most 21 for a perfect game).
+    - **Space Complexity**: The space complexity is O(n), as we need to store each roll in the throws slice.
+
+## Conclusion
+The Bowling problem can be efficiently solved using a simple array to track the throws and iterating through it to calculate the score frame by frame. This Go implementation accurately handles all special cases like strikes, spares, and invalid rolls, providing a reliable solution to the problem.

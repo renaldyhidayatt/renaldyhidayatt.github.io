@@ -1,0 +1,171 @@
+---
+title: Connect
+description: Solve the Connect problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-03"
+---
+
+## Problem Statement
+
+The **Connect** problem involves determining the winner of a game played on a hexagonal board where two players take turns placing stones on the board. Player X wins if they can connect the left and right sides of the board, while player O wins if they connect the top and bottom sides.
+
+Given the current board configuration, our goal is to check if either player has achieved a connected path across the board.
+
+## Approach
+
+The problem is similar to pathfinding in graphs. Each player's goal is to create a continuous path across the board. We can think of the stones as graph nodes and the possible neighboring positions (adjacent hexagonal cells) as edges. A recursive depth-first search (DFS) approach can be used to explore possible paths for both players.
+
+### Algorithm
+
+1. **Board Representation**:
+   - The board is represented as a 2D array of strings where each string is either `"X"`, `"O"`, or `"."` (empty position).
+
+2. **Pathfinding (DFS)**:
+   - For each player, we begin exploring the board from the starting side (top row for O, left column for X).
+   - Use DFS to find a valid route across the board. For player O, we check if a path exists from the top to the bottom of the board, and for player X, from the left to the right.
+   - We keep track of visited positions to avoid revisiting nodes.
+
+3. **Board Transformation**:
+   - Since the board is hexagonal, it requires special handling of neighbor cells, including diagonals.
+   - For player X, we can "rotate" the board, treating it as if X is also trying to connect top to bottom, simplifying the algorithm.
+
+4. **Validation**:
+   - The algorithm should also handle edge cases, such as empty boards or invalid inputs.
+
+### Implementation in Go
+
+Here is the Go solution for the **Connect** problem:
+
+```go
+package connect
+
+import (
+	"errors"
+	"strings"
+)
+
+func ResultOf(lines []string) (string, error) {
+	if len(lines) == 0 {
+		return "", errors.New("board has no positions")
+	}
+	rectangleBoard := [][]string{}
+	for _, line := range lines {
+		rectangleBoard = append(rectangleBoard, strings.Split(line, ""))
+	}
+	for index, stone := range rectangleBoard[0] {
+		if stone == "O" && RouteExists([][2]int{{0, index}}, rectangleBoard, "O") {
+			return "O", nil
+		}
+	}
+	rectangleBoard = FlipBoard(rectangleBoard)
+	for index, stone := range rectangleBoard[0] {
+		if stone == "X" && RouteExists([][2]int{{0, index}}, rectangleBoard, "X") {
+			return "X", nil
+		}
+	}
+	return "", nil
+}
+
+func RouteExists(route [][2]int, board [][]string, stoneType string) bool {
+	if route[len(route)-1][0] == len(board)-1 {
+		return true
+	}
+	for _, stone := range GetValidNextStones(route, board, stoneType) {
+		var routeCopy [][2]int
+		routeCopy = append(routeCopy, append(route, stone)...)
+		if RouteExists(routeCopy, board, stoneType) {
+			return true
+		}
+	}
+	return false
+}
+
+func GetValidNextStones(route [][2]int, board [][]string, stoneType string) [][2]int {
+	potentialPositions := GetPotentialPositions(route[len(route)-1], board)
+	actualPositions := [][2]int{}
+	for _, position := range potentialPositions {
+		if !ContainedInRoute(route, position) && board[position[0]][position[1]] == stoneType {
+			actualPositions = append(actualPositions, position)
+		}
+	}
+	return actualPositions
+}
+
+func GetPotentialPositions(lastStone [2]int, board [][]string) [][2]int {
+	potentialPositions := [][2]int{}
+	if lastStone[1] > 0 {
+		potentialPositions = append(potentialPositions, [2]int{lastStone[0], lastStone[1] - 1})
+	}
+	if lastStone[1] < len(board[lastStone[0]])-1 {
+		potentialPositions = append(potentialPositions, [2]int{lastStone[0], lastStone[1] + 1})
+	}
+	if lastStone[0] > 0 {
+		potentialPositions = append(potentialPositions, [2]int{lastStone[0] - 1, lastStone[1]})
+	}
+	if lastStone[0] < len(board)-1 {
+		potentialPositions = append(potentialPositions, [2]int{lastStone[0] + 1, lastStone[1]})
+	}
+	if lastStone[1] > 0 && lastStone[0] < len(board)-1 {
+		potentialPositions = append(potentialPositions, [2]int{lastStone[0] + 1, lastStone[1] - 1})
+	}
+	if lastStone[0] > 0 && lastStone[1] < len(board[lastStone[0]])-1 {
+		potentialPositions = append(potentialPositions, [2]int{lastStone[0] - 1, lastStone[1] + 1})
+	}
+	return potentialPositions
+}
+
+func ContainedInRoute(route [][2]int, position [2]int) bool {
+	for _, routePosition := range route {
+		if position == routePosition {
+			return true
+		}
+	}
+	return false
+}
+
+func FlipBoard(board [][]string) [][]string {
+	newBoard := [][]string{}
+	for columnIndex := range board[0] {
+		newRow := []string{}
+		for rowIndex := range board {
+			newRow = append(newRow, board[rowIndex][columnIndex])
+		}
+		newBoard = append(newBoard, newRow)
+	}
+	return newBoard
+}
+```
+
+
+### Explanation
+    - **Board Representation**:
+
+        - The board is first split into a 2D slice of strings where each element represents a position ("X", "O", or ".").
+
+    - **Route Exists**:
+
+        - The RouteExists function checks whether a continuous path exists for a given stone type using recursive DFS.
+        - It uses helper functions like GetValidNextStones to get the valid neighboring stones that match the current player's stone type.
+
+    - **Flipping the Board**:
+
+        - Since player X needs to connect the left and right sides, the board is "flipped" to treat it as if X is trying to connect top to bottom, making the pathfinding algorithm reusable for both players.
+    
+    - **Edge Case Handling**:
+
+        - The algorithm gracefully handles cases like an empty board by returning an error message.
+
+
+### Time and Space Complexity
+
+
+    - **Time Complexity**:
+
+        - Each cell on the board is visited once, and for each stone, we check its neighboring cells. Thus, the time complexity is approximately O(n), where n is the total number of cells on the board.
+    
+    - *Space Complexity**:
+
+        - The space complexity is O(n) due to the recursive DFS and the stack required to store the route.
+
+## Conclusion
+The Connect problem is a classic example of a pathfinding problem on a hexagonal grid. By using a recursive depth-first search (DFS) approach and efficiently managing the board's structure, the problem can be solved in a time-efficient manner. The Go implementation ensures clean and modular handling of board traversal and validation.

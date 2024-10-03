@@ -1,0 +1,139 @@
+---
+title: Dominoes
+description: Solve the Dominoes problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+In the **Dominoes** problem, we are tasked with arranging a set of domino pieces in a chain such that the numbers on adjacent pieces match, and the first and last pieces in the chain also match. The challenge is to determine if a valid domino chain can be constructed with the given set of dominoes.
+
+Each domino is represented as a tuple of two integers, and the goal is to form a continuous loop of dominoes.
+
+## Approach
+
+To solve the problem, we can use a greedy approach along with a tracking mechanism to handle the domino pieces. The solution involves:
+1. Tracking the remaining dominoes using a map-like structure that holds how many times each domino is available.
+2. Iteratively adding dominoes to the chain while ensuring that the adjacent pieces match.
+3. Verifying that the first and last dominoes also match, ensuring the chain forms a loop.
+
+### Algorithm
+
+1. **Tracking Remaining Dominoes**:
+   - We use a custom `Dmap` type to count how many times each domino is available.
+   - As we add dominoes to the chain, we reduce their count in the `Dmap`.
+
+2. **Constructing the Chain**:
+   - We start with any domino and keep adding valid dominoes from the `Dmap` that match the last number of the previous domino.
+   - If no valid domino is found, the process fails.
+
+3. **Verification**:
+   - Once the chain is constructed, we verify that the chain starts and ends with matching numbers to ensure it forms a loop.
+
+### Implementation in Go
+
+```go
+package dominoes
+
+// Define the Domino type here.
+type Domino [2]int
+type Dmap map[Domino]int
+
+func MakeChain(input []Domino) (rez []Domino, err bool) {
+	leftDomino := make(Dmap)
+
+	for _, dmn := range input {
+		leftDomino[dmn]++
+	}
+
+	for i, dmn := range input {
+		if i == 0 {
+			rez = append(rez, dmn)
+			leftDomino.reduce(dmn)
+			continue
+		}
+		rez = append(rez, leftDomino.find(rez[len(rez)-1][1]))
+	}
+
+	if len(leftDomino) > 0 {
+		return nil, false
+	}
+
+	if len(rez) > 0 {
+		if rez[0][0] != rez[len(rez)-1][1] {
+			return nil, false
+		}
+	}
+
+	return rez, true
+}
+
+func (dmap Dmap) reduce(dm Domino) {
+	if dmap[dm] > 1 {
+		dmap[dm]--
+	} else {
+		delete(dmap, dm)
+	}
+}
+
+func (dmap Dmap) find(n int) Domino {
+	var candidate, candidateOrig Domino
+	var candidateOcur int
+
+	for tstDm, val := range dmap {
+		if tstDm[0] == n {
+			if tstDm[0] == tstDm[1] {
+				candidate = tstDm
+				candidateOrig = candidate
+				break
+			}
+
+			if val > candidateOcur {
+				candidate = tstDm
+				candidateOrig = candidate
+				candidateOcur = val
+			}
+		}
+
+		if tstDm[1] == n {
+			if val > candidateOcur {
+				candidateOrig = tstDm
+				candidate = Domino{
+					tstDm[1],
+					tstDm[0],
+				}
+				candidateOcur = val
+			}
+		}
+	}
+
+	dmap.reduce(candidateOrig)
+	return candidate
+}
+```
+
+### Explanation
+    - **Domino Type**: Each domino is represented as a pair of integers [2]int.
+    - **Dmap**: This type is a map that counts how many times each domino appears in the input.
+    - **MakeChain**:
+        - The function first initializes a map Dmap to keep track of remaining dominoes.
+        - It starts the chain with any domino and continues appending dominoes that match the last number of the previous domino.
+        - It verifies whether the final chain forms a valid loop.
+    
+    - **reduce and find**:
+        - The reduce function decreases the count of a specific domino or removes it from the map.
+        - The find function looks for the next domino that matches the last number of the current chain.
+
+### Time and Space Complexity
+    
+    - #### Time Complexity:
+
+        - Constructing the domino chain involves iterating over the input dominoes and searching for matching pairs. This results in a time complexity of O(n), where n is the number of dominoes in the input.
+        The reduction and search operations are performed in constant time because we use a map structure to track the remaining dominoes.
+    - #### **Space Complexity**:
+
+        - The space complexity is O(n) due to the use of the Dmap structure and the result array, both of which store up to n dominoes.
+
+## Conclusion
+The Dominoes problem can be efficiently solved using a greedy approach with a map to track the remaining dominoes. By verifying that all pieces are used and that the chain forms a valid loop, we can determine whether a solution exists. The Go implementation is both efficient and simple, making it a suitable choice for solving this problem.

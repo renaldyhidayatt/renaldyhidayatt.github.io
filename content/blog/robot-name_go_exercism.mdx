@@ -1,0 +1,126 @@
+---
+title: Robot Name
+description: Solve the Robot Name problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The problem requires us to generate a unique name for each robot, following a specific format: two uppercase letters followed by three digits (e.g., "AB123"). Additionally, the system must support resetting the robot's name, which should allow the robot to generate a new unique name if needed.
+
+We need to ensure that the name generation is efficient and that the names are unique within a defined limit.
+
+## Approach
+
+1. **Robot Name Generation**:
+   - Each robot must have a unique name in the format of two letters followed by three digits (e.g., "AA000" to "ZZ999").
+   
+2. **Unique Name Constraint**:
+   - Ensure names are unique by keeping track of previously assigned names.
+   - There is a limit to the number of unique names, which is calculated as `26 * 26 * 1000 = 676,000` names.
+
+3. **Reset Functionality**:
+   - Implement a `Reset` method that allows a robot to reset its name and get a new unique name.
+
+### Algorithm
+
+1. **Name Generation**:
+   - Randomly generate two uppercase letters followed by three digits.
+   - Check if the name is already taken by using a map to track used names.
+   
+2. **Check for Maximum Names**:
+   - Ensure that the maximum number of names is not exceeded.
+   
+3. **Reset Functionality**:
+   - If the robot's name is reset, the system should generate a new unique name for the robot.
+
+### Implementation in Go
+
+```go
+package robotname
+
+import (
+	"errors"
+	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+)
+
+const SOURCE = "ABCDEFGHIJKLMNOPQRXTUVWXYZ"
+const MAX_NAMES = 26 * 26 * 1000
+
+var robotNames = make(map[string]string, MAX_NAMES)
+
+type Robot struct {
+	name string
+}
+
+func (r *Robot) Name() (string, error) {
+	if r.name == "" {
+		name, err := createName()
+
+		if err != nil {
+			return "", err
+		}
+
+		if _, ok := robotNames[name]; ok {
+			name, _ = r.Name()
+		}
+
+		r.name = name
+		robotNames[name] = name
+	}
+	return r.name, nil
+}
+
+func (r *Robot) Reset() {
+	r.name = ""
+}
+
+func createName() (string, error) {
+	if len(robotNames) == MAX_NAMES {
+		return "", errors.New("maximum number of names reached")
+	}
+
+	rand.NewSource(time.Now().UnixNano())
+	no := rand.Intn(1000)
+	robotName := strings.ToUpper(string(SOURCE[rand.Intn(25)]) + string(SOURCE[rand.Intn(25)]))
+	newName := fmt.Sprintf("%s%03d", robotName, no)
+
+	return newName, nil
+}
+```
+
+### Explanation
+    - **Robot Struct**: The Robot type contains a name field to store the robot's unique name. This struct has methods to get the name and reset it.
+
+    - **Name Method**:
+
+        - This method generates a name if the robot does not have one yet.
+        - It calls createName() to generate a new name and checks for uniqueness using the robotNames map.
+    
+    - **Reset Method**:
+
+        - When the Reset() function is called, it clears the robot's name so that a new one can be generated when Name() is called again.
+    
+    - **createName Function**:
+
+        - This function generates a random name consisting of two uppercase letters and three digits.
+        - It ensures uniqueness by checking the robotNames map.
+        - If the number of unique names has reached its limit, an error is returned.
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+
+        - Name generation is O(1) because it involves generating a random name and checking its uniqueness in a map.
+        - The reset operation is also O(1).
+
+    - #### **Space Complexity**:
+
+        - O(n) where n is the number of unique robot names generated. This space is used to store the robot names in a map for checking uniqueness.
+
+## Conclusion
+This solution efficiently handles robot name generation while ensuring uniqueness across robots. It provides a reset functionality and leverages random name generation with O(1) operations for both name generation and resetting, making it suitable for large-scale applications.

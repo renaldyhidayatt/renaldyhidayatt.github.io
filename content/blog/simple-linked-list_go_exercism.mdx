@@ -1,0 +1,110 @@
+---
+title: Simple Linked List
+description: Solve the Simple Linked List problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The **Simple Linked List** problem involves creating a basic linked list data structure. The linked list should support the following operations:
+
+- **Push**: Add an element to the end of the list.
+- **Pop**: Remove and return the last element of the list.
+- **Size**: Return the current number of elements in the list.
+- **Array**: Convert the linked list into a slice (array) of integers.
+- **Reverse**: Reverse the elements in the linked list.
+
+## Approach
+
+### Algorithm
+
+1. **Data Structure Definition**: Define a struct `list` to hold the elements of the linked list as a slice of integers.
+
+2. **Constructor**: Implement a constructor function `New` to initialize the linked list with a given slice of integers.
+
+3. **Size Method**: Implement the `Size` method to return the number of elements in the list.
+
+4. **Push Method**: Implement the `Push` method to append a new integer element to the end of the list.
+
+5. **Pop Method**: Implement the `Pop` method to remove the last element from the list and return it, handling the case where the list is empty.
+
+6. **Array Method**: Implement the `Array` method to return the current elements in the list as a slice.
+
+7. **Reverse Method**: Implement the `Reverse` method to reverse the order of elements in the list.
+
+### Implementation in Go
+
+```go
+package linkedlist
+
+import "errors"
+
+// Define the List and Element types here.
+type list struct {
+	values []int
+}
+
+func New(values []int) *list {
+	return &list{
+		values: values,
+	}
+}
+
+func (l *list) Size() int {
+	return len(l.values)
+}
+
+func (l *list) Push(element int) {
+	l.values = append(l.values, element)
+}
+
+func (l *list) Pop() (int, error) {
+	if len(l.values) == 0 {
+		return 0, errors.New("can't pop from an empty stack")
+	}
+
+	last := l.values[len(l.values)-1]
+	l.values = l.values[:len(l.values)-1]
+
+	return last, nil
+}
+
+func (l *list) Array() []int {
+	return l.values
+}
+
+func (l *list) Reverse() *list {
+	for i, j := 0, len(l.values)-1; i < j; i, j = i+1, j-1 {
+		l.values[i], l.values[j] = l.values[j], l.values[i]
+	}
+
+	return l
+}
+```
+
+###Explanation
+    - **Data Structure**: The list struct holds a slice of integers. This is a simple way to implement a linked list without using pointers for each element, providing basic functionalities.
+
+    - **Methods**: Each method of the list struct serves its purpose:
+
+        - **New**: Initializes the linked list with an optional set of integers.
+        - **Size**: Returns the count of elements in the list.
+        - **Push**: Appends a new element to the end of the list.
+        - **Pop**: Removes the last element and handles the case of an empty list by returning an error.
+        - **Array**: Returns the elements as a slice of integers.
+        - **Reverse**: Swaps the elements in place to reverse the order.
+
+### Time and Space Complexity
+    - **Time Complexity**:
+
+        - **Push**: O(1) (amortized)
+        - **Pop**: O(1)
+        - **Size**: O(1)
+        - **Array**: O(n), where n is the number of elements in the list.
+        - **Reverse**: O(n), as it iterates through the list once.
+    
+    - **Space Complexity**: O(n) for the slice that stores the elements.
+
+## Conclusion
+The Simple Linked List implementation in Go provides a straightforward way to handle a collection of integers. It offers essential operations efficiently, showcasing how basic data structures can be implemented and manipulated in Go.

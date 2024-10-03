@@ -1,0 +1,228 @@
+---
+title: Yacht
+description: Solve the Yacht problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The **Yacht** problem is based on a dice game where the goal is to score points based on different combinations of dice rolls. The task is to calculate the score of a dice roll given a specific category (e.g., "full house," "little straight," "yacht," etc.). Different categories have different scoring rules, and the function must evaluate the dice roll based on these rules.
+
+## Approach
+
+### Algorithm
+
+1. **Categorize the Dice Roll**: Identify the scoring category (e.g., "full house," "yacht," "big straight").
+2. **Evaluate the Dice Combination**: Count the occurrences of each die value and calculate the sum where necessary.
+3. **Return the Score**: Based on the category, return the corresponding score for the dice combination.
+
+### Implementation in Go
+
+```go
+package yacht
+
+import (
+	"log"
+	"sort"
+)
+
+var (
+	littleStraight = []int{1, 2, 3, 4, 5}
+	bigStraight    = []int{2, 3, 4, 5, 6}
+)
+
+func Score(dice []int, category string) int {
+	sort.Ints(dice)
+
+	var sum int
+	counts := map[int]int{}
+	sums := map[int]int{}
+
+	for _, die := range dice {
+		sum += die
+		sums[die] += die
+		counts[die]++
+	}
+
+	equal := func(arr []int) bool {
+		for i, v := range arr {
+			if dice[i] != v {
+				return false
+			}
+		}
+		return true
+	}
+
+	switch category {
+	case "big straight":
+		if equal(bigStraight) {
+			return 30
+		}
+	case "choice":
+		return sum
+	case "fives":
+		return sums[5]
+	case "four of a kind":
+		if counts[dice[0]] >= 4 {
+			return dice[0] * 4
+		}
+		if counts[dice[1]] >= 4 {
+			return dice[1] * 4
+		}
+	case "fours":
+		return sums[4]
+	case "full house":
+		if (counts[dice[0]] == 3 && counts[dice[4]] == 2) || (counts[dice[0]] == 2 && counts[dice[4]] == 3) {
+			return sum
+		}
+	case "little straight":
+		if equal(littleStraight) {
+			return 30
+		}
+	case "ones":
+		return sums[1]
+	case "sixes":
+		return sums[6]
+	case "threes":
+		return sums[3]
+	case "twos":
+		return sums[2]
+	case "yacht":
+		if sum == dice[0]*5 {
+			return 50
+		}
+	default:
+		log.Fatalf("unknown category: %v", category)
+	}
+
+	return 0
+}
+```
+
+
+Here is the MDX article for the Yacht problem:
+
+mdx
+Salin kode
+---
+title: Yacht
+description: Solve the Yacht problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The **Yacht** problem is based on a dice game where the goal is to score points based on different combinations of dice rolls. The task is to calculate the score of a dice roll given a specific category (e.g., "full house," "little straight," "yacht," etc.). Different categories have different scoring rules, and the function must evaluate the dice roll based on these rules.
+
+## Approach
+
+### Algorithm
+
+1. **Categorize the Dice Roll**: Identify the scoring category (e.g., "full house," "yacht," "big straight").
+2. **Evaluate the Dice Combination**: Count the occurrences of each die value and calculate the sum where necessary.
+3. **Return the Score**: Based on the category, return the corresponding score for the dice combination.
+
+### Implementation in Go
+
+```go
+package yacht
+
+import (
+	"log"
+	"sort"
+)
+
+var (
+	littleStraight = []int{1, 2, 3, 4, 5}
+	bigStraight    = []int{2, 3, 4, 5, 6}
+)
+
+func Score(dice []int, category string) int {
+	sort.Ints(dice)
+
+	var sum int
+	counts := map[int]int{}
+	sums := map[int]int{}
+
+	for _, die := range dice {
+		sum += die
+		sums[die] += die
+		counts[die]++
+	}
+
+	equal := func(arr []int) bool {
+		for i, v := range arr {
+			if dice[i] != v {
+				return false
+			}
+		}
+		return true
+	}
+
+	switch category {
+	case "big straight":
+		if equal(bigStraight) {
+			return 30
+		}
+	case "choice":
+		return sum
+	case "fives":
+		return sums[5]
+	case "four of a kind":
+		if counts[dice[0]] >= 4 {
+			return dice[0] * 4
+		}
+		if counts[dice[1]] >= 4 {
+			return dice[1] * 4
+		}
+	case "fours":
+		return sums[4]
+	case "full house":
+		if (counts[dice[0]] == 3 && counts[dice[4]] == 2) || (counts[dice[0]] == 2 && counts[dice[4]] == 3) {
+			return sum
+		}
+	case "little straight":
+		if equal(littleStraight) {
+			return 30
+		}
+	case "ones":
+		return sums[1]
+	case "sixes":
+		return sums[6]
+	case "threes":
+		return sums[3]
+	case "twos":
+		return sums[2]
+	case "yacht":
+		if sum == dice[0]*5 {
+			return 50
+		}
+	default:
+		log.Fatalf("unknown category: %v", category)
+	}
+
+	return 0
+}
+
+### Explanation
+    - **Dice Sorting**: The dice array is sorted at the beginning to make comparisons easier, especially for sequences like "little straight" and "big straight."
+
+    - **Counts and Sums**: A map counts is used to track the occurrences of each dice value, and a map sums stores the sum of the dice for each value (e.g., for fives, it holds the total sum of all fives rolled).
+
+    - **Category Handling**: The switch statement handles different scoring categories:
+
+        - **Big/Little Straight**: Checks if the sorted dice match a predefined straight sequence.
+        - **Choice**: Simply sums up all the dice.
+        - **Four of a Kind**: Checks if four dice are the same and returns the product of the die value and four.
+        - **Full House**: Ensures the counts match the full house pattern (three of one value, two of another).
+        - **Yacht**: Checks if all five dice are the same.
+        - **Error Handling**: If an unknown category is provided, the program logs a fatal error.
+
+### Time and Space Complexity
+    - **Time Complexity**: Sorting the dice takes O(5 log 5) = O(1) since there are only five dice. The rest of the operations (counting, summing) are linear, O(5), making the overall time complexity O(1).
+    - **Space Complexity**: The space complexity is O(1), as the algorithm only uses a fixed amount of additional space, regardless of input size.
+
+## Conclusion
+The Yacht problem involves evaluating different scoring categories based on a dice roll. The Go implementation efficiently handles each category using a combination of sorting, counting, and conditionally summing values. With a time complexity of O(1), this solution is optimized for performance.

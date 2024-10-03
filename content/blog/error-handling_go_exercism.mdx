@@ -1,0 +1,78 @@
+---
+title: Error Handling
+description: Solve the Error Handling problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The **Error Handling** problem requires implementing a function that utilizes resources in a safe and efficient manner, handling errors appropriately. The goal is to correctly manage resources that can fail to open and to handle panic situations gracefully, using the concepts of error checking, resource management, and recovery in Go.
+
+## Approach
+
+### Algorithm
+
+1. **Resource Opening**: The function should attempt to open a resource using a provided function (`ResourceOpener`). It needs to handle errors that may occur during this process.
+
+2. **Transient Errors**: If a transient error occurs while opening the resource, the function should retry until it succeeds or a non-transient error occurs.
+
+3. **Deferred Closure**: Use deferred calls to ensure that the resource is properly closed once it is no longer needed, even if an error occurs.
+
+4. **Panic Recovery**: Implement a deferred function that recovers from any panic that may occur during the execution, specifically handling `FrobError` to defrob the resource with the associated tag.
+
+5. **Frob Input**: If everything succeeds, call the `Frob` method on the resource using the provided input.
+
+### Implementation in Go
+
+```go
+package erratum
+
+func Use(o ResourceOpener, input string) (err error) {
+	var r Resource
+
+	// Open resource
+	for r, err = o(); err != nil; r, err = o() {
+		if _, ok := err.(TransientError); ok {
+			continue
+		}
+		return err
+	}
+
+	defer r.Close()
+
+	defer func() {
+		if e := recover(); e != nil {
+			if f, ok := e.(FrobError); ok {
+				r.Defrob(f.defrobTag)
+			}
+			err = e.(error)
+		}
+	}()
+
+	r.Frob(input)
+	return err
+}
+```
+
+
+### Explanation
+    - **ResourceOpener**: This is a function type that attempts to open a resource and returns it along with any error encountered.
+
+    - **Error Handling**: The loop retries opening the resource as long as it encounters transient errors. It checks if the error is a TransientError and continues to retry if so.
+
+    - **Deferred Resource Closure**: The defer r.Close() ensures that the resource is always closed after it has been used, preventing resource leaks.
+
+    - **Panic Recovery**: The deferred function checks for panics during execution. If a FrobError occurs, it calls the Defrob method on the resource with the appropriate tag to clean up the resource.
+
+    - **Frob Input**: After successfully obtaining the resource and handling potential panics, the Frob method is invoked with the provided input.
+
+### Time and Space Complexity
+    - **Time Complexity**:
+
+        - The time complexity of opening a resource is dependent on the implementation of the ResourceOpener. The loop may run multiple times if transient errors occur, making the worst-case scenario O(n), where n is the number of retries until success or a non-transient error.
+    
+    - **Space Complexity**: O(1) for the variables used to manage the resource and errors.
+
+### Conclusion
+The Error Handling implementation in Go effectively demonstrates the best practices of managing resources, handling errors, and recovering from panics. By structuring the code in this way, it ensures robustness and reliability in operations that involve external resources, making it suitable for various applications.

@@ -1,0 +1,113 @@
+---
+title: Circular-buffer
+description: Solve the Circular-buffer problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Circular Buffer problem requires the implementation of a buffer that can store a fixed number of bytes and manage data in a circular manner. The buffer should support two types of writes: overflow-checked writes, which return an error if the buffer is full, and unconditional writes that overwrite the oldest data when the buffer is full.
+
+## Approach
+
+To solve the Circular Buffer problem, we will:
+1. Define a `Buffer` struct to hold the buffer data, start and end indices, and the current count of bytes.
+2. Implement methods for reading and writing bytes, overwriting bytes, and resetting the buffer.
+3. Ensure that the methods handle circular behavior correctly by using modulo arithmetic.
+
+### Algorithm
+
+1. **Initialization**: Create a buffer with a fixed size, initializing the start, end, and count variables.
+2. **Reading a Byte**: Retrieve the byte at the start index, move the start index forward, and update the count.
+3. **Writing a Byte**: Check if the buffer is full. If not, write the byte at the end index, move the end index forward, and update the count.
+4. **Overwriting**: If the buffer is full, overwrite the byte at the start index and adjust the start index accordingly.
+5. **Resetting**: Set all indices and count back to their initial values.
+
+### Implementation in Go
+
+```go
+package circular
+
+import "errors"
+
+type Buffer struct {
+	buff              []byte
+	start, end, count int
+}
+
+func NewBuffer(size int) *Buffer {
+	if size <= 0 {
+		return nil
+	}
+
+	buff := &Buffer{
+		start: 0,
+		end:   0,
+		buff:  make([]byte, size),
+	}
+
+	return buff
+}
+
+func (b *Buffer) ReadByte() (byte, error) {
+	if b.count == 0 {
+		return 0, errors.New("empty buffer")
+	}
+
+	c := b.buff[b.start]
+
+	b.start++
+
+	b.start %= len(b.buff)
+
+	b.count--
+
+	return c, nil
+}
+
+func (b *Buffer) WriteByte(c byte) error {
+	if b.count == len(b.buff) {
+		return errors.New("full buffer")
+	}
+
+	b.buff[b.end] = c
+
+	b.end++
+	b.end %= len(b.buff)
+
+	b.count++
+
+	return nil
+}
+
+func (b *Buffer) Overwrite(c byte) {
+	if b.count != len(b.buff) {
+		b.WriteByte(c)
+	} else {
+		b.buff[b.start] = c
+		b.start++
+		b.start %= len(b.buff)
+	}
+}
+
+func (b *Buffer) Reset() {
+	b.start, b.end, b.count = 0, 0, 0
+}
+```
+
+
+### Explanation
+    - The Buffer struct manages the circular buffer's state, including the underlying byte slice, start and end indices, and the count of currently stored bytes.
+    - The NewBuffer function initializes a new buffer of a specified size.
+    - The ReadByte method retrieves and removes a byte from the start of the buffer, updating the indices accordingly.
+    - The WriteByte method adds a byte to the end of the buffer if there is space.
+    - The Overwrite method allows writing a byte that will replace the oldest byte in the buffer if it's full.
+    - The Reset method clears the buffer, preparing it for new data.
+
+### Time and Space Complexity
+    - **Time Complexity**: O(1) for reading, writing, overwriting, and resetting operations, as they all involve a constant number of steps.
+    - **Space Complexity**: O(n), where n is the size of the buffer, as the buffer needs space for storing the bytes.
+
+## Conclusion
+The Circular Buffer implementation in Go efficiently manages byte storage in a circular manner, providing both overflow-checked and unconditional writing capabilities. This design allows for flexible data handling in scenarios where memory constraints or data streaming are essential

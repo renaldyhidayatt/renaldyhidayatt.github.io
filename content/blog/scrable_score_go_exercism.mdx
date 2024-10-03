@@ -1,0 +1,89 @@
+---
+title: Scrabble Score
+description: Solve the "Scrabble Score" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The "Scrabble Score" problem requires calculating the total score of a word based on the Scrabble letter values. Each letter in the word contributes to the score based on its associated point value in the Scrabble game. The score for each letter varies:
+- Common letters like 'A', 'E', 'I', etc., are worth 1 point.
+- Less common letters like 'G', 'B', 'C', and 'M' have higher point values.
+- Rare letters like 'Q' and 'Z' are worth 10 points.
+
+The goal is to compute the total score for a given word, taking into account the individual letter values.
+
+## Approach
+
+We can solve the problem by iterating over each character in the input word, looking up the corresponding Scrabble score, and summing the values. Additionally, we need to handle both uppercase and lowercase letters correctly by normalizing them to uppercase before looking up their score.
+
+### Algorithm
+
+1. **Scoreboard Definition**: Define a map where each letter (rune) is mapped to its corresponding Scrabble point value.
+2. **Iterate through the Word**: For each character in the word, convert it to uppercase (since the Scrabble board is case-insensitive) and retrieve the score from the map.
+3. **Sum the Scores**: Add up the scores for all characters in the word.
+4. **Return the Total**: After iterating through the word, return the total score.
+
+### Implementation in Go
+
+Here’s the implementation of the `Score` function in Go:
+
+```go
+package scrabble
+
+import "unicode"
+
+// Map of Scrabble letter values
+var scoreboard = map[rune]int{
+  'A': 1,
+  'E': 1,
+  'I': 1,
+  'O': 1,
+  'U': 1,
+  'L': 1,
+  'N': 1,
+  'R': 1,
+  'S': 1,
+  'T': 1,
+  'D': 2,
+  'G': 2,
+  'B': 3,
+  'C': 3,
+  'M': 3,
+  'P': 3,
+  'F': 4,
+  'H': 4,
+  'V': 4,
+  'W': 4,
+  'Y': 4,
+  'K': 5,
+  'J': 8,
+  'X': 8,
+  'Q': 10,
+  'Z': 10,
+}
+
+// Score calculates the total Scrabble score for the input word.
+func Score(word string) int {
+  total := 0
+  for _, r := range word {
+    total += scoreboard[unicode.ToUpper(r)]
+  }
+  return total
+}
+```
+
+### Explanation
+
+- **Scoreboard Map**: The scoreboard map associates each letter with its Scrabble point value. The keys in this map are runes representing the uppercase letters.
+- **Iterating over the Word**: In the Score function, we use a for loop to iterate over each rune in the word. For each rune, we convert it to uppercase using unicode.ToUpper and look up its corresponding value in the scoreboard map.
+- **Summing Scores**: The scores for each letter are added to the total variable, which is initialized to 0.
+- **Return Value**: After the loop, the total score is returned as the result.
+
+### Time and Space Complexity
+- **Time Complexity**: The time complexity is O(n), where n is the length of the input word. This is because we loop through each character in the word exactly once and look up its score in the map in constant time.
+- **Space Complexity**: The space complexity is O(1) because we only store a few constant-sized variables (the total and the map), and the space used does not grow with the size of the input.
+
+## Conclusion
+The "Scrabble Score" problem demonstrates how to efficiently calculate scores based on character mappings using a map in Go. This solution processes the input word in linear time, making it efficient even for long words. It also handles both uppercase and lowercase letters seamlessly with Go’s unicode package.

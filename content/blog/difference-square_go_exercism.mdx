@@ -1,0 +1,74 @@
+---
+title: Difference of Squares
+description: Solve the "Difference of Squares" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Difference of Squares** problem asks you to calculate two specific values for a given integer `n`:
+1. The **square of the sum** of the first `n` natural numbers.
+2. The **sum of the squares** of the first `n` natural numbers.
+
+Then, compute the difference between the square of the sum and the sum of the squares.
+
+For example, for `n = 5`:
+- The square of the sum is: (1 + 2 + 3 + 4 + 5)^2 = 15^2 = 225
+- The sum of the squares is: 1^2 + 2^2 + 3^2 + 4^2 + 5^2 = 55
+- The difference is: 225 - 55 = 170
+
+## Approach
+
+We need to calculate the square of the sum and the sum of the squares separately, and then find their difference. For this, we can use well-known mathematical formulas:
+1. **Sum of the first `n` natural numbers**: Sum = n(n + 1) / 2
+2. **Sum of the squares of the first `n` natural numbers**: Sum of squares = n(n + 1)(2n + 1) / 6
+
+### Algorithm
+
+1. **Square of the Sum**:
+   - First, calculate the sum of the first `n` numbers using the formula n(n + 1) / 2.
+   - Then, square this sum to get the square of the sum.
+
+2. **Sum of the Squares**:
+   - Use the formula n(n + 1)(2n + 1) / 6 to directly compute the sum of the squares of the first `n` numbers.
+
+3. **Difference**:
+   - Subtract the sum of the squares from the square of the sum to get the difference.
+
+### Implementation in Go
+
+Here’s the implementation of the `Difference` function in Go:
+
+```go
+package diffsquares
+
+// SquareOfSum calculates the square of the sum of the first n natural numbers.
+func SquareOfSum(n int) int {
+	result := (n * (n + 1)) / 2
+	return result * result
+}
+
+// SumOfSquares calculates the sum of the squares of the first n natural numbers.
+func SumOfSquares(n int) int {
+	return (n * (n + 1) * (2*n + 1)) / 6
+}
+
+// Difference returns the difference between the square of the sum and the sum of the squares.
+func Difference(n int) int {
+	return SquareOfSum(n) - SumOfSquares(n)
+}
+```
+
+### Explanation
+- **Square of Sum**: The SquareOfSum function uses the formula n(n + 1) / 2 to compute the sum of the first n natural numbers, then squares the result to get the square of the sum.
+- **Sum of Squares**: The SumOfSquares function directly calculates the sum of the squares of the first n numbers using the formula n(n + 1)(2n + 1) / 6.
+- **Difference**: The Difference function simply subtracts the result of SumOfSquares from SquareOfSum, yielding the desired difference.
+
+### Time and Space Complexity
+- **Time Complexity**: All operations are based on constant-time arithmetic calculations, making the time complexity \( O(1) \).
+- **Space Complexity**: The space complexity is also \( O(1) \) since the functions only use a fixed amount of memory for storing the results.
+
+
+## Conclusion
+The "Difference of Squares" problem is a great exercise in mathematical reasoning and the application of well-known formulas. Using the formulas for the sum of the first n numbers and the sum of their squares allows for an efficient O(1) solution in Go, avoiding the need for loops or recursion. This approach is highly efficient and scales well for large inputs.

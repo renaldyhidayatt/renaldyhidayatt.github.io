@@ -1,0 +1,86 @@
+---
+title: Triangle
+description: Solve the Triangle problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The Triangle problem involves determining the type of triangle that can be formed from three given side lengths. The types of triangles are:
+- **Equilateral**: All three sides are equal.
+- **Isosceles**: Exactly two sides are equal.
+- **Scalene**: All sides are different.
+Additionally, if the given sides do not form a valid triangle (such as negative lengths or the sum of two sides being less than or equal to the third), the result should indicate that it is not a triangle.
+
+## Approach
+
+### Algorithm
+
+1. **Input Validation**: Check if any of the sides are negative or if the sum of any two sides is less than or equal to the third side. If so, return an indication that it is not a triangle.
+2. **Triangle Classification**:
+   - If all three sides are equal, classify it as an equilateral triangle.
+   - If exactly two sides are equal, classify it as an isosceles triangle.
+   - If all three sides are different, classify it as a scalene triangle.
+
+### Implementation in Go
+
+Here is the Go implementation for determining the type of triangle:
+
+```go
+// Package triangle provides functionality to classify triangles based on side lengths.
+package triangle
+
+import "math"
+
+// Kind represents the type of triangle.
+type Kind int
+
+const (
+	NaT Kind = iota // Not a Triangle
+	Equ              // Equilateral
+	Iso              // Isosceles
+	Sca              // Scalene
+)
+
+// KindFromSides classifies the triangle based on the lengths of its sides.
+func KindFromSides(a, b, c float64) Kind {
+	if math.IsNaN(a+b+c) || a+b <= c || a+c <= b || b+c <= a {
+		return NaT
+	}
+
+	if a == b && a == c {
+		return Equ
+	}
+
+	if a == b || a == c || b == c {
+		return Iso
+	}
+
+	return Sca
+}
+```
+
+
+
+### Explanation
+    - **Triangle Type Definition**: The Kind type is defined to represent the possible classifications of triangles using an enumeration approach. The constants represent:
+
+        - ``NaT``: Not a Triangle
+        - ``Equ``: Equilateral
+        - ``Iso``: Isosceles
+        - ``Sca``: Scalene
+    - **KindFromSides Function**: This function accepts three float64 values representing the sides of a triangle. It first checks for validity by ensuring all sides are positive and the triangle inequality theorem holds. If the conditions are met, it determines the type of triangle based on the lengths of the sides.
+
+## Time and Space Complexity
+    ### Time Complexity: O(1)
+
+        - The function runs in constant time since it involves a fixed number of comparisons and arithmetic operations, regardless of the input values.
+
+    ### Space Complexity: O(1)
+
+        - The space complexity is also constant, as it only uses a fixed amount of space for the variables and does not depend on the size of the input.
+
+
+## Conclusion
+The Triangle problem is efficiently solved with a straightforward implementation in Go. By utilizing a clear structure to classify triangles based on their side lengths, this solution effectively addresses the requirements of the problem. With constant time and space complexity, it provides an optimal approach for triangle classification in various applications.

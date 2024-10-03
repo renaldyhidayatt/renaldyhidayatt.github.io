@@ -1,0 +1,85 @@
+---
+title: Darts
+description: Solve the Darts problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In this problem, we are tasked with determining the score of a dart throw based on its Cartesian coordinates `(x, y)`. The dartboard is represented by three concentric rings:
+- The bullseye (center) has a radius of 1 and awards 10 points.
+- The middle ring has a radius of 5 and awards 5 points.
+- The outer ring has a radius of 10 and awards 1 point.
+- Any dart that lands outside the outer ring scores 0 points.
+
+The objective is to write a function `Score(x, y float64) int` that calculates the score based on the dart's coordinates.
+
+## Approach
+
+The approach involves calculating the distance from the dart to the center of the dartboard, which is located at `(0, 0)`. This is done using the formula for the Euclidean distance:
+
+```plaintext
+distance = x^2 + y^2
+```
+We then compare the squared distance with the radii of the different dartboard rings to determine the appropriate score.
+
+### Algorithm
+
+1. Compute the squared distance from the dart to the origin using the formula ``$$x^2 + y^2$$``.
+2. Compare this distance against the predefined ring radii:
+   - If the distance is less than or equal to 1, the dart is within the bullseye and scores 10 points.
+   - If the distance is greater than 1 but less than or equal to 25, the dart is within the middle ring and scores 5 points.
+   - If the distance is greater than 25 but less than or equal to 100, the dart is within the outer ring and scores 1 point.
+   - If the distance is greater than 100, the dart is outside the dartboard and scores 0 points.
+
+### Implementation in Go
+
+```go
+// Package darts provides a function to score a dart throw based on its cartesian coordinates with a 3-ring
+// dartboard with a radius of 10 and scores of 10, 5 and 1 for the bullseye, middle and outer rings,
+// respectively.
+package darts
+
+// Score provides the integer score of a dart throw on a radius-10 dartboard with 3 rings of radius 1, 5
+// and 10 and scores of 10, 5, and 1.
+func Score(x, y float64) int {
+    // Calculate squared distance from the origin
+    distance := x*x + y*y
+
+    // Determine the score based on the dart's distance from the origin
+    switch {
+    case distance <= 1:
+        return 10
+    case distance <= 25:
+        return 5
+    case distance <= 100:
+        return 1
+    default:
+        return 0
+    }
+}
+```
+
+
+### Explanation
+    - Distance Calculation: The formula x*x + y*y calculates the square of the distance from the point (x, y) to the origin. This avoids using the square root function, which can be computationally more expensive.
+
+    - Switch Statement: The switch statement is used to compare the squared distance with the thresholds for each scoring ring:
+
+            - For a dart inside the bullseye (radius 1), it returns a score of 10.
+            - For a dart inside the middle ring (radius 5), it returns 5.
+            - For a dart inside the outer ring (radius 10), it returns 1.
+            - If the dart is outside the dartboard, it returns 0.
+
+### Time and Space Complexity
+    #### Time Complexity:
+
+        - Calculating the squared distance involves constant time operations, so the time complexity is O(1).
+        - The comparison operations inside the switch statement also take constant time, making the overall time complexity O(1).
+#### Space Complexity:
+
+        - The space complexity is O(1) since no additional data structures are used and only a few variables are needed.
+
+## Conclusion
+The provided solution efficiently solves the Darts problem by leveraging basic geometry and comparison operations. The use of squared distances avoids the need for floating-point square root calculations, improving performance. This solution is optimal with constant time and space complexity.

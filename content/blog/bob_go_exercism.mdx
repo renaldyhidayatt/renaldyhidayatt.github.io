@@ -1,0 +1,90 @@
+---
+title: BOB
+description: Solve the BOB problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In the BOB problem, Bob is a lackadaisical teenager. He responds to conversation based on specific patterns in the input string. Bob answers based on the following rules:
+
+- If you ask him a question (i.e., the remark ends with a question mark), he answers "Sure."
+- If you yell at him (i.e., all letters in the remark are uppercase), he answers "Whoa, chill out!"
+- If you yell a question at him, he answers "Calm down, I know what I'm doing!"
+- If you address him without saying anything (i.e., the remark is empty or consists only of whitespace), he responds with "Fine. Be that way!"
+- For anything else, he responds with "Whatever."
+
+## Approach
+
+### Algorithm
+
+1. **Trim whitespace**: Remove leading and trailing whitespace from the input string.
+2. **Determine if it's silence**: Check if the string is empty after trimming.
+3. **Check if the remark contains letters**: Determine if the remark includes any letters.
+4. **Identify if it’s yelling**: Check if all letters in the remark are uppercase.
+5. **Determine if it's a question**: Check if the remark ends with a question mark.
+6. **Return the appropriate response**: Based on the conditions above, return one of Bob’s responses.
+
+### Implementation in Go
+
+Here is the Go implementation for Bob's conversation logic:
+
+```go
+// Package bob provides a conversational agent that responds
+// based on the tone of the remark.
+package bob
+
+import (
+	"strings"
+	"unicode"
+)
+
+// Hey responds based on the provided remark.
+func Hey(remark string) string {
+	trimmedRemark := strings.TrimSpace(remark)
+
+	isSilence := trimmedRemark == ""
+	hasLetters := strings.IndexFunc(trimmedRemark, unicode.IsLetter) >= 0
+	isYelling := hasLetters && strings.ToUpper(trimmedRemark) == trimmedRemark
+	isQuestion := strings.HasSuffix(trimmedRemark, "?")
+
+	switch {
+	case isSilence:
+		return "Fine. Be that way!"
+	case isYelling && isQuestion:
+		return "Calm down, I know what I'm doing!"
+	case isYelling:
+		return "Whoa, chill out!"
+	case isQuestion:
+		return "Sure."
+	default:
+		return "Whatever."
+	}
+}
+```
+
+### Explanation
+
+- **Trimming Whitespace**: The first step is to remove any leading or trailing whitespace using `strings.TrimSpace()`. This ensures we are working with the actual content of the remark.
+- **Detecting Silence**: Silence is defined as an empty string or one that contains only whitespace. After trimming, if the string is empty, Bob responds with "Fine. Be that way!".
+- **Checking for Letters**: The function `strings.IndexFunc()` is used to check if the remark contains any letters. This helps determine if Bob can identify yelling or normal speech.
+- **Detecting Yelling**: If the remark contains letters and all the letters are uppercase, Bob considers this yelling. We check this by comparing the remark with its uppercased version (`strings.ToUpper(remark)`).
+- **Detecting a Question**: If the remark ends with a question mark (`?`), it is considered a question. We use `strings.HasSuffix()` to check for this condition.
+- **Response Decision**: Based on these checks, the program decides which response Bob will give, prioritizing silence, yelling, or questions accordingly.
+
+### Time and Space Complexity
+
+- **Time Complexity**: O(n)
+  - Trimming whitespace with `strings.TrimSpace()` takes O(n) where n is the length of the remark.
+  - Checking for letters and detecting yelling both involve scanning the entire remark, contributing O(n).
+  - The final check for a question using `strings.HasSuffix()` is also O(n).
+  - Therefore, the overall time complexity is linear in the size of the input remark.
+
+- **Space Complexity**: O(n)
+  - We create a new string when trimming whitespace, which can be as large as the original remark (O(n)).
+  - We don't use any additional data structures that scale with the input size, so the space complexity is linear in terms of the length of the input.
+
+### Conclusion
+
+The BOB problem can be efficiently solved using Go by analyzing the input string for specific patterns: silence, yelling, and questions. By using Go’s standard library functions such as `strings.TrimSpace()`, `strings.ToUpper()`, and `unicode.IsLetter()`, we can determine Bob's response with a time complexity of O(n). The approach is optimal, with both time and space complexities being linear, making it suitable for a wide range of input sizes.

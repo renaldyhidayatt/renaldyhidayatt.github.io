@@ -1,0 +1,102 @@
+---
+title: Knapsack
+description: Solve the Knapsack problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Knapsack problem is a classic optimization problem in which we are given a set of items, each with a weight and value, and a maximum weight capacity for a knapsack. The goal is to determine the maximum value that can be obtained by selecting a subset of the items such that the total weight does not exceed the given capacity.
+
+## Approach
+
+To solve this problem, we can use dynamic programming to explore the two main possibilities for each item:
+1. **Include the item**: Add its value and reduce the remaining weight capacity.
+2. **Exclude the item**: Keep the current weight capacity and move to the next item.
+
+By considering these two options recursively and storing the results of subproblems (memoization), we can avoid redundant calculations and solve the problem efficiently.
+
+### Algorithm
+
+1. **Recursive Approach with Memoization**:
+   - For each item, we either include it in the knapsack (if its weight does not exceed the current capacity) or exclude it.
+   - The recursive function explores both options and returns the maximum possible value.
+   - We use a memoization map to store intermediate results and avoid redundant calculations.
+
+2. **Base Case**:
+   - If the capacity is zero or there are no more items to consider, the total value is zero.
+
+3. **Memoization**:
+   - We use a map to store the solutions to subproblems to avoid recomputing them.
+
+### Implementation in Go
+
+```go
+package knapsack
+
+type Item struct {
+	Weight, Value int
+}
+
+func Knapsack(maxWeight int, items []Item) int {
+	return knapsack(maxWeight, items, make(map[index]int))
+}
+
+type index struct {
+	nElems    int
+	maxWeight int
+}
+
+func knapsack(maxWeight int, items []Item, mem map[index]int) int {
+	if maxWeight == 0 || len(items) == 0 {
+		return 0
+	}
+
+	if sol, ok := mem[index{len(items), maxWeight}]; ok {
+		return sol
+	}
+
+	lastItem := items[len(items)-1]
+
+	var sol int
+
+	if lastItem.Weight <= maxWeight {
+		sol = max(
+			lastItem.Value+knapsack(maxWeight-lastItem.Weight, items[:len(items)-1], mem),
+			knapsack(maxWeight, items[:len(items)-1], mem),
+		)
+	} else {
+		sol = knapsack(maxWeight, items[:len(items)-1], mem)
+	}
+
+	mem[index{len(items), maxWeight}] = sol
+	return sol
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+```
+
+### Explanation
+    - **Item Struct**: Each item has a Weight and a Value, represented by the Item struct.
+    - **Recursive Function**: The knapsack function checks the base cases (no items or zero capacity) and makes recursive calls to explore both including and excluding the current item.
+    - **Memoization**: The memoization map mem stores solutions for subproblems (indexed by the number of remaining items and the current capacity).
+    - **Decision Making**: For each item, we choose the maximum value between including the item (if it fits in the knapsack) and excluding it.
+
+### Time and Space Complexity
+    
+    - **Time Complexity**:
+
+        - The time complexity is O(n * W), where n is the number of items and W is the maximum weight capacity. This is because each subproblem is computed once and stored in the memoization map.
+    - **Space Complexity**:
+
+        - The space complexity is O(n * W) due to the recursive call stack and memoization table that stores solutions for subproblems.
+
+## Conclusion
+The Knapsack problem is a fundamental optimization problem that can be solved efficiently using dynamic programming with memoization. This approach ensures that subproblems are solved only once, leading to an optimal solution with a manageable time complexity. The Go implementation provides a clear and concise solution to this classic problem.

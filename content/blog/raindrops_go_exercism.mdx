@@ -1,0 +1,76 @@
+---
+title: Raindrops
+description: Solve the "Raindrops" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The "Raindrops" problem is a common beginner exercise that involves converting a number into a string based on certain factors. If the number has a factor of:
+
+- 3, add "Pling" to the result.
+- 5, add "Plang" to the result.
+- 7, add "Plong" to the result.
+
+If the number is not divisible by any of these, return the number as a string.
+
+For example:
+- 28 returns "Plong" (7 is a factor).
+- 30 returns "PlingPlang" (3 and 5 are factors).
+- 34 returns "34" (no factors of 3, 5, or 7).
+
+## Approach
+
+To solve the problem, we can check if the given number is divisible by 3, 5, or 7 using the modulo operator. We will build the result string based on these conditions. If none of the conditions are met, we simply return the number itself as a string using Go’s `strconv.Itoa` function.
+
+### Algorithm
+
+1. Initialize an empty string `msg` to store the result.
+2. Check if the number is divisible by 3 using `number % 3 == 0` and append `"Pling"` to `msg`.
+3. Check if the number is divisible by 5 using `number % 5 == 0` and append `"Plang"` to `msg`.
+4. Check if the number is divisible by 7 using `number % 7 == 0` and append `"Plong"` to `msg`.
+5. If no conditions are met (i.e., `msg` is empty), convert the number to a string using `strconv.Itoa(number)`.
+6. Return the `msg`.
+
+### Implementation in Go
+
+Here’s the implementation of the `Convert` function in Go:
+
+```go
+package raindrops
+
+import "strconv"
+
+// Convert returns a string based on the factors of the number
+func Convert(number int) string {
+	msg := ""
+	if number%3 == 0 {
+		msg += "Pling"
+	}
+	if number%5 == 0 {
+		msg += "Plang"
+	}
+	if number%7 == 0 {
+		msg += "Plong"
+	}
+	if msg == "" {
+		msg = strconv.Itoa(number)
+	}
+	return msg
+}
+```
+
+
+### Explanation
+- **Factor Check**: The code uses the modulo operator (%) to check if the number is divisible by 3, 5, or 7. If it is, the corresponding string is appended to the msg.
+- **Fallback Case**: If the number is not divisible by any of these factors, the msg will remain an empty string. In this case, the function converts the number to a string using strconv.Itoa(number).
+- **String Concatenation**: The result string is built by concatenating the appropriate terms in order, based on the factors of the number.
+
+### Time and Space Complexity
+- **Time Complexity**: The time complexity is O(1), as the operations are constant time modulo checks and string concatenations, which do not depend on the size of the input.
+
+- **Space Complexity**: The space complexity is O(1) as well, since the amount of space required is constant and independent of the input size, apart from storing the result string.
+
+## Conclusion
+The "Raindrops" problem is a simple yet effective exercise for practicing modulo operations and string manipulation in Go. The implementation is efficient with constant time and space complexity, making it suitable for larger inputs as well.
