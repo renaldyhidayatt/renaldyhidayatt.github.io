@@ -70,15 +70,15 @@ func Age(seconds float64, planet Planet) float64 {
 ```
 
 ### Explanation
-- **Planet Type**: We define a custom type Planet as a string to represent the different planets in our function.
+	- **Planet Type**: We define a custom type Planet as a string to represent the different planets in our function.
 
-- **Age Function**: This function takes two parameters: the age in seconds and the planet. It first calculates the Earth age by dividing the seconds by the number of seconds in a year (approximately 31,557,600). It then uses a switch statement to determine the age on the specified planet by dividing the Earth age by the planet's orbital period.
+	- **Age Function**: This function takes two parameters: the age in seconds and the planet. It first calculates the Earth age by dividing the seconds by the number of seconds in a year (approximately 31,557,600). It then uses a switch statement to determine the age on the specified planet by dividing the Earth age by the planet's orbital period.
 
 ### Time and Space Complexity
 
-- **Time Complexity**: O(1), as the function performs a fixed number of operations regardless of the input size.
+	- **Time Complexity**: O(1), as the function performs a fixed number of operations regardless of the input size.
 
-- **Space Complexity**: O(1), since the space used by the function does not change with the size of the input; it only returns a single float value.
+	- **Space Complexity**: O(1), since the space used by the function does not change with the size of the input; it only returns a single float value.
 
 ## Conclusion
 The Space Age problem is a practical application of basic arithmetic and conditional logic in programming. By understanding the differences in planetary orbital periods, we can easily calculate a person's age on various planets. This implementation in Go is efficient and straightforward, showcasing how to handle different types and calculations effectively.

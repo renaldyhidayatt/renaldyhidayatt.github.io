@@ -70,10 +70,10 @@ func Format(input string) (string, error) {
 ```
 
 ### Explanation
-- **Regular Expression**: The regular expression "[0-9]+" is used to match and extract all digit sequences from the input string. These digits are then concatenated together.
-- **Normalization**: The function checks if the number starts with a '1'. If so, the leading '1' is stripped, leaving the final 10 digits.
-- **Validation**: The code ensures that the phone number consists of exactly 10 digits. It also checks that neither the first digit of the area code nor the exchange code (i.e., the next three digits) is '0' or '1', as these are not valid in North American phone numbers.
-- **Formatting**: The Format function returns the number in a specific format (XXX) XXX-XXXX, and the AreaCode function returns just the first three digits.
+	- **Regular Expression**: The regular expression "[0-9]+" is used to match and extract all digit sequences from the input string. These digits are then concatenated together.
+	- **Normalization**: The function checks if the number starts with a '1'. If so, the leading '1' is stripped, leaving the final 10 digits.
+	- **Validation**: The code ensures that the phone number consists of exactly 10 digits. It also checks that neither the first digit of the area code nor the exchange code (i.e., the next three digits) is '0' or '1', as these are not valid in North American phone numbers.
+	- **Formatting**: The Format function returns the number in a specific format (XXX) XXX-XXXX, and the AreaCode function returns just the first three digits.
 
 ### Time and Space Complexity
     - #### **Time Complexity**: O(n), where n is the number of characters in the input string. The algorithm processes each character once to extract the digits.

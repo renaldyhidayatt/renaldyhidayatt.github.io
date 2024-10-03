@@ -57,15 +57,15 @@ func IsIsogram(s string) bool {
 
 ### Explanation
 
-- **Convert to Lowercase**: The input string is first converted to lowercase using strings.ToLower to make the comparison case-insensitive.
-- **Iterate through the String**: The function uses a for loop to iterate through each character in the string.
-- **Check for Repeating Letters**: For each character, it checks if the character appears again in the remaining portion of the string (s[i+1:]) using strings.ContainsRune. This ensures that any letter appearing more than once will return false.
-- **Ignore Non-Letter Characters**: The function uses unicode.IsLetter to ensure only alphabetic characters are checked for repetition, ignoring characters like spaces, dashes, or other punctuation.
-- **Return Value**: If no duplicate letters are found, the function returns true, indicating that the input is an isogram.
+	- **Convert to Lowercase**: The input string is first converted to lowercase using strings.ToLower to make the comparison case-insensitive.
+	- **Iterate through the String**: The function uses a for loop to iterate through each character in the string.
+	- **Check for Repeating Letters**: For each character, it checks if the character appears again in the remaining portion of the string (s[i+1:]) using strings.ContainsRune. This ensures that any letter appearing more than once will return false.
+	- **Ignore Non-Letter Characters**: The function uses unicode.IsLetter to ensure only alphabetic characters are checked for repetition, ignoring characters like spaces, dashes, or other punctuation.
+	- **Return Value**: If no duplicate letters are found, the function returns true, indicating that the input is an isogram.
 
 ### Time and Space Complexity
-- **Time Complexity**: The time complexity is O(n²), where n is the length of the string. This is because for each character, we search the rest of the string to check for duplicates, leading to a quadratic runtime.
-- **Space Complexity**: The space complexity is O(1), as we only store a few variables for the lowercase string and loop indices. No additional space is used proportional to the input size.
+	- **Time Complexity**: The time complexity is O(n²), where n is the length of the string. This is because for each character, we search the rest of the string to check for duplicates, leading to a quadratic runtime.
+	- **Space Complexity**: The space complexity is O(1), as we only store a few variables for the lowercase string and loop indices. No additional space is used proportional to the input size.
 
 ## Conclusion
 The "Isogram" problem is a simple yet effective exercise in string manipulation and iteration. While the current solution has a time complexity of O(n²) due to checking the remaining string for each character, it is straightforward and works well for short strings. Optimizations could be made by using a set or map for faster lookups, but the current approach effectively demonstrates basic problem-solving in Go.

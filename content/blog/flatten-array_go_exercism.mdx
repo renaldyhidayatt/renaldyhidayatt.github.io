@@ -43,13 +43,13 @@ func Flatten(nested interface{}) []interface{} {
 ```
 
 ### Explanation
-- **Base case**: If the element is not an array (interface{}), it is added directly to the flattened array.
-- **Recursive case**: If the element is an array ([]interface{}), we recursively flatten each of its elements and append the result to the final array.
-- **Result construction**: As we go through the nested structure, all elements are collected into a flat array.
+	- **Base case**: If the element is not an array (interface{}), it is added directly to the flattened array.
+	- **Recursive case**: If the element is an array ([]interface{}), we recursively flatten each of its elements and append the result to the final array.
+	- **Result construction**: As we go through the nested structure, all elements are collected into a flat array.
 
 ### Time and Space Complexity
-- **Time Complexity**: O(n), where n is the total number of elements in the nested structure. This is because each element is visited exactly once.
-- **Space Complexity**: O(n), since we are creating a new array to hold all the elements and using the recursion stack for depth-first traversal.
+	- **Time Complexity**: O(n), where n is the total number of elements in the nested structure. This is because each element is visited exactly once.
+	- **Space Complexity**: O(n), since we are creating a new array to hold all the elements and using the recursion stack for depth-first traversal.
 
 ## Conclusion
 This solution efficiently solves the problem of flattening a nested array in Go using recursion. The recursive approach is simple and elegant, allowing the function to handle arrays of arbitrary depth while maintaining linear time complexity.

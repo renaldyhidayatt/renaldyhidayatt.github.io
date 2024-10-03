@@ -98,11 +98,11 @@ func (a *Account) Close() (int64, bool) {
 ### Explanation
     - **Concurrency**:
 
-        To ensure thread safety, each method uses a sync.Mutex to lock the account for safe access. This ensures that no two operations can interfere with each other, preventing race conditions.
+        - To ensure thread safety, each method uses a sync.Mutex to lock the account for safe access. This ensures that no two operations can interfere with each other, preventing race conditions.
     
     - **Open**:
 
-        The Open function creates a new account only if the initial deposit is non-negative. It initializes the account with the given amount and sets the closed flag to false.
+        - The Open function creates a new account only if the initial deposit is non-negative. It initializes the account with the given amount and sets the closed flag to false.
     
     - **Balance**:
 
@@ -126,7 +126,7 @@ func (a *Account) Close() (int64, bool) {
             - **Close**: O(1), as it sets values and changes the status of the account.
     - #### Space Complexity:
 
-        - O(1) for each method, as the account operations only use a fixed amount of space regardless of the input size.
+			- O(1) for each method, as the account operations only use a fixed amount of space regardless of the input size.
 
 ## Conclusion
 The Bank Account implementation in Go demonstrates a safe, concurrent system that manages account operations like deposits, withdrawals, and closures efficiently. By using mutex locks, the solution ensures that race conditions are avoided, making it suitable for concurrent access in a multi-threaded environment.

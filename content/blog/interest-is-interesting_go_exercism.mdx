@@ -82,19 +82,19 @@ func YearsBeforeDesiredBalance(balance, targetBalance float64) int {
 
     1. **InterestRate**:
 
-    - The interest rate is tiered. If the balance is negative, the interest rate is 3.213%. If the balance is less than 1000, the interest rate is 0.5%. For balances between 1000 and 5000, the interest rate is 1.621%. For balances above 5000, the interest rate is 2.475%.
+        - The interest rate is tiered. If the balance is negative, the interest rate is 3.213%. If the balance is less than 1000, the interest rate is 0.5%. For balances between 1000 and 5000, the interest rate is 1.621%. For balances above 5000, the interest rate is 2.475%.
 
     2. **Interest**:
 
-    - This function computes the interest for a given balance by multiplying the balance by the interest rate and dividing by 100 (to account for percentage).
+        - This function computes the interest for a given balance by multiplying the balance by the interest rate and dividing by 100 (to account for percentage).
 
     3. **AnnualBalanceUpdate**:
 
-    - The annual update adds the interest to the balance for a given year. The interest is calculated by calling the Interest function.
+        - The annual update adds the interest to the balance for a given year. The interest is calculated by calling the Interest function.
 
     4. **YearsBeforeDesiredBalance**:
 
-    - This function applies the balance update in a loop, counting how many years it takes for the balance to meet or exceed the desired balance. Each year, the balance increases by the interest earned.
+        - This function applies the balance update in a loop, counting how many years it takes for the balance to meet or exceed the desired balance. Each year, the balance increases by the interest earned.
 
 ### Time and Space Complexity
     - #### **Time Complexity**:

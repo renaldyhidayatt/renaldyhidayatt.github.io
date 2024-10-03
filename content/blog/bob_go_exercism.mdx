@@ -66,24 +66,24 @@ func Hey(remark string) string {
 
 ### Explanation
 
-- **Trimming Whitespace**: The first step is to remove any leading or trailing whitespace using `strings.TrimSpace()`. This ensures we are working with the actual content of the remark.
-- **Detecting Silence**: Silence is defined as an empty string or one that contains only whitespace. After trimming, if the string is empty, Bob responds with "Fine. Be that way!".
-- **Checking for Letters**: The function `strings.IndexFunc()` is used to check if the remark contains any letters. This helps determine if Bob can identify yelling or normal speech.
-- **Detecting Yelling**: If the remark contains letters and all the letters are uppercase, Bob considers this yelling. We check this by comparing the remark with its uppercased version (`strings.ToUpper(remark)`).
-- **Detecting a Question**: If the remark ends with a question mark (`?`), it is considered a question. We use `strings.HasSuffix()` to check for this condition.
-- **Response Decision**: Based on these checks, the program decides which response Bob will give, prioritizing silence, yelling, or questions accordingly.
+	- **Trimming Whitespace**: The first step is to remove any leading or trailing whitespace using `strings.TrimSpace()`. This ensures we are working with the actual content of the remark.
+	- **Detecting Silence**: Silence is defined as an empty string or one that contains only whitespace. After trimming, if the string is empty, Bob responds with "Fine. Be that way!".
+	- **Checking for Letters**: The function `strings.IndexFunc()` is used to check if the remark contains any letters. This helps determine if Bob can identify yelling or normal speech.
+	- **Detecting Yelling**: If the remark contains letters and all the letters are uppercase, Bob considers this yelling. We check this by comparing the remark with its uppercased version (`strings.ToUpper(remark)`).
+	- **Detecting a Question**: If the remark ends with a question mark (`?`), it is considered a question. We use `strings.HasSuffix()` to check for this condition.
+	- **Response Decision**: Based on these checks, the program decides which response Bob will give, prioritizing silence, yelling, or questions accordingly.
 
 ### Time and Space Complexity
 
-- **Time Complexity**: O(n)
-  - Trimming whitespace with `strings.TrimSpace()` takes O(n) where n is the length of the remark.
-  - Checking for letters and detecting yelling both involve scanning the entire remark, contributing O(n).
-  - The final check for a question using `strings.HasSuffix()` is also O(n).
-  - Therefore, the overall time complexity is linear in the size of the input remark.
+	- **Time Complexity**: O(n)
+		- Trimming whitespace with `strings.TrimSpace()` takes O(n) where n is the length of the remark.
+		- Checking for letters and detecting yelling both involve scanning the entire remark, contributing O(n).
+		- The final check for a question using `strings.HasSuffix()` is also O(n).
+		- Therefore, the overall time complexity is linear in the size of the input remark.
 
-- **Space Complexity**: O(n)
-  - We create a new string when trimming whitespace, which can be as large as the original remark (O(n)).
-  - We don't use any additional data structures that scale with the input size, so the space complexity is linear in terms of the length of the input.
+	- **Space Complexity**: O(n)
+		- We create a new string when trimming whitespace, which can be as large as the original remark (O(n)).
+		- We don't use any additional data structures that scale with the input size, so the space complexity is linear in terms of the length of the input.
 
 ### Conclusion
 

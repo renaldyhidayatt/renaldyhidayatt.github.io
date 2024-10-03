@@ -56,7 +56,7 @@ func IsPangram(s string) bool {
         - Therefore, the overall time complexity is O(n * 26), which simplifies to O(n).
     - #### Space Complexity:
 
-        The space complexity is O(1) in terms of auxiliary space since we're only using a few variables and modifying the input string in place.
+        - The space complexity is O(1) in terms of auxiliary space since we're only using a few variables and modifying the input string in place.
 
 ## Conclusion
 This solution efficiently determines whether a string is a pangram by checking the presence of each letter in the alphabet. It ensures that the problem is solved in linear time relative to the size of the input string, making it well-suited for larger inputs. The use of Go's strings.ContainsRune function simplifies the process of checking for characters in the string.

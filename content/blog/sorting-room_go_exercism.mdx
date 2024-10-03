@@ -120,12 +120,12 @@ func DescribeAnything(i interface{}) string {
 
     - #### **Time Complexity**:
 
-    DescribeNumber, DescribeNumberBox, and DescribeFancyNumberBox all run in O(1) since they perform simple operations like string formatting and integer conversions.
-    ExtractFancyNumber involves a string-to-integer conversion, which also runs in O(1) time for typical cases since the string length is short.
+		- DescribeNumber, DescribeNumberBox, and DescribeFancyNumberBox all run in O(1) since they perform simple operations like string formatting and integer conversions.
+		ExtractFancyNumber involves a string-to-integer conversion, which also runs in O(1) time for typical cases since the string length is short.
 
     - #### **Space Complexity**:
 
-    The space complexity for each function is O(1) as well. The memory usage is limited to the input and the formatted output strings.
+		- The space complexity for each function is O(1) as well. The memory usage is limited to the input and the formatted output strings.
 
 ## Conclusion
 The Sorting Room problem demonstrates the flexibility of Go’s interfaces and type switches. By leveraging these features, we can handle different types of input dynamically and produce human-readable descriptions for various kinds of number boxes. The solution also showcases robust error handling for scenarios like string-to-integer conversion.

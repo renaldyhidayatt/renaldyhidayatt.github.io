@@ -66,18 +66,18 @@ func collatz(n int) int {
 
 ### Explanation
 
-- **Input Validation**: The main function CollatzConjecture(n) checks if the input n is a positive integer. If not, it returns an error.
-- **Recursive Collatz Function**: The function collatz(n) handles the core logic of the Collatz sequence:
-If n == 1, the function returns 0, signaling the end of the sequence.
+	- **Input Validation**: The main function CollatzConjecture(n) checks if the input n is a positive integer. If not, it returns an error.
+	- **Recursive Collatz Function**: The function collatz(n) handles the core logic of the Collatz sequence:
+	If n == 1, the function returns 0, signaling the end of the sequence.
 
-- If n is even, the function divides n by 2 and adds 1 to the result (since this represents one step in the sequence).
-- If n is odd, the function calculates 3*n + 1, adds 1 to the result, and continues the sequence.
+	- If n is even, the function divides n by 2 and adds 1 to the result (since this represents one step in the sequence).
+	- If n is odd, the function calculates 3*n + 1, adds 1 to the result, and continues the sequence.
 
-- **Recursive Structure**: The function uses recursion to reduce the input until n == 1, tracking the number of steps.
+	- **Recursive Structure**: The function uses recursion to reduce the input until n == 1, tracking the number of steps.
 
 ### Time and Space Complexity
-- **Time Complexity**: The time complexity of the function is O(log n) in the best case (when n is a power of 2), as the sequence halves the input each time. In the worst case (for large numbers), the sequence takes more steps, but generally, the function runs efficiently for most values of n.
-- **Space Complexity**: The space complexity is O(log n) due to the recursive stack that stores intermediate results.
+	- **Time Complexity**: The time complexity of the function is O(log n) in the best case (when n is a power of 2), as the sequence halves the input each time. In the worst case (for large numbers), the sequence takes more steps, but generally, the function runs efficiently for most values of n.
+	- **Space Complexity**: The space complexity is O(log n) due to the recursive stack that stores intermediate results.
 
 ## Conclusion
 The "Collatz Conjecture" problem offers a simple recursive approach to solve the sequence in Go. With proper input validation and a recursive function, the problem is efficiently solved. The implementation is well-suited for beginners learning about recursion and mathematical sequences in Go.

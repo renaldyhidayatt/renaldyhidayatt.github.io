@@ -52,22 +52,22 @@ func ToRNA(dna string) string {
 ```
 
 ### Explanation
-- **Function ToRNA**: The function takes a string representing the DNA sequence as input and initializes an empty string retVal to build the RNA sequence.
-- **Iteration**: Using a for loop, we iterate over each character in the DNA string.
-- **Switch Statement**: A switch statement is employed to check the current nucleotide and append the corresponding RNA nucleotide to retVal:
-        If the character is 'G', append 'C'.
-        If the character is 'C', append 'G'.
-        If the character is 'T', append 'A'.
-        If the character is 'A', append 'U'.
+	- **Function ToRNA**: The function takes a string representing the DNA sequence as input and initializes an empty string retVal to build the RNA sequence.
+	- **Iteration**: Using a for loop, we iterate over each character in the DNA string.
+	- **Switch Statement**: A switch statement is employed to check the current nucleotide and append the corresponding RNA nucleotide to retVal:
+			If the character is 'G', append 'C'.
+			If the character is 'C', append 'G'.
+			If the character is 'T', append 'A'.
+			If the character is 'A', append 'U'.
 
-- **Return Statement**: Finally, the function returns the constructed RNA sequence.
+	- **Return Statement**: Finally, the function returns the constructed RNA sequence.
 
 
 ### Time and Space Complexity
 
-- **Time Complexity**: O(n), where n is the length of the DNA string, as we need to iterate through each character once.
+	- **Time Complexity**: O(n), where n is the length of the DNA string, as we need to iterate through each character once.
 
-- **Space Complexity**: O(n), where n is the length of the resulting RNA string, as we store the RNA sequence in a new string.
+	- **Space Complexity**: O(n), where n is the length of the resulting RNA string, as we store the RNA sequence in a new string.
 
 ## Conclusion
 The RNA Transcription problem is a straightforward exercise in character mapping and string manipulation. By following the specified conversion rules and constructing the RNA sequence iteratively, we can efficiently transform a DNA strand into its corresponding RNA strand. This implementation in Go demonstrates a simple yet effective approach to solving the problem using basic data structures and control flow.

@@ -99,23 +99,23 @@ func (md MeteorologyData) String() string {
 ### Explanation
     1. **TemperatureUnit Type**:
 
-    The TemperatureUnit type is an integer-based enum with two constants: Celsius and Fahrenheit. The String method returns either "°C" or "°F" depending on the value.
+        The TemperatureUnit type is an integer-based enum with two constants: Celsius and Fahrenheit. The String method returns either "°C" or "°F" depending on the value.
 
     2. **Temperature Struct**:
 
-    The Temperature struct stores the degree and unit of temperature. Its String method combines the degree and the unit into a formatted string (e.g., "25 °C").
+        The Temperature struct stores the degree and unit of temperature. Its String method combines the degree and the unit into a formatted string (e.g., "25 °C").
 
     3. **SpeedUnit Type**:
 
-    The SpeedUnit type is another integer-based enum with two constants: KmPerHour and MilesPerHour. The String method returns either "km/h" or "mph".
+        The SpeedUnit type is another integer-based enum with two constants: KmPerHour and MilesPerHour. The String method returns either "km/h" or "mph".
 
     4. **Speed Struct**:
 
-    The Speed struct holds the wind speed and its unit. Its String method outputs the magnitude and unit in a readable format (e.g., "20 km/h").
+        The Speed struct holds the wind speed and its unit. Its String method outputs the magnitude and unit in a readable format (e.g., "20 km/h").
 
     5. **MeteorologyData Struct**:
 
-    This struct holds the overall weather data for a location, including temperature, wind direction, wind speed, and humidity. The String method formats this data into a concise weather report (e.g., "Paris: 22 °C, Wind N at 10 km/h, 60% Humidity").
+        This struct holds the overall weather data for a location, including temperature, wind direction, wind speed, and humidity. The String method formats this data into a concise weather report (e.g., "Paris: 22 °C, Wind N at 10 km/h, 60% Humidity").
 
 
 ### Time and Space Complexity

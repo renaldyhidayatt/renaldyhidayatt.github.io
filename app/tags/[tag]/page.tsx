@@ -7,7 +7,7 @@ interface TagPageProps {
   };
 }
 
-// Generate static params for the dynamic routing
+
 export function generateStaticParams() {
   const tags = Array.from(new Set(posts.flatMap(post => post.tags)));
   return tags.map(tag => ({ tag }));

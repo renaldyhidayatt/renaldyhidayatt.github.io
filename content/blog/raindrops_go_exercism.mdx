@@ -63,14 +63,14 @@ func Convert(number int) string {
 
 
 ### Explanation
-- **Factor Check**: The code uses the modulo operator (%) to check if the number is divisible by 3, 5, or 7. If it is, the corresponding string is appended to the msg.
-- **Fallback Case**: If the number is not divisible by any of these factors, the msg will remain an empty string. In this case, the function converts the number to a string using strconv.Itoa(number).
-- **String Concatenation**: The result string is built by concatenating the appropriate terms in order, based on the factors of the number.
+	- **Factor Check**: The code uses the modulo operator (%) to check if the number is divisible by 3, 5, or 7. If it is, the corresponding string is appended to the msg.
+	- **Fallback Case**: If the number is not divisible by any of these factors, the msg will remain an empty string. In this case, the function converts the number to a string using strconv.Itoa(number).
+	- **String Concatenation**: The result string is built by concatenating the appropriate terms in order, based on the factors of the number.
 
 ### Time and Space Complexity
-- **Time Complexity**: The time complexity is O(1), as the operations are constant time modulo checks and string concatenations, which do not depend on the size of the input.
+	- **Time Complexity**: The time complexity is O(1), as the operations are constant time modulo checks and string concatenations, which do not depend on the size of the input.
 
-- **Space Complexity**: The space complexity is O(1) as well, since the amount of space required is constant and independent of the input size, apart from storing the result string.
+	- **Space Complexity**: The space complexity is O(1) as well, since the amount of space required is constant and independent of the input size, apart from storing the result string.
 
 ## Conclusion
 The "Raindrops" problem is a simple yet effective exercise for practicing modulo operations and string manipulation in Go. The implementation is efficient with constant time and space complexity, making it suitable for larger inputs as well.

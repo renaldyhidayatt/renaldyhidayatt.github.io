@@ -74,16 +74,16 @@ func WithinLimit(log string, limit int) bool {
 
     #### **Application**:
 
-    - Iterates over the characters in the log. It returns the name of the application based on the first special character found. If no special characters are present, it defaults to "default".
+        - Iterates over the characters in the log. It returns the name of the application based on the first special character found. If no special characters are present, it defaults to "default".
 
 
     #### **Replace**:
 
-    - Takes the log string and two runes (old and new). It replaces all instances of oldRune in the log with newRune and returns the modified string.
+        - Takes the log string and two runes (old and new). It replaces all instances of oldRune in the log with newRune and returns the modified string.
 
     ### **WithinLimit**:
 
-    - Counts the number of runes in the log using utf8.RuneCountInString and checks if it is less than or equal to the specified limit.
+        - Counts the number of runes in the log using utf8.RuneCountInString and checks if it is less than or equal to the specified limit.
 
 ### Time and Space Complexity
     - #### **Time Complexity**:

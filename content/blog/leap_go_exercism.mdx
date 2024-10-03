@@ -62,18 +62,18 @@ func IsLeapYear(year int) bool {
 
 ## Explanation
 
-- **Divisibility Checks**: The function checks if the year is divisible by 4, then if divisible by 100, and finally if divisible by 400.
-- **Return Logic**:
-   - If year % 400 == 0, the year is a leap year.
-   - If year % 100 == 0 and not divisible by 400, it is not a leap year.
-   - If year % 4 == 0 and not divisible by 100, it is a leap year.
-   - If the year is not divisible by 4, it is not a leap year.
+	- **Divisibility Checks**: The function checks if the year is divisible by 4, then if divisible by 100, and finally if divisible by 400.
+	- **Return Logic**:
+		- If year % 400 == 0, the year is a leap year.
+		- If year % 100 == 0 and not divisible by 400, it is not a leap year.
+		- If year % 4 == 0 and not divisible by 100, it is a leap year.
+		- If the year is not divisible by 4, it is not a leap year.
 
 ### Time and Space Complexity
 
-- **Time Complexity**: The time complexity is O(1) because the function performs a constant number of arithmetic operations regardless of the size of the input.
+	- **Time Complexity**: The time complexity is O(1) because the function performs a constant number of arithmetic operations regardless of the size of the input.
 
-- **Space Complexity**: The space complexity is O(1) as no additional memory is required beyond a few variables to store the intermediate results of the modulus operations.
+	- **Space Complexity**: The space complexity is O(1) as no additional memory is required beyond a few variables to store the intermediate results of the modulus operations.
 
 ## Conclusion
 The "Leap" problem is a straightforward exercise in using basic arithmetic operations and control flow in Go. By following the divisibility rules for leap years, we can solve the problem efficiently in constant time and space. This is a great example of how simple logic can be applied to solve real-world date-related problems.

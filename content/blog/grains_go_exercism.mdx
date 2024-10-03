@@ -53,20 +53,20 @@ func Total() uint64 {
 
 ### Explanation
 
-- **Square Function**: 
-  - The function `Square()` checks if the input square number is between 1 and 64. If the number is valid, it uses bitwise shifting (`1 << (number-1)`) to calculate the number of grains on the given square. This operation is equivalent to computing 2^(number-1).
-  
-- **Total Function**: 
-  - The function `Total()` calculates the total number of grains on the chessboard using a similar bitwise operation. The total grains is equal to 2^64 - 1, which can be computed as `1 << 64 - 1`. This represents the sum of all grains on the 64 squares.
+  - **Square Function**: 
+    - The function `Square()` checks if the input square number is between 1 and 64. If the number is valid, it uses bitwise shifting (`1 << (number-1)`) to calculate the number of grains on the given square. This operation is equivalent to computing 2^(number-1).
+    
+  - **Total Function**: 
+    - The function `Total()` calculates the total number of grains on the chessboard using a similar bitwise operation. The total grains is equal to 2^64 - 1, which can be computed as `1 << 64 - 1`. This represents the sum of all grains on the 64 squares.
 
 
 ### Time and Space Complexity
 
-- **Time Complexity**: O(1)
-  - The bitwise shifting operation takes constant time regardless of the input, making the time complexity for both `Square()` and `Total()` O(1).
-  
-- **Space Complexity**: O(1)
-  - Both functions only use a constant amount of space to store intermediate values and the result. Therefore, the space complexity is also O(1).
+  - **Time Complexity**: O(1)
+    - The bitwise shifting operation takes constant time regardless of the input, making the time complexity for both `Square()` and `Total()` O(1).
+    
+  - **Space Complexity**: O(1)
+    - Both functions only use a constant amount of space to store intermediate values and the result. Therefore, the space complexity is also O(1).
 
 ## Conclusion
 

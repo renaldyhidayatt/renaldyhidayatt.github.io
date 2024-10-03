@@ -73,13 +73,13 @@ func Score(x, y float64) int {
             - If the dart is outside the dartboard, it returns 0.
 
 ### Time and Space Complexity
-    #### Time Complexity:
+    - #### Time Complexity:
 
         - Calculating the squared distance involves constant time operations, so the time complexity is O(1).
         - The comparison operations inside the switch statement also take constant time, making the overall time complexity O(1).
-#### Space Complexity:
+    - #### Space Complexity:
 
-        - The space complexity is O(1) since no additional data structures are used and only a few variables are needed.
+            - The space complexity is O(1) since no additional data structures are used and only a few variables are needed.
 
 ## Conclusion
 The provided solution efficiently solves the Darts problem by leveraging basic geometry and comparison operations. The use of squared distances avoids the need for floating-point square root calculations, improving performance. This solution is optimal with constant time and space complexity.

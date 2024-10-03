@@ -40,13 +40,13 @@ func AddGigasecond(t time.Time) time.Time {
 
 ###Explanation
 
-- **time.Time Object**: The time.Time type in Go represents a point in time. The Add method allows adding a duration to this time.
-- **time.Second Constant**: The constant time.Second represents a single second in Go’s time package. By multiplying this constant by 1,000,000,000, we calculate the exact duration of a gigasecond.
-- **Return Value**: The function returns the new time, which is the result of adding a gigasecond to the input time.
+	- **time.Time Object**: The time.Time type in Go represents a point in time. The Add method allows adding a duration to this time.
+	- **time.Second Constant**: The constant time.Second represents a single second in Go’s time package. By multiplying this constant by 1,000,000,000, we calculate the exact duration of a gigasecond.
+	- **Return Value**: The function returns the new time, which is the result of adding a gigasecond to the input time.
 
 ### Time and Space Complexity
-- **Time Complexity**: The time complexity is O(1) because the Add operation is a constant-time arithmetic operation.
-- **Space Complexity**: The space complexity is O(1) as well, since only a constant amount of additional space is required to store the result.
+	- **Time Complexity**: The time complexity is O(1) because the Add operation is a constant-time arithmetic operation.
+	- **Space Complexity**: The space complexity is O(1) as well, since only a constant amount of additional space is required to store the result.
 
 ## Conclusion
 The "Gigasecond" problem is a straightforward application of Go’s time package. By leveraging the built-in time manipulation functions, we can efficiently solve the problem with constant time and space complexity. This is an excellent example of how Go’s standard library simplifies common tasks like date and time arithmetic.

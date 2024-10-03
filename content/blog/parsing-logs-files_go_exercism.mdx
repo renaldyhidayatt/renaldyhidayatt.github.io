@@ -112,16 +112,16 @@ func TagWithUserName(lines []string) []string {
 
 ### Time and Space Complexity
 
-#### Time Complexity:
+	- #### Time Complexity:
 
-	- **IsValidLine**: O(n), where n is the length of the log line.
-	- **SplitLogLine**: O(n), as it scans through the log line to split it.
-	- **CountQuotedPasswords**: O(m * n), where m is the number of lines and n is the average length of the lines, as it checks each line.
-	- **RemoveEndOfLineText**: O(n), where n is the length of the log line.
-	- **TagWithUserName**: O(m * n), similar to CountQuotedPasswords.
+		- **IsValidLine**: O(n), where n is the length of the log line.
+		- **SplitLogLine**: O(n), as it scans through the log line to split it.
+		- **CountQuotedPasswords**: O(m * n), where m is the number of lines and n is the average length of the lines, as it checks each line.
+		- **RemoveEndOfLineText**: O(n), where n is the length of the log line.
+		- **TagWithUserName**: O(m * n), similar to CountQuotedPasswords.
 
-#### Space Complexity:
-All functions generally operate in O(1) additional space, except for CountQuotedPasswords and TagWithUserName, which return slices, leading to O(m) in those cases.
+	- #### Space Complexity:
+		- All functions generally operate in O(1) additional space, except for CountQuotedPasswords and TagWithUserName, which return slices, leading to O(m) in those cases.
 
 ## Conclusion
 The Parsing Log Files problem demonstrates effective log file processing using Go. By leveraging regex and efficient string manipulation techniques, we can extract and analyze critical information from logs, making this a valuable exercise in parsing and data extraction.

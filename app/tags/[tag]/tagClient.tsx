@@ -9,7 +9,7 @@ import { getAllTags, sortPosts, sortTagsByCount } from "@/lib/utils";
 import { Suspense, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const POSTS_PER_PAGE = 5;
+const POSTS_PER_PAGE = 10;
 
 const SearchParamsHandler = ({ setCurrentPage }: any) => {
   const searchParams = useSearchParams();

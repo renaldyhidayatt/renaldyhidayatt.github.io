@@ -66,15 +66,15 @@ func Valid(s string) bool {
 ```
 
 ### Explanation
-- The Valid function processes the input string, iterating from the last character to the first.
-It uses a switch statement to handle spaces and digits, applying the Luhn algorithm rules.
-- The result is determined by checking that at least two digits were processed and that the total sum is a multiple of 10.
+    - The Valid function processes the input string, iterating from the last character to the first.
+    It uses a switch statement to handle spaces and digits, applying the Luhn algorithm rules.
+    - The result is determined by checking that at least two digits were processed and that the total sum is a multiple of 10.
 
 
 ### Time and Space Complexity
 
-- **Time Complexity**: O(n), where n is the number of characters in the input string. Each character is processed exactly once.
-- **Space Complexity**: O(1), as we are using a constant amount of extra space regardless of the input size.
+    - **Time Complexity**: O(n), where n is the number of characters in the input string. Each character is processed exactly once.
+    - **Space Complexity**: O(1), as we are using a constant amount of extra space regardless of the input size.
 
 ## Conclusion
 The Luhn algorithm is a straightforward method to validate identification numbers. The Go implementation efficiently handles the input and adheres to the algorithm's rules. This solution demonstrates how simple algorithms can effectively solve real-world problems in a concise and efficient manner.

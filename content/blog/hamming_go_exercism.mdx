@@ -55,14 +55,14 @@ func Distance(a, b string) (int, error) {
 ```
 
 ### Explanation
-- **Input Validation**: The function first checks if the lengths of the two strings a and b are equal. If they are not, it returns an error with the message "strings must be of equal length".
-- **Looping through Strings**: The function then loops through the characters in the strings using the range keyword. It compares the characters at each index i in both strings.
-- **Counting Differences**: If the characters at a particular index differ (a[i] != b[i]), the counter numErrors is incremented.
-- **Return Value**: Finally, the function returns the number of differing characters, which represents the Hamming distance between the two strings.
+	- **Input Validation**: The function first checks if the lengths of the two strings a and b are equal. If they are not, it returns an error with the message "strings must be of equal length".
+	- **Looping through Strings**: The function then loops through the characters in the strings using the range keyword. It compares the characters at each index i in both strings.
+	- **Counting Differences**: If the characters at a particular index differ (a[i] != b[i]), the counter numErrors is incremented.
+	- **Return Value**: Finally, the function returns the number of differing characters, which represents the Hamming distance between the two strings.
 
 ### Time and Space Complexity
-- **Time Complexity**: The time complexity is O(n), where n is the length of the strings. This is because the function iterates through each character in both strings once.
-- **Space Complexity**: The space complexity is O(1), as the function only uses a few integer variables (the error counter and the loop index) and does not require any additional memory that scales with the input size.
+	- **Time Complexity**: The time complexity is O(n), where n is the length of the strings. This is because the function iterates through each character in both strings once.
+	- **Space Complexity**: The space complexity is O(1), as the function only uses a few integer variables (the error counter and the loop index) and does not require any additional memory that scales with the input size.
 
 
 ## Conclusion

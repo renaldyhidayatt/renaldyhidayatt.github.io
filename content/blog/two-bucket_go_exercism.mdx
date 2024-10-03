@@ -249,12 +249,12 @@ func (it *Iteration) seen(b1, b2 int) bool {
 ```
 
 
-Explanation
-Iteration Struct: Represents the state of the two buckets at each step, tracking their contents, the current operation, and the previous states to avoid cycles.
-Solution Struct: Holds the goal amount and the queue of iterations to be explored.
-Solve Function: Initializes the problem, checks for impossible cases using GCD, and starts the solution process.
-Find Function: Implements a breadth-first search (BFS) algorithm to explore possible operations and find the solution.
-Operations: The program simulates all possible operations and checks if they lead to the goal state.
+## Explanation
+    - **Iteration Struct**: Represents the state of the two buckets at each step, tracking their contents, the current operation, and the previous states to avoid cycles.
+    - **Solution Struct**: Holds the goal amount and the queue of iterations to be explored.
+    - **Solve Function**: Initializes the problem, checks for impossible cases using GCD, and starts the solution process.
+    - **Find Function**: Implements a breadth-first search (BFS) algorithm to explore possible operations and find the solution.
+    - **Operations**: The program simulates all possible operations and checks if they lead to the goal state.
 
 ### Time and Space Complexity
     - **Time Complexity**: The worst-case scenario involves exploring all possible states of the two buckets. Since each bucket can have sizeOne + 1 and sizeTwo + 1 states, the time complexity is approximately O(sizeOne * sizeTwo).

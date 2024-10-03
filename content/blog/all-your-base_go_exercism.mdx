@@ -65,10 +65,25 @@ func ConvertToBase(inputBase int, inputDigits []int, outputBase int) ([]int, err
 ```
 
 ### Explanation
-Validation: The first step is to ensure that both the input and output bases are valid (i.e., they must be greater than or equal to 2). Additionally, we check that each digit in the input list is valid for the input base (the digits should be between 0 and the base minus 1).
+	- **Validation**: The first step is to ensure that both the input and output bases are valid (i.e., they must be greater than or equal to 2). Additionally, we check that each digit in the input list is valid for the input base (the digits should be between 0 and the base minus 1).
 
-Converting to Base 10: The function first converts the input digits, which are in the input base, into a number in base 10. This is done by multiplying each digit by the input base raised to the power of its position and summing the results.
+	- **Converting to Base 10**: The function first converts the input digits, which are in the input base, into a number in base 10. This is done by multiplying each digit by the input base raised to the power of its position and summing the results.
 
-Converting to the Output Base: Once the number is converted into base 10, it's transformed into the output base. This is done by repeatedly dividing the base 10 number by the output base, collecting the remainders, which represent the digits in the new base.
+	- **Converting to the Output Base**: Once the number is converted into base 10, it's transformed into the output base. This is done by repeatedly dividing the base 10 number by the output base, collecting the remainders, which represent the digits in the new base.
 
-Edge Case Handling: If the input number is 0, the function directly returns [0], as 0 in any base is always 0.
+	- **Edge Case Handling**: If the input number is 0, the function directly returns [0], as 0 in any base is always 0.
+
+### Time and Space Complexity
+	- **Time Complexity**:
+
+		- Converting from the input base to base 10 involves iterating over the input digits, which is an O(n) operation where n is the number of digits.
+		- Converting from base 10 to the output base involves dividing the base 10 number repeatedly by the output base, which takes approximately O(log_b(m)) where m is the number in base 10 and b is the output base.
+		Therefore, the overall time complexity is O(n + log_b(m)).
+
+	- **Space Complexity**:
+
+		- The space complexity is O(n), where n is the number of digits in the input base, since we are storing both the input and output digits.
+
+
+## Conclusion
+The All Your Base problem demonstrates how to effectively convert a number between arbitrary bases. The key is to first transform the number into base 10 and then convert it to the desired base. This approach ensures a simple yet efficient solution, accommodating various input bases and digits.
