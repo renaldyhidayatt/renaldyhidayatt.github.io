@@ -1,7 +1,6 @@
 import Image from "next/image";
 import * as runtime from "react/jsx-runtime";
 import { Callout } from "./callout";
-import { cn } from "@/lib/utils";
 import 'katex/dist/katex.min.css';
 import Latex from 'react-latex-next';
 

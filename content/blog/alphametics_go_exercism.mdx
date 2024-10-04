@@ -133,6 +133,7 @@ func (a *alphametic) sumWord(word string) (sum int) {
     - **Time Complexity***: The time complexity is O(10^n) in the worst case, where n is the number of distinct letters in the puzzle. Each letter can take on one of 10 possible digits, leading to exponential growth in the search space.
     - **Space Complexity**: The space complexity is O(n), where n is the number of distinct letters, since we need to track digit assignments and previous states during recursion.
 
+
 ## Conclusion
 The Alphametics puzzle is a classic example of using backtracking to solve constraint satisfaction problems. By recursively trying different digit assignments, we can efficiently find a solution that satisfies the equation. Go's data structures and recursion provide a clean and performant way to approach this problem.
 
