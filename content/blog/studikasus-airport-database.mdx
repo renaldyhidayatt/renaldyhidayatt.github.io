@@ -1,0 +1,546 @@
+---
+title: "Case Study: Airline Management System"
+description: Case study of using database to manage airline management system.
+tags: ["database", "sql"]
+date: "2024-10-05"
+published: true
+---
+
+
+# Case Study: Airline Management System
+
+In the aviation industry, aircraft fleet management and flight operations are very important aspects. With the large amount of data to be managed, a database system becomes an indispensable tool for storing, managing, and processing information related to aircraft, airports, flights, and ticket reservations. This article will discuss the use of the `aircrafts` database as part of an airline management system, as well as examples of its use cases.
+
+## Database Description
+
+This database consists of several interconnected tables, namely:
+
+1. **aircrafts**: Stores information about aircraft owned by the airline, including aircraft code, model, and range.
+2. **airports**: Stores airport data, including airport code, name, city, coordinates, and time zone.
+3. **flights**: Stores flight information, including flight ID, flight number, departure schedule, and arrival.
+4. **tickets**: Stores information about tickets booked, including ticket number, booking reference, passenger ID, and passenger name.
+5. **bookings**: Stores ticket booking records, including reference number, booking date, and total cost.
+6. **boarding_passes**: Stores boarding card information issued to passengers.
+
+
+## Usage Scenarios
+
+### 1. Passenger Ticket Booking Process
+    When a passenger wants to book a ticket:
+    - The system adds a new record to the `bookings` table to store the booking information.
+    - The passenger's ticket is recorded in the `tickets` table, which contains information such as ticket number, booking reference, and passenger name.
+    - The ticket is associated with one or more flights in the `ticket_flights` table.
+
+### 2. Boarding Pass Issuance
+    After the passenger has successfully purchased a ticket:
+    - A boarding pass is issued and recorded in the `boarding_passes` table.
+    - This record includes the ticket number, flight ID, boarding number, and seat number taken from the `seats` table.
+
+### 3. Flight Schedule and Status
+    To monitor flights:
+    - The system manages the flight schedule in the `flights` table.
+    - The flight status is updated if there is a delay or status change.
+
+### 4. Airport Information Processing
+    - The system stores airport information in the `airports` table for flight planning.
+
+### 5. Aircraft Management
+    - The `aircrafts` table stores information about aircraft. The system checks available aircraft to ensure that the aircraft's range matches the flight route.
+
+
+### SQL
+
+```sql
+CREATE TABLE IF NOT EXISTS public.aircrafts
+(
+    aircraft_code character(3) COLLATE pg_catalog."default" NOT NULL,
+    model jsonb NOT NULL,
+    range integer NOT NULL,
+    CONSTRAINT aircrafts_pkey PRIMARY KEY (aircraft_code),
+    CONSTRAINT aircrafts_range_check CHECK (range > 0)
+);
+
+
+CREATE TABLE IF NOT EXISTS public.airports
+(
+    airport_code character(3) COLLATE pg_catalog."default" NOT NULL,
+    airport_name jsonb NOT NULL,
+    city jsonb NOT NULL,
+    coordinates point NOT NULL,
+    timezone text COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT airports_data_pkey PRIMARY KEY (airport_code)
+);
+
+
+CREATE TABLE IF NOT EXISTS public.flights
+(
+    flight_id integer NOT NULL DEFAULT nextval('flights_flight_id_seq'::regclass),
+    flight_no character(6) COLLATE pg_catalog."default" NOT NULL,
+    scheduled_departure timestamp with time zone NOT NULL,
+    scheduled_arrival timestamp with time zone NOT NULL,
+    departure_airport character(3) COLLATE pg_catalog."default" NOT NULL,
+    arrival_airport character(3) COLLATE pg_catalog."default" NOT NULL,
+    status character varying(20) COLLATE pg_catalog."default" NOT NULL,
+    aircraft_code character(3) COLLATE pg_catalog."default" NOT NULL,
+    actual_departure timestamp with time zone,
+    actual_arrival timestamp with time zone,
+    CONSTRAINT flights_pkey PRIMARY KEY (flight_id),
+    CONSTRAINT flights_flight_no_scheduled_departure_key UNIQUE (flight_no, scheduled_departure),
+    CONSTRAINT flights_aircraft_code_fkey FOREIGN KEY (aircraft_code)
+        REFERENCES public.aircrafts (aircraft_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT flights_arrival_airport_fkey FOREIGN KEY (arrival_airport)
+        REFERENCES public.airports (airport_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT flights_departure_airport_fkey FOREIGN KEY (departure_airport)
+        REFERENCES public.airports (airport_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT flights_check CHECK (scheduled_arrival > scheduled_departure),
+    CONSTRAINT flights_check1 CHECK (actual_arrival IS NULL OR actual_departure IS NOT NULL AND actual_arrival IS NOT NULL AND actual_arrival > actual_departure),
+    CONSTRAINT flights_status_check CHECK (status::text = ANY (ARRAY['On Time'::character varying::text, 'Delayed'::character varying::text, 'Departed'::character varying::text, 'Arrived'::character varying::text, 'Scheduled'::character varying::text, 'Cancelled'::character varying::text]))
+);
+
+
+CREATE TABLE IF NOT EXISTS public.tickets
+(
+    ticket_no character(13) COLLATE pg_catalog."default" NOT NULL,
+    book_ref character(6) COLLATE pg_catalog."default" NOT NULL,
+    passenger_id character varying(20) COLLATE pg_catalog."default" NOT NULL,
+    passenger_name text COLLATE pg_catalog."default" NOT NULL,
+    contact_data jsonb,
+    CONSTRAINT tickets_pkey PRIMARY KEY (ticket_no),
+    CONSTRAINT tickets_book_ref_fkey FOREIGN KEY (book_ref)
+        REFERENCES public.bookings (book_ref) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS public.ticket_flights
+(
+    ticket_no character(13) COLLATE pg_catalog."default" NOT NULL,
+    flight_id integer NOT NULL,
+    fare_conditions character varying(10) COLLATE pg_catalog."default" NOT NULL,
+    amount numeric(10,2) NOT NULL,
+    CONSTRAINT ticket_flights_pkey PRIMARY KEY (ticket_no, flight_id),
+    CONSTRAINT ticket_flights_flight_id_fkey FOREIGN KEY (flight_id)
+        REFERENCES public.flights (flight_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT ticket_flights_ticket_no_fkey FOREIGN KEY (ticket_no)
+        REFERENCES public.tickets (ticket_no) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT ticket_flights_amount_check CHECK (amount >= 0::numeric),
+    CONSTRAINT ticket_flights_fare_conditions_check CHECK (fare_conditions::text = ANY (ARRAY['Economy'::character varying::text, 'Comfort'::character varying::text, 'Business'::character varying::text]))
+);
+
+CREATE TABLE IF NOT EXISTS public.seats
+(
+    aircraft_code character(3) COLLATE pg_catalog."default" NOT NULL,
+    seat_no character varying(4) COLLATE pg_catalog."default" NOT NULL,
+    fare_conditions character varying(10) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT seats_pkey PRIMARY KEY (aircraft_code, seat_no),
+    CONSTRAINT seats_aircraft_code_fkey FOREIGN KEY (aircraft_code)
+        REFERENCES public.aircrafts (aircraft_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT seats_fare_conditions_check CHECK (fare_conditions::text = ANY (ARRAY['Economy'::character varying::text, 'Comfort'::character varying::text, 'Business'::character varying::text]))
+);
+
+
+CREATE TABLE IF NOT EXISTS public.bookings
+(
+    book_ref character(6) COLLATE pg_catalog."default" NOT NULL,
+    book_date timestamp with time zone NOT NULL,
+    total_amount numeric(10,2) NOT NULL,
+    CONSTRAINT bookings_pkey PRIMARY KEY (book_ref),
+    CONSTRAINT bookings_total_amount_check CHECK (total_amount >= 0::numeric)
+);
+
+
+CREATE TABLE IF NOT EXISTS public.boarding_passes
+(
+    ticket_no character(13) COLLATE pg_catalog."default" NOT NULL,
+    flight_id integer NOT NULL,
+    boarding_no integer NOT NULL,
+    seat_no character varying(4) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT boarding_passes_pkey PRIMARY KEY (ticket_no, flight_id),
+    CONSTRAINT boarding_passes_flight_id_fkey FOREIGN KEY (flight_id)
+        REFERENCES public.flights (flight_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT boarding_passes_ticket_no_fkey FOREIGN KEY (ticket_no)
+        REFERENCES public.tickets (ticket_no) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT boarding_passes_seat_no_fkey FOREIGN KEY (seat_no)
+        REFERENCES public.seats (seat_no) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT boarding_passes_boarding_no_check CHECK (boarding_no > 0)
+);
+
+-- Add indexes to the aircrafts table
+CREATE INDEX idx_aircrafts_range ON public.aircrafts (range);
+
+-- Add indexes to the airports table
+CREATE INDEX idx_airports_city ON public.airports USING GIN (city jsonb_path_ops);
+CREATE INDEX idx_airports_coordinates ON public.airports USING GIST (coordinates);
+
+-- Add indexes to the flights table
+CREATE INDEX idx_flights_scheduled_departure ON public.flights (scheduled_departure);
+CREATE INDEX idx_flights_scheduled_arrival ON public.flights (scheduled_arrival);
+CREATE INDEX idx_flights_status ON public.flights (status);
+CREATE INDEX idx_flights_departure_airport ON public.flights (departure_airport);
+CREATE INDEX idx_flights_arrival_airport ON public.flights (arrival_airport);
+
+-- Add indexes to the tickets table
+CREATE INDEX idx_tickets_book_ref ON public.tickets (book_ref);
+CREATE INDEX idx_tickets_passenger_id ON public.tickets (passenger_id);
+CREATE INDEX idx_tickets_passenger_name ON public.tickets (passenger_name);
+
+-- Add indexes to the ticket_flights table
+CREATE INDEX idx_ticket_flights_flight_id ON public.ticket_flights (flight_id);
+CREATE INDEX idx_ticket_flights_fare_conditions ON public.ticket_flights (fare_conditions);
+
+-- Add indexes to the seats table
+CREATE INDEX idx_seats_fare_conditions ON public.seats (fare_conditions);
+
+-- Add indexes to the bookings table
+CREATE INDEX idx_bookings_book_date ON public.bookings (book_date);
+
+-- Add indexes to the boarding_passes table
+CREATE INDEX idx_boarding_passes_flight_id ON public.boarding_passes (flight_id);
+CREATE INDEX idx_boarding_passes_boarding_no ON public.boarding_passes (boarding_no);
+
+
+```
+
+## Contoh Kasus Penggunaan
+
+
+
+### Easy Case 1: Displaying All Aircraft
+**Scenario**:
+
+The system needs to display all aircraft in the fleet to provide complete information about an airline's aircraft fleet.
+
+### Key Steps
+1. **Database Access**: Connect to the database containing the aircrafts table.
+2. **Execute Query**: Run SQL commands to retrieve all data from the aircrafts table.
+3. **Display Results**: Display the query results in a readable format, such as a table.
+4. **Verify Data**: Ensure that all aircraft are listed correctly and completely.
+
+```sql
+SELECT * FROM aircrafts;
+```
+
+### Easy Case 2: Displaying Aircraft with Range More than 3000 km
+
+**Scenario**:
+The system wants to display a list of aircraft that have a range more than 3000 km to help in planning long-haul flight routes.
+
+### Key Steps
+1. **Database Access**: Connect to the database containing the aircrafts table.
+Perform Query: Run SQL commands to retrieve aircraft data with range greater than 3000 km.
+2. **Filter Data**: Ensure that the query results only include aircraft that meet the range criteria.
+3. **Show Results**: Display the results in an organized format, showing aircraft code, model, and range.
+4. **Verify Data**: Ensure that only aircraft with the appropriate range are displayed.
+
+```sql
+SELECT aircraft_code, model, range
+FROM aircrafts
+WHERE range > 3000;
+```
+
+### Easy Case 3: Displaying Specific Aircraft Models
+
+**Scenario**:
+The system needs to display all aircraft that have the model "Airbus A320" for fleet analysis and aircraft availability purposes.
+
+### Key Steps
+1. **Access Database**: Connect to the database that contains the aircrafts table.
+2. **Execute Query**: Run a SQL command to retrieve data on aircraft with the model "Airbus A320".
+3. **Filter Data**: Ensure that the query results only include aircraft with the correct model.
+4. **Show Results**: Display the results in a structured format, including aircraft code, model, and range.
+5. **Verify Data**: Ensure that all aircraft displayed have the correct model.
+
+
+```sql
+SELECT aircraft_code, model, range
+FROM aircrafts
+WHERE model->>'model_name' = 'Airbus A320';
+```
+
+## Medium Case 1: Ensuring Aircraft Availability for Long-Haul Flights
+
+**Scenario**:
+An airline wants to make sure that an aircraft with a specific code, such as a Boeing 737, can fly from JFK Airport to LAX Airport. The system will calculate the distance between the two airports and verify whether the aircraft can cover the distance based on its maximum range.
+
+### Key Steps
+1. **Identify Airports**: Specify the departure (JFK) and destination (LAX) airports.
+2. **Retrieve Aircraft Data**: Get the aircraft information from the aircrafts table to find out the maximum range of the aircraft with a specific code (Boeing 737).
+3. **Calculate Distance**: Use the airport coordinates to calculate the distance between JFK and LAX.
+4. **Verify Availability**: Check whether the aircraft has sufficient range to cover the distance.
+5. **Generate Report**: Display the results indicating whether the aircraft is available for long-haul flights.
+
+```sql
+SELECT a.aircraft_code, a.range, p1.coordinates <@> p2.coordinates AS distance_km
+FROM aircrafts a
+JOIN airports p1 ON p1.airport_code = 'JFK' -- Bandara keberangkatan
+JOIN airports p2 ON p2.airport_code = 'LAX' -- Bandara tujuan
+WHERE a.aircraft_code = '737'
+AND p1.coordinates <@> p2.coordinates <= a.range;
+```
+
+## Medium Case 2: Analyze Aircraft Performance by Flight
+**Scenario**:
+An airline wants to analyze the performance of each aircraft based on the number of flights performed and total flight hours. This data will help in determining the efficiency and effectiveness of aircraft operations.
+
+### Key Steps
+1. **Collect Flight Data**: Extract flight data from the flights table, including departure and arrival times.
+
+2. **Calculate Total Flights**: Calculate the number of flights performed by each aircraft.
+
+3. **Calculate Total Flight Hours**: Calculate the total flight hours for each aircraft by subtracting the arrival time from the departure time.
+
+4. **Categorize and Group**: Group the data based on aircraft codes.
+
+5. **Generate Report**: Display the analysis results showing the number of flights and total flight hours for each aircraft, sorted by the number of flights.
+
+
+```sql
+WITH flight_data AS (
+    SELECT aircraft_code, COUNT(flight_id) AS total_flights,
+           SUM(EXTRACT(EPOCH FROM (actual_arrival - actual_departure)) / 3600) AS total_hours_flown
+    FROM flights
+    WHERE actual_arrival IS NOT NULL
+    GROUP BY aircraft_code
+)
+SELECT aircraft_code, total_flights, total_hours_flown
+FROM flight_data
+ORDER BY total_flights DESC;
+```
+
+## Hard Case 1: Aircraft Utilization Analysis
+
+### **Scenario**:
+An airline wants to calculate the utilization rate of its aircraft to evaluate the operational efficiency of its fleet over a period of time. By analyzing this data, the airline can:
+
+- Understand how often an aircraft is used compared to the total available operational time.
+- Identify underutilized aircraft that can be reallocated or optimized.
+- Improve flight schedules to ensure that aircraft are optimally utilized.
+
+### Key Steps to Address:
+1. **Calculate Total Aircraft Flight Hours**: Aircraft flight hour data will be calculated based on the time difference between the arrival time (actual_arrival) and departure time (actual_departure) of each flight.
+
+2. **Calculate Total Aircraft Operating Time**: Total operating time is calculated by calculating the number of active days (days with scheduled flights) multiplied by the number of hours in a day (24 hours). This is important to get a full picture of how long an aircraft is available for use.
+
+3. **Calculating Aircraft Utilization Rate**: The utilization rate will be calculated by comparing the actual flight hours (from the recorded flight hours) with the total operational hours of the aircraft (time spent in operation), then multiplying by 100 to get a percentage.
+
+### Steps for Hard Case 1:
+Calculating Total Flight Hours for Each Aircraft: First, we need to calculate the total flight hours of the aircraft based on the difference between the actual arrival time (actual_arrival) and the actual departure time (actual_departure). If the aircraft has landed, then the data is calculated, and the result is converted from seconds to hours.
+
+```sql
+WITH flight_data AS (
+    SELECT aircraft_code, 
+           SUM(EXTRACT(EPOCH FROM (actual_arrival - actual_departure)) / 3600) AS total_hours_flown
+    FROM flights
+    WHERE actual_arrival IS NOT NULL
+    GROUP BY aircraft_code
+)
+```
+    - EXTRACT(EPOCH FROM (actual_arrival - actual_departure)): Extract the difference in time between arrival and departure in seconds.
+    - / 3600: Convert seconds to hours (because 1 hour = 3600 seconds).
+    - GROUP BY aircraft_code: The result is grouped by aircraft code, so we get the total number of flight hours for each aircraft.
+
+2. **Calculating Total Aircraft Operating Time**: Next, we calculate the total aircraft operating time by counting how many days the aircraft has scheduled flights. Since aircraft can be used at any time of the day, we multiply the number of operating days by 24 hours to get the total operating hours.
+
+- `COUNT(DISTINCT scheduled_departure::date)`: Count the number of days that flights occurred (based on the scheduled departure time), without counting the same date twice.
+- `* 24`: Multiply the number of operating days by 24 hours to get the total operating hours.
+
+3. **Calculating Utilization Rate**: After getting the total flight hours and total operational hours, we can calculate the aircraft utilization as a percentage of flight hours compared to operational time.
+
+```sql
+SELECT fd.aircraft_code, fd.total_hours_flown, ot.total_hours_operated, 
+       (fd.total_hours_flown / ot.total_hours_operated) * 100 AS utilization_rate
+FROM flight_data fd
+JOIN operation_time ot ON fd.aircraft_code = ot.aircraft_code;
+```
+
+    - fd.total_hours_flown / ot.total_hours_operated: Compares flight hours with total operational hours.
+    - * 100: Converts the result to a percentage for easy understanding.
+    - JOIN: Combines data from the flight_data (flight hours) and operation_time (operational hours) tables based on the aircraft code.
+
+4. Result Interpretation: The result of this query will display the aircraft utilization rate in percentage form. By looking at this data, airlines can assess whether the aircraft is being used optimally or whether there are aircraft that are not being used optimally and need to be optimized.
+
+#### Example Output Results:
+
+| aircraft_code | total_hours_flown | total_hours_operated | utilization_rate |
+|---------------|-------------------|----------------------|------------------|
+| ABC           | 500               | 720                  | 69.44%           |
+| XYZ           | 300               | 480                  | 62.50%           |
+| PQR           | 700               | 1000                 | 70.00%           |
+
+
+
+```sql
+WITH flight_data AS (
+    SELECT aircraft_code, 
+           SUM(EXTRACT(EPOCH FROM (actual_arrival - actual_departure)) / 3600) AS total_hours_flown
+    FROM flights
+    WHERE actual_arrival IS NOT NULL
+    GROUP BY aircraft_code
+),
+operation_time AS (
+    SELECT aircraft_code, 
+           COUNT(DISTINCT scheduled_departure::date) * 24 AS total_hours_operated
+    FROM flights
+    GROUP BY aircraft_code
+)
+SELECT fd.aircraft_code, fd.total_hours_flown, ot.total_hours_operated, 
+       (fd.total_hours_flown / ot.total_hours_operated) * 100 AS utilization_rate
+FROM flight_data fd
+JOIN operation_time ot ON fd.aircraft_code = ot.aircraft_code;
+```
+
+## Hard Case 2: Analyze Specific Flight Routes
+
+**Scenario**:
+An airline wants to analyze the flight routes most frequently served by a specific aircraft to maximize operational efficiency. This data can be used to:
+
+- Find out which routes are most frequently served by an aircraft with a specific code.
+- Help in planning and rescheduling aircraft for high-demand routes.
+- Optimize aircraft utilization and reduce aircraft idle time.
+
+For example, an airline wants to analyze an aircraft with the code 'ABC' to see how frequently it serves a specific route from its origin to its destination.
+
+### Key Steps to Address:
+1. **Identify Flight Routes by Specific Aircraft**: The system needs to identify the routes (from origin to destination) served by an aircraft with a specific code, such as 'ABC'.
+
+2. **Grouping Flights by Route**: Flight routes are grouped by origin and destination airports, and then the number of flights served by that aircraft on each route is calculated.
+
+3. **Sort by Frequency**: Routes with the highest number of flights should be sorted by frequency so that airlines can focus on the most frequently served routes.
+
+### Steps for Hard case:
+
+1. **Identify Aircraft**: First, the system will filter all flights based on a specific aircraft code, for example aircraft with code 'ABC'.ter semua penerbangan berdasarkan kode pesawat tertentu, misalnya pesawat dengan kode 'ABC'.
+
+```sql
+SELECT flight_id, departure_airport, arrival_airport
+FROM flights
+WHERE aircraft_code = 'ABC';
+```
+
+2. **Grouping by Route**: After getting all the flights using the aircraft, the system will group the flights based on the combination of the departure_airport and arrival_airport, and then calculate the number of flights on each route.
+
+```sql
+SELECT departure_airport, arrival_airport, COUNT(flight_id) AS flight_count
+FROM flights
+WHERE aircraft_code = 'ABC'
+GROUP BY departure_airport, arrival_airport;
+```
+3. **Sorting by Number of Flights**: After getting the number of flights on each route, the system sorts the data based on the number of flights in descending order. This helps the airlines to know the routes most frequently served by aircraft with the code 'ABC'.
+
+```sql
+SELECT departure_airport, arrival_airport, COUNT(flight_id) AS flight_count
+FROM flights
+WHERE aircraft_code = 'ABC'
+GROUP BY departure_airport, arrival_airport
+ORDER BY flight_count DESC;
+```
+4. **Data Analysis**: Once the data is sorted, the airline can analyze which routes are served most frequently by the aircraft. This helps in decision making, such as:
+
+- Is the aircraft overused on a particular route and can it be reassigned to another route?
+- Is there an opportunity to add more flights to that route?
+- How can the operational efficiency of the aircraft be improved?
+
+5. **Aircraft Rescheduling**: Based on the analysis, the airline can decide to reassign the aircraft to another route that needs more attention or use another more efficient aircraft for a particular route.
+
+
+### Extra Steps for Optimization:
+- Adding Indexes to Columns: To improve the performance of the above query, airlines can add indexes to the aircraft_code, departure_airport, and arrival_airport columns.
+
+```sql
+CREATE INDEX idx_flights_aircraft_code ON flights(aircraft_code);
+CREATE INDEX idx_flights_departure_arrival ON flights(departure_airport, arrival_airport);
+```
+- Adding Filters Based on Time: If the airline wants to analyze data in a certain period, for example the last 1 year, a time filter can be added.
+
+```sql
+SELECT departure_airport, arrival_airport, COUNT(flight_id) AS flight_count
+FROM flights
+WHERE aircraft_code = 'ABC'
+AND scheduled_departure BETWEEN '2023-01-01' AND '2023-12-31'
+GROUP BY departure_airport, arrival_airport
+ORDER BY flight_count DESC;
+```
+
+
+
+## Hard Case 3: Seat Selection Optimization and Boarding Pass Cancellation
+
+**Scenario**: An airline faces a situation where seat selection needs to be optimized for an already crowded flight. Additionally, if a passenger cancels a flight after the ticket has been purchased and the boarding pass has been issued, the system must:
+
+1. Update the ticket status to “Cancelled” or “Refunded” and return the selected seat to the available seat pool.
+2. Delete the associated boarding pass without deleting any other flight data.
+
+### Key steps that need to be addressed:
+
+- Every time a passenger selects a seat for a flight, the system must ensure that the seat matches the ticket class (fare_conditions) and is available.
+- If the ticket is canceled after the boarding pass has been issued, the system needs to return the selected seat to the list of available seats for that flight.
+
+
+### Steps for hard case
+
+    1. **Automatic or Manual Seat Selection**:
+
+        - The system must validate that the seat selected by the passenger is available and matches the ticket class (e.g., economy class tickets can only select economy seats).
+
+        ```sql
+            
+        SELECT seat_no
+        FROM seats
+        WHERE aircraft_code = 'A320'
+        AND fare_conditions = 'Economy'
+        AND seat_no NOT IN (
+            SELECT seat_no
+            FROM boarding_passes
+            WHERE flight_id = 123
+        );
+
+        ```
+    
+    2. **Ticket and Boarding Pass Cancellation**:
+
+        - When a passenger cancels a flight, the ticket and boarding pass must be renewed. The system will delete the boarding pass record and change the ticket status to “Cancelled” or “Refunded.”
+
+        ```sql
+        DELETE FROM boarding_passes
+        WHERE ticket_no = '1234567890123' AND flight_id = 123;
+
+        
+        UPDATE tickets
+        SET status = 'Cancelled'
+        WHERE ticket_no = '1234567890123';
+
+        ```
+    3. **Returning Seats to Available Pool**:
+
+        - Once a boarding pass is deleted, the seat selected by the passenger should be returned to the list of available seats for that flight.
+
+        ```sql
+        -- No separate query is needed to return the seat to the pool because deleting it from the `boarding_passes` table
+        -- automatically returns the seat to available
+
+        ```
+    4. **Overbooking Handling**:
+
+        - If a flight is overbooked, the system should be able to reschedule or compensate passengers who are not able to get a seat, while also updating the seat availability in case of last minute cancellations.
+
+
+## Conclusion
+Data management in airlines requires an effective and efficient database solution. By implementing a system that manages aircraft, flight, and ticket booking data, airlines can maximize flight operations, provide better customer service, and monitor and analyze aircraft performance periodically. This database is a very important tool in achieving efficiency and optimizing airline resources.

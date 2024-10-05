@@ -20,14 +20,14 @@ To implement the Diffie-Hellman key exchange, the following steps are taken:
 
 1. **Private Key Generation**: Generate a random integer in the range [2, p-1] where p is a large prime number.
 2. **Public Key Generation**: Compute the public key using the formula:
-   \[
-   \text{PublicKey} = g^{\text{PrivateKey}} \mod p
-   \]
+   $$
+	\text{PublicKey} = g^{\text{PrivateKey}} \mod p
+   $$
    where g is a base (also known as the generator).
 3. **Shared Secret Key Generation**: Compute the shared secret key using the formula:
-   \[
+   $$
    \text{SecretKey} = (\text{PublicKey}_2)^{\text{PrivateKey}_1} \mod p
-   \]
+   $$
    where `PublicKey_2` is the public key of the other party, and `PrivateKey_1` is the private key of the current party.
 
 ### Implementation in Go
