@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS public.aircrafts
     CONSTRAINT aircrafts_pkey PRIMARY KEY (aircraft_code),
     CONSTRAINT aircrafts_range_check CHECK (range > 0)
 );
-
-
+ 
+ 
 CREATE TABLE IF NOT EXISTS public.airports
 (
     airport_code character(3) COLLATE pg_catalog."default" NOT NULL,
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS public.airports
     timezone text COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT airports_data_pkey PRIMARY KEY (airport_code)
 );
-
-
+ 
+ 
 CREATE TABLE IF NOT EXISTS public.flights
 (
     flight_id integer NOT NULL DEFAULT nextval('flights_flight_id_seq'::regclass),
@@ -102,8 +102,8 @@ CREATE TABLE IF NOT EXISTS public.flights
     CONSTRAINT flights_check1 CHECK (actual_arrival IS NULL OR actual_departure IS NOT NULL AND actual_arrival IS NOT NULL AND actual_arrival > actual_departure),
     CONSTRAINT flights_status_check CHECK (status::text = ANY (ARRAY['On Time'::character varying::text, 'Delayed'::character varying::text, 'Departed'::character varying::text, 'Arrived'::character varying::text, 'Scheduled'::character varying::text, 'Cancelled'::character varying::text]))
 );
-
-
+ 
+ 
 CREATE TABLE IF NOT EXISTS public.tickets
 (
     ticket_no character(13) COLLATE pg_catalog."default" NOT NULL,
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.tickets
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 );
-
+ 
 CREATE TABLE IF NOT EXISTS public.ticket_flights
 (
     ticket_no character(13) COLLATE pg_catalog."default" NOT NULL,
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS public.ticket_flights
     CONSTRAINT ticket_flights_amount_check CHECK (amount >= 0::numeric),
     CONSTRAINT ticket_flights_fare_conditions_check CHECK (fare_conditions::text = ANY (ARRAY['Economy'::character varying::text, 'Comfort'::character varying::text, 'Business'::character varying::text]))
 );
-
+ 
 CREATE TABLE IF NOT EXISTS public.seats
 (
     aircraft_code character(3) COLLATE pg_catalog."default" NOT NULL,
@@ -149,8 +149,8 @@ CREATE TABLE IF NOT EXISTS public.seats
         ON DELETE CASCADE,
     CONSTRAINT seats_fare_conditions_check CHECK (fare_conditions::text = ANY (ARRAY['Economy'::character varying::text, 'Comfort'::character varying::text, 'Business'::character varying::text]))
 );
-
-
+ 
+ 
 CREATE TABLE IF NOT EXISTS public.bookings
 (
     book_ref character(6) COLLATE pg_catalog."default" NOT NULL,
@@ -159,13 +159,14 @@ CREATE TABLE IF NOT EXISTS public.bookings
     CONSTRAINT bookings_pkey PRIMARY KEY (book_ref),
     CONSTRAINT bookings_total_amount_check CHECK (total_amount >= 0::numeric)
 );
-
-
+ 
+ 
 CREATE TABLE IF NOT EXISTS public.boarding_passes
 (
     ticket_no character(13) COLLATE pg_catalog."default" NOT NULL,
     flight_id integer NOT NULL,
     boarding_no integer NOT NULL,
+    aircraft_code character(3) NOT NULL,  -- Add aircraft_code here
     seat_no character varying(4) COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT boarding_passes_pkey PRIMARY KEY (ticket_no, flight_id),
     CONSTRAINT boarding_passes_flight_id_fkey FOREIGN KEY (flight_id)
@@ -176,45 +177,224 @@ CREATE TABLE IF NOT EXISTS public.boarding_passes
         REFERENCES public.tickets (ticket_no) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION,
-    CONSTRAINT boarding_passes_seat_no_fkey FOREIGN KEY (seat_no)
-        REFERENCES public.seats (seat_no) MATCH SIMPLE
+    CONSTRAINT boarding_passes_seat_fkey FOREIGN KEY (aircraft_code, seat_no)  -- Reference both columns
+        REFERENCES public.seats (aircraft_code, seat_no) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION,
     CONSTRAINT boarding_passes_boarding_no_check CHECK (boarding_no > 0)
 );
 
+CREATE TABLE IF NOT EXISTS public.flight_data
+(
+    aircraft_code character(3) NOT NULL,  -- Matches the aircraft_code in aircrafts table
+    total_hours_flown numeric NOT NULL,   -- Total hours the aircraft has flown
+    CONSTRAINT flight_data_pkey PRIMARY KEY (aircraft_code),
+    CONSTRAINT flight_data_aircraft_code_fkey FOREIGN KEY (aircraft_code)
+        REFERENCES public.aircrafts (aircraft_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS public.operation_time
+(
+    aircraft_code character(3) NOT NULL,  -- Matches the aircraft_code in aircrafts table
+    total_hours_operated numeric NOT NULL,  -- Total hours the aircraft has been operational
+    CONSTRAINT operation_time_pkey PRIMARY KEY (aircraft_code),
+    CONSTRAINT operation_time_aircraft_code_fkey FOREIGN KEY (aircraft_code)
+        REFERENCES public.aircrafts (aircraft_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+);
+
+
+ 
 -- Add indexes to the aircrafts table
 CREATE INDEX idx_aircrafts_range ON public.aircrafts (range);
-
+ 
 -- Add indexes to the airports table
 CREATE INDEX idx_airports_city ON public.airports USING GIN (city jsonb_path_ops);
 CREATE INDEX idx_airports_coordinates ON public.airports USING GIST (coordinates);
-
+ 
 -- Add indexes to the flights table
 CREATE INDEX idx_flights_scheduled_departure ON public.flights (scheduled_departure);
+
 CREATE INDEX idx_flights_scheduled_arrival ON public.flights (scheduled_arrival);
 CREATE INDEX idx_flights_status ON public.flights (status);
 CREATE INDEX idx_flights_departure_airport ON public.flights (departure_airport);
 CREATE INDEX idx_flights_arrival_airport ON public.flights (arrival_airport);
-
+ 
 -- Add indexes to the tickets table
 CREATE INDEX idx_tickets_book_ref ON public.tickets (book_ref);
 CREATE INDEX idx_tickets_passenger_id ON public.tickets (passenger_id);
 CREATE INDEX idx_tickets_passenger_name ON public.tickets (passenger_name);
-
+ 
 -- Add indexes to the ticket_flights table
 CREATE INDEX idx_ticket_flights_flight_id ON public.ticket_flights (flight_id);
 CREATE INDEX idx_ticket_flights_fare_conditions ON public.ticket_flights (fare_conditions);
-
+ 
 -- Add indexes to the seats table
 CREATE INDEX idx_seats_fare_conditions ON public.seats (fare_conditions);
-
+ 
 -- Add indexes to the bookings table
 CREATE INDEX idx_bookings_book_date ON public.bookings (book_date);
-
+ 
 -- Add indexes to the boarding_passes table
 CREATE INDEX idx_boarding_passes_flight_id ON public.boarding_passes (flight_id);
 CREATE INDEX idx_boarding_passes_boarding_no ON public.boarding_passes (boarding_no);
+ 
+
+CREATE SEQUENCE IF NOT EXISTS public.flights_flight_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE EXTENSION IF NOT EXISTS cube;
+CREATE EXTENSION IF NOT EXISTS earthdistance;
+
+
+INSERT INTO public.aircrafts (aircraft_code, model, range)
+VALUES
+    ('A01', '{"name": "Boeing 737", "capacity": 180}', 5000),
+    ('A02', '{"name": "Airbus A320", "capacity": 150}', 6000),
+    ('A03', '{"name": "Boeing 777", "capacity": 400}', 9000),
+    ('A04', '{"name": "Airbus A350", "capacity": 300}', 8000),
+    ('A05', '{"name": "Boeing 787", "capacity": 250}', 7000),
+    ('A06', '{"name": "Embraer E190", "capacity": 100}', 4000),
+    ('A07', '{"name": "Bombardier CRJ900", "capacity": 90}', 3000),
+    ('A08', '{"name": "Cessna 172", "capacity": 4}', 1000),
+    ('A09', '{"name": "Gulfstream G650", "capacity": 19}', 7000),
+    ('A10', '{"name": "Airbus A220", "capacity": 130}', 3500);
+
+
+INSERT INTO public.airports (airport_code, airport_name, city, coordinates, timezone)
+VALUES
+    ('JFK', '{"name": "John F. Kennedy International Airport"}', '{"city": "New York"}', '(40.6413, -73.7781)', 'America/New_York'),
+    ('LAX', '{"name": "Los Angeles International Airport"}', '{"city": "Los Angeles"}', '(33.9428, -118.4108)', 'America/Los_Angeles'),
+    ('ORD', '{"name": "O''Hare International Airport"}', '{"city": "Chicago"}', '(41.9742, -87.9073)', 'America/Chicago'),
+    ('DFW', '{"name": "Dallas/Fort Worth International Airport"}', '{"city": "Dallas"}', '(32.8998, -97.0403)', 'America/Chicago'),
+    ('DEN', '{"name": "Denver International Airport"}', '{"city": "Denver"}', '(39.8617, -104.6731)', 'America/Denver'),
+    ('SFO', '{"name": "San Francisco International Airport"}', '{"city": "San Francisco"}', '(37.6213, -122.3790)', 'America/Los_Angeles'),
+    ('SEA', '{"name": "Seattle-Tacoma International Airport"}', '{"city": "Seattle"}', '(47.4502, -122.3087)', 'America/Los_Angeles'),
+    ('LAS', '{"name": "McCarran International Airport"}', '{"city": "Las Vegas"}', '(36.08, -115.17)', 'America/Los_Angeles'),
+    ('MIA', '{"name": "Miami International Airport"}', '{"city": "Miami"}', '(25.7959, -80.2870)', 'America/New_York'),
+    ('PHL', '{"name": "Philadelphia International Airport"}', '{"city": "Philadelphia"}', '(39.8719, -75.2410)', 'America/New_York');
+
+
+INSERT INTO public.flights (flight_no, scheduled_departure, scheduled_arrival, departure_airport, arrival_airport, status, aircraft_code)
+VALUES
+    ('AA100', '2024-10-05 08:00:00-04', '2024-10-05 11:00:00-04', 'JFK', 'ORD', 'On Time', 'A01'),
+    ('AA200', '2024-10-06 09:00:00-04', '2024-10-06 12:00:00-04', 'LAX', 'DFW', 'On Time', 'A02'),
+    ('UA300', '2024-10-07 10:00:00-04', '2024-10-07 14:00:00-04', 'ORD', 'DEN', 'Delayed', 'A03'),
+    ('DL400', '2024-10-08 11:00:00-04', '2024-10-08 15:00:00-04', 'DFW', 'SFO', 'Scheduled', 'A04'),
+    ('SW500', '2024-10-09 12:00:00-04', '2024-10-09 16:00:00-04', 'DEN', 'SEA', 'Cancelled', 'A05'),
+    ('SW600', '2024-10-10 13:00:00-04', '2024-10-10 17:00:00-04', 'SFO', 'MIA', 'On Time', 'A06'),
+    ('WN700', '2024-10-11 14:00:00-04', '2024-10-11 18:00:00-04', 'LAS', 'PHL', 'Departed', 'A07'),
+    ('AA800', '2024-10-12 15:00:00-04', '2024-10-12 19:00:00-04', 'MIA', 'JFK', 'Arrived', 'A08'),
+    ('DL900', '2024-10-13 16:00:00-04', '2024-10-13 20:00:00-04', 'ORD', 'LAX', 'Delayed', 'A09'),
+    ('UA1000', '2024-10-14 17:00:00-04', '2024-10-14 21:00:00-04', 'DEN', 'SEA', 'Scheduled', 'A10');
+
+
+INSERT INTO public.bookings (book_ref, book_date, total_amount)
+VALUES
+    ('REF001', '2024-10-01 10:00:00-04', 1500.00),
+    ('REF002', '2024-10-02 11:00:00-04', 2500.00),
+    ('REF003', '2024-10-03 12:00:00-04', 4500.00),
+    ('REF004', '2024-10-04 13:00:00-04', 1500.00),
+    ('REF005', '2024-10-05 14:00:00-04', 2500.00),
+    ('REF006', '2024-10-06 15:00:00-04', 4500.00),
+    ('REF007', '2024-10-07 16:00:00-04', 1500.00),
+    ('REF008', '2024-10-08 17:00:00-04', 2500.00),
+    ('REF009', '2024-10-09 18:00:00-04', 4500.00),
+    ('REF010', '2024-10-10 19:00:00-04', 1500.00);
+
+
+INSERT INTO public.tickets (ticket_no, book_ref, passenger_id, passenger_name, contact_data)
+VALUES
+    ('TICKET001', 'REF001', 'PASS001', 'John Doe', '{"email": "johndoe@example.com", "phone": "123-456-7890"}'),
+    ('TICKET002', 'REF002', 'PASS002', 'Jane Smith', '{"email": "janesmith@example.com", "phone": "234-567-8901"}'),
+    ('TICKET003', 'REF003', 'PASS003', 'Robert Brown', '{"email": "robertbrown@example.com", "phone": "345-678-9012"}'),
+    ('TICKET004', 'REF004', 'PASS004', 'Emily Davis', '{"email": "emilydavis@example.com", "phone": "456-789-0123"}'),
+    ('TICKET005', 'REF005', 'PASS005', 'Michael Wilson', '{"email": "michaelwilson@example.com", "phone": "567-890-1234"}'),
+    ('TICKET006', 'REF006', 'PASS006', 'Sarah Johnson', '{"email": "sarahjohnson@example.com", "phone": "678-901-2345"}'),
+    ('TICKET007', 'REF007', 'PASS007', 'David Martinez', '{"email": "davidmartinez@example.com", "phone": "789-012-3456"}'),
+    ('TICKET008', 'REF008', 'PASS008', 'Linda Garcia', '{"email": "lindagarcia@example.com", "phone": "890-123-4567"}'),
+    ('TICKET009', 'REF009', 'PASS009', 'William Rodriguez', '{"email": "williamrodriguez@example.com", "phone": "901-234-5678"}'),
+    ('TICKET010', 'REF010', 'PASS010', 'Jessica Lee', '{"email": "jessicalee@example.com", "phone": "012-345-6789"}');
+
+
+INSERT INTO public.ticket_flights (ticket_no, flight_id, fare_conditions, amount)
+VALUES
+    ('TICKET001', 1, 'Economy', 150.00),
+    ('TICKET002', 2, 'Comfort', 250.00),
+    ('TICKET003', 3, 'Business', 450.00),
+    ('TICKET004', 4, 'Economy', 150.00),
+    ('TICKET005', 5, 'Comfort', 250.00),
+    ('TICKET006', 6, 'Business', 450.00),
+    ('TICKET007', 7, 'Economy', 150.00),
+    ('TICKET008', 8, 'Comfort', 250.00),
+    ('TICKET009', 9, 'Business', 450.00),
+    ('TICKET010', 10, 'Economy', 150.00);
+
+
+INSERT INTO public.seats (aircraft_code, seat_no, fare_conditions)
+VALUES
+    ('A01', '1A', 'Economy'),
+    ('A01', '1B', 'Economy'),
+    ('A02', '2A', 'Comfort'),
+    ('A02', '2B', 'Comfort'),
+    ('A03', '3A', 'Business'),
+    ('A03', '3B', 'Business'),
+    ('A04', '4A', 'Economy'),
+    ('A04', '4B', 'Comfort'),
+    ('A05', '5A', 'Business'),
+    ('A05', '5B', 'Economy');
+
+
+INSERT INTO public.boarding_passes (ticket_no, flight_id, boarding_no, aircraft_code, seat_no)
+VALUES
+    ('TICKET001', 1, 1, 'A01', '1A'),
+    ('TICKET002', 2, 2, 'A02', '2A'),
+    ('TICKET003', 3, 3, 'A03', '3A'),
+    ('TICKET004', 4, 4, 'A04', '4A'),
+    ('TICKET005', 5, 5, 'A05', '5A'),
+    ('TICKET006', 6, 6, 'A01', '1B'),
+    ('TICKET007', 7, 7, 'A02', '2B'),
+    ('TICKET008', 8, 8, 'A03', '3B'),
+    ('TICKET009', 9, 9, 'A04', '4B'),
+    ('TICKET010', 10, 10, 'A05', '5B');
+
+
+INSERT INTO public.operation_time (aircraft_code, total_hours_operated)
+VALUES
+    ('A01', 1000.00),
+    ('A02', 700.00),
+    ('A03', 1200.00),
+    ('A04', 800.00),
+    ('A05', 950.00),
+    ('A06', 300.00),
+    ('A07', 400.00),
+    ('A08', 200.00),
+    ('A09', 650.00),
+    ('A10', 500.00);
+
+INSERT INTO public.flight_data (aircraft_code, total_hours_flown)
+VALUES
+    ('A01', 1200.50),
+    ('A02', 800.25),
+    ('A03', 1500.75),
+    ('A04', 950.00),
+    ('A05', 1100.60),
+    ('A06', 400.30),
+    ('A07', 600.90),
+    ('A08', 300.15),
+    ('A09', 750.85),
+    ('A10', 500.40);
+
+
+
+
 
 
 ```
@@ -349,9 +529,15 @@ WITH flight_data AS (
     SELECT aircraft_code, 
            SUM(EXTRACT(EPOCH FROM (actual_arrival - actual_departure)) / 3600) AS total_hours_flown
     FROM flights
-    WHERE actual_arrival IS NOT NULL
+    WHERE actual_arrival IS NOT NULL AND actual_departure IS NOT NULL
     GROUP BY aircraft_code
 )
+SELECT fd.aircraft_code,
+       a.model->>'en' AS aircraft_model,
+       ROUND(fd.total_hours_flown::numeric, 2) AS total_hours_flown
+FROM flight_data fd
+JOIN aircrafts a ON fd.aircraft_code = a.aircraft_code
+ORDER BY total_hours_flown DESC;
 ```
     - EXTRACT(EPOCH FROM (actual_arrival - actual_departure)): Extract the difference in time between arrival and departure in seconds.
     - / 3600: Convert seconds to hours (because 1 hour = 3600 seconds).

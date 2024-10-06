@@ -3,13 +3,13 @@ title: "Case Study: Room Reservation Management System"
 description: Case study of database usage to manage Room Reservation Management System.
 tags: ["database", "sql"]
 date: "2024-10-05"
-published: true
+published: false
 ---
 
 **Scenario**
 A company develops a room booking system to allow employees to book meeting rooms or workspaces. The system must be able to manage room bookings, manage room availability, and manage users who can book rooms. In addition, the system must provide reports on bookings made.
 
-## Langkah-langkah Utama yang Perlu Ditangani
+## Usage Scenarios
 1. **User Management**:
 
     - New user registration.
@@ -36,27 +36,19 @@ A company develops a room booking system to allow employees to book meeting room
 ## Sql
 
 ```sql
--- Create the base_model table (assuming it exists based on the inheritance in Java classes)
-CREATE TABLE base_model (
+-- Create the roles table
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,  -- Use SERIAL for auto-increment
+    name VARCHAR(20),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
 );
 
--- Create the roles table
-CREATE TABLE roles (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(20),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    created_by VARCHAR(255),
-    updated_by VARCHAR(255)
-) ENGINE=InnoDB;
-
 -- Create the users table
-CREATE TABLE users (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,  -- Use BIGSERIAL for auto-increment
     username VARCHAR(20) NOT NULL UNIQUE,
     email VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(120) NOT NULL,
@@ -66,53 +58,125 @@ CREATE TABLE users (
     updated_at TIMESTAMP,
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
-) ENGINE=InnoDB;
+);
 
 -- Create the user_roles junction table
-CREATE TABLE user_roles (
+CREATE TABLE IF NOT EXISTS user_roles (
     user_id BIGINT,
     role_id INT,
     PRIMARY KEY (user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (role_id) REFERENCES roles(id)
-) ENGINE=InnoDB;
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
 
 -- Create the rooms table
-CREATE TABLE rooms (
-    room_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS rooms (
+    room_id BIGSERIAL PRIMARY KEY,  -- Use BIGSERIAL for auto-increment
     room_name VARCHAR(255) NOT NULL,
     room_capacity INT NOT NULL,
     photo VARCHAR(255) NOT NULL,
     room_status VARCHAR(255) DEFAULT 'ready',
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Optional: Automatically set timestamp
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Optional: Automatically set timestamp
     created_by VARCHAR(255),
     updated_by VARCHAR(255)
-) ENGINE=InnoDB;
+);
+
 
 -- Create the bookings table
-CREATE TABLE bookings (
-    booking_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS bookings (
+    booking_id BIGSERIAL PRIMARY KEY,  -- Use BIGSERIAL for auto-increment
     order_id VARCHAR(255) NOT NULL,
     user_id BIGINT NOT NULL,
     room_id BIGINT NOT NULL,
     total_person INT NOT NULL,
-    booking_time DATETIME NOT NULL,
-    noted VARCHAR(255) NOT NULL,
-    check_in_time DATETIME,
-    check_out_time DATETIME,
+    booking_time TIMESTAMP NOT NULL,  -- Use TIMESTAMP for consistency
+    noted VARCHAR(255),
+    check_in_time TIMESTAMP,
+    check_out_time TIMESTAMP,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     created_by VARCHAR(255),
     updated_by VARCHAR(255),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (room_id) REFERENCES rooms(room_id)
-) ENGINE=InnoDB;
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
+);
 
 -- Add indexes for better query performance
 CREATE INDEX idx_booking_user ON bookings(user_id);
 CREATE INDEX idx_booking_room ON bookings(room_id);
 CREATE INDEX idx_room_status ON rooms(room_status);
+
+
+INSERT INTO roles (name, created_at, updated_at, created_by, updated_by)
+VALUES
+    ('Admin', NOW(), NOW(), 'system', 'system'),
+    ('User', NOW(), NOW(), 'system', 'system'),
+    ('Manager', NOW(), NOW(), 'system', 'system'),
+    ('Guest', NOW(), NOW(), 'system', 'system'),
+    ('Staff', NOW(), NOW(), 'system', 'system'),
+    ('Supervisor', NOW(), NOW(), 'system', 'system'),
+    ('Owner', NOW(), NOW(), 'system', 'system'),
+    ('Operator', NOW(), NOW(), 'system', 'system'),
+    ('Customer', NOW(), NOW(), 'system', 'system'),
+    ('Vendor', NOW(), NOW(), 'system', 'system');
+
+
+INSERT INTO users (username, email, password, verification_code, is_verified, created_at, updated_at, created_by, updated_by)
+VALUES
+    ('user1', 'user1@example.com', 'password1', 'code1', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user2', 'user2@example.com', 'password2', 'code2', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user3', 'user3@example.com', 'password3', 'code3', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user4', 'user4@example.com', 'password4', 'code4', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user5', 'user5@example.com', 'password5', 'code5', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user6', 'user6@example.com', 'password6', 'code6', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user7', 'user7@example.com', 'password7', 'code7', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user8', 'user8@example.com', 'password8', 'code8', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user9', 'user9@example.com', 'password9', 'code9', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user10', 'user10@example.com', 'password10', 'code10', TRUE, NOW(), NOW(), 'system', 'system');
+
+
+INSERT INTO user_roles (user_id, role_id)
+VALUES
+    (1, 1),  -- user1 is Admin
+    (2, 2),  -- user2 is User
+    (3, 3),  -- user3 is Manager
+    (4, 4),  -- user4 is Guest
+    (5, 5),  -- user5 is Staff
+    (6, 6),  -- user6 is Supervisor
+    (7, 7),  -- user7 is Owner
+    (8, 8),  -- user8 is Operator
+    (9, 9),  -- user9 is Customer
+    (10, 10); -- user10 is Vendor
+
+
+INSERT INTO rooms (room_name, room_capacity, photo, room_status, created_at, updated_at, created_by, updated_by)
+VALUES
+    ('Room A', 2, 'room_a.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room B', 4, 'room_b.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room C', 3, 'room_c.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room D', 5, 'room_d.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room E', 1, 'room_e.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room F', 2, 'room_f.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room G', 6, 'room_g.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room H', 4, 'room_h.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room I', 3, 'room_i.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room J', 5, 'room_j.jpg', 'ready', NOW(), NOW(), 'system', 'system');
+
+
+INSERT INTO bookings (order_id, user_id, room_id, total_person, booking_time, noted, check_in_time, check_out_time, created_at, updated_at, created_by, updated_by)
+VALUES
+    ('ORD001', 1, 1, 2, NOW(), 'First booking', '2024-10-05 14:00:00', '2024-10-10 11:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD002', 2, 2, 4, NOW(), 'Second booking', '2024-10-06 15:00:00', '2024-10-11 12:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD003', 3, 3, 3, NOW(), 'Third booking', '2024-10-07 16:00:00', '2024-10-12 13:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD004', 4, 4, 5, NOW(), 'Fourth booking', '2024-10-08 17:00:00', '2024-10-13 14:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD005', 5, 5, 1, NOW(), 'Fifth booking', '2024-10-09 18:00:00', '2024-10-14 15:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD006', 6, 6, 2, NOW(), 'Sixth booking', '2024-10-10 19:00:00', '2024-10-15 16:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD007', 7, 7, 6, NOW(), 'Seventh booking', '2024-10-11 20:00:00', '2024-10-16 17:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD008', 8, 8, 4, NOW(), 'Eighth booking', '2024-10-12 21:00:00', '2024-10-17 18:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD009', 9, 9, 3, NOW(), 'Ninth booking', '2024-10-13 22:00:00', '2024-10-18 19:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD010', 10, 10, 5, NOW(), 'Tenth booking', '2024-10-14 23:00:00', '2024-10-19 20:00:00', NOW(), NOW(), 'system', 'system');
+
 ```
 
 ## Langkah-langkah untuk Easy, Medium, dan Hard Case
@@ -176,8 +240,9 @@ A user wants to make a booking for a specific meeting room and enter information
         ```sql
         SELECT COUNT(*) 
         FROM bookings 
-        WHERE room_id = ? 
-        AND (check_in_time < ? AND check_out_time > ?);
+        WHERE room_id = 101 
+        AND (check_in_time < '2024-10-5 14:00:00' AND check_out_time > '2024-10-10 11:00:00');
+
 
         ```
         - If the above query result is more than 0, the room is not available.
@@ -274,9 +339,12 @@ A room manager wants to get a report on the utilization rate of each room in the
     WITH total_bookings AS (
     SELECT room_id, COUNT(booking_id) AS total_bookings
     FROM bookings
-    WHERE check_in_time >= ? AND check_out_time <= ?  -- Batasan waktu untuk periode tertentu
+    WHERE check_in_time >= '2024-10-05 14:00:00' 
+      AND check_out_time <= '2024-10-10 11:00:00'
     GROUP BY room_id
     )
+    SELECT *
+    FROM total_bookings;
 
     ```
 
@@ -286,10 +354,11 @@ A room manager wants to get a report on the utilization rate of each room in the
 
     ```sql
     SELECT room_id, 
-       COUNT(DISTINCT DATE(check_in_time)) * 8 AS total_available_hours 
+       COUNT(DISTINCT DATE(check_in_time)) * 8 AS total_available_hours
     FROM bookings
-    WHERE check_in_time >= ? AND check_out_time <= ? 
-    GROUP BY room_id
+    WHERE check_in_time >= '2024-10-05 00:00:00' AND check_out_time <= '2024-10-10 23:59:59'  -- Adjust as needed
+    GROUP BY room_id;
+
 
     ```
 
@@ -298,10 +367,18 @@ A room manager wants to get a report on the utilization rate of each room in the
         - Calculate the utilization rate by comparing the number of orders to the total time available:
 
     ```sql
-    SELECT r.room_name, tb.total_bookings,
-       (tb.total_bookings::float / total_available_hours * 100) AS utilization_rate
-    FROM rooms r
-    LEFT JOIN total_bookings tb ON r.id = tb.room_id;
+    WITH total_bookings AS (
+    SELECT room_id, COUNT(booking_id) AS total_bookings
+    FROM bookings
+    WHERE check_in_time >= '2024-10-05 00:00:00' AND check_out_time <= '2024-10-10 23:59:59'  -- Adjust as needed
+    GROUP BY room_id
+    )
+    SELECT r.room_name, 
+        COALESCE(tb.total_bookings, 0) AS total_bookings,  
+        (COALESCE(tb.total_bookings, 0)::float / total_available_hours * 100) AS utilization_rate
+    FROM public.rooms r  -- Specify schema if needed
+    LEFT JOIN total_bookings tb ON r.room_id = tb.room_id;
+
     ```
 
     4. **Handling Errors**:
