@@ -1,0 +1,325 @@
+---
+title: "Understanding Go Concurrency"
+description: "Explore different concurrency patterns in Go, including goroutines, channels, worker pools, and race condition handling."
+tags: ["go", "concurrency", "goroutines", "channels"]
+date: "2024-10-06"
+---
+
+# Understanding Go Concurrency
+
+Go (or Golang) was designed with concurrency in mind, making it one of the go-to languages for building efficient, scalable systems. Concurrency in Go is lightweight and easy to manage thanks to goroutines, channels, and other synchronization primitives. In this article, we will explore different concurrency patterns and techniques in Go, ranging from simple goroutines to more complex constructs like worker pools and handling race conditions.
+
+## 1. Introduction to Goroutines
+
+Goroutines are the building blocks of concurrency in Go. They are lightweight threads managed by the Go runtime, making them highly efficient. Starting a goroutine is as simple as adding the `go` keyword before a function call. Goroutines run independently and concurrently with other goroutines.
+
+### Basic Goroutine Example
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    go doSomething() 
+    go doSomethingElse()
+
+    time.Sleep(3 * time.Second) 
+    fmt.Println("Main function is done")
+}
+
+func doSomething() {
+    time.Sleep(2 * time.Second)
+    fmt.Println("Task 1 completed")
+}
+
+func doSomethingElse() {
+    time.Sleep(2 * time.Second)
+    fmt.Println("Task 2 completed")
+}
+```
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/PuerkitoBio/goquery"
+)
+
+var wg sync.WaitGroup
+
+func main() {
+	start := time.Now()
+
+	// URLs of the news websites
+	urls := []string{
+		"https://www.detik.com/",
+		"https://www.tempo.co/",
+		"https://www.thejakartapost.com/",
+	}
+
+	wg.Add(len(urls))
+
+	for _, url := range urls {
+		go fetchTitle(url)
+	}
+
+	wg.Wait()
+
+	elapsed := time.Since(start)
+	fmt.Printf("Fetching titles took %s\n", elapsed)
+}
+
+func fetchTitle(url string) {
+	defer wg.Done()
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("Failed to fetch %s: %v", url, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Error: Status code %d for %s", resp.StatusCode, url)
+		return
+	}
+
+	// Parse the page using goquery
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		log.Printf("Error parsing %s: %v", url, err)
+		return
+	}
+
+	fmt.Printf("\nArticles from %s:\n", url)
+
+	// Different websites have different HTML structures, so we need to extract titles accordingly
+	if url == "https://www.detik.com/" {
+		doc.Find(".media__title a").Each(func(i int, s *goquery.Selection) {
+			title := s.Text()
+			fmt.Printf(" - %s\n", title)
+		})
+	} else if url == "https://www.tempo.co/" {
+		doc.Find(".title").Each(func(i int, s *goquery.Selection) {
+			title := s.Text()
+			fmt.Printf(" - %s\n", title)
+		})
+	} else if url == "https://www.thejakartapost.com/" {
+		doc.Find(".title a").Each(func(i int, s *goquery.Selection) {
+			title := s.Text()
+			fmt.Printf(" - %s\n", title)
+		})
+	}
+}
+```
+
+
+
+2. Synchronization with WaitGroup
+While the previous example uses time.Sleep to give the goroutines enough time to finish, this isn’t a robust approach. In real-world applications, we can use sync.WaitGroup to wait for multiple goroutines to complete their execution.
+
+Using WaitGroup Example
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+    "time"
+)
+
+var wg = sync.WaitGroup{}
+
+func main() {
+    wg.Add(2) // We are waiting for two goroutines to finish
+
+    go doSomethingWithWaitGroup()
+    go doSomethingElseWithWaitGroup()
+
+    wg.Wait() // Block until the two goroutines call Done()
+    fmt.Println("Main function is done")
+}
+
+func doSomethingWithWaitGroup() {
+    time.Sleep(2 * time.Second)
+    fmt.Println("Task 1 completed")
+    wg.Done() // Signal that this goroutine is done
+}
+
+func doSomethingElseWithWaitGroup() {
+    time.Sleep(2 * time.Second)
+    fmt.Println("Task 2 completed")
+    wg.Done() // Signal that this goroutine is done
+}
+
+```
+
+`WaitGroup` provides a robust way to synchronize goroutines. In this example, the `wg.Add(2)` call tells the program to wait for two goroutines to finish. The `wg.Done()` method is called at the end of each goroutine to signal that the task is complete.
+
+3. Channels for Communication
+Channels are another key feature in Go’s concurrency model. They are used for communication between goroutines, ensuring safe data exchange without the need for complex locking mechanisms. Channels can either block the sender or receiver until the other side is ready.
+
+Basic Channel Example
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    ch := make(chan string)
+
+    go sendMessage(ch)
+
+    message := <-ch // Wait for the message
+    fmt.Println("Received:", message)
+}
+
+func sendMessage(ch chan<- string) {
+    time.Sleep(2 * time.Second)
+    ch <- "Hello from the goroutine!" // Send a message through the channel
+}
+```
+
+Here, the main function waits until it receives a message from the sendMessage goroutine via the channel `ch`.
+
+4. Buffered Channels
+Buffered channels allow you to send multiple values before blocking the sender. They are useful when you need to process multiple tasks concurrently without the overhead of waiting for every individual message to be processed immediately.
+
+Buffered Channel Example:
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    ch := make(chan string, 2)
+
+    go sendBufferedMessage(ch)
+    time.Sleep(3 * time.Second)
+
+    for i := 0; i < 2; i++ {
+        fmt.Println(<-ch) // Receive both messages from the channel
+    }
+}
+
+func sendBufferedMessage(ch chan<- string) {
+    ch <- "Message 1"
+    ch <- "Message 2"
+    time.Sleep(2 * time.Second)
+    fmt.Println("Messages sent")
+}
+```
+
+
+In this example, the buffered channel can hold two messages without blocking the sender, making the communication between goroutines more efficient.
+
+5. Worker Pool
+A worker pool pattern is useful when you have a large number of jobs to process and want to distribute the workload across a fixed number of worker goroutines. This approach helps manage resource usage and parallelizes the work efficiently.
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    const numJobs = 5
+    jobs := make(chan int, numJobs)
+    results := make(chan int, numJobs)
+
+    // Start 3 workers
+    for w := 1; w <= 3; w++ {
+        go worker(w, jobs, results)
+    }
+
+    // Send jobs to the workers
+    for j := 1; j <= numJobs; j++ {
+        jobs <- j
+    }
+    close(jobs)
+
+    // Collect results
+    for a := 1; a <= numJobs; a++ {
+        fmt.Println("Result:", <-results)
+    }
+}
+
+func worker(id int, jobs <-chan int, results chan<- int) {
+    for j := range jobs {
+        fmt.Printf("Worker %d processing job %d\n", id, j)
+        time.Sleep(2 * time.Second)
+        results <- j
+    }
+}
+```
+
+In this example, a pool of three worker goroutines processes five jobs concurrently. Each worker picks up a job from the jobs channel and returns the result to the results channel. This setup allows you to efficiently process multiple jobs without overloading system resources.
+
+6. Avoiding Race Conditions
+Race conditions occur when two or more goroutines access shared data simultaneously, and the result of the program depends on the timing of their access. Go provides synchronization tools like sync.Mutex and atomic operations to prevent race conditions.
+
+```go
+
+package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+var (
+    widgetInventory int32 = 1000
+    wg              sync.WaitGroup
+)
+
+func main() {
+    fmt.Println("Starting inventory count =", widgetInventory)
+    wg.Add(2)
+
+    go makeSales()
+    go newPurchases()
+
+    wg.Wait()
+    fmt.Println("Ending inventory count =", widgetInventory)
+}
+
+func makeSales() {
+    for i := 0; i < 3000; i++ {
+        widgetInventory -= 100
+    }
+    wg.Done()
+}
+
+func newPurchases() {
+    for i := 0; i < 3000; i++ {
+        widgetInventory += 100
+    }
+    wg.Done()
+}
+```
+
+In this example, both makeSales and newPurchases modify the widgetInventory variable concurrently, leading to unpredictable results. To fix this, we would need to use a mutex to lock access to the shared resource.
+
+7. Conclusion
+Go’s concurrency model, built around goroutines and channels, provides a powerful and efficient way to handle multiple tasks at once. Whether you're using goroutines for simple concurrency, channels for communication, or more advanced patterns like worker pools, Go offers the tools you need to manage concurrency effectively. By combining these patterns and understanding synchronization techniques, you can write robust, scalable applications that make the most of modern hardware.

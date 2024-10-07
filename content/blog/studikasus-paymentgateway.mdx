@@ -1,0 +1,154 @@
+---
+title: "Case Study: Payment Gateway"
+description: "Case study of using a database to manage a payment gateway system."
+tags: ["database", "sql"]
+date: "2024-10-06"
+published: false
+---
+
+## Case Study: Payment Gateway
+
+In this case study, we explore the design and implementation of a database for a payment gateway system. The primary objective of this system is to manage user accounts, top-ups, withdrawals, and transfers efficiently while ensuring data integrity and security.
+
+### Overview
+
+The payment gateway system is designed to facilitate seamless transactions for users, allowing them to perform actions such as:
+
+- **User Registration and Authentication**: Users can create accounts and securely log in.
+- **Top-Up Management**: Users can add funds to their accounts through various methods.
+- **Balance Management**: The system tracks user balances and allows withdrawals.
+- **Transaction History**: Users can view their transaction history, including transfers and withdrawals.
+
+### Database Design
+
+The database consists of several key tables:
+
+1. **Users Table**: Stores user information, including personal details and authentication credentials.
+2. **Topups Table**: Records all top-up transactions made by users.
+3. **Saldo Table**: Manages user balances, including total balance and withdrawal history.
+4. **Transfers Table**: Keeps track of all transfer transactions between users.
+5. **Withdraws Table**: Records withdrawal requests made by users.
+
+### SQL Schema
+
+The following SQL schema outlines the structure of the database:
+
+```sql
+CREATE TABLE IF NOT EXISTS "users"(
+    "user_id" SERIAL PRIMARY KEY,
+    "firstname" VARCHAR(100) NOT NULL,
+    "lastname" VARCHAR(100) NOT NULL,
+    "email" VARCHAR(100) UNIQUE NOT NULL,
+    "password" VARCHAR(100) NOT NULL,
+    "noc_transfer" VARCHAR(100) UNIQUE NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS "topups" (
+    "topup_id" SERIAL PRIMARY KEY,
+    "user_id" INTEGER REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    "topup_no" TEXT NOT NULL,
+    "topup_amount" INTEGER NOT NULL,
+    "topup_method" TEXT NOT NULL,
+    "topup_time" TIMESTAMP NOT NULL,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS "saldo" (
+    "saldo_id" SERIAL PRIMARY KEY,
+    "user_id" INTEGER REFERENCES "users"(user_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    "total_balance" INTEGER NOT NULL,
+    "withdraw_amount" INTEGER DEFAULT 0,
+    "withdraw_time" TIMESTAMP DEFAULT NULL,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS "transfers" (
+    "transfer_id" SERIAL PRIMARY KEY,
+    "transfer_from" INTEGER REFERENCES "users"(user_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    "transfer_to" INTEGER REFERENCES "users"(user_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    "transfer_amount" INTEGER NOT NULL DEFAULT 0,
+    "transfer_time" TIMESTAMP NOT NULL,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS "withdraws" (
+    "withdraw_id" SERIAL PRIMARY KEY,
+    "user_id" INTEGER REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    "withdraw_amount" INTEGER NOT NULL,
+    "withdraw_time" TIMESTAMP NOT NULL,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Seed data for the users table
+INSERT INTO users (firstname, lastname, email, password, noc_transfer) VALUES
+('John', 'Doe', 'john.doe@example.com', 'password123', 'TR12345'),
+('Jane', 'Smith', 'jane.smith@example.com', 'password456', 'TR67890'),
+('Alice', 'Johnson', 'alice.johnson@example.com', 'password789', 'TR11112'),
+('Bob', 'Brown', 'bob.brown@example.com', 'passwordabc', 'TR13141'),
+('Charlie', 'Davis', 'charlie.davis@example.com', 'passworddef', 'TR15161'),
+('David', 'Wilson', 'david.wilson@example.com', 'passwordghi', 'TR17181'),
+('Eve', 'Taylor', 'eve.taylor@example.com', 'passwordjkl', 'TR19202'),
+('Frank', 'Thomas', 'frank.thomas@example.com', 'passwordmno', 'TR21222'),
+('Grace', 'Martinez', 'grace.martinez@example.com', 'passwordpqr', 'TR23232'),
+('Hannah', 'Lopez', 'hannah.lopez@example.com', 'passwordstu', 'TR24242');
+
+-- Seed data for the saldo table
+INSERT INTO saldo (user_id, total_balance, withdraw_amount, withdraw_time) VALUES
+(1, 100000, 0, NULL),
+(2, 150000, 0, NULL),
+(3, 200000, 0, NULL),
+(4, 250000, 0, NULL),
+(5, 300000, 0, NULL),
+(6, 350000, 0, NULL),
+(7, 400000, 0, NULL),
+(8, 450000, 0, NULL),
+(9, 500000, 0, NULL),
+(10, 550000, 0, NULL);
+
+-- Seed data for the topups table
+INSERT INTO topups (user_id, topup_no, topup_amount, topup_method, topup_time) VALUES
+(1, 'TOPUP-001', 50000, 'alfamart', NOW()),
+(2, 'TOPUP-002', 75000, 'indomart', NOW()),
+(3, 'TOPUP-003', 100000, 'lawson', NOW()),
+(4, 'TOPUP-004', 25000, 'dana', NOW()),
+(5, 'TOPUP-005', 80000, 'ovo', NOW()),
+(6, 'TOPUP-006', 60000, 'gopay', NOW()),
+(7, 'TOPUP-007', 40000, 'linkaja', NOW()),
+(8, 'TOPUP-008', 30000, 'jenius', NOW()),
+(9, 'TOPUP-009', 150000, 'bri', NOW()),
+(10, 'TOPUP-010', 90000, 'paypal', NOW());
+
+-- Seed data for the transfers table
+INSERT INTO transfers (transfer_from, transfer_to, transfer_amount, transfer_time) VALUES
+(1, 2, 10000, NOW()),
+(2, 3, 20000, NOW()),
+(3, 4, 30000, NOW()),
+(4, 5, 40000, NOW()),
+(5, 6, 50000, NOW()),
+(6, 7, 60000, NOW()),
+(7, 8, 70000, NOW()),
+(8, 9, 80000, NOW()),
+(9, 10, 90000, NOW()),
+(10, 1, 100000, NOW());
+
+-- Seed data for the withdraws table
+INSERT INTO withdraws (user_id, withdraw_amount, withdraw_time) VALUES
+(1, 10000, NOW()),
+(2, 15000, NOW()),
+(3, 20000, NOW()),
+(4, 25000, NOW()),
+(5, 30000, NOW()),
+(6, 35000, NOW()),
+(7, 40000, NOW()),
+(8, 45000, NOW()),
+(9, 50000, NOW()),
+(10, 55000, NOW());
+```
+
