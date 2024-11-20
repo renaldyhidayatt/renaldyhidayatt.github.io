@@ -17,11 +17,9 @@ export function formatDate(input: string | number): string {
 }
 
 export function sortPosts(posts: Array<Post>) {
-  return posts.sort((a, b) => {
-    if (a.date > b.date) return -1;
-    if (a.date < b.date) return 1;
-    return 0;
-  });
+  return posts
+    .filter((post) => post.published) // Hanya sertakan postingan yang dipublikasikan
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Urutkan berdasarkan tanggal
 }
 
 export function getAllTags(posts: Array<Post>) {

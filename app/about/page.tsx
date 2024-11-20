@@ -1,13 +1,16 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { siteConfig } from "@/config/site";
 import { Metadata } from "next";
+import ModalCV from "@/components/model_cv";
 
 export const metadata: Metadata = {
   title: "About Me",
   description: "Information about me",
 };
 
-export default async function AboutPage() {
+export default function AboutPage() {
+ 
+
   return (
     <div className="container max-w-6xl py-6 lg:py-10 bg-background text-foreground">
       <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between md:gap-8">
@@ -21,15 +24,17 @@ export default async function AboutPage() {
       <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
         <div className="min-w-48 max-w-48 flex flex-col gap-2">
           <Avatar className="h-48 w-48">
-            <AvatarImage src="https://avatars.githubusercontent.com/u/46998157?v=4" alt={siteConfig.author} />
-            <AvatarFallback>JC</AvatarFallback>
+            <AvatarImage
+              src="https://avatars.githubusercontent.com/u/46998157?v=4"
+              alt={siteConfig.author}
+            />
+            <AvatarFallback>RH</AvatarFallback>
           </Avatar>
           <h2 className="text-2xl font-bold text-center text-foreground">
             {siteConfig.author}
           </h2>
-          <p className="text-muted-foreground text-center">
-            Software Developer
-          </p>
+          <p className="text-muted-foreground text-center">Software Enginner</p>
+          <ModalCV />
         </div>
         <p className="text-muted-foreground text-lg py-4">
         I&apos;m a Computer Science candidate at Nusa Mandiri University, and
@@ -53,7 +58,7 @@ export default async function AboutPage() {
           unwavering dedication keeps me pushing the boundaries.
         </p>
       </div>
+     
     </div>
   );
 }
-

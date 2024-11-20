@@ -19,7 +19,7 @@ const SearchParamsHandler = ({ setCurrentPage }: any) => {
     setCurrentPage(page);
   }, [searchParams, setCurrentPage]);
 
-  return null; // This component doesn't render anything
+  return null; 
 };
 
 export default function BlogPage() {
@@ -41,7 +41,6 @@ export default function BlogPage() {
   const tags = useMemo(() => getAllTags(posts), []);
   const sortedTags = useMemo(() => sortTagsByCount(tags), [tags]);
 
-  // Calculate the index for the current page to slice the sorted posts
   const displayPosts = useMemo(
     () => sortedPosts.slice(
       POSTS_PER_PAGE * (currentPage - 1),
@@ -58,7 +57,6 @@ export default function BlogPage() {
   );
 
   const handlePageChange = (page: any) => {
-    // Update the URL to reflect the current page
     router.push(`?page=${page}`);
   };
 
@@ -99,7 +97,6 @@ export default function BlogPage() {
               <p>No posts found</p>
             )}
 
-            {/* Pagination */}
             <Suspense fallback={<div>Loading pagination...</div>}>
               <QueryPagination
                 totalPages={totalPages}
