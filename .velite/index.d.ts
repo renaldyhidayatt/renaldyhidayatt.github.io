@@ -6,3 +6,6 @@ type Collections = typeof config.collections
 
 export type Post = Collections['posts']['schema']['_output']
 export declare const posts: Post[]
+
+export type Portofolio = Collections['portofolio']['schema']['_output']
+export declare const portofolio: Portofolio[]

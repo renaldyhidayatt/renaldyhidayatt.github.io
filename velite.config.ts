@@ -26,6 +26,22 @@ const posts = defineCollection({
     .transform(computedFields),
 });
 
+const portofolio = defineCollection({
+  name: "Portofolio",
+  pattern: "portofolio/**/*.mdx",
+  schema: s
+    .object({
+      slug: s.path(),
+      title: s.string().max(99),
+      description: s.string().max(999).optional(),
+      date: s.isodate(),
+      image: s.string(),
+      urlProject: s.string(),
+      body: s.mdx(),
+    })
+    .transform(computedFields),
+});
+
 export default defineConfig({
   root: "content",
   output: {
@@ -35,7 +51,7 @@ export default defineConfig({
     name: "[name]-[hash:6].[ext]",
     clean: true,
   },
-  collections: { posts },
+  collections: { posts, portofolio },
   mdx: {
     rehypePlugins: [
       rehypeSlug,
@@ -50,10 +66,8 @@ export default defineConfig({
           },
         },
       ],
-      rehypeKatex, // Plugin untuk mendukung LaTeX
+      rehypeKatex,
     ],
-    remarkPlugins: [
-      remarkMath, // Plugin untuk mendukung sintaks matematika
-    ],
+    remarkPlugins: [remarkMath],
   },
 });

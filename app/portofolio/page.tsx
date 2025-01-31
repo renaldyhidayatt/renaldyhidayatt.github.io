@@ -1,10 +1,11 @@
 "use client";
 
-import { myportofolio } from "@/lib/myporto";
+import { portofolio } from "@/.velite";
 import Image from "next/image";
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QueryPagination } from "@/components/query-pagination";
+
 
 const ITEMS_PER_PAGE = 6;
 
@@ -20,7 +21,7 @@ const PortfolioContent = () => {
     setCurrentPage(page ? parseInt(page, 10) : 1);
   }, [searchParams]);
 
-  const filteredProjects = myportofolio.filter((project) =>
+  const filteredProjects = portofolio.filter((project) =>
     project.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -33,12 +34,6 @@ const PortfolioContent = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-  };
-
-  const truncateDescription = (description: string) => {
-    return description.length > 100
-      ? description.slice(0, 100) + "..."
-      : description;
   };
 
   const handlePageChange = (page: number) => {
@@ -73,6 +68,7 @@ const PortfolioContent = () => {
           currentProjects.map((project, index) => (
             <div
               key={index}
+              onClick={() => router.push(`/${project.slug}`)}
               className="bg-white dark:bg-[#1c1d1f] rounded-lg shadow-lg transition-transform transform hover:scale-105"
             >
               <Image
@@ -87,7 +83,7 @@ const PortfolioContent = () => {
                   {project.title}
                 </h2>
                 <p className="text-gray-700 dark:text-gray-400 mb-4">
-                  {truncateDescription(project.description)}
+                  {project.description}
                 </p>
                 <a
                   href={project.urlProject}

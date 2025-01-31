@@ -9,17 +9,17 @@ import { getAllTags, sortPosts, sortTagsByCount } from "@/lib/utils";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const POSTS_PER_PAGE = 10; // Adjust this to 10
+const POSTS_PER_PAGE = 10;
 
 const SearchParamsHandler = ({ setCurrentPage }: any) => {
   const searchParams = useSearchParams();
-  
+
   useEffect(() => {
     const page = Number(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams, setCurrentPage]);
 
-  return null; 
+  return null;
 };
 
 export default function BlogPage() {
@@ -32,7 +32,7 @@ export default function BlogPage() {
     () => sortPosts(posts.filter((post) => post.published)),
     []
   );
-  
+
   const totalPages = useMemo(
     () => Math.ceil(sortedPosts.length / POSTS_PER_PAGE),
     [sortedPosts]

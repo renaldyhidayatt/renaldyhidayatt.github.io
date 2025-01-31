@@ -1,0 +1,76 @@
+---
+title: "Personal Financial Management App"
+description: "Aplikasi manajemen keuangan pribadi yang membantu pengguna melacak transaksi, mengatur anggaran, dan mencapai tujuan finansial dengan mudah."
+date: "2025-01-31"
+image: "https://github.com/MamangRust/personal-financial-management/raw/main/images/image.png?raw=true"
+urlProject: "https://github.com/MamangRust/personal-financial-management"
+---
+
+## Deskripsi Proyek
+
+**Personal Financial Management App** adalah aplikasi manajemen keuangan pribadi yang dirancang untuk membantu pengguna mengelola keuangan mereka dengan lebih efektif. Aplikasi ini memungkinkan pengguna untuk melacak transaksi, mengatur anggaran, dan menetapkan tujuan finansial. 
+
+Aplikasi ini dibangun menggunakan **Tauri** untuk membuat aplikasi desktop ringan, dengan **React** sebagai frontend dan **SQLite** sebagai database utama.
+
+## Teknologi yang Digunakan
+
+- **Tauri**: Membungkus aplikasi dalam bentuk desktop cross-platform.
+- **React**: Framework frontend untuk membangun antarmuka pengguna yang interaktif.
+- **SQLite**: Basis data lokal untuk menyimpan informasi pengguna dan transaksi.
+- **Ant Design**: Library UI untuk membangun tampilan aplikasi yang modern dan responsif.
+
+## Fitur Utama
+
+### 🔐 User Authentication
+- Pengguna dapat mendaftar, masuk, dan mengelola akun mereka dengan aman.
+
+### 💰 Transaction Management
+- Melacak pemasukan, pengeluaran, dan transfer.
+- Kategorisasi transaksi untuk organisasi yang lebih baik.
+- Menampilkan riwayat transaksi secara detail.
+
+### 📊 Budgeting
+- Menetapkan anggaran untuk berbagai kategori pengeluaran.
+- Memantau penggunaan anggaran dan mendapatkan peringatan jika terjadi overspending.
+
+### 🎯 Goal Setting
+- Membuat tujuan finansial dengan jumlah target dan batas waktu.
+- Melacak progres dalam mencapai tujuan keuangan.
+
+## Cara Menjalankan Aplikasi
+
+### Prasyarat
+- **Node.js** dan **npm** telah terinstal.
+- **Rust** dan **Cargo** telah terinstal.
+- **Tauri CLI** terinstal secara global.
+
+### Langkah-langkah
+
+1. **Clone the Repository**
+
+   ```bash
+   git clone https://github.com/MamangRust/personal-financial-management.git
+   cd personal-financial-app
+
+2. **Install Depencies**
+   ```bash
+    yarn install
+   ```
+3. **Install Depencies src-tauri**
+    ```bash
+    cd src-tauri
+
+    cargo build
+
+    ```
+
+4. **Build tauri App**
+    ```bash
+    yarn tauri build
+    
+    running on release folder src-tauri
+    ```
+
+## Demo App
+
+![Demo-App](https://github.com/MamangRust/personal-financial-management/raw/main/images/image.png?raw=true)
