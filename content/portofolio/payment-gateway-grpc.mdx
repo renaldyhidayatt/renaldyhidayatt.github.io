@@ -46,7 +46,11 @@ To clone and run the project:
 ```sh
 git clone https://github.com/MamangRust/payment-gateway-grpc.git
 cd payment-gateway
-go run main.go
+
+go run cmd/migrate/main.go // migrate table
+go run cmd/client/main.go // run client (rest api)
+go run cmd/server/main.go // run server (grpc)
+
 ```
 
 Happy Coding! 🚀
