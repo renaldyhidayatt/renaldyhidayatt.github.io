@@ -20,10 +20,24 @@ The project involves multiple entities like users, cards, merchants, and financi
 
 ## **Tech Stack** 🚀
 
-- **Golang** 🐹
-- **Sqlc** 🗄️
-- **Echo Framework** ⚡
-- **gRPC** 🔌
+### Backend
+
+- **Golang** 🐹  
+- **Sqlc** 🗄️  
+- **Echo Framework** ⚡  
+- **gRPC** 🔌  
+
+### Frontend
+
+- **ReactJs** ⚛️  
+- **Shadcn UI** 🎨  
+- **Tailwind.css** 🌊  
+- **Rust** 🦀  
+- **Tauri.js** 🚀  
+- **Axios** 🔗  
+- **Zustand** 🐻  
+
+
 
 ## **Preview** 📸
 
@@ -43,6 +57,8 @@ The project involves multiple entities like users, cards, merchants, and financi
 
 To clone and run the project:
 
+### Backend
+
 ```sh
 git clone https://github.com/MamangRust/payment-gateway-grpc.git
 cd payment-gateway
@@ -50,6 +66,24 @@ cd payment-gateway
 go run cmd/migrate/main.go // migrate table
 go run cmd/client/main.go // run client (rest api)
 go run cmd/server/main.go // run server (grpc)
+
+```
+
+### Frontend
+```sh
+git clone https://github.com/MamangRust/payment-gateway-web.git
+
+
+cd payment-gateway-web
+
+npm install
+
+# Build aplikasi Tauri
+npm run tauri build
+
+# Hasil build ada di:
+ls src-tauri/target/release
+
 
 ```
 
