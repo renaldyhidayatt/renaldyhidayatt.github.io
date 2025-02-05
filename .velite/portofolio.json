@@ -74,7 +74,7 @@
     "title": "Example System Monitoring Ratatui",
     "description": "System monitoring application built with Ratatui.",
     "date": "2025-01-31T00:00:00.000Z",
-    "image": "httpshttps://github.com/MamangRust/example-monitoring-ratatui/raw/main/image/example.png?raw=true",
+    "image": "https://github.com/MamangRust/example-monitoring-ratatui/raw/main/image/example.png?raw=true",
     "urlProject": "https://github.com/MamangRust/example-monitoring-ratatui",
     "body": "const{Fragment:e,jsx:n,jsxs:t}=arguments[0];function _createMdxContent(r){const a={a:\"a\",h2:\"h2\",p:\"p\",...r.components};return t(e,{children:[n(a.h2,{id:\"demo\",children:n(a.a,{className:\"subheading-anchor\",\"aria-label\":\"Link to section\",href:\"#demo\",children:\"Demo\"})}),\"\\n\",n(\"img\",{src:\"https://github.com/MamangRust/example-monitoring-ratatui/raw/main/image/example.png?raw=true\",alt:\"demo-test\"}),\"\\n\",n(a.h2,{id:\"-source-code--repository\",children:n(a.a,{className:\"subheading-anchor\",\"aria-label\":\"Link to section\",href:\"#-source-code--repository\",children:\"🔗 Source Code & Repository\"})}),\"\\n\",n(a.p,{children:n(a.a,{href:\"https://github.com/MamangRust/example-monitoring-ratatui\",children:\"📌 View on GitHub\"})})]})}return{default:function(e={}){const{wrapper:t}=e.components||{};return t?n(t,{...e,children:n(_createMdxContent,{...e})}):_createMdxContent(e)}};",
     "slugAsParams": "monitoring-ratatui"
