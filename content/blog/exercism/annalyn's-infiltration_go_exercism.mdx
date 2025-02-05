@@ -1,0 +1,94 @@
+---
+title: Annalyn's Infiltration
+description: Solve the "Annalyn's Infiltration" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Annalyn's Infiltration
+
+In this article, we will solve the "Annalyn's Infiltration" problem from Exercism using Go. This problem focuses on determining the success of various actions based on the wakefulness of several characters.
+
+## Problem Statement
+
+Annalyn is planning an infiltration and needs to decide which actions can be executed based on the following conditions:
+
+- There is a knight, an archer, and a prisoner. Depending on whether these characters are awake or asleep, Annalyn has different options for her actions.
+- There are four possible actions that Annalyn can take:
+  1. **Fast Attack**: Can be executed if the knight is asleep.
+  2. **Spy**: Can be executed if at least one character (knight, archer, or prisoner) is awake.
+  3. **Signal Prisoner**: Can be executed if the prisoner is awake and the archer is asleep.
+  4. **Free Prisoner**: Can be executed if either:
+      - The prisoner is awake, and both the knight and archer are asleep, or
+      - Annalyn has her pet dog with her, and the archer is asleep (the knight's state doesn't matter in this case).
+
+## Approach
+
+### Algorithm
+
+To solve this problem, we need to write separate functions for each action based on the given conditions. We will use logical operations such as AND (`&&`), OR (`||`), and NOT (`!`) to decide whether each action is possible.
+
+### Implementation in Go
+
+Below is the Go implementation of the problem:
+
+```go
+package annalyn
+
+// CanFastAttack determines if the fast attack can be executed
+// It can be executed if the knight is asleep.
+func CanFastAttack(knightIsAwake bool) bool {
+	return !knightIsAwake
+}
+
+// CanSpy determines if Annalyn can spy on the enemies
+// It can be executed if at least one character (knight, archer, or prisoner) is awake.
+func CanSpy(knightIsAwake, archerIsAwake, prisonerIsAwake bool) bool {
+	return knightIsAwake || archerIsAwake || prisonerIsAwake
+}
+
+// CanSignalPrisoner determines if Annalyn can signal the prisoner
+// It can be executed if the prisoner is awake and the archer is asleep.
+func CanSignalPrisoner(archerIsAwake, prisonerIsAwake bool) bool {
+	return !archerIsAwake && prisonerIsAwake
+}
+
+// CanFreePrisoner determines if Annalyn can free the prisoner
+// It can be executed if the prisoner is awake and the knight and archer are asleep,
+// or if Annalyn has her pet dog with her and the archer is asleep.
+func CanFreePrisoner(knightIsAwake, archerIsAwake, prisonerIsAwake, petDogIsPresent bool) bool {
+	if petDogIsPresent {
+		return !archerIsAwake
+	}
+	return !knightIsAwake && !archerIsAwake && prisonerIsAwake
+}
+```
+
+### Explanation
+  1. **CanFastAttack**:
+
+    - This function returns true if the knight is asleep (!knightIsAwake).
+    - If the knight is awake, the fast attack is not possible.
+
+  2. **CanSpy**:
+    - This function checks if any of the characters (knight, archer, or prisoner) are awake using the OR (||) operator. If at least one of them is awake, spying can be executed.
+
+  3. **CanSignalPrisoner**:
+      - This function returns true if the archer is asleep (!archerIsAwake) and the prisoner is awake (prisonerIsAwake). Both conditions must be true for Annalyn to signal the prisoner.
+
+  4. **CanFreePrisoner**:
+      - This function handles two cases:
+        - If Annalyn has her pet dog with her (petDogIsPresent), she can free the prisoner as long as the archer is asleep (!archerIsAwake).
+        - Otherwise, both the knight and the archer must be asleep, and the prisoner must be awake (!knightIsAwake && !archerIsAwake && prisonerIsAwake).
+
+### Time and Space Complexity
+
+  - #### **Time Complexity**:
+      - All the functions run in constant time O(1), as they only involve simple logical operations.
+
+  - #### **Space Complexity**:
+      - The space complexity is also O(1) for each function, as no additional memory is used aside from the input parameters.
+
+
+### Conclusion
+In this article, we discussed how to solve the "Annalyn's Infiltration" problem using Go. By breaking down the problem into multiple logical conditions and writing functions for each possible action, we can effectively determine whether Annalyn can execute a given action. This problem showcases the use of conditional logic and boolean operations in Go.

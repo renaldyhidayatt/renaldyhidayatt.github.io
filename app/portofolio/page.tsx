@@ -5,6 +5,7 @@ import Image from "next/image";
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QueryPagination } from "@/components/query-pagination";
+import LoadingSkeleton from "@/components/loadingSkeleton";
 
 
 const ITEMS_PER_PAGE = 6;
@@ -43,72 +44,74 @@ const PortfolioContent = () => {
   };
 
   return (
-    <div className="container max-w-6xl py-10 mx-auto">
-      <div className="text-center mb-10">
-        <h1 className="text-5xl font-bold text-gray-900 dark:text-slate-200 mb-2">
-          Portfolio
-        </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400">
-          Check out my work and projects.
-        </p>
-      </div>
+    <Suspense fallback={<LoadingSkeleton />}>
+      <div className="container max-w-6xl py-10 mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+            Portfolio
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            Check out my work and projects.
+          </p>
+        </div>
 
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search projects..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="w-full p-3 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(124,58,237)]"
-        />
-      </div>
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="w-full p-3 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(124,58,237)]"
+          />
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {currentProjects.length > 0 ? (
-          currentProjects.map((project, index) => (
-            <div
-              key={index}
-              onClick={() => router.push(`/${project.slug}`)}
-              className="bg-white dark:bg-[#1c1d1f] rounded-lg shadow-lg transition-transform transform hover:scale-105"
-            >
-              <Image
-                src={project.image}
-                alt={project.title}
-                width={700}
-                height={400}
-                className="w-full h-48 object-cover rounded-t-lg"
-              />
-              <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                  {project.title}
-                </h2>
-                <p className="text-gray-700 dark:text-gray-400 mb-4">
-                  {project.description}
-                </p>
-                <a
-                  href={project.urlProject}
-                  className="inline-block bg-[rgb(124,58,237)] text-white text-base font-medium rounded-md px-4 py-2 transition-colors duration-200 hover:bg-[rgb(104,50,210)] dark:bg-[rgb(124,58,237)] dark:hover:bg-[rgb(104,50,210)]"
-                  aria-label={`Link to ${project.title}`}
-                >
-                  Learn more &rarr;
-                </a>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {currentProjects.length > 0 ? (
+            currentProjects.map((project, index) => (
+              <div
+                key={index}
+                onClick={() => router.push(`/${project.slug}`)}
+                className="bg-white dark:bg-[#1c1d1f] rounded-lg shadow-lg transition-transform transform hover:scale-105"
+              >
+                <Image
+                  src={project.image}
+                  alt={project.title}
+                  width={700}
+                  height={400}
+                  className="w-full h-48 object-cover rounded-t-lg"
+                />
+                <div className="p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                    {project.title}
+                  </h2>
+                  <p className="text-gray-700 dark:text-gray-400 mb-4">
+                    {project.description}
+                  </p>
+                  <a
+                    href={project.urlProject}
+                    className="inline-block bg-[rgb(124,58,237)] text-white text-base font-medium rounded-md px-4 py-2 transition-colors duration-200 hover:bg-[rgb(104,50,210)] dark:bg-[rgb(124,58,237)] dark:hover:bg-[rgb(104,50,210)]"
+                    aria-label={`Link to ${project.title}`}
+                  >
+                    Learn more &rarr;
+                  </a>
+                </div>
               </div>
-            </div>
-          ))
-        ) : (
-          <p>No projects found.</p>
-        )}
-      </div>
+            ))
+          ) : (
+            <p>No projects found.</p>
+          )}
+        </div>
 
-      <div className="flex justify-center mt-6">
-        <QueryPagination
-          totalPages={totalPages}
-          currentPage={currentPage}
-          onPageChange={handlePageChange}
-          className="justify-end mt-4"
-        />
+        <div className="flex justify-center mt-6">
+          <QueryPagination
+            totalPages={totalPages}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+            className="justify-end mt-4"
+          />
+        </div>
       </div>
-    </div>
+    </Suspense>
   );
 };
 

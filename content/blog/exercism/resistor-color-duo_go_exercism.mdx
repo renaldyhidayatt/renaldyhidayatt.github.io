@@ -1,0 +1,64 @@
+---
+title: Resistor Color Duo
+description: Solve the Resistor Color Duo problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The Resistor Color Duo problem involves determining the resistance value of a resistor based on its color bands. A resistor typically has two significant color bands that represent a two-digit number. Each color corresponds to a specific digit according to the resistor color code. The task is to create a function that takes an array of color names and returns the calculated resistance value as an integer.
+
+## Approach
+
+### Algorithm
+
+1. **Define a Color Map**: Create a mapping of color names to their corresponding integer values based on the standard resistor color code.
+2. **Extract Color Values**: Retrieve the values of the first two colors from the input array.
+3. **Calculate Resistance**: Combine the two values into a single two-digit integer by applying the formula: `first_value * 10 + second_value`.
+4. **Return the Result**: Output the calculated resistance value.
+
+### Implementation in Go
+
+Here is the Go implementation for calculating the resistor value based on color bands:
+
+```go
+package resistorcolorduo
+
+// Value should return the resistance value of a resistor with given colors.
+var encoded = map[string]int{
+	"black":  0,
+	"brown":  1,
+	"red":    2,
+	"orange": 3,
+	"yellow": 4,
+	"green":  5,
+	"blue":   6,
+	"violet": 7,
+	"grey":   8,
+	"white":  9,
+}
+
+// Value calculates the resistance value from the provided colors.
+func Value(colors []string) int {
+	return encoded[colors[0]]*10 + encoded[colors[1]]
+}
+```
+
+### Explanation
+    - **Color Mapping**: The encoded variable is a map that associates each color with its corresponding integer value. This allows for easy lookup when calculating the resistance.
+
+    - **Resistance Calculation**: The Value function takes an array of strings representing the colors. It retrieves the values of the first two colors using the mapping and computes the resistance value as first_value * 10 + second_value.
+
+    - **Output**: The function returns the final resistance value as an integer.
+
+### **Time and Space Complexity**
+    - #### **Time Complexity**: O(1)
+
+        - The time complexity is O(1) since the function performs a fixed number of operations regardless of the input size. It only looks up two values in the map and performs a few arithmetic operations.
+    - #### **Space Complexity**: O(1)
+
+        - The space complexity is O(1) as the function uses a constant amount of space for the map and the integer values, which do not depend on the input size.
+
+## Conclusion
+The Resistor Color Duo problem can be efficiently solved using a simple mapping approach in Go. The implementation leverages a color code map to translate color names into their corresponding digit values and computes the resistance with minimal computational overhead. With constant time and space complexity, this solution is optimal for determining resistor values based on color bands.

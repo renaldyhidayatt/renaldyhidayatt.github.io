@@ -1,0 +1,93 @@
+---
+title: Grade School
+description: Solve the Grade School problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Grade School problem requires creating a school management system that can keep track of students' names associated with their respective grades. The system should allow adding students to specific grades, retrieving students for a given grade, and listing all grades along with their students in a sorted manner.
+
+## Approach
+
+To solve this problem, we will:
+1. **Define Types**: Create `Grade` and `School` types to represent the structure of the data.
+2. **Add Students**: Implement a method to add students to their respective grades.
+3. **Retrieve Grades**: Provide functionality to retrieve students by grade.
+4. **Enrollment Listing**: Implement a method to list all grades along with the corresponding students sorted alphabetically.
+
+### Algorithm
+
+1. **Data Structures**:
+   - `Grade`: A struct that contains the grade level and a slice of student names.
+   - `School`: A map where keys are grade levels and values are slices of student names.
+
+2. **Functionality**:
+   - `New()`: Initializes a new school.
+   - `Add(student, grade)`: Adds a student to the specified grade.
+   - `Grade(level)`: Retrieves a list of students in the specified grade.
+   - `Enrollment()`: Returns a sorted list of all grades and their respective students.
+
+### Implementation in Go
+
+```go
+package school
+
+import "sort"
+
+// Define the Grade and School types here.
+
+type Grade struct {
+	level    int
+	students []string
+}
+
+type School map[int][]string
+
+func New() *School {
+	return &School{}
+}
+
+func (s School) Add(student string, grade int) {
+	s[grade] = append(s[grade], student)
+}
+
+func (s School) Grade(level int) []string {
+	return s[level]
+}
+
+func (s School) Enrollment() []Grade {
+	var rooster []Grade
+
+	for level, student := range s {
+		sort.Strings(student)
+
+		rooster = append(rooster, Grade{level, student})
+	}
+
+	sort.Slice(rooster, func(i, j int) bool {
+		return rooster[i].level < rooster[j].level
+	})
+
+	return rooster
+}
+```
+
+### Explanation
+    - **Data Structure**: The Grade struct holds the grade level and the list of students in that grade. The School type is a map where each key represents a grade and its associated value is a slice of students in that grade.
+    - **Adding Students**: The Add method appends a student to the slice corresponding to their grade in the School map.
+    - **Retrieving Grades**: The Grade method returns the list of students for the specified grade, allowing easy access to student data.
+    - **Enrollment Listing**: The Enrollment method sorts the student lists alphabetically and also sorts the grades in ascending order before returning the complete list.
+
+### Time and Space Complexity
+    
+    - **Time Complexity**:
+        - Adding a student takes O(1) time for appending to the slice.
+        - Retrieving a grade takes O(1) time since it's a direct lookup in the map.
+        - Sorting the student names in the Enrollment method takes O(m log m), where m is the total number of students across all grades. Sorting the grades themselves takes O(n log n), where n is the number of grades.
+    
+    - **Space Complexity**: The space complexity is O(n + m) due to storing grades and students in the map and slices.
+
+## Conclusion
+The Grade School problem can be efficiently implemented in Go using simple data structures like structs and maps. By encapsulating the functionality in a clean interface, we can easily manage student enrollment and retrieval based on grades, ensuring that the system is both efficient and easy to use.

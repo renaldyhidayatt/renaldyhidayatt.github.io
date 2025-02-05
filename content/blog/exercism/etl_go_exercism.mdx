@@ -1,0 +1,67 @@
+---
+title: ETL
+description: Solve the ETL problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In the ETL (Extract, Transform, Load) problem, we are tasked with transforming a given map where the keys are integers representing points, and the values are slices of strings representing letters. The goal is to transform this structure into a map where the keys are the lowercase letters, and the values are the associated points.
+
+For example, the input:
+
+```go
+map[int][]string{
+    1: {"A", "E", "I", "O", "U"},
+    2: {"D", "G"},
+}
+```
+
+## Approach
+
+### Algorithm
+
+    - Iterate through the input map: The key represents the points, and the value is the slice of strings representing the letters.
+    - Convert each letter to lowercase: Use Go's strings.ToLower() method to handle case conversion.
+    - Create a new map with the transformed structure: The keys will now be the lowercase letters, and the values will be their corresponding points from the input map.
+
+### Implementation in Go
+
+Here is the Go implementation to solve the ETL problem:
+
+```go
+package etl
+
+import "strings"
+
+// Transform takes in a map of int keys and []string values and
+// returns a map of string keys and int values.
+func Transform(in map[int][]string) map[string]int {
+    spl := map[string]int{}
+
+    for key, value := range in {
+        for _, v := range value {
+            spl[strings.ToLower(v)] = key
+        }
+    }
+
+    return spl
+}
+
+```
+
+### Explanation
+
+    - The function Transform() accepts a map where the keys are integers and the values are slices of strings.
+    - It initializes an empty map spl of type map[string]int to store the transformed key-value pairs.
+    The outer loop iterates over each key-value pair in the input map. For each slice of strings, the inner loop iterates through the letters, converts each letter to lowercase, and stores it in the new map with the corresponding point as the value.
+
+### Time and Space Complexity
+
+    - **Time Complexity**: O(n), where n is the total number of letters in the input map. For each letter, we perform a constant-time operation (lowercasing and inserting into the new map).
+    - **Space Complexity**: O(n), since we create a new map that stores a transformed version of the input data.
+
+## Conclusion
+
+This ETL transformation is efficiently solved using Go. By iterating through the input map and leveraging Go's strings.ToLower() function, we can easily convert the letter cases and build a new map with the desired structure. The algorithm runs in linear time with respect to the number of letters, making it optimal for this kind of transformation.

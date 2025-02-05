@@ -1,0 +1,64 @@
+---
+title: Sum Of Multiples
+description: Solve the Sum Of Multiples problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Sum Of Multiples** problem requires calculating the sum of all unique multiples of given divisors below a specified limit. The solution should efficiently handle multiple divisors and avoid counting any multiple more than once. The challenge includes dealing with edge cases, such as divisors of zero.
+
+## Approach
+
+To solve the problem, we will maintain a set of unique multiples of the given divisors up to the limit. We will iterate through each divisor and generate multiples, summing them as we go.
+
+### Algorithm
+
+1. Initialize a map to keep track of unique multiples.
+2. For each divisor:
+   - If the divisor is zero, skip it.
+   - Generate multiples of the divisor that are less than the limit.
+   - Add each multiple to the map (to ensure uniqueness) and update the sum.
+3. Return the final sum of unique multiples.
+
+### Implementation in Go
+
+```go
+package summultiples
+
+// SumMultiples calculates the sum of unique multiples of the given divisors below the specified limit.
+func SumMultiples(limit int, divisors ...int) int {
+	list := map[int]bool{}
+	sum := 0
+
+	for _, i := range divisors {
+		if i == 0 {
+			continue
+		}
+
+		for j := i; j < limit; j += i {
+			if _, ok := list[j]; !ok {
+				list[j] = true
+				sum += j
+			}
+		}
+	}
+	return sum
+}
+```
+
+### Explanation
+    - **Function Signature**: The SumMultiples function takes an integer limit and a variadic number of integers divisors.
+    - **Map for Uniqueness**: A map (list) is used to track which multiples have already been included in the sum. This prevents duplicate additions.
+    - **Looping through Divisors**: For each divisor:
+        - If the divisor is zero, it is skipped since multiples of zero are not defined.
+        - The inner loop generates multiples of the divisor starting from the divisor itself up to the limit. Each multiple is checked against the map for uniqueness.
+        - If the multiple is not already in the map, it is added and included in the sum.
+
+### Time and Space Complexity
+    - **Time Complexity**: O(n), where n is the sum of the multiples found. The algorithm iterates over the range defined by the divisors and checks each multiple, making it efficient.
+    - **Space Complexity**: O(m), where m is the number of unique multiples stored in the map. This space is needed to ensure that we do not count duplicates.
+
+## Conclusion
+The Sum Of Multiples solution efficiently computes the sum of all unique multiples of specified divisors below a given limit. By using a map to track unique values, the implementation is both straightforward and performant. This approach can be easily extended or modified to accommodate more complex requirements as needed.

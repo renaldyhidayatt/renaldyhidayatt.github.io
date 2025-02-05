@@ -1,0 +1,80 @@
+---
+title: Diamond
+description: Solve the Diamond problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The **Diamond** problem is a pattern generation problem where given a letter (e.g., 'A', 'B', 'C', etc.), you need to print a diamond shape. The diamond will be symmetrical, with the widest row containing the input letter, and the rows above and below containing earlier letters in the alphabet.
+
+For example, the diamond for 'C' looks like this:
+
+```plaintext
+A
+B B C C B B A
+```
+
+
+## Approach
+
+### Algorithm
+
+1. First, determine the total number of rows in the diamond based on the given letter. The number of rows is `2*(input_letter - 'A') + 1`.
+2. For each letter from 'A' to the input letter:
+   - Create a row with spaces.
+   - Place the current letter in the correct column positions for both left and right sides of the diamond.
+   - Add the row to the list of rows.
+3. Construct the entire diamond by mirroring the rows around the middle.
+
+### Implementation in Go
+
+```go
+package diamond
+
+import (
+	"bytes"
+	"errors"
+	"strings"
+)
+
+func Gen(inCh byte) (string, error) {
+	if inCh < 'A' || inCh > 'Z' {
+		return "", errors.New("Chat out of range")
+	}
+
+	rowCnt := 2*(inCh-'A') + 1
+
+	rows := make([]string, rowCnt)
+
+	for c := byte('A'); c <= inCh; c++ {
+		row := bytes.Repeat([]byte{' '}, int(rowCnt))
+
+		colNum := inCh - c
+		row[colNum] = c
+		row[rowCnt-colNum-1] = c
+		rowNum := c - 'A'
+		rows[rowNum] = string(row)
+		rows[rowCnt-rowNum-1] = string(row)
+	}
+	return strings.Join(rows, "\n"), nil
+}
+```
+
+### Explanation
+    - **Input validation**: The function checks if the input character is between 'A' and 'Z'. If the input is invalid, it returns an error.
+    - **Rows Calculation**: The total number of rows for the diamond is 2 * (input_letter - 'A') + 1.
+    - **Row Construction**: For each character from 'A' to the input character, the function:
+        - Creates a row of spaces.
+        - Sets the current letter in the correct positions for both the left and right sides of the diamond.
+        - The top half of the diamond is constructed, and the corresponding rows are mirrored for the bottom half.
+        
+    - **String Join**: The rows are joined together with newline characters to produce the final diamond shape.
+
+### Time and Space Complexity
+    - **Time Complexity**: The time complexity of this algorithm is O(n^2), where n is the number of rows. This is because for each row, we may perform operations such as creating a new string of spaces and placing the characters, which both take linear time.
+    - **Space Complexity**: The space complexity is also O(n^2), as the function needs to store each row and its corresponding mirror.
+
+## Conclusion
+The Diamond problem is a fun exercise in string manipulation and pattern generation. The Go implementation efficiently builds the diamond shape by using space and byte manipulations, ensuring symmetry and correct alignment for all input characters from 'A' to 'Z'.

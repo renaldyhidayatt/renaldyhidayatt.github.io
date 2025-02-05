@@ -1,0 +1,58 @@
+---
+title: Two Fer
+description: Solve the "Two Fer" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In this exercise, you need to implement the `ShareWith` function that returns a string of the form:
+
+> "One for X, one for me."
+
+Where `X` is a given name. However, if no name is provided, the function should default to using "you" instead of an empty string. This is a common beginner exercise to practice conditional logic and string formatting in Go.
+
+## Approach
+
+To solve this problem, we can use a simple conditional check to see if the provided name is an empty string. If it is, we assign the default value `"you"` to the name, and then we use Go's `fmt.Sprintf` function to format the output string.
+
+### Algorithm
+
+1. Define a function `ShareWith` that accepts a string parameter, `name`.
+2. Check if `name` is an empty string.
+3. If `name` is empty, set the value of `name` to `"you"`.
+4. Return the formatted string using `fmt.Sprintf`.
+
+### Implementation in Go
+
+Here’s the implementation of the `ShareWith` function in Go:
+
+```go
+package twofer
+
+import "fmt"
+
+// ShareWith returns a sentence in the format "One for {name}, one for me."
+func ShareWith(name string) string {
+	if name == "" {
+		name = "you"
+	}
+	return fmt.Sprintf("One for %s, one for me.", name)
+}
+```
+
+### Explanation
+
+- **Function Signature**: The function ShareWith takes a single argument, name, which is a string. It returns a string formatted according to the logic.
+- **Empty Check**: The key part of the implementation is the conditional check if name == "". If the name is empty, we assign "you" as the default.
+- **String Formatting**: The fmt.Sprintf function is used to insert the name into the string. This is a common and efficient way to handle formatted strings in Go.
+
+### Time and Space Complexity
+
+- **Time Complexity**: The time complexity of this solution is O(n), where n is the length of the name string. This is because the fmt.Sprintf function needs to traverse the string to insert it into the formatted output.
+- **Space Complexity**: The space complexity is O(n) as well, since we are returning a new formatted string of size proportional to the input.
+
+## Conclusion
+
+The "Two Fer" problem is an excellent way to practice simple conditional logic and string formatting in Go. The solution is efficient in both time and space complexity, and it demonstrates the power of Go’s fmt package for string manipulation.

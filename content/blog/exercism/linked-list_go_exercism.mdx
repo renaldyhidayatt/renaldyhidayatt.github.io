@@ -1,0 +1,172 @@
+---
+title: Linked List
+description: Solve the Linked List problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+A **linked list** is a linear collection of data elements where each element points to the next. In a **doubly linked list**, each element contains pointers to both the next and the previous elements, allowing traversal in both directions. The challenge is to implement a doubly linked list in Go that supports typical operations like `Push`, `Pop`, `Unshift`, `Shift`, and `Reverse`.
+
+## Approach
+
+### Algorithm
+
+The list is composed of two types:
+- `List`: which contains pointers to the first and last nodes.
+- `Node`: which holds a value and pointers to the previous and next nodes.
+
+The linked list supports the following operations:
+1. **Push**: Add an element to the end of the list.
+2. **Pop**: Remove and return the last element.
+3. **Unshift**: Add an element to the beginning of the list.
+4. **Shift**: Remove and return the first element.
+5. **Reverse**: Reverse the order of the list.
+
+### Implementation in Go
+
+```go
+package linkedlist
+
+import "errors"
+
+type List struct {
+	first *Node
+	last  *Node
+}
+
+type Node struct {
+	next  *Node
+	prev  *Node
+	Value interface{}
+}
+
+func NewList(args ...interface{}) *List {
+	out := &List{}
+	for _, v := range args {
+		out.Push(v)
+	}
+
+	return out
+}
+
+func (l *List) startNode(n *Node) {
+	l.first = n
+	l.last = n
+}
+
+func (n *Node) Next() *Node {
+	return n.next
+}
+
+func (n *Node) Prev() *Node {
+	return n.prev
+}
+
+func (l *List) Unshift(v interface{}) {
+	n := Node{Value: v}
+
+	if l.first == nil {
+		l.startNode(&n)
+		return
+	}
+
+	l.first.prev = &n
+	n.next = l.first
+	l.first = &n
+}
+
+func (l *List) Push(v interface{}) {
+	n := Node{Value: v}
+
+	if l.last == nil {
+		l.startNode(&n)
+		return
+	}
+
+	n.prev = l.last
+	l.last.next = &n
+	l.last = &n
+}
+
+func (l *List) Shift() (interface{}, error) {
+	if l.first == nil {
+		return nil, errors.New("cannot shift on empty list")
+	}
+
+	if l.first == l.last {
+		v := l.first.Value
+		l.first, l.last = nil, nil
+		return v, nil
+	}
+
+	n := l.first
+
+	l.first = n.next
+	n.next = nil
+	l.first.prev = nil
+
+	return n.Value, nil
+}
+
+func (l *List) Pop() (interface{}, error) {
+	if l.last == nil {
+		return nil, errors.New("cannot pop on empty list")
+	}
+
+	if l.first == l.last {
+		v := l.last.Value
+		l.first, l.last = nil, nil
+		return v, nil
+	}
+
+	n := l.last
+
+	l.last = n.prev
+	n.prev = nil
+	l.last.next = nil
+
+	return n.Value, nil
+}
+
+func (l *List) Reverse() {
+	if l.last == nil {
+		return
+	}
+	l.first, l.last = l.last, l.first
+
+	n := l.first
+	for n != nil {
+		n.prev, n.next = n.next, n.prev
+		n = n.next
+	}
+}
+
+func (l *List) First() *Node {
+	return l.first
+}
+
+func (l *List) Last() *Node {
+	return l.last
+}
+```
+
+### Explanation
+    - **NewList**: Initializes a new list and accepts a variable number of arguments, pushing each onto the list.
+    - **Push and Unshift**: Add elements to the end and beginning of the list, respectively.
+    - **Pop and Shift**: Remove elements from the end and beginning of the list, respectively. Both return the removed value or an error if the list is empty.
+    - **Reverse**: Reverses the list by swapping the next and prev pointers of each node and swapping the first and last pointers of the list.
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+
+            - **Push, Unshift, Pop, Shift**: Each of these operations runs in O(1) time as they involve a constant number of pointer manipulations.
+            - **Reverse**: This operation is O(n), where n is the number of nodes in the list, as it traverses the entire list.
+    - #### **Space Complexity**:
+
+            - The space complexity is O(n), where n is the number of nodes, as each node requires additional space for the prev and next pointers.
+
+## Conclusion
+The Linked List problem demonstrates basic data structure manipulation in Go, including pointer-based operations for inserting, removing, and reversing elements in a doubly linked list. The implementation efficiently supports constant time operations for most of the common list tasks, making it a useful structure for many algorithms.

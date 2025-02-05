@@ -1,0 +1,127 @@
+---
+title: Parsing Log Files
+description: Solve the Parsing Log Files problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Parsing Log Files
+
+In the **Parsing Log Files** problem, we focus on processing and analyzing log files to extract meaningful information. This task involves validating log entries, splitting log lines, counting occurrences of sensitive information, and modifying log content. This article outlines the implementation and approach to solve this problem using Go.
+
+## Problem Statement
+
+The task involves several functionalities:
+1. **Validate** log lines based on their format.
+2. **Split** log lines using specific delimiters.
+3. **Count** occurrences of quoted passwords in log lines.
+4. **Remove** specific end-of-line text from logs.
+5. **Tag** log lines with usernames.
+
+## Approach
+
+We will define functions to accomplish each of the tasks mentioned above using regular expressions (regex) for pattern matching and manipulation.
+
+### Algorithm
+
+1. **IsValidLine**: Checks if a log line starts with one of the predefined log levels.
+2. **SplitLogLine**: Splits a log line into parts based on specified delimiters.
+3. **CountQuotedPasswords**: Counts how many log lines contain the word "password" within quotes.
+4. **RemoveEndOfLineText**: Removes occurrences of "end-of-line" followed by digits.
+5. **TagWithUserName**: Tags lines with usernames extracted from them.
+
+### Implementation in Go
+
+```go
+package parsinglogfiles
+
+import (
+	"fmt"
+	"regexp"
+)
+
+// IsValidLine checks if the log line has a valid format.
+func IsValidLine(text string) bool {
+	re := regexp.MustCompile(`^\[(TRC|DBG|INF|WRN|ERR|FTL)\]`)
+	return re.MatchString(text)
+}
+
+// SplitLogLine splits the log line based on specific delimiters.
+func SplitLogLine(text string) []string {
+	re := regexp.MustCompile(`<[-=~*]*>`)
+	return re.Split(text, -1)
+}
+
+// CountQuotedPasswords counts how many log lines contain quoted passwords.
+func CountQuotedPasswords(lines []string) int {
+	re := regexp.MustCompile(`(?i)".*password.*"`)
+	i := 0
+
+	for _, line := range lines {
+		if re.MatchString(line) {
+			i++
+		}
+	}
+
+	return i
+}
+
+// RemoveEndOfLineText removes end-of-line text from log lines.
+func RemoveEndOfLineText(text string) string {
+	re := regexp.MustCompile(`end-of-line\d*`)
+	return re.ReplaceAllString(text, "")
+}
+
+// TagWithUserName tags lines with usernames found in them.
+func TagWithUserName(lines []string) []string {
+	re := regexp.MustCompile(`User\s+(\w+)`)
+	s := []string{}
+
+	for _, line := range lines {
+		founds := re.FindStringSubmatch(line)
+		if founds != nil {
+			line = fmt.Sprintf("[USR] %s %s", founds[1], line)
+		}
+		s = append(s, line)
+	}
+
+	return s
+}
+```
+
+### Explanation
+	- #### **IsValidLine**:
+
+		Uses a regex pattern to match lines that start with one of the log levels (TRC, DBG, INF, WRN, ERR, FTL).
+
+	- #### **SplitLogLine**:
+
+		Splits the input text by the specified delimiter pattern , returning an array of substrings.
+
+	- #### **CountQuotedPasswords**:
+
+		Uses a case-insensitive regex pattern to count how many lines contain the word "password" within quotes.
+
+	- #### **RemoveEndOfLineText**:
+
+		Removes all occurrences of "end-of-line" followed by any digits from the provided text.
+
+	- #### **TagWithUserName**:
+
+		Searches for lines containing the username pattern (User ), and prepends it with a tag in the format [USR] .
+
+### Time and Space Complexity
+
+	- #### Time Complexity:
+
+		- **IsValidLine**: O(n), where n is the length of the log line.
+		- **SplitLogLine**: O(n), as it scans through the log line to split it.
+		- **CountQuotedPasswords**: O(m * n), where m is the number of lines and n is the average length of the lines, as it checks each line.
+		- **RemoveEndOfLineText**: O(n), where n is the length of the log line.
+		- **TagWithUserName**: O(m * n), similar to CountQuotedPasswords.
+
+	- #### Space Complexity:
+		- All functions generally operate in O(1) additional space, except for CountQuotedPasswords and TagWithUserName, which return slices, leading to O(m) in those cases.
+
+## Conclusion
+The Parsing Log Files problem demonstrates effective log file processing using Go. By leveraging regex and efficient string manipulation techniques, we can extract and analyze critical information from logs, making this a valuable exercise in parsing and data extraction.

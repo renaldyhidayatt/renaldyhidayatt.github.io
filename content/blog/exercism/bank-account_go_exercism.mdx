@@ -1,0 +1,132 @@
+---
+title: Bank Account
+description: Solve the Bank Account problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Bank Account problem requires implementing an account system with basic functionality, including:
+- Opening an account with an initial balance.
+- Depositing and withdrawing funds.
+- Closing the account.
+- Ensuring safe access and updates using concurrency mechanisms like locks.
+
+## Approach
+
+The goal is to design an account system that:
+- Safely manages deposits, withdrawals, and balance inquiries.
+- Protects the account from inconsistent states using mutex locks for thread safety.
+- Supports closing the account, after which no further operations should be allowed.
+
+### Algorithm
+
+1. **Open**:
+   - The `Open` function creates a new account with a non-negative initial balance.
+
+2. **Balance**:
+   - The `Balance` method returns the current balance if the account is open; otherwise, it returns false.
+
+3. **Deposit**:
+   - The `Deposit` method allows adding or withdrawing funds. If a withdrawal results in a negative balance, the transaction is rejected.
+
+4. **Close**:
+   - The `Close` method closes the account and returns the remaining balance.
+
+### Implementation in Go
+
+```go
+package account
+
+import "sync"
+
+// Account structure
+type Account struct {
+	amount int64
+	mu     sync.Mutex
+	closed bool
+}
+
+// Open opens a new account if the initial deposit is non-negative
+func Open(amount int64) *Account {
+	if amount < 0 {
+		return nil
+	}
+	return &Account{amount: amount, closed: false}
+}
+
+// Balance returns the current balance and status of the account
+func (a *Account) Balance() (int64, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.closed {
+		return 0, false
+	}
+	return a.amount, true
+}
+
+// Deposit handles both deposits and withdrawals.
+// It returns the updated balance and a boolean indicating success.
+func (a *Account) Deposit(amount int64) (int64, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.closed {
+		return 0, false
+	}
+	if a.amount+amount < 0 {
+		return a.amount, false
+	}
+	a.amount = a.amount + amount
+	return a.amount, true
+}
+
+// Close closes the account and returns the remaining balance.
+func (a *Account) Close() (int64, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.closed {
+		return 0, false
+	}
+	buf := a.amount
+	a.amount = 0
+	a.closed = true
+	return buf, true
+}
+```
+
+### Explanation
+    - **Concurrency**:
+
+        - To ensure thread safety, each method uses a sync.Mutex to lock the account for safe access. This ensures that no two operations can interfere with each other, preventing race conditions.
+    
+    - **Open**:
+
+        - The Open function creates a new account only if the initial deposit is non-negative. It initializes the account with the given amount and sets the closed flag to false.
+    
+    - **Balance**:
+
+        - The Balance method safely checks whether the account is closed before returning the current balance. If the account is closed, it returns a zero balance and false.
+    
+    - **Deposit**:
+
+        - This method supports both deposits and withdrawals. Deposits are simply positive amounts, while withdrawals are negative amounts. If a withdrawal results in a negative balance, the transaction is rejected, and the account remains unchanged.
+    
+    - **Close**:
+
+        - The Close method locks the account, sets its balance to zero, and marks it as closed. It returns the remaining balance and true to indicate successful closure.
+
+### Time and Space Complexity
+    
+    - #### Time Complexity:
+
+            - **Open**: O(1), since it only initializes the account.
+            - **Balance**: O(1), as it simply retrieves the balance and checks the status.
+            - **Deposit**: O(1), since it involves a few arithmetic operations and a lock.
+            - **Close**: O(1), as it sets values and changes the status of the account.
+    - #### Space Complexity:
+
+			- O(1) for each method, as the account operations only use a fixed amount of space regardless of the input size.
+
+## Conclusion
+The Bank Account implementation in Go demonstrates a safe, concurrent system that manages account operations like deposits, withdrawals, and closures efficiently. By using mutex locks, the solution ensures that race conditions are avoided, making it suitable for concurrent access in a multi-threaded environment.

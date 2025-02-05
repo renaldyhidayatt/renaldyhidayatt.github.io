@@ -1,0 +1,124 @@
+---
+title: List Ops
+description: Solve the List Ops problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **List Ops** problem involves creating an abstraction for a list of integers and implementing various operations that can be performed on this list. The goal is to define methods for folding, filtering, mapping, reversing, appending, and concatenating lists, encapsulated within an `IntList` type. 
+
+## Approach
+
+To solve this problem, we will define an `IntList` type as a slice of integers and implement methods that provide the required operations. The methods will operate directly on the `IntList` type, manipulating the underlying slice as needed.
+
+### Algorithm
+
+1. **Foldl**: Traverse the list from left to right, applying a binary function to accumulate results.
+2. **Foldr**: Traverse the list from right to left, applying a binary function to accumulate results.
+3. **Filter**: Iterate through the list and return a new list containing only the elements that satisfy a given predicate.
+4. **Length**: Return the number of elements in the list.
+5. **Map**: Apply a function to each element of the list and return a new list with the results.
+6. **Reverse**: Create a new list with elements in reverse order.
+7. **Append**: Concatenate another list to the end of the current list.
+8. **Concat**: Concatenate a slice of lists into a single list.
+
+### Implementation in Go
+
+```go
+package listops
+
+// IntList is an abstraction of a list of integers which we can define methods on
+type IntList []int
+
+func (s IntList) Foldl(fn func(int, int) int, initial int) int {
+	acc := initial
+
+	for _, val := range s {
+		acc = fn(acc, val)
+	}
+
+	return acc
+}
+
+func (s IntList) Foldr(fn func(int, int) int, initial int) int {
+	acc := initial
+
+	for i := len(s) - 1; i >= 0; i-- {
+		acc = fn(s[i], acc)
+	}
+
+	return acc
+}
+
+func (s IntList) Filter(fn func(int) bool) IntList {
+	res := IntList{}
+
+	for _, val := range s {
+		if fn(val) {
+			res = append(res, val)
+		}
+	}
+
+	return res
+}
+
+func (s IntList) Length() int {
+	return len(s)
+}
+
+func (s IntList) Map(fn func(int) int) IntList {
+	res := IntList{}
+
+	for _, val := range s {
+		res = append(res, fn(val))
+	}
+
+	return res
+}
+
+func (s IntList) Reverse() IntList {
+	res := IntList{}
+
+	for i := len(s) - 1; i >= 0; i-- {
+		res = append(res, s[i])
+	}
+
+	return res
+}
+
+func (s IntList) Append(lst IntList) IntList {
+	return append(s, lst...)
+}
+
+func (s IntList) Concat(lists []IntList) IntList {
+	res := s
+
+	for _, list := range lists {
+		res = append(res, list...)
+	}
+
+	return res
+}
+```
+
+### Explanation
+    - **IntList Type**: This is a type definition for a slice of integers, allowing us to define methods on it.
+    - **Foldl and Foldr**: These methods allow the user to reduce the list to a single value using a provided binary function, with Foldl processing from left to right and Foldr from right to left.
+    - **Filter**: Returns a new IntList containing only the elements for which the provided function returns true.
+    - **Length**: Simply returns the count of elements in the list.
+    - **Map**: Applies a given function to each element and returns a new list containing the results.
+    - **Reverse**: Constructs a new list with elements in reverse order.
+    - **Append**: Concatenates another IntList to the current list.
+    - **Concat**: Takes a slice of IntList and concatenates them into a single IntList.
+
+### Time and Space Complexity
+    - #### **Time Complexity**:
+        - For Foldl, Foldr, Filter, Map, Reverse, Append, and Concat: O(n), where n is the length of the list. Each operation processes each element once.
+    - #### **Space Complexity**:
+        - For Filter, Map, and Reverse: O(n) due to the creation of new lists.
+        - For Append and Concat: O(m) where m is the size of the list being appended or concatenated.
+
+## Conclusion
+The List Ops problem provides a solid introduction to defining types and methods in Go. By encapsulating list operations within an IntList type, we gain the ability to create reusable and composable functions, making it easy to manipulate lists of integers in a functional style.

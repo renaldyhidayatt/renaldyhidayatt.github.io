@@ -1,0 +1,139 @@
+---
+title: Alphametics
+description: Solve the Alphametics problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-03"
+---
+
+## Problem Statement
+
+**Alphametics** is a puzzle where letters represent unique digits in a mathematical equation. The goal is to replace each letter with a unique digit (0-9) such that the equation is valid. A key constraint is that no number in the equation can start with the digit `0`.
+
+For example, given the equation `SEND + MORE = MONEY`, we need to determine the correct digit for each letter.
+
+## Approach
+
+This problem can be solved by performing a **backtracking search** over possible digit assignments. We assign digits to letters and recursively check if the current assignment satisfies the equation. If a contradiction is found, we backtrack and try a different digit.
+
+### Algorithm
+
+1. **Parse the Puzzle**: 
+   - Break the equation into operands and the result (the part after the equals sign). Each operand is a word that represents a number where the digits correspond to letters.
+   
+2. **Track Letters**:
+   - We create a `letters` array to track the value and occurrence of each letter, as well as a flag to indicate whether the letter is a leading character (to prevent assigning it the digit `0`).
+
+3. **Backtracking Search**:
+   - We use recursion to assign digits to letters. At each depth of the recursion, we attempt to assign a digit to a letter, ensuring it hasn’t already been used. After assigning a digit, we check if the partial assignment can lead to a solution. If it doesn’t, we backtrack and try another digit.
+
+4. **Summing Words**:
+   - For each word, we calculate its numeric value based on the current digit assignment.
+
+5. **Check Equation**:
+   - Once all digits are assigned, we check if the sum of the operand words equals the result word. If it does, we have found a valid solution.
+
+### Implementation in Go
+
+```go
+package alphametics
+
+import (
+	"errors"
+	"strings"
+)
+
+type char struct {
+	val     int
+	letter  byte
+	leading bool // Letter appears at start of word (cannot be '0')
+}
+
+type alphametic struct {
+	usedDigits [10]bool
+	letters    [26]char
+	index      []*char
+	operands   []string
+}
+
+func Solve(puzzle string) (map[string]int, error) {
+	a := alphametic{index: make([]*char, 0, 26)}
+	a.operands = strings.FieldsFunc(puzzle, func(r rune) bool { return r == '+' || r == '=' || r == ' ' })
+
+	for _, w := range a.operands {
+		a.letters[w[0]-'A'].leading = true
+
+        for _, c := range []byte(w) {
+			a.letters[c-'A'].letter = c
+		}
+	}
+
+	for i := range a.letters {
+		if a.letters[i].letter > 0 {
+			a.index = append(a.index, &a.letters[i])
+		}
+	}
+
+    if !a.solveInner(0) {
+		return nil, errors.New("no solution")
+	}
+
+    result := make(map[string]int, len(a.index))
+
+    for _, v := range a.index {
+		result[string(v.letter)] = v.val
+	}
+
+    return result, nil
+}
+
+func (a *alphametic) solveInner(depth int) bool {
+	if depth == len(a.index) {
+		tot := 0
+
+		for _, o := range a.operands[:len(a.operands)-1] {
+			tot += a.sumWord(o)
+		}
+
+		return tot == a.sumWord(a.operands[len(a.operands) - 1])
+	}
+
+	char := a.index[depth]
+
+	for digit := 0; digit < 10; digit++ {
+		if (digit != 0 || !char.leading) && !a.usedDigits[digit] {
+			a.usedDigits[digit], char.val = true, digit
+
+            if a.solveInner(depth + 1) {
+				return true
+			}
+
+			a.usedDigits[digit] = false
+		}
+	}
+
+	return false
+}
+
+func (a *alphametic) sumWord(word string) (sum int) {
+	for _, c := range []byte(word) {
+		sum = 10 * sum + a.letters[c - 'A'].val
+	}
+
+	return sum
+}
+```
+
+### Explanation
+    - **Puzzle Parsing**: The puzzle is parsed into words, with the = symbol splitting the operands from the result.
+    - **Tracking Letters**: We store information about each letter, ensuring that leading characters in words cannot be assigned the digit 0.
+    - **Backtracking**: The core of the algorithm uses recursion to try different digit assignments, undoing assignments if they lead to an invalid state (i.e., if the equation doesn’t hold).
+    - **Summing Words**: The numeric value of each word is computed by interpreting the letters as digits, which is then used to check the validity of the equation.
+
+### Time and Space Complexity
+    - **Time Complexity***: The time complexity is O(10^n) in the worst case, where n is the number of distinct letters in the puzzle. Each letter can take on one of 10 possible digits, leading to exponential growth in the search space.
+    - **Space Complexity**: The space complexity is O(n), where n is the number of distinct letters, since we need to track digit assignments and previous states during recursion.
+
+
+## Conclusion
+The Alphametics puzzle is a classic example of using backtracking to solve constraint satisfaction problems. By recursively trying different digit assignments, we can efficiently find a solution that satisfies the equation. Go's data structures and recursion provide a clean and performant way to approach this problem.
+

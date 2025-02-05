@@ -1,0 +1,264 @@
+---
+title: Two Bucket
+description: Solve the Two Bucket problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-03"
+---
+
+## Problem Statement
+
+In the **Two Bucket** problem, you are given two buckets of different capacities and a goal amount of water. Your task is to determine the fewest steps required to measure exactly the goal amount of water by either filling, emptying, or transferring water between the buckets. Additionally, you need to track which bucket starts with the operation and how much water remains in the other bucket when the goal is reached.
+
+### Key Operations:
+- Fill a bucket.
+- Empty a bucket.
+- Transfer water from one bucket to the other until one bucket is either full or empty.
+
+## Approach
+
+To solve the Two Bucket problem efficiently, we use a **breadth-first search (BFS)** approach where each state (iteration) is represented as a configuration of the two buckets. We keep track of all previous states to avoid revisiting them, and we explore every possible operation in order to reach the goal amount.
+
+### Algorithm
+
+1. **Initialization**:
+   - Start with both buckets empty.
+   - Track which bucket starts the operation.
+   
+2. **Operations**:
+   - Perform all possible operations at each step: fill a bucket, empty a bucket, or transfer water between buckets.
+   - Each time we generate a new configuration, we check whether the current state has been seen before. If it has, we discard it; if it hasn't, we continue exploring that state.
+
+3. **Goal Check**:
+   - If one of the buckets reaches the goal amount, we return the number of steps taken and the amount of water in the other bucket.
+
+4. **Invalid Configurations**:
+   - If it is mathematically impossible to measure the goal amount based on the greatest common divisor (GCD) of the bucket sizes, return an error.
+
+### Implementation in Go
+
+```go
+package twobucket
+
+import (
+	"errors"
+	"log"
+)
+
+var allOperations = []string{
+	"one",
+	"two",
+	"empty(one)",
+	"empty(two)",
+	"one->two",
+	"two->one",
+}
+
+type Iteration struct {
+	number      int
+	bucketOne   int
+	bucketTwo   int
+	sizeOne     int
+	sizeTwo     int
+	startBucket string
+
+	operation  string
+	prev       []string
+	prevStates [][2]int
+}
+
+type Solution struct {
+	goalAmount int
+	queue      []Iteration
+}
+
+func Solve(sizeBucketOne, sizeBucketTwo, goalAmount int, startBucket string) (string, int, int, error) {
+	if sizeBucketOne == 0 || sizeBucketTwo == 0 || goalAmount%gcd(sizeBucketOne, sizeBucketTwo) != 0 ||
+		(goalAmount > sizeBucketOne && goalAmount > sizeBucketTwo) || goalAmount == 0 ||
+		(startBucket != "one" && startBucket != "two") {
+		return "", 0, 0, errors.New("impossible")
+	}
+
+	firstIteration := Iteration{
+		number:      0,
+		bucketOne:   0,
+		bucketTwo:   0,
+		sizeOne:     sizeBucketOne,
+		sizeTwo:     sizeBucketTwo,
+		startBucket: startBucket,
+
+		operation: startBucket,
+	}
+
+	s := Solution{
+		goalAmount: goalAmount,
+		queue:      []Iteration{firstIteration},
+	}
+
+	return s.Find()
+}
+
+func (s *Solution) Find() (string, int, int, error) {
+	for pos := 0; pos < len(s.queue); pos++ {
+		nextIter := s.queue[pos].next()
+		if nextIter == nil {
+			continue
+		}
+
+		if nextIter.bucketOne == s.goalAmount {
+			log.Println("found", nextIter)
+			return "one", nextIter.number, nextIter.bucketTwo, nil
+		}
+
+		if nextIter.bucketTwo == s.goalAmount {
+			log.Println("found", nextIter)
+			return "two", nextIter.number, nextIter.bucketOne, nil
+		}
+
+		s.queue = append(s.queue, possibleIterations(*nextIter)...)
+	}
+
+	return "", 0, 0, errors.New("nothing found")
+}
+
+// next returns the next iteration, or nil,
+// if the next iteration for the specified operation is impossible.
+func (it *Iteration) next() *Iteration {
+	nextIter := *it
+	nextIter.number++
+	nextIter.prev = append(append([]string{}, it.prev...), it.operation)
+	nextIter.prevStates = append(append([][2]int{}, it.prevStates...), [2]int{it.bucketOne, it.bucketTwo})
+
+	switch it.operation {
+	case "one":
+		if it.bucketOne == it.sizeOne {
+			return nil
+		}
+
+		nextIter.bucketOne = nextIter.sizeOne
+
+	case "two":
+		if it.bucketTwo == it.sizeTwo {
+			return nil
+		}
+
+		nextIter.bucketTwo = nextIter.sizeTwo
+
+	case "empty(one)":
+		if it.bucketOne == 0 {
+			return nil
+		}
+
+		nextIter.bucketOne = 0
+
+	case "empty(two)":
+		if it.bucketTwo == 0 {
+			return nil
+		}
+
+		nextIter.bucketTwo = 0
+
+	case "one->two":
+		if it.bucketTwo == it.sizeTwo {
+			return nil
+		}
+		if it.bucketOne == 0 {
+			return nil
+		}
+
+		if it.sizeTwo-it.bucketTwo >= it.bucketOne {
+			nextIter.bucketTwo += it.bucketOne
+			nextIter.bucketOne = 0
+		} else {
+			nextIter.bucketTwo = it.sizeTwo
+			nextIter.bucketOne -= (it.sizeTwo - it.bucketTwo)
+		}
+
+	case "two->one":
+		if it.bucketOne == it.sizeOne {
+			return nil
+		}
+		if it.bucketTwo == 0 {
+			return nil
+		}
+
+		if it.sizeOne-it.bucketOne >= it.bucketTwo {
+			nextIter.bucketOne += it.bucketTwo
+			nextIter.bucketTwo = 0
+		} else {
+			nextIter.bucketOne = it.sizeOne
+			nextIter.bucketTwo -= (it.sizeOne - it.bucketOne)
+		}
+
+	default:
+		panic("unknown operation")
+	}
+
+	if it.seen(it.bucketOne, it.bucketTwo) {
+		return nil
+	}
+
+	// Checking the third rule:
+	//
+	// After an action, you may not arrive at a state where the starting bucket
+	// is empty and the other bucket is full.
+	switch {
+	case nextIter.startBucket == "one":
+		if nextIter.bucketOne == 0 && nextIter.bucketTwo == nextIter.sizeTwo {
+			return nil
+		}
+	case nextIter.startBucket == "two":
+		if nextIter.bucketTwo == 0 && nextIter.bucketOne == nextIter.sizeOne {
+			return nil
+		}
+	}
+
+	return &nextIter
+}
+
+func possibleIterations(it Iteration) []Iteration {
+	result := []Iteration{}
+
+	for _, op := range allOperations {
+		newIt := it
+		newIt.operation = op
+		result = append(result, newIt)
+	}
+
+	return result
+}
+
+func gcd(a, b int) int {
+	switch {
+	case a > b:
+		return gcd(b, a)
+	case b%a == 0:
+		return a
+	default:
+		return gcd(b%a, a)
+	}
+}
+
+func (it *Iteration) seen(b1, b2 int) bool {
+	for i := range it.prevStates {
+		if it.prevStates[i][0] == b1 && it.prevStates[i][1] == b2 {
+			return true
+		}
+	}
+	return false
+}
+```
+
+
+## Explanation
+    - **Iteration Struct**: Represents the state of the two buckets at each step, tracking their contents, the current operation, and the previous states to avoid cycles.
+    - **Solution Struct**: Holds the goal amount and the queue of iterations to be explored.
+    - **Solve Function**: Initializes the problem, checks for impossible cases using GCD, and starts the solution process.
+    - **Find Function**: Implements a breadth-first search (BFS) algorithm to explore possible operations and find the solution.
+    - **Operations**: The program simulates all possible operations and checks if they lead to the goal state.
+
+### Time and Space Complexity
+    - **Time Complexity**: The worst-case scenario involves exploring all possible states of the two buckets. Since each bucket can have sizeOne + 1 and sizeTwo + 1 states, the time complexity is approximately O(sizeOne * sizeTwo).
+    - **Space Complexity**: The space required to store the queue and visited states is also proportional to the number of bucket states, making the space complexity O(sizeOne * sizeTwo).
+
+## Conclusion
+The Two Bucket problem can be efficiently solved using a breadth-first search approach, leveraging a map of previous states to avoid revisiting configurations. This Go implementation provides an elegant solution to determine the fewest steps required to measure the goal amount of water.

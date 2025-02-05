@@ -1,0 +1,100 @@
+---
+title: Logs-logs-logs
+description: Solve the Logs-logs-logs problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Logs-logs-logs
+
+In the **Logs-logs-logs** problem, we are tasked with processing log messages from various applications. This problem emphasizes string manipulation and character counting in Go, allowing us to identify the application that generated the log, replace specific characters, and verify log length.
+
+## Problem Statement
+
+The problem requires us to:
+1. Identify the application based on specific characters in the log.
+2. Replace occurrences of a specified character in the log.
+3. Check if the log message is within a specified character limit.
+
+## Approach
+
+The approach involves defining functions that handle each of the specified tasks using Go's string manipulation capabilities.
+
+### Algorithm
+
+1. **Application Function**:
+   - Loop through each character in the log and check for predefined symbols to identify the application.
+
+2. **Replace Function**:
+   - Utilize Go's string functions to replace all occurrences of a specified character with a new one.
+
+3. **WithinLimit Function**:
+   - Count the number of runes in the log and compare it to the provided limit.
+
+### Implementation in Go
+
+```go
+package logs
+
+import (
+	"strings"
+	"unicode/utf8"
+)
+
+// Application identifies the application emitting the given log.
+func Application(log string) string {
+	for _, rooney := range log {
+		switch rooney {
+		case '❗':
+			return "recommendation"
+		case '🔍':
+			return "search"
+		case '☀':
+			return "weather"
+		}
+	}
+	return "default"
+}
+
+// Replace replaces all occurrences of old with new, returning the modified log
+// to the caller.
+func Replace(log string, oldRune, newRune rune) string {
+	return strings.ReplaceAll(log, string(oldRune), string(newRune))
+}
+
+// WithinLimit determines whether or not the number of characters in log is
+// within the limit.
+func WithinLimit(log string, limit int) bool {
+	return utf8.RuneCountInString(log) <= limit
+}
+```
+
+
+### Explanation
+
+    #### **Application**:
+
+        - Iterates over the characters in the log. It returns the name of the application based on the first special character found. If no special characters are present, it defaults to "default".
+
+
+    #### **Replace**:
+
+        - Takes the log string and two runes (old and new). It replaces all instances of oldRune in the log with newRune and returns the modified string.
+
+    ### **WithinLimit**:
+
+        - Counts the number of runes in the log using utf8.RuneCountInString and checks if it is less than or equal to the specified limit.
+
+### Time and Space Complexity
+    - #### **Time Complexity**:
+
+        - **Application**: O(n), where n is the number of characters in the log, as we may need to examine each character.
+        - **Replace**: O(n), due to the need to traverse the entire string to perform replacements.
+        - **WithinLimit**: O(n), as it also involves counting characters.
+
+    - #### **Space Complexity**:
+
+        - All functions have a space complexity of O(1) if we do not account for the input string size, as they use a constant amount of space for variables. However, the Replace function may allocate space for a new string of up to O(n).
+
+## Conclusion
+The Logs-logs-logs problem illustrates how to effectively manipulate strings and handle character encoding in Go. It provides a solid exercise in identifying patterns within data, transforming strings, and validating constraints.

@@ -3,8 +3,9 @@ import { twMerge } from "tailwind-merge";
 import { Post } from "@/.velite";
 import { slug } from "github-slugger";
 
+
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 
 export function formatDate(input: string | number): string {
@@ -46,12 +47,11 @@ export function getPostsByTagSlug(posts: Array<Post>, tag: string, page: number,
     const slugifiedTags = post.tags.map(t => slug(t)); // Ensure tags are slugified for comparison
     return slugifiedTags.includes(slugifiedTag);
   });
-  
+
   const start = (page - 1) * perPage;
   const end = start + perPage;
-  
+
   console.log("Filtered Posts for Tag:", slugifiedTag, filteredPosts); // Debugging output
-  
+
   return filteredPosts.slice(start, end);
 }
-

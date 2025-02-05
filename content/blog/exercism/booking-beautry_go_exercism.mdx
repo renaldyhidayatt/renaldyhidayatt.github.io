@@ -1,0 +1,131 @@
+---
+title: Booking up for Beauty
+description: Solve the Booking up for Beauty problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Booking up for Beauty
+
+In the **Booking up for Beauty** problem, we deal with scheduling appointments and working with date-time data. You will write Go functions that handle date formatting, check if a time has passed, determine if an appointment is in the afternoon, and more.
+
+## Problem Statement
+
+You need to solve the following tasks:
+1. **Schedule**: Parse a string containing date and time information into a `time.Time` object.
+2. **HasPassed**: Check if a given date has passed relative to the current time.
+3. **IsAfternoonAppointment**: Determine if an appointment falls within the afternoon time range (between 12 PM and 6 PM).
+4. **Description**: Return a human-readable formatted string of the appointment time.
+5. **AnniversaryDate**: Return a `time.Time` object for an anniversary date in the current year.
+
+## Approach
+
+We'll leverage Go's `time` package to parse, format, and compare date-time values efficiently.
+
+### Algorithm
+
+1. **Schedule**:
+   - Parse the input string in a specific date-time format (`"1/02/2006 15:04:05"`) to get a `time.Time` object.
+   
+2. **HasPassed**:
+   - Parse the input string with a full date format (`"January 2, 2006 15:04:05"`) and compare it to the current time using the `Before()` method.
+
+3. **IsAfternoonAppointment**:
+   - Parse the date and check whether the hour falls between 12 PM (inclusive) and 6 PM (exclusive).
+   
+4. **Description**:
+   - Parse the input date and reformat it using the `Format()` method to return a human-readable string.
+   
+5. **AnniversaryDate**:
+   - Return the anniversary date for the current year by combining the year from the current date with a fixed month and day (`September 15`).
+
+### Implementation in Go
+
+```go
+package booking
+
+import (
+	"fmt"
+	"time"
+)
+
+// Schedule returns a time.Time from a string containing a date
+// Example input: "7/25/2019 13:45:00"
+func Schedule(date string) time.Time {
+	t, err := time.Parse("1/02/2006 15:04:05", date)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+// HasPassed returns whether a date has passed
+// Example input: "July 25, 2019 13:45:00"
+func HasPassed(date string) bool {
+	d, err := time.Parse("January 2, 2006 15:04:05", date)
+	if err != nil {
+		panic(err)
+	}
+	return d.Before(time.Now())
+}
+
+// IsAfternoonAppointment returns whether a time is in the afternoon
+// Example input: "Thursday, July 25, 2019 13:45:00"
+func IsAfternoonAppointment(date string) bool {
+	d, err := time.Parse("Monday, January 2, 2006 15:04:05", date)
+	if err != nil {
+		panic(err)
+	}
+	return d.Hour() >= 12 && d.Hour() < 18
+}
+
+// Description returns a formatted string of the appointment time
+// Example input: "7/25/2019 13:45:00"
+// Example output: "You have an appointment on Thursday, July 25, 2019, at 13:45."
+func Description(date string) string {
+	d, err := time.Parse("1/2/2006 15:04:05", date)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("You have an appointment on %s", d.Format("Monday, January 2, 2006, at 15:04."))
+}
+
+// AnniversaryDate returns a Time with this year's anniversary (September 15).
+func AnniversaryDate() time.Time {
+	t, _ := time.Parse("2006-01-2", fmt.Sprintf("%d-09-15", time.Now().Year()))
+	return t
+}
+```
+
+### Explanation
+
+    1. **Schedule**:
+
+        The time.Parse function parses the date-time string into a time.Time object using the layout "1/02/2006 15:04:05". This layout corresponds to common US date formats (MM/DD/YYYY).
+
+    2. **HasPassed**:
+
+        This function uses time.Parse to convert the date to a time.Time object and then checks if this date is earlier than the current time using Before(time.Now()).
+
+    3. **IsAfternoonAppointment**:
+
+        This function checks if the appointment time is between 12 PM and 6 PM by checking the hour field of the parsed time.
+
+    4. **Description**:
+
+        After parsing the date, we use d.Format to return a human-readable formatted string for the appointment description.
+
+    5. **AnniversaryDate**:
+
+        This function constructs a time.Time object for September 15 of the current year by combining the current year with the fixed month and day.
+
+### Time and Space Complexity
+    - #### **Time Complexity**:
+
+        - All the functions perform constant-time operations, except for string parsing and formatting, which run in linear time relative to the size of the input string. Therefore, the time complexity is O(n), where n is the length of the date string.
+
+    - #### **Space Complexity**:
+        - Each function uses a constant amount of memory for the parsed date and result, making the space complexity O(1).
+
+## Conclusion
+The Booking up for Beauty problem teaches how to effectively use Go's time package to parse, format, and manipulate dates and times. The solution involves simple string manipulation and comparisons, all while taking advantage of built-in Go features to ensure code readability and efficiency.

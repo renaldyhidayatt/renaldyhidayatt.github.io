@@ -1,0 +1,159 @@
+---
+title: Kindergarten Garden
+description: Solve the Kindergarten Garden problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Kindergarten Garden** problem involves managing a garden's layout for children in a kindergarten setting. The garden diagram is represented as a string with each child's assigned plants. The challenge is to create a system that allows you to determine which plants each child has in their section of the garden based on a given diagram and a list of children.
+
+## Approach
+
+To solve the problem, we will:
+1. Validate the garden diagram and the list of children.
+2. Parse the diagram to identify the plants each child is responsible for.
+3. Implement methods to retrieve the sorted list of students and their assigned plants.
+
+### Algorithm
+
+1. **Validation**: Check for invalid plant codes, duplicate children, and the proper format of the garden diagram.
+2. **Parsing**: Split the diagram into rows and map the plant codes to their respective plant names.
+3. **Storage**: Store the plants in a way that allows easy access based on the child’s name.
+4. **Retrieval**: Implement methods to get plants for a specific child and return a sorted list of children.
+
+### Implementation in Go
+
+```go
+package kindergarten
+
+import (
+	"errors"
+	"fmt"
+	"sort"
+	"strings"
+)
+
+// Garden represents the garden's layout and the students' assignments.
+type Garden struct {
+	plants   []string
+	students []string
+}
+
+// NewGarden creates a new Garden instance based on the diagram and students list.
+func NewGarden(diagram string, children []string) (*Garden, error) {
+	if hasInvalidCodes(diagram) {
+		return nil, errors.New("error: invalid cup codes")
+	}
+
+	if hasDuplicateChild(children) {
+		return nil, errors.New(fmt.Sprintf("error: the student odd student list"))
+	}
+
+	if !strings.HasPrefix(diagram, "\n") || strings.Count(diagram, "\n") != 2 {
+		return nil, errors.New("Invalid diagram")
+	}
+
+	plantMap := map[string]string{
+		"V": "violets",
+		"G": "grass",
+		"C": "clover",
+		"R": "radishes",
+	}
+
+	diagram = strings.Replace(diagram, "\n", "", 1)
+
+	rows := strings.Split(diagram, "\n")
+	rows0 := strings.Split(rows[0], "")
+	rows1 := strings.Split(rows[1], "")
+
+	if len(children)*4 != (len(diagram) - 1) {
+		return nil, errors.New("error: not enough plant or student")
+	}
+
+	garden := Garden{
+		plants:   []string{},
+		students: children,
+	}
+
+	for i := range children {
+		garden.plants = append(garden.plants, plantMap[rows0[i*2]])
+		garden.plants = append(garden.plants, plantMap[rows0[i*2+1]])
+		garden.plants = append(garden.plants, plantMap[rows1[i*2]])
+		garden.plants = append(garden.plants, plantMap[rows1[i*2+1]])
+	}
+	return &garden, nil
+}
+
+// Plants returns the plants assigned to a specific child.
+func (g *Garden) Plants(child string) ([]string, bool) {
+	sortedStudents := g.SortedStudents()
+
+	for i, v := range sortedStudents {
+		if child == v {
+			return g.plants[i*4 : i*4+4], true
+		}
+	}
+
+	return nil, false
+}
+
+// SortedStudents returns the list of students sorted alphabetically.
+func (g *Garden) SortedStudents() []string {
+	newSlc := []string{}
+
+	for _, v := range g.students {
+		newSlc = append(newSlc, v)
+	}
+
+	sort.Strings(newSlc)
+
+	return newSlc
+}
+
+// hasInvalidCodes checks for any invalid plant codes in the diagram.
+func hasInvalidCodes(diagram string) bool {
+	diagram = strings.ReplaceAll(diagram, "\n", "")
+
+	for _, v := range diagram {
+		if v != 'V' && v != 'C' && v != 'G' && v != 'R' {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hasDuplicateChild checks for duplicate entries in the students' list.
+func hasDuplicateChild(children []string) bool {
+	childrenStr := strings.Join(children, ",")
+
+	for _, v := range children {
+		if v == "" {
+			return true
+		}
+
+		if strings.Count(childrenStr, v) > 1 {
+			return true
+		}
+	}
+
+	return false
+}
+```
+
+### Explanation
+    - **Garden Struct**: Represents the garden layout and includes a list of plants and students.
+    - **NewGarden Function**: Initializes a new garden, validates inputs, and maps plant codes to their names.
+    - **Plants Method**: Returns the plants assigned to a specific child, searching through the sorted list of students.
+    - **SortedStudents Method**: Returns a sorted list of student names.
+    - **Validation Functions**: Check for invalid plant codes and duplicates in the list of children.
+
+### Time and Space Complexity
+
+    - **Time Complexity**: O(n log n) for sorting the students, where n is the number of students. The rest of the operations are O(n).
+    - **Space Complexity**: O(n) for storing the list of plants and students.
+
+## Conclusion
+The Kindergarten Garden problem illustrates how to manage data for a garden layout using Go. It covers input validation, string manipulation, and data structuring, offering a clear solution to a practical problem in a kindergarten setting.

@@ -1,0 +1,186 @@
+---
+title: Palindrome Number
+description: Learn how to efficiently solve the Palindrome Number problem in Go, using simple arithmetic.
+tags: ["leetcode", "golang", "algorithms"]
+date: "2024-09-28"
+---
+
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+   - [TypeScript](#implementation-in-typescript)
+   - [Python](#implementation-in-python)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+
+## Problem Statement
+
+Given an integer `x`, return `true` if `x` is a palindrome, and `false` otherwise.
+
+A palindrome is a number that reads the same forward and backward. For example, `121` is a palindrome because it reads as `121` from both directions.
+
+### Example 1:
+- **Input**: `x = 121`
+- **Output**: `true`
+- **Explanation**: 121 reads as 121 from left to right and from right to left.
+
+### Example 2:
+- **Input**: `x = -121`
+- **Output**: `false`
+- **Explanation**: The number -121 reads 121- from right to left, which is not the same.
+
+### Example 3:
+- **Input**: `x = 10`
+- **Output**: `false`
+- **Explanation**: 10 reads as 01 when reversed, which is not a palindrome.
+
+### Constraints:
+- `-2^31 <= x <= 2^31 - 1` (32-bit signed integer)
+
+## Approach
+
+### Algorithm
+
+1. **Negative Check**: If the number is negative, it is not a palindrome because negative signs only appear on one side.
+2. **Zero and Last-Digit Check**: If the number ends in `0` but is not `0` itself, it cannot be a palindrome. For example, `10` is not a palindrome.
+3. **Revert Half of the Number**: 
+   - Reverse the second half of the integer and compare it to the first half. If they are equal, then the number is a palindrome.
+   - For instance, for `x = 121`, after reversing the last half (`21` becomes `12`), it can be compared with the first half.
+
+
+### Implementation in Go
+
+Here is the Go implementation of the solution:
+
+```go
+package main
+
+import "fmt"
+
+// isPalindrome checks if a given integer x is a palindrome
+func isPalindrome(x int) bool {
+    if x < 0 || (x%10 == 0 && x != 0) {
+        return false
+    }
+
+    revertedNumber := 0
+    for x > revertedNumber {
+        revertedNumber = revertedNumber*10 + x%10
+        x /= 10
+    }
+
+    return x == revertedNumber || x == revertedNumber/10
+}
+
+func main() {
+    fmt.Println(isPalindrome(121))  // Output: true
+    fmt.Println(isPalindrome(-121)) // Output: false
+    fmt.Println(isPalindrome(10))   // Output: false
+}
+
+```
+
+### Implementation in Java
+
+Here is the Java implementation of the solution:
+
+```java
+public class PalindromeNumber {
+
+    public boolean isPalindrome(int x) {
+        // Negative numbers and multiples of 10 that are not 0 are not palindromes
+        if (x < 0 || (x % 10 == 0 && x != 0)) {
+            return false;
+        }
+
+        int revertedNumber = 0;
+        while (x > revertedNumber) {
+            revertedNumber = revertedNumber * 10 + x % 10;
+            x /= 10;
+        }
+
+        // Check if the number is equal to the reverted number or its truncated version (for odd length)
+        return x == revertedNumber || x == revertedNumber / 10;
+    }
+
+    public static void main(String[] args) {
+        PalindromeNumber pn = new PalindromeNumber();
+        System.out.println(pn.isPalindrome(121));   // Output: true
+        System.out.println(pn.isPalindrome(-121));  // Output: false
+        System.out.println(pn.isPalindrome(10));    // Output: false
+    }
+}
+```
+
+### Implementation in Typescript
+
+Here is the Typescript implementation of the solution:
+
+```typescript
+function isPalindrome(x: number): boolean {
+    // Negative numbers and multiples of 10 that are not 0 are not palindromes
+    if (x < 0 || (x % 10 === 0 && x !== 0)) {
+        return false;
+    }
+
+    let revertedNumber = 0;
+    while (x > revertedNumber) {
+        revertedNumber = revertedNumber * 10 + x % 10;
+        x = Math.floor(x / 10);  // Truncate the number
+    }
+
+    // Check if the number is equal to the reverted number or its truncated version (for odd length)
+    return x === revertedNumber || x === Math.floor(revertedNumber / 10);
+}
+
+// Example usage
+console.log(isPalindrome(121));    // Output: true
+console.log(isPalindrome(-121));   // Output: false
+console.log(isPalindrome(10));     // Output: false
+```
+
+### Implementation in Python
+
+Here is the Python implementation of the solution:
+
+```python
+def is_palindrome(x: int) -> bool:
+    # Negative numbers and multiples of 10 that are not 0 are not palindromes
+    if x < 0 or (x % 10 == 0 and x != 0):
+        return False
+
+    reverted_number = 0
+    while x > reverted_number:
+        reverted_number = reverted_number * 10 + x % 10
+        x //= 10  # Floor division
+
+    # Check if the number is equal to the reverted number or its truncated version (for odd length)
+    return x == reverted_number or x == reverted_number // 10
+
+# Example usage
+print(is_palindrome(121))    # Output: True
+print(is_palindrome(-121))   # Output: False
+print(is_palindrome(10))     # Output: False
+```
+
+### Explanation
+1. Step 1: We first check if x is negative or if it ends with a zero (except when x is 0). If either of these conditions is true, we return false immediately.
+2. Step 2: We then reverse half of the digits of x. This is done by extracting the last digit (using x % 10), appending it to the reversed number, and removing the last digit from x (using x /= 10).
+3. Step 3: We continue this process until the reversed number is equal to or greater than x. This tells us we've processed half of the digits. If the remaining part of x equals the reversed number, or if ignoring the middle digit (for odd-length numbers) results in equality, then the number is a palindrome.
+
+
+### Time and Space Complexity
+
+1. **Time Complexity**: O(log₁₀(n)), where n is the input number. We reduce x by one digit in every loop iteration, so the time complexity is proportional to the number of digits in x.
+2. **Space Complexity**: O(1). We use a constant amount of space for variables like revertedNumber and x.
+
+## Conclusion
+This solution efficiently checks if an integer is a palindrome by reversing half of the number and comparing it with the other half. It avoids the need for extra space (like converting the integer into a string) and handles edge cases such as negative numbers and integers that end in zeros.

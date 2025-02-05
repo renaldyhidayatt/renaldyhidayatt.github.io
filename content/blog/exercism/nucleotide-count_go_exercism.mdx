@@ -1,0 +1,80 @@
+---
+title: Nucleotide Count
+description: Solve the "Nucleotide Count" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In the Nucleotide Count problem, we are tasked with counting the occurrences of nucleotides in a given DNA strand. DNA is composed of four types of nucleotides: adenine (A), cytosine (C), guanine (G), and thymine (T).
+
+The goal is to create a function that takes a DNA strand as input and returns a histogram (a mapping) of the count of each nucleotide. If the input contains any invalid nucleotides, the function should return an error.
+
+## Approach
+
+To solve this problem, we will implement a method called `Counts` for the `DNA` type. This method will:
+
+1. Convert the DNA strand to uppercase to ensure uniformity.
+2. Initialize a histogram to keep track of the counts of each valid nucleotide.
+3. Iterate through each nucleotide in the DNA strand, incrementing its count in the histogram.
+4. Return the histogram or an error if an invalid nucleotide is found.
+
+### Implementation in Go
+
+Here is the Go implementation for the Nucleotide Count problem:
+
+```go
+package dna
+
+import (
+	"fmt"
+	"strings"
+)
+
+// Histogram is a mapping from nucleotide to its count in given DNA.
+type Histogram map[rune]uint
+
+// DNA is a list of nucleotides.
+type DNA string
+
+// Counts generates a histogram of valid nucleotides in the given DNA.
+// Returns an error if d contains an invalid nucleotide.
+func (d DNA) Counts() (Histogram, error) {
+	d = DNA(strings.ToUpper(string(d)))
+	h := Histogram{'A': 0, 'C': 0, 'G': 0, 'T': 0}
+	for _, nucleotide := range d {
+		_, ok := h[nucleotide]
+		if !ok {
+			return nil, fmt.Errorf("Invalid nucleotide %v", nucleotide)
+		}
+
+		h[nucleotide]++
+	}
+
+	return h, nil
+}
+```
+
+### Explanation
+
+	- **Histogram Type**: We define a custom type Histogram as a mapping of nucleotides (rune) to their counts (uint).
+
+	- **DNA Type**: The DNA type represents a sequence of nucleotides as a string.
+
+	- **Counts Method**: The Counts method performs the following:
+
+			- Converts the DNA strand to uppercase using strings.ToUpper to ensure that we only deal with valid nucleotide characters.
+
+			- Initializes a histogram with all valid nucleotides set to zero.
+			- Iterates through each nucleotide in the DNA strand. If a nucleotide is invalid (not A, C, G, or T), it returns an error. If valid, it increments the count in the histogram.
+
+### Time and Space Complexity
+
+	- **Time Complexity**: O(n), where n is the length of the DNA string, as we need to iterate through each character once.
+
+	- **Space Complexity**: O(1), since the histogram will always have a fixed size (4 entries for the valid nucleotides).
+
+## Conclusion
+
+The Nucleotide Count problem is a straightforward exercise in string manipulation and error handling. By effectively counting the occurrences of valid nucleotides and managing potential invalid inputs, we can ensure that our implementation is robust and efficient. This solution in Go demonstrates a clear and systematic approach to solving the problem using basic data structures and control flow.

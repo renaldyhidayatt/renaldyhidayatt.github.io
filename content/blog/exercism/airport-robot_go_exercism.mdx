@@ -1,0 +1,95 @@
+---
+title: Airport Robot
+description: Solve the Airport Robot problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Airport Robot
+
+In the **Airport Robot** problem, we need to implement a system that allows a robot to greet people in different languages at the airport. The robot can speak multiple languages, and based on the type of language greeter passed, it will greet in that language. This article outlines the approach and solution using Go's interfaces and types.
+
+## Problem Statement
+
+We need to design:
+1. A **Greeter interface** that defines how different language greeters should work.
+2. Different language types that implement the **Greeter** interface, providing greetings in various languages.
+3. A function `SayHello` that takes a name and a language greeter to produce a greeting.
+
+## Approach
+
+The idea is to leverage Go's interface system to create an extensible greeting system where multiple languages can be supported by implementing the same interface.
+
+### Algorithm
+
+1. Define a `Greeter` interface with two methods:
+   - `LanguageName() string`: Returns the name of the language.
+   - `Greet(name string) string`: Greets the provided name in the respective language.
+   
+2. Implement the `Greeter` interface for different language types such as **Italian** and **Portuguese**.
+
+3. Create a function `SayHello` that accepts a name and a greeter object, then returns a formatted greeting in the respective language.
+
+### Implementation in Go
+
+```go
+package airportrobot
+
+import "fmt"
+
+// Greeter interface defines the blueprint for different language greeters.
+type Greeter interface {
+	LanguageName() string
+	Greet(name string) string
+}
+
+// SayHello creates a greeting message in the language provided by the Greeter.
+func SayHello(name string, g Greeter) string {
+	return fmt.Sprintf("I can speak %s: %s", g.LanguageName(), g.Greet(name))
+}
+
+// Italian greeter that implements the Greeter interface.
+type Italian struct{}
+
+func (i Italian) LanguageName() string {
+	return "Italian"
+}
+
+func (i Italian) Greet(name string) string {
+	return fmt.Sprintf("Ciao %s!", name)
+}
+
+// Portuguese greeter that implements the Greeter interface.
+type Portuguese struct{}
+
+func (p Portuguese) LanguageName() string {
+	return "Portuguese"
+}
+
+func (p Portuguese) Greet(name string) string {
+	return fmt.Sprintf("Olá %s!", name)
+}
+```
+
+
+### Explanation
+    1. **Greeter Interface**:
+    
+            - This interface defines two methods that any language type must implement: LanguageName to return the language name, and Greet to greet someone by name.
+
+    2. **SayHello Function**:
+
+            - It accepts a Greeter and a name, then returns a string using the language's greeting format by calling the Greet method on the greeter.
+
+    3. **Italian and Portuguese Types**:
+
+            - These types implement the Greeter interface. For each language, the Greet method formats the greeting appropriately for the language.
+            LanguageName for Italian returns "Italian", and Greet formats "Ciao !".
+            Similarly, Portuguese returns "Portuguese" and formats "Olá !".
+
+### Time and Space Complexity
+    - **Time Complexity**: O(1) for both Greet and LanguageName methods, as they involve simple string operations.
+    - **Space Complexity**: O(1), as each call allocates a small fixed amount of memory for the returned string.
+
+## Conclusion
+The Airport Robot problem demonstrates the power of Go's interface system to create flexible and reusable code. By defining a common Greeter interface and implementing it for different languages, the solution allows for easy extension and modification in the future, supporting more languages as needed. This is an elegant way to manage behaviors that differ across types but share a common interface.

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAllTags, sortPosts, sortTagsByCount } from "@/lib/utils";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import LoadingSkeleton from "@/components/loadingSkeleton";
 
 const POSTS_PER_PAGE = 10;
 
@@ -61,7 +62,7 @@ export default function BlogPage() {
   };
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingSkeleton />}>
       <SearchParamsHandler setCurrentPage={setCurrentPage} />
       <div className="container max-w-4xl py-6 lg:py-10">
         <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between md:gap-8">
@@ -120,6 +121,6 @@ export default function BlogPage() {
           </Card>
         </div>
       </div>
-    </Suspense>
+    </Suspense >
   );
 }

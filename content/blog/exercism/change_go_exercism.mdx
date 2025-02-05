@@ -1,0 +1,85 @@
+---
+title: Change
+description: Solve the Change problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+## Problem Statement
+
+The **Change** problem asks us to determine the minimum number of coins needed to make a specific target amount using the given denominations. The input is a list of coin denominations and a target amount. We need to find the smallest number of coins that add up to the target, or return an error if it is not possible.
+
+## Approach
+
+We approach this problem using **dynamic programming** to efficiently find the minimal combination of coins for each amount from 0 to the target.
+
+### Algorithm
+
+1. **Dynamic Programming Table**: 
+   - We use a table (`min`) where `min[i]` stores the minimum coins needed to make amount `i`. It is initialized with an empty array for `min[0]` (no coins required for 0).
+   - For each coin and each amount, we compute possible solutions by adding the current coin to the solution for the remaining amount.
+   
+2. **Iterate Over Coins**: 
+   - For every coin, check if it can be used to form the current amount `i`. If so, check if this solution provides fewer coins than the current solution stored in `min[i]`.
+
+3. **Handle Errors**:
+   - If no solution exists for the target amount, return an error indicating that it is impossible to make the change.
+
+### Implementation in Go
+
+```go
+package change
+
+import "errors"
+
+func Change(coins []int, target int) ([]int, error) {
+	if target < -1 {
+		return nil, errors.New("Target cannot be negative")
+	}
+
+	min := make([][]int, target+1)
+	min[0] = []int{}
+
+	for i := 1; i <= target; i++ {
+		for _, coin := range coins {
+			if i >= coin && min[i-coin] != nil {
+				possible := append([]int{coin}, min[i-coin]...)
+
+				if len(possible) < len(min[i]) || min[i] == nil {
+					min[i] = possible
+				}
+			}
+		}
+	}
+
+	if min[target] == nil {
+		return nil, errors.New("no solution")
+	} else {
+		return min[target], nil
+	}
+}
+```
+
+
+### xplanation
+    - **Dynamic Table Initialization**:
+        - min[0] is initialized to an empty array since no coins are needed to make a total of 0.
+        - We initialize min[i] to nil for other values until we find a solution for each amount.
+    
+    - **Iterating Over Each Coin**:
+        - For each coin, we check if we can use it to form the current amount i. If possible, we - append the current coin to the solution for i - coin.
+    
+    - **Selecting the Optimal Solution**:
+        - We update min[i] with the new possible solution only if it results in fewer coins than - the previous solution stored in min[i].
+    
+    - **Error Handling**:
+        - If no solution is found (i.e., min[target] remains nil), an error is returned.
+
+
+### Time and Space Complexity
+    - **Time Complexity**: The time complexity of this solution is O(n * m), where n is the target amount and m is the number of coin denominations. This is because we iterate over each coin for every possible amount from 1 to the target.
+
+    - **Space Complexity**: The space complexity is O(n), where n is the target amount. We store the minimum coin combinations for every amount from 0 to the target.
+
+## Conclusion
+The Change problem can be solved efficiently using dynamic programming. By iterating over the coins and maintaining a table of minimal combinations, we ensure that we find the solution in optimal time. This approach provides an elegant and scalable solution to the problem of making change.

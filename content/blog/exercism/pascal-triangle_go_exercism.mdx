@@ -1,0 +1,65 @@
+---
+title: Pascal Triangle
+description: Solve the Pascal Triangle problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The **Pascal's Triangle** problem requires generating the first `n` rows of Pascal's Triangle. Pascal's Triangle is a triangular array of numbers where each number is the sum of the two directly above it in the previous row. The first and last elements of each row are always 1.
+
+## Approach
+
+### Algorithm
+
+1. **Base Case**: The first row is always `[1]`.
+2. **Recursive Construction**: For each subsequent row, construct it by:
+   - Initializing the first and last elements as `1`.
+   - Filling each element in between by adding the two elements directly above from the previous row.
+3. Repeat this process until `n` rows are generated.
+
+### Implementation in Go
+
+```go
+package pascal
+
+func Triangle(n int) [][]int {
+    t := make([][]int, n)
+    
+    // First row is always [1]
+    t[0] = []int{1}
+    
+    // For each row i from 1 to n-1
+    for i := 1; i < n; i++ {
+        // Initialize the row with size i+1
+        t[i] = make([]int, i+1)
+        
+        // First and last elements are always 1
+        t[i][0], t[i][i] = 1, 1
+        
+        // Fill in the rest of the row using values from the previous row
+        for j := 1; j < i; j++ {
+            t[i][j] = t[i-1][j-1] + t[i-1][j]
+        }
+    }
+    
+    return t
+}
+```
+
+### Explanation
+    - **Initialization**: We create a 2D slice t to hold all rows of the triangle, with n being the total number of rows.
+    - **Base Case**: The first row is explicitly set to [1].
+    - **Row Construction**:
+        - For each row, the first and last elements are always set to 1.
+        - For each element between the first and last, it is computed as the sum of the two elements directly above it from the previous row.
+        - The triangle is built row by row, ensuring that each element in a new row is calculated based on its predecessors.
+
+### Time and Space Complexity
+    - **Time Complexity**: The time complexity is O(n²) because we iterate through each row, and each row i contains i+1 elements. The total number of elements in the triangle is the sum of the first n integers, which is proportional to n².
+    - **Space Complexity**: The space complexity is O(n²) because we store all the elements in the triangle.
+
+
+## Conclusion
+Pascal's Triangle is a fundamental example of a combinatorial structure. By using a dynamic programming approach, we can efficiently compute the triangle row by row in O(n²) time. This approach also demonstrates how simple recursion and iteration can be combined to solve problems involving structured arrays.

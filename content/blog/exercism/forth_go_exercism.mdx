@@ -1,0 +1,268 @@
+---
+title: Forth
+description: Solve the Forth problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-03"
+---
+
+## Problem Statement
+
+The **Forth** problem requires implementing a subset of the Forth programming language, a stack-based language where all operations are performed using a stack. The task involves interpreting and executing Forth commands, including basic arithmetic, stack manipulation operations, and user-defined words.
+
+Given a list of commands, the goal is to evaluate these instructions and return the final state of the stack. The program needs to support built-in operations like addition, subtraction, duplication, and others, along with allowing users to define their own words.
+
+## Approach
+
+The problem can be tackled by simulating a stack where each operation manipulates the stack in a specific way. We can build the interpreter with two components:
+1. A stack for storing and manipulating values.
+2. A set of predefined and user-defined commands for processing operations.
+
+### Algorithm
+
+1. **Stack Operations**:
+   - The stack operations include pushing, popping, and accessing elements from the stack.
+   - Implement functions for basic arithmetic (`+`, `-`, `*`, `/`) and stack manipulation (`dup`, `drop`, `swap`, `over`).
+
+2. **User-defined Words**:
+   - Parse and store user-defined words (functions) that can replace predefined operations or introduce new ones.
+   - These words are executed when encountered in the instruction set.
+
+3. **Execution of Commands**:
+   - Iterate through the list of instructions, checking if each is a number or a command.
+   - Numbers are pushed onto the stack, while commands modify the stack state.
+
+4. **Error Handling**:
+   - Handle errors such as division by zero, empty stack operations, and invalid instructions gracefully.
+
+### Implementation in Go
+
+Here's the Go implementation for the **Forth** problem:
+
+```go
+package forth
+
+import (
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+type stack struct {
+	s []string
+}
+
+func (s *stack) Push(a string) {
+	s.s = append(s.s, a)
+}
+
+func (s *stack) Shift() string {
+	var v string
+	if len(s.s) == 0 {
+		return ""
+	}
+	v, s.s = s.s[0], s.s[1:]
+	return v
+}
+
+func (s *stack) Top() string {
+	if len(s.s) == 0 {
+		return ""
+	}
+	return s.s[len(s.s)-1]
+}
+
+func (s *stack) TopSecond() string {
+	return s.s[len(s.s)-2]
+}
+
+func (s *stack) Drop() {
+	if len(s.s) == 0 {
+		return
+	}
+	s.s = s.s[:len(s.s)-1]
+}
+
+func (s *stack) Pop() string {
+	if len(s.s) == 0 {
+		return ""
+	}
+	var v string
+	v, s.s = s.s[len(s.s)-1], s.s[:len(s.s)-1]
+	return v
+}
+
+func (s *stack) ShiftTwo() (int, int, error) {
+	a, b := s.Shift(), s.Shift()
+	an, err := strconv.Atoi(a)
+	if err != nil {
+		return -1, -1, err
+	}
+	bn, err := strconv.Atoi(b)
+	if err != nil {
+		return -1, -1, err
+	}
+	return an, bn, nil
+}
+
+func Forth(args []string) ([]int, error) {
+	reservedWords := make(map[string]func(s *stack) error)
+	reservedWords["+"] = func(s *stack) error {
+		an, bn, err := s.ShiftTwo()
+		if err != nil {
+			return err
+		}
+		sum := an + bn
+		s.Push(strconv.Itoa(sum))
+		return nil
+	}
+	reservedWords["-"] = func(s *stack) error {
+		an, bn, err := s.ShiftTwo()
+		if err != nil {
+			return err
+		}
+		sum := an - bn
+		s.Push(strconv.Itoa(sum))
+		return nil
+	}
+	reservedWords["/"] = func(s *stack) error {
+		an, bn, err := s.ShiftTwo()
+		if err != nil {
+			return err
+		}
+		if bn == 0 {
+			return errors.New("divided by zero")
+		}
+		sum := an / bn
+		s.Push(strconv.Itoa(sum))
+		return nil
+	}
+	reservedWords["*"] = func(s *stack) error {
+		an, bn, err := s.ShiftTwo()
+		if err != nil {
+			return err
+		}
+		sum := an * bn
+		s.Push(strconv.Itoa(sum))
+		return nil
+	}
+	reservedWords["dup"] = func(s *stack) error {
+		top := s.Top()
+		s.Push(top)
+		return nil
+	}
+	reservedWords["drop"] = func(s *stack) error {
+		if len(s.s) == 0 {
+			return errors.New("empty")
+		}
+		s.Drop()
+		return nil
+	}
+	reservedWords["swap"] = func(s *stack) error {
+		if len(s.s) < 2 {
+			return errors.New("not enough elements")
+		}
+		a, b := s.Pop(), s.Pop()
+		s.Push(a)
+		s.Push(b)
+		return nil
+	}
+	reservedWords["over"] = func(s *stack) error {
+		if len(s.s) < 2 {
+			return errors.New("not enough elements")
+		}
+		a := s.TopSecond()
+		s.Push(a)
+		return nil
+	}
+
+	stack := &stack{
+		s: make([]string, 0),
+	}
+
+	userDefinedWords := make(map[string][]string)
+	userDefinitions := args[:len(args)-1]
+	if len(userDefinitions) != 0 {
+		for _, v := range userDefinitions {
+			instructions := strings.Split(v, " ")
+			word := strings.ToLower(instructions[1])
+			if _, err := strconv.Atoi(word); err == nil {
+				return nil, err
+			}
+
+			actions := make([]string, len(instructions[2:len(instructions)-1]))
+			copy(actions, instructions[2:len(instructions)-1])
+
+			for i := 0; i < len(actions); i++ {
+				if a, ok := userDefinedWords[strings.ToLower(actions[i])]; ok {
+					actions = append(actions[:i], append(a, actions[i+1:]...)...)
+				}
+			}
+			userDefinedWords[word] = actions
+		}
+	}
+	program := args[len(args)-1]
+
+	instructions := strings.Split(program, " ")
+	for j := 0; j < len(instructions); j++ {
+
+		if _, err := strconv.Atoi(instructions[j]); err == nil {
+			stack.Push(instructions[j])
+			continue
+		}
+
+		keyword := strings.ToLower(instructions[j])
+		if v, ok := userDefinedWords[keyword]; ok {
+			instructions = append(instructions[:j], append(v, instructions[j+1:]...)...)
+			j--
+			continue
+		}
+		f, ok := reservedWords[keyword]
+		if !ok {
+			return nil, fmt.Errorf("no instruction %s found", keyword)
+		}
+		if err := f(stack); err != nil {
+			return nil, err
+		}
+	}
+	result := make([]int, 0)
+	for _, v := range stack.s {
+		if n, err := strconv.Atoi(v); err != nil {
+			return nil, err
+		} else {
+			result = append(result, n)
+		}
+	}
+	return result, nil
+}
+```
+
+### Explanation
+    - **Stack Structure**:
+
+        - We implement a custom stack structure that provides functions for pushing, popping, and shifting elements. This is essential for stack manipulation operations like dup, swap, over, and drop.
+    
+    - **Instruction Processing**:
+
+        - The program processes instructions one by one. Numbers are pushed onto the stack, while operations manipulate the stack. For arithmetic operations like +, -, *, /, the top two values are popped from the stack, and the result is pushed back after applying the operation.
+    
+    - **User-defined Words**:
+
+        - User-defined words are treated like mini-programs. The code replaces the word with its corresponding set of instructions, enabling more complex operations and reusability.
+    
+    - **Error Handling**:
+
+        - The interpreter handles common errors such as division by zero, invalid operations, and attempting to manipulate an empty stack.
+
+
+### Time and Space Complexity
+    - **Time Complexity**:
+
+        - Each instruction is processed in constant time, so the overall time complexity is O(n), where n is the number of instructions.
+    
+    - **Space Complexity**:
+
+        The space complexity is also O(n) due to the use of a stack to store intermediate values and results.
+
+## Conclusion
+The Forth problem provides an excellent opportunity to explore stack-based computation and interpreters. The Go implementation efficiently handles basic operations, user-defined words, and error cases, making it a robust solution for evaluating Forth-like instructions.

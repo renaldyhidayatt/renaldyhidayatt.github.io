@@ -1,0 +1,131 @@
+---
+title: Meteorology
+description: Solve the Meteorology problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Meteorology
+
+In the **Meteorology** problem, we need to model meteorological data for different locations and provide meaningful string representations for the data. This involves working with temperature units, wind speed units, and general weather-related data. Our task is to implement a `String` method for each relevant type to display this data in a human-readable format.
+
+## Problem Statement
+
+We need to implement:
+1. A `TemperatureUnit` type with values for Celsius and Fahrenheit.
+2. A `Temperature` struct to represent the degree and unit of temperature.
+3. A `SpeedUnit` type with values for kilometers per hour and miles per hour.
+4. A `Speed` struct to represent wind speed and its unit.
+5. A `MeteorologyData` struct to encapsulate location, temperature, wind direction, wind speed, and humidity.
+6. A `String` method for each type to convert data into a readable format.
+
+## Approach
+
+The key aspect of the solution is defining `String` methods for the different types, which allows for concise, formatted output. The use of Go's type system and methods helps us encapsulate the details of each meteorological component.
+
+### Algorithm
+
+1. **TemperatureUnit and SpeedUnit Types**: These types represent units of measurement and require a `String` method to return the appropriate symbol.
+2. **Temperature and Speed Structs**: These structs store the values and units for temperature and speed and implement `String` methods to format these values.
+3. **MeteorologyData Struct**: This struct contains information about the weather at a location, including temperature, wind direction, wind speed, and humidity. Its `String` method combines all the details into a formatted weather report.
+
+### Implementation in Go
+
+```go
+package meteorology
+
+import "fmt"
+
+type TemperatureUnit int
+
+const (
+	Celsius    TemperatureUnit = 0
+	Fahrenheit TemperatureUnit = 1
+)
+
+// Add a String method to the TemperatureUnit type
+func (tu TemperatureUnit) String() string {
+    units := []string{"°C","°F"}
+    return units[tu]
+}
+
+type Temperature struct {
+	degree int
+	unit   TemperatureUnit
+}
+
+// Add a String method to the Temperature type
+func (t Temperature) String() string {
+	return fmt.Sprintf("%v %v", t.degree, t.unit)
+}
+
+type SpeedUnit int
+
+const (
+	KmPerHour    SpeedUnit = 0
+	MilesPerHour SpeedUnit = 1
+)
+
+// Add a String method to SpeedUnit
+func (su SpeedUnit) String() string {
+    units := []string{"km/h","mph"}
+    return units[su]
+}
+
+type Speed struct {
+	magnitude int
+	unit      SpeedUnit
+}
+
+// Add a String method to Speed
+func (s Speed) String() string {
+    return fmt.Sprintf("%v %v", s.magnitude, s.unit)
+}
+
+type MeteorologyData struct {
+	location      string
+	temperature   Temperature
+	windDirection string
+	windSpeed     Speed
+	humidity      int
+}
+
+// Add a String method to MeteorologyData
+func (md MeteorologyData) String() string {
+    return fmt.Sprintf("%v: %v, Wind %v at %v, %v%% Humidity", md.location, md.temperature, md.windDirection, md.windSpeed, md.humidity)
+}
+```
+
+### Explanation
+    1. **TemperatureUnit Type**:
+
+        The TemperatureUnit type is an integer-based enum with two constants: Celsius and Fahrenheit. The String method returns either "°C" or "°F" depending on the value.
+
+    2. **Temperature Struct**:
+
+        The Temperature struct stores the degree and unit of temperature. Its String method combines the degree and the unit into a formatted string (e.g., "25 °C").
+
+    3. **SpeedUnit Type**:
+
+        The SpeedUnit type is another integer-based enum with two constants: KmPerHour and MilesPerHour. The String method returns either "km/h" or "mph".
+
+    4. **Speed Struct**:
+
+        The Speed struct holds the wind speed and its unit. Its String method outputs the magnitude and unit in a readable format (e.g., "20 km/h").
+
+    5. **MeteorologyData Struct**:
+
+        This struct holds the overall weather data for a location, including temperature, wind direction, wind speed, and humidity. The String method formats this data into a concise weather report (e.g., "Paris: 22 °C, Wind N at 10 km/h, 60% Humidity").
+
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+        - The time complexity for each String method is O(1) since we are simply formatting existing data into strings.
+
+    - #### **Space Complexity**:
+        - The space complexity is also O(1) as we are not creating any additional large data structures. The memory usage is limited to the size of the input structs and the returned string.
+
+## Conclusion
+
+The Meteorology problem demonstrates how to use Go's struct and method system to encapsulate data and provide meaningful output through the String method. This approach makes it easy to manage and display meteorological data in a readable format, suitable for weather reports and similar applications.

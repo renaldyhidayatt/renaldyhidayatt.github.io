@@ -1,0 +1,119 @@
+---
+title: Census
+description: Solve the Census problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Census
+
+In the **Census** problem, we are tasked with building a system that collects and processes census data for a city. Specifically, we need to manage resident information, check if their required data is provided, and count those who have complete information. This article outlines an approach to solving this problem using Go.
+
+## Problem Statement
+
+We need to implement:
+
+1. A `Resident` struct that stores information about a resident (name, age, and address).
+2. Functions to:
+   - Register a new resident.
+   - Check if a resident has the required information (name and street address).
+   - Delete a resident's information.
+   - Count all residents with complete information.
+
+## Approach
+
+The approach involves using Go's structs and methods to represent residents and perform operations on their data. We will also use slices to manage multiple residents and keep track of those who have complete census information.
+
+### Algorithm
+
+1. **Struct Definition**: Define a `Resident` struct to hold data for each resident (name, age, and address).
+2. **NewResident Function**: Create a function to register a new resident with a name, age, and address.
+3. **HasRequiredInfo Method**: Implement a method that checks if the resident has both a name and a street address.
+4. **Delete Method**: Provide a way to delete a resident's information by resetting their fields.
+5. **Count Function**: Count and return the number of residents that have the required information.
+
+### Implementation in Go
+
+```go
+// Package census simulates a system used to collect census data.
+package census
+
+// Resident represents a resident in this city.
+type Resident struct {
+	Name    string
+	Age     int
+	Address map[string]string
+}
+
+// NewResident registers a new resident in this city.
+func NewResident(name string, age int, address map[string]string) *Resident {
+	return &Resident{Name: name, Age: age, Address: address}
+}
+
+// HasRequiredInfo determines if a given resident has all of the required information.
+func (r *Resident) HasRequiredInfo() bool {
+	return r.Name != "" && r.Address["street"] != ""
+}
+
+// Delete deletes a resident's information.
+func (r *Resident) Delete() {
+	r.Name = ""
+	r.Age = 0
+	r.Address = nil
+}
+
+// Count counts all residents that have provided the required information.
+func Count(residents []*Resident) int {
+	var count int
+
+	for _, resident := range residents {
+		if resident.HasRequiredInfo() {
+			count++
+		}
+	}
+
+	return count
+}
+```
+
+### Explanation
+
+    1. **Resident Struct**:
+
+        The Resident struct stores basic information about a city resident, including their name, age, and address. The address is represented as a map with strings for keys (e.g., "street").
+
+    2. **NewResident Function**:
+
+        This function registers a new resident by creating a new instance of Resident with the provided details.
+
+    3. **HasRequiredInfo Method**:
+
+        This method checks whether a resident has provided both their name and street address. These are considered mandatory fields.
+
+    4. **Delete Method**:
+
+        This method deletes the resident's information by resetting the fields to their zero values. For the address, it sets it to nil.
+
+    5 **Count Function**:
+
+        The Count function iterates over a slice of residents, checks if they have the required information using HasRequiredInfo, and counts those who do.
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+
+        **NewResident**: O(1), as it only initializes a new struct.
+        **HasRequiredInfo**: O(1), since it only checks two fields.
+        **Delete**: O(1), as it resets the fields directly.
+        **Count**: O(n), where n is the number of residents in the list. It iterates over each resident once.
+
+    - #### **Space Complexity**:
+
+        **NewResident**: O(1), as it allocates space for a single resident.
+        **HasRequiredInfo**: O(1), no additional memory is allocated.
+        **Delete**: O(1), since it clears data but doesn’t allocate extra space.
+        **Count**: O(1), apart from storing the count, no extra memory is used.
+
+## Conclusion
+
+The Census problem demonstrates a simple and efficient way to manage resident data using Go's struct and method system. The solution focuses on creating reusable methods to check and update resident data, ensuring that required information is collected. The algorithm is scalable and can easily handle larger datasets with minor adjustments.

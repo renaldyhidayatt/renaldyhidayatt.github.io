@@ -1,0 +1,100 @@
+---
+title: Zebra Puzzle
+description: Solve the Zebra Puzzle efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+## Problem Statement
+
+The **Zebra Puzzle** (also known as "Einstein's Riddle") is a well-known logic puzzle that involves figuring out who owns the zebra and who drinks water. The puzzle consists of a series of clues that help determine the relationships between different attributes, such as house colors, nationalities, pets, drinks, and cigarettes.
+
+You are given 5 houses in different colors, with residents of different nationalities. Each resident owns a different pet, drinks a different beverage, and smokes a different brand of cigarettes. The goal is to find who drinks water and who owns the zebra.
+
+## Approach
+
+### Algorithm
+
+The problem can be solved using a brute-force approach by generating all possible permutations of house attributes and applying the given constraints. The puzzle is structured as a permutation problem where each of the five houses must be assigned the correct color, nationality, drink, pet, and cigarette brand based on the clues.
+
+We solve the puzzle by:
+1. Generating all possible permutations of house attributes.
+2. Applying the clues to filter out invalid permutations.
+3. Returning the correct solution once all conditions are satisfied.
+
+### Implementation in Go
+
+Here's the Go implementation for solving the Zebra Puzzle:
+
+```go
+package zebra
+
+type Solution struct{ DrinksWater, OwnsZebra string }
+
+const red, grn, ivr, ylw, blu, eng, spa, ukr, nor, jap = 0, 1, 2, 3, 4, 0, 1, 2, 3, 4
+const cof, tea, mil, oj, wtr, og, kls, chs, lky, prl, dog, snl, fox, hrs, zbr = 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4
+
+func SolvePuzzle() (sln Solution) {
+
+    permsInner, desc := func([5]int, int) {}, [5]string{}
+
+    // Build a slice of all possible permutations
+    permutations := make([][5]int, 0, 5*4*3*2)
+    permsInner = func(a [5]int, k int) {
+        if k == 5 {
+            permutations = append(permutations, a)
+        } else {
+            for i := k; i < 5; i++ {
+                a[k], a[i] = a[i], a[k]
+                permsInner(a, k+1)
+                a[k], a[i] = a[i], a[k]
+            }
+        }
+    }
+    permsInner([5]int{0, 1, 2, 3, 4}, 0)
+
+    // Try all possible permutations
+    for _, cols := range permutations {
+        if cols[grn]-cols[ivr] == 1 {
+            for _, men := range permutations {
+                if men[eng] == cols[red] && men[nor] == 0 && nextTo(men[nor], cols[blu]) {
+                    for _, drnks := range permutations {
+                        if drnks[cof] == cols[grn] && men[ukr] == drnks[tea] && drnks[mil] == 2 {
+                            for _, smks := range permutations {
+                                if smks[kls] == cols[ylw] && smks[lky] == drnks[oj] && men[jap] == smks[prl] {
+                                    for _, pets := range permutations {
+                                        if men[spa] == pets[dog] && smks[og] == pets[snl] && nextTo(smks[chs], pets[fox]) && nextTo(smks[kls], pets[hrs]) {
+                                            desc[men[eng]], desc[men[spa]], desc[men[ukr]], desc[men[jap]], desc[men[nor]] = "Englishman", "Spaniard", "Ukrainian", "Japanese", "Norwegian"
+                                            return Solution{desc[drnks[wtr]], desc[pets[zbr]]}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return
+}
+
+func nextTo(p, q int) bool { return (p-q) == 1 || (q-p) == 1 }
+````
+
+### Explanation
+    - **Constants**: We define constants for house colors, nationalities, drinks, pets, and cigarette brands. This makes it easier to work with the puzzle’s attributes.
+
+    - **Permutations**: We generate all possible permutations for the five houses. The permsInner function recursively swaps and generates all 120 (5 factorial) possible arrangements for each attribute (colors, drinks, nationalities, etc.).
+
+    - **Applying Clues**: The puzzle provides a set of clues, which are applied as constraints to filter out invalid permutations. For example, one clue is that the green house must be immediately to the left of the ivory house (cols[grn] - cols[ivr] == 1). We continue applying such constraints to prune invalid arrangements.
+
+    - **Solution**: Once a valid permutation satisfies all the constraints, the function returns the person who drinks water and the person who owns the zebra.
+
+### Time and Space Complexity
+    - **Time Complexity**: The algorithm uses permutation generation, which has a factorial time complexity. For each attribute (like house colors, drinks, etc.), we generate all 5! = 120 permutations. Since there are 5 attributes, the complexity is O(5!^5), which simplifies to O(120^5). However, we quickly eliminate many invalid permutations using the given constraints, reducing the actual number of computations.
+
+    - **Space Complexity**: We store the permutations and maintain several arrays for house attributes. The space complexity is O(5!) for storing permutations, and the additional space required for filtering and storing the solution is minimal.
+
+## Conclusion
+The Zebra Puzzle can be efficiently solved by generating permutations and applying constraints based on the clues. The Go implementation leverages a brute-force approach, but the filtering of permutations allows us to find the solution in a reasonable time. This problem demonstrates how combinatorial search combined with constraint satisfaction can solve even complex puzzles.

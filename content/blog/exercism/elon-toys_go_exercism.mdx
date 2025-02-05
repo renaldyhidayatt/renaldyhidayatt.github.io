@@ -1,0 +1,125 @@
+---
+title: Elon Toys
+description: Solve the Elon Toys problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-09-29"
+---
+
+# Elon Toys
+
+In the **Elon Toys** problem, we create a remote-controlled car that can drive, display its distance and battery status, and determine if it can finish a given track distance based on its battery capacity. This exercise emphasizes object-oriented programming in Go, particularly with structs and methods.
+
+## Problem Statement
+
+The goal is to create a `Car` type that supports:
+1. Driving a specified distance while consuming battery.
+2. Displaying the distance driven and the current battery level.
+3. Determining if the car can finish a race given its speed and battery drain.
+
+## Approach
+
+The approach involves defining a `Car` struct with methods to handle driving logic, displaying current status, and checking if the car can complete a given distance based on its battery capacity.
+
+### Algorithm
+
+1. **Car Struct**:
+   - Define a struct to hold the car's speed, battery drain rate, current battery level, and distance driven.
+
+2. **NewCar Function**:
+   - Initialize a new car with specified speed and battery drain, starting with a full battery.
+
+3. **Drive Method**:
+   - Implement the logic to increase the distance driven if the battery allows.
+
+4. **DisplayDistance Method**:
+   - Return a formatted string showing how far the car has driven.
+
+5. **DisplayBattery Method**:
+   - Return a formatted string displaying the current battery percentage.
+
+6. **CanFinish Method**:
+   - Calculate whether the car can finish the track based on its speed, battery drain, and distance to be traveled.
+
+### Implementation in Go
+
+```go
+package elon
+
+import "fmt"
+
+// Car implements a remote-controlled car.
+type Car struct {
+	speed        int
+	batteryDrain int
+	battery      int
+	distance     int
+}
+
+// NewCar creates a new car with given specifications.
+func NewCar(speed, batteryDrain int) *Car {
+	return &Car{
+		speed:        speed,
+		batteryDrain: batteryDrain,
+		battery:      100,
+	}
+}
+
+func (c *Car) Drive() {
+	if c.battery >= c.batteryDrain {
+		c.distance += c.speed
+		c.battery -= c.batteryDrain
+	}
+}
+
+func (c *Car) DisplayDistance() string {
+	return fmt.Sprintf("Driven %d meters", c.distance)
+}
+
+func (c *Car) DisplayBattery() string {
+	return fmt.Sprintf("Battery at %d%%", c.battery)
+}
+
+func (c *Car) CanFinish(trackDistance int) bool {
+	return (c.battery / c.batteryDrain) * c.speed >= trackDistance
+}
+```
+
+
+Explanation
+    1. **Car Struct**:
+
+        Contains fields for speed, batteryDrain, battery, and distance to manage the state of the car.
+
+    2. **NewCar**:
+
+        Constructs a new car with a full battery and specified speed and drain.
+    
+    3. **Drive**:
+
+        Increments the distance if there is enough battery to cover the distance specified by the car's batteryDrain.
+
+    4. **DisplayDistance**:
+
+        Returns a string with the total distance driven in meters.
+
+    5. **DisplayBattery**:
+
+        Returns a string indicating the current battery percentage.
+
+    6. **CanFinish**:
+
+        Checks if the car has enough battery to cover a specified trackDistance based on its speed and battery drain.
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+
+        - All methods operate in constant time O(1) as they perform basic arithmetic and string formatting.
+
+
+    - #### **Space Complexity**:
+
+        - The space complexity is also O(1) as the Car struct only allocates a fixed amount of memory for its fields.
+
+## Conclusion
+The Elon Toys problem demonstrates how to effectively model an object-oriented system in Go using structs and methods. It reinforces concepts such as encapsulation and state management while allowing for interaction through well-defined interfaces.

@@ -1,0 +1,72 @@
+---
+title: Atbash Cipher
+description: Solve the Atbash Cipher problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The Atbash Cipher is a substitution cipher where each letter of the alphabet is replaced by its reverse counterpart. For example, 'A' becomes 'Z', 'B' becomes 'Y', and so on. The challenge is to implement the Atbash cipher such that it can handle both uppercase and lowercase letters, as well as numbers, while ignoring any other characters. The output should also format the text into groups of five characters separated by spaces.
+
+## Approach
+
+### Algorithm
+
+1. **Character Transformation**:
+   - Iterate through each character in the input string.
+   - If the character is an uppercase letter, transform it by replacing it with its counterpart from the opposite end of the alphabet.
+   - If it is a lowercase letter, apply the same transformation.
+   - If the character is a number (0-9), retain it without any changes.
+   - Ignore any non-alphanumeric characters.
+
+2. **Grouping**:
+   - After transforming the characters, format the output into groups of five characters. Insert a space after every five characters for readability.
+
+### Implementation in Go
+
+Here is the Go implementation of the Atbash cipher:
+
+```go
+// Package atbash provides functionality to encode and decode messages using the Atbash cipher.
+package atbash
+
+// Atbash encodes the input string using the Atbash cipher.
+func Atbash(s string) string {
+	r := []rune{}
+	for _, v := range s {
+		var char rune
+		if 'A' <= v && v <= 'Z' {
+			char = 'Z' - v + 'A'
+		} else if 'a' <= v && v <= 'z' {
+			char = 'z' - v + 'a'
+		} else if '0' <= v && v <= '9' {
+			char = v
+		} else {
+			continue
+		}
+		if len(r)%6 == 5 {
+			r = append(r, ' ')
+		}
+		r = append(r, char)
+	}
+	return string(r)
+}
+```
+
+
+### Explanation
+
+    - **Atbash Function**: This function takes a string input and processes each character based on its type (uppercase letter, lowercase letter, digit, or other). The transformation for letters uses the formula char = 'Z' - v + 'A' for uppercase letters and char = 'z' - v + 'a' for lowercase letters. For digits, it remains unchanged. The transformed characters are appended to a rune slice, and spaces are added as needed after every five characters.
+
+
+### Time and Space Complexity
+    - #### **Time Complexity**: O(n)
+
+        - Where n is the length of the input string. The algorithm processes each character once.
+    - #### **Space Complexity**: O(n)
+
+        - The space used is proportional to the size of the output string, which could be up to the same length as the input if no characters are ignored.
+
+## Conclusion
+The Atbash Cipher can be efficiently implemented in Go using a straightforward approach that involves character transformation and grouping. The solution effectively handles different character types while maintaining the desired format, making it a robust implementation of this classic cipher.

@@ -1,0 +1,86 @@
+---
+title: Resistor Color
+description: Solve the "Resistor Color" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+In electronics, resistors are color-coded to indicate their resistance values. The colors correspond to numbers, and these numbers can be combined to determine the resistance. The goal is to create a program that can return the list of colors and provide the corresponding resistance value for a given color.
+
+### Color Coding
+
+Here is the standard color code used for resistors:
+
+| Color   | Value |
+|---------|-------|
+| Black   | 0     |
+| Brown   | 1     |
+| Red     | 2     |
+| Orange  | 3     |
+| Yellow  | 4     |
+| Green   | 5     |
+| Blue    | 6     |
+| Violet  | 7     |
+| Grey    | 8     |
+| White   | 9     |
+
+## Approach
+
+To solve this problem, we need to implement two functions: `Colors` and `ColorCode`.
+
+1. **Colors Function**: This function will return a list of all resistor colors in order, corresponding to their resistance values.
+  
+2. **ColorCode Function**: This function will take a color as input and return its corresponding resistance value by searching through the list of colors. If the color is not found, it should return -1.
+
+### Implementation in Go
+
+Here is the Go implementation for the Resistor Color problem:
+
+```go
+package resistorcolor
+
+// Colors should return the list of all colors.
+func Colors() []string {
+    return []string{
+        "black",
+        "brown",
+        "red",
+        "orange",
+        "yellow",
+        "green",
+        "blue",
+        "violet",
+        "grey",
+        "white",
+    }
+}
+
+// ColorCode returns the resistance value of the given color.
+func ColorCode(color string) int {
+    for i, element := range Colors() {
+        if element == color {
+            return i
+        }
+    }
+    return -1
+}
+```
+
+### Explanation
+    - **Colors Function**: This function returns a static list of strings representing the colors corresponding to resistor values.
+
+    - **ColorCode Function**: This function iterates through the list of colors returned by Colors. For each color, it checks if it matches the input color. If a match is found, the function returns the index of that color (which corresponds to its value). If no match is found after checking all colors, it returns -1.
+
+### Time and Space Complexity
+
+    - #### **Time Complexity**:
+        - **Colors**: O(1) since it always returns a fixed list of colors.
+        - **ColorCode**: O(n), where n is the number of colors. In the worst case, it checks each color once.
+
+
+    - #### **Space Complexity**: O(1) as the space used does not grow with the size of the input; it returns a fixed array of colors.
+
+## Conclusion
+The Resistor Color problem is a simple yet effective way to understand how data structures can represent real-world concepts. By utilizing arrays and simple iteration, we can easily map colors to resistance values, demonstrating the power and elegance of Go for solving such algorithmic problems. This implementation serves as a foundational example of how to handle basic lookups in programming.

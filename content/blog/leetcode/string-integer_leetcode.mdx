@@ -1,0 +1,283 @@
+---
+title: String to Integer (atoi)
+description: Solve the "String to Integer (atoi)" problem efficiently using Go.
+tags: ["leetcode", "golang", "algorithms"]
+date: "2024-09-28"
+published: true
+---
+
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+   - [TypeScript](#implementation-in-typescript)
+   - [Python](#implementation-in-python)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+
+## Problem Statement
+
+The problem requires implementing the `myAtoi` function, which converts a string to a 32-bit signed integer. The algorithm should handle several cases:
+1. Ignore any leading whitespace.
+2. Determine the sign based on the presence of a '+' or '-' sign.
+3. Convert the digits until a non-digit is encountered or the string ends.
+4. If the converted integer is out of the 32-bit signed integer range, round it to the nearest boundary value.
+5. Return the integer result.
+
+### Constraints
+
+- The input string `s` may contain letters, digits, whitespace, and symbols like '+' or '-'.
+- If no valid conversion is found, return `0`.
+
+## Approach
+
+To solve this problem, we can break down the task into clear steps:
+1. **Whitespace handling:** The string should ignore leading spaces.
+2. **Signedness determination:** Identify if the number is positive or negative.
+3. **Conversion logic:** Read the digits and build the integer.
+4. **Boundary check:** Ensure the result remains within the 32-bit integer range.
+5. **Return the result.**
+
+### Algorithm
+
+1. **Skip whitespace:** Iterate through the string to skip leading spaces.
+2. **Detect the sign:** Look for a '+' or '-' to determine if the number is positive or negative.
+3. **Build the integer:** Continue reading digits until a non-digit is found or the end of the string is reached. Multiply the result by `10` as new digits are read.
+4. **Overflow detection:** If the resulting integer exceeds the 32-bit signed integer boundaries (`-2^31` to `2^31 - 1`), return the boundary value.
+
+### Flowchart
+![Flowchart of Atoi](/leetcode/atoi.png)
+
+
+### Implementation in Go
+
+Here is the Go implementation of the solution:
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+    "unicode"
+)
+
+const maxDiv10 = math.MaxInt32 / 10
+
+// myAtoi converts a string to a 32-bit signed integer
+func myAtoi(s string) int {
+    i, n := 0, len(s)
+    
+    // Skip leading whitespaces
+    for i < n && unicode.IsSpace(rune(s[i])) {
+        i++
+    }
+    
+    // Handle sign
+    sign := 1
+    if i < n && s[i] == '+' {
+        i++
+    } else if i < n && s[i] == '-' {
+        sign = -1
+        i++
+    }
+    
+    // Convert digits into an integer
+    num := 0
+    for i < n && unicode.IsDigit(rune(s[i])) {
+        digit := int(s[i] - '0')
+        
+        // Handle overflow/underflow
+        if num > maxDiv10 || (num == maxDiv10 && digit >= 8) {
+            if sign == 1 {
+                return math.MaxInt32
+            }
+            return math.MinInt32
+        }
+        
+        num = num*10 + digit
+        i++
+    }
+    
+    return sign * num
+}
+
+func main() {
+    fmt.Println(myAtoi("42"))           // Output: 42
+    fmt.Println(myAtoi("   -42"))       // Output: -42
+    fmt.Println(myAtoi("4193 with words")) // Output: 4193
+    fmt.Println(myAtoi("words and 987"))   // Output: 0
+    fmt.Println(myAtoi("-91283472332"))    // Output: -2147483648
+}
+
+```
+
+### Implementation in Java
+
+Here is the Java implementation of the solution:
+
+```java
+public class MyAtoi {
+
+    public int myAtoi(String s) {
+        int i = 0, n = s.length();
+        int sign = 1;
+        int num = 0;
+        int maxDiv10 = Integer.MAX_VALUE / 10;
+
+        // Skip leading whitespaces
+        while (i < n && Character.isWhitespace(s.charAt(i))) {
+            i++;
+        }
+
+        // Handle sign
+        if (i < n && s.charAt(i) == '+') {
+            i++;
+        } else if (i < n && s.charAt(i) == '-') {
+            sign = -1;
+            i++;
+        }
+
+        // Convert digits into an integer
+        while (i < n && Character.isDigit(s.charAt(i))) {
+            int digit = s.charAt(i) - '0';
+
+            // Handle overflow/underflow
+            if (num > maxDiv10 || (num == maxDiv10 && digit >= 8)) {
+                return sign == 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+            }
+
+            num = num * 10 + digit;
+            i++;
+        }
+
+        return sign * num;
+    }
+
+    public static void main(String[] args) {
+        MyAtoi converter = new MyAtoi();
+        System.out.println(converter.myAtoi("42"));                // Output: 42
+        System.out.println(converter.myAtoi("   -42"));            // Output: -42
+        System.out.println(converter.myAtoi("4193 with words"));   // Output: 4193
+        System.out.println(converter.myAtoi("words and 987"));     // Output: 0
+        System.out.println(converter.myAtoi("-91283472332"));      // Output: -2147483648
+    }
+}
+```
+
+
+### Implementation in TypeScript
+
+Here is the TypeScript implementation of the solution:
+
+```typescript
+function myAtoi(s: string): number {
+    let i = 0, n = s.length;
+    let sign = 1;
+    let num = 0;
+    const maxDiv10 = Math.floor(Number.MAX_SAFE_INTEGER / 10);
+
+    // Skip leading whitespaces
+    while (i < n && s[i] === ' ') {
+        i++;
+    }
+
+    // Handle sign
+    if (i < n && s[i] === '+') {
+        i++;
+    } else if (i < n && s[i] === '-') {
+        sign = -1;
+        i++;
+    }
+
+    // Convert digits into an integer
+    while (i < n && s[i] >= '0' && s[i] <= '9') {
+        const digit = s.charCodeAt(i) - '0';
+
+        // Handle overflow/underflow
+        if (num > maxDiv10 || (num === maxDiv10 && digit >= 8)) {
+            return sign === 1 ? 2147483647 : -2147483648;
+        }
+
+        num = num * 10 + digit;
+        i++;
+    }
+
+    return sign * num;
+}
+
+// Example usage
+console.log(myAtoi("42"));                 // Output: 42
+console.log(myAtoi("   -42"));             // Output: -42
+console.log(myAtoi("4193 with words"));    // Output: 4193
+console.log(myAtoi("words and 987"));      // Output: 0
+console.log(myAtoi("-91283472332"));       // Output: -2147483648
+```
+
+### Implementation in Python
+
+Here is the Python implementation of the solution:
+
+```python
+import math
+
+def my_atoi(s: str) -> int:
+    i = 0
+    n = len(s)
+    sign = 1
+    num = 0
+    max_div_10 = math.floor(2**31 - 1) // 10  # Max 32-bit integer divided by 10
+
+    # Skip leading whitespaces
+    while i < n and s[i].isspace():
+        i += 1
+
+    # Handle sign
+    if i < n and s[i] == '+':
+        i += 1
+    elif i < n and s[i] == '-':
+        sign = -1
+        i += 1
+
+    # Convert digits into an integer
+    while i < n and s[i].isdigit():
+        digit = int(s[i])
+
+        # Handle overflow/underflow
+        if num > max_div_10 or (num == max_div_10 and digit >= 8):
+            return (2**31 - 1) if sign == 1 else -2**31
+
+        num = num * 10 + digit
+        i += 1
+
+    return sign * num
+
+# Example usage
+print(my_atoi("42"))                 # Output: 42
+print(my_atoi("   -42"))             # Output: -42
+print(my_atoi("4193 with words"))    # Output: 4193
+print(my_atoi("words and 987"))      # Output: 0
+print(my_atoi("-91283472332"))       # Output: -2147483648
+```
+
+### Explanation
+1. **Whitespace Handling**: The function skips any leading spaces using a for loop and unicode.IsSpace to ensure it processes the string correctly.
+2. **Sign Detection**: If the next character is a '+' or '-', it updates the sign variable accordingly.
+3. **Integer Construction**: The function iterates over the digits, converting them into an integer by multiplying the previous result by 10 and adding the current digit.
+4. **Overflow Handling**: To avoid overflow, the function checks whether the current number exceeds the maximum 32-bit signed integer (2^31 - 1). If an overflow is detected, it returns math.MaxInt32 for positive numbers or math.MinInt32 for negative ones.
+
+
+### Time and Space Complexity
+1. **Time Complexity**: O(n) where n is the length of the input string. The algorithm scans the string once to convert it to an integer.
+2. **Space Complexity**: O(1) since we only use a constant amount of extra space to store variables like sign and num.
+
+
+## Conclusion
+This implementation of myAtoi efficiently converts a string to a 32-bit signed integer, accounting for potential edge cases like whitespaces, signs, non-digit characters, and overflow. The algorithm operates in linear time and uses constant space, making it well-suited for handling the problem within the constraints provided.

@@ -1,0 +1,87 @@
+---
+title: Binary Search Tree
+description: Solve the Binary Search Tree problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-02"
+---
+
+## Problem Statement
+
+The Binary Search Tree (BST) is a data structure that facilitates efficient searching, insertion, and sorting of data. Each node in a BST contains a value, a pointer to the left child, and a pointer to the right child. The left subtree contains values less than the node's value, while the right subtree contains values greater than or equal to the node's value.
+
+## Approach
+
+To implement a Binary Search Tree, we need to provide methods for:
+1. Inserting new values into the tree.
+2. Retrieving sorted values from the tree.
+
+### Algorithm
+
+1. **Node Structure**: Define a structure for the BST node that includes pointers to left and right children, as well as an integer for the node's value.
+2. **Insert Method**: 
+   - If the tree is empty, create a new node.
+   - If the value to be inserted is less than or equal to the current node's value, move to the left child. If there's no left child, insert the new node there; otherwise, continue down the left subtree.
+   - If the value is greater than the current node's value, repeat the process for the right child.
+3. **Sorted Data Method**: 
+   - Traverse the left subtree, then the current node, and finally the right subtree, collecting values in sorted order.
+
+### Implementation in Go
+
+```go
+package binarysearchtree
+
+type BinarySearchTree struct {
+	left  *BinarySearchTree
+	data  int
+	right *BinarySearchTree
+}
+
+func NewBst(i int) *BinarySearchTree {
+	return &BinarySearchTree{data: i}
+}
+
+func (bst *BinarySearchTree) Insert(i int) {
+	if bst == nil {
+		return
+	}
+
+	if i <= bst.data {
+		if bst.left == nil {
+			bst.left = NewBst(i)
+		} else {
+			bst.left.Insert(i)
+		}
+	} else {
+		if bst.right == nil {
+			bst.right = NewBst(i)
+		} else {
+			bst.right.Insert(i)
+		}
+	}
+}
+
+func (bst *BinarySearchTree) SortedData() []int {
+	if bst == nil {
+		return []int{}
+	}
+
+	return append(append(bst.left.SortedData(), bst.data), bst.right.SortedData()...)
+}
+```
+
+### Explanation
+    - **Structure**: The BinarySearchTree struct represents each node with pointers to left and right children, and an integer for the node's value.
+    - **NewBst Function**: This function initializes a new BST with a given value.
+    - **Insert Method**: The method checks where to insert the new value based on the BST properties, ensuring the tree maintains its ordered structure.
+    - **SortedData Method**: This method returns a slice of integers containing the values of the nodes in sorted order by performing an in-order traversal.
+
+### Time and Space Complexity
+
+    - **Time Complexity**:
+        - **Insert**: O(h), where h is the height of the tree. In the worst case (unbalanced tree), this could be O(n), where n is the number of nodes.
+        - **SortedData**: O(n), as it visits every node in the tree.
+        
+    - **Space Complexity**: O(n) for storing the result of the sorted data, assuming we collect all values.
+
+## Conclusion
+The Binary Search Tree is a fundamental data structure that provides efficient data handling capabilities. This implementation in Go includes methods for inserting values and retrieving sorted data, demonstrating the efficiency of BST operations.

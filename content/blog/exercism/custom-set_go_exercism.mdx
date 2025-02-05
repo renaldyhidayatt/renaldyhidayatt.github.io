@@ -1,0 +1,142 @@
+---
+title: Custom Set
+description: Solve the Custom Set problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Custom Set** problem requires implementing a collection of unique string values. The goal is to create a set data structure that allows adding, checking, and performing operations like union, intersection, and difference on sets of strings.
+
+## Approach
+
+To solve this problem, we will:
+1. Define a `Set` type based on a map to ensure uniqueness of strings.
+2. Implement methods to add elements, check for existence, and perform set operations.
+3. Override the string representation to format the set correctly.
+
+### Algorithm
+
+1. **Define the Set Type**: Use a map to store strings as keys, ensuring uniqueness.
+2. **Implement Methods**:
+   - **String()**: Override to format the output with proper escaping and syntax.
+   - **IsEmpty()**: Check if the set has no elements.
+   - **Has(elem)**: Check if a specific element is in the set.
+   - **Add(elem)**: Add an element to the set.
+   - **Subset(s1, s2)**: Check if one set is a subset of another.
+   - **Disjoint(s1, s2)**: Check if two sets have no elements in common.
+   - **Equal(s1, s2)**: Check if two sets contain the same elements.
+   - **Intersection(s1, s2)**: Return a new set containing elements present in both sets.
+   - **Difference(s1, s2)**: Return a new set containing elements in the first set but not in the second.
+   - **Union(s1, s2)**: Return a new set containing all elements from both sets.
+
+### Implementation in Go
+
+```go
+package stringset
+
+import "fmt"
+
+type Set map[string]struct{}
+
+func New() Set {
+	return make(Set)
+}
+
+func NewFromSlice(l []string) Set {
+	result := New()
+
+	for _, s := range l {
+		result.Add(s)
+	}
+
+	return result
+}
+
+func (s Set) String() string {
+	var i int
+	x := len(s)
+	result := "{"
+
+	for k := range s {
+		i++
+		result += fmt.Sprintf("\"%v\"", k)
+		if i < x {
+			result += ", "
+		}
+	}
+	result += "}"
+
+	return result
+}
+
+func (s Set) IsEmpty() bool {
+	return len(s) == 0
+}
+
+func (s Set) Has(elem string) bool {
+	_, ok := s[elem]
+	return ok
+}
+
+func (s Set) Add(elem string) {
+	s[elem] = struct{}{}
+}
+
+func Subset(s1, s2 Set) bool {
+	for k := range s1 {
+		if !s2.Has(k) {
+			return false
+		}
+	}
+	return true
+}
+
+func Disjoint(s1, s2 Set) bool {
+	return len(Intersection(s1, s2)) == 0
+}
+
+func Equal(s1, s2 Set) bool {
+	return Subset(s1, s2) && len(s1) == len(s2)
+}
+
+func Intersection(s1, s2 Set) Set {
+	result := New()
+	for k := range s1 {
+		if s2.Has(k) {
+			result.Add(k)
+		}
+	}
+	return result
+}
+
+func Difference(s1, s2 Set) Set {
+	result := New()
+	for s := range s1 {
+		if !s2.Has(s) {
+			result.Add(s)
+		}
+	}
+	return result
+}
+
+func Union(s1, s2 Set) Set {
+	for s := range s1 {
+		s2.Add(s)
+	}
+	return s2
+}
+```
+
+### Explanation
+    - **Set Type**: The Set type is defined as a map with string keys and empty struct values, allowing for fast membership checks.
+    - **String Method**: This method constructs a string representation of the set, formatting elements as double-quoted strings.
+    - **Set Operations**: Each operation (add, check existence, intersection, etc.) is implemented as a method on the Set type, providing a clear and intuitive interface.
+
+### Time and Space Complexity
+    - **Time Complexity**: Most operations (add, check existence, etc.) are O(1) on average, while union, intersection, and difference are O(n), where n is the number of elements in the sets.
+    - **Space Complexity**: O(n) for storing elements in the set.
+
+## Conclusion
+The Custom Set implementation provides a robust and efficient way to manage a collection of unique strings. By leveraging Go's map data structure, we can easily implement set operations, ensuring high performance and clear syntax.

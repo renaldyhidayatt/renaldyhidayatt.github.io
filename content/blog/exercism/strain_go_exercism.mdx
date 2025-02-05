@@ -1,0 +1,67 @@
+---
+title: Strain
+description: Solve the "Strain" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The "Strain" problem involves implementing two functions, `Keep` and `Discard`, which operate on a collection of items. The `Keep` function retains elements that satisfy a given predicate, while the `Discard` function removes elements that meet the predicate criteria.
+
+## Approach
+
+To solve this problem, we will implement two generic functions that iterate over a slice of items. For each item, we will apply the provided predicate function to determine whether to keep or discard the item.
+
+### Algorithm
+
+1. **Keep Function**:
+   - Initialize an empty slice to store the items that meet the criteria.
+   - Loop through each item in the input slice.
+   - If the predicate function returns `true` for the item, append it to the kept items slice.
+   - Return the kept items slice.
+
+2. **Discard Function**:
+   - Similar to the `Keep` function, initialize an empty slice.
+   - Loop through each item and check if the predicate function returns `false`.
+   - If it does, append the item to the kept items slice.
+   - Return the kept items slice.
+
+### Implementation in Go
+
+```go
+package strain
+
+// Implement the "Keep" and "Discard" function in this file.
+func Keep[T any](items []T, pred func(T) bool) []T {
+    var kept []T
+    for _, item := range items {
+        if pred(item) {
+            kept = append(kept, item)
+        }
+    }
+    return kept
+}
+
+func Discard[T any](items []T, pred func(T) bool) []T {
+    var kept []T
+    for _, item := range items {
+        if !pred(item) {
+            kept = append(kept, item)
+        }
+    }
+    return kept
+}
+```
+
+### Explanation
+    - The Keep function takes a slice of items and a predicate function as parameters. It iterates through the slice and appends items to the kept slice if they satisfy the predicate.
+    - The Discard function follows a similar logic but appends items that do not satisfy the predicate.
+    - The use of generics (T any) allows the functions to work with any data type, making them versatile.
+
+### Time and Space Complexity
+    - **Time Complexity**: Both functions have a time complexity of O(n), where n is the number of items in the input slice, since each item is examined exactly once.
+    - **Space Complexity**: The space complexity is O(k) for the kept slice, where k is the number of items that are kept (or discarded) based on the predicate.
+
+## Conclusion
+The implementation of the Keep and Discard functions provides a flexible way to filter elements from a collection based on arbitrary criteria. This generic approach allows for code reuse and enhances maintainability. These functions can be applied in various contexts wherever filtering logic is needed.

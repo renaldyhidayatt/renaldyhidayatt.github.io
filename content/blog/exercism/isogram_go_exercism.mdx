@@ -1,0 +1,71 @@
+---
+title: Isogram
+description: Solve the "Isogram" problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+An **isogram** is a word or phrase in which no letter occurs more than once. The goal of this problem is to determine whether a given string is an isogram. The function should ignore letter case and any non-letter characters (like spaces and hyphens).
+
+For example:
+- `"lumberjack"` is an isogram because no letter is repeated.
+- `"programming"` is not an isogram because the letter `'r'` appears more than once.
+
+## Approach
+
+To solve this problem:
+1. Convert the string to lowercase to ignore case sensitivity.
+2. Iterate through the string and check if any letter appears more than once.
+3. Ignore non-letter characters while checking for duplicates.
+4. Return `true` if no duplicate letters are found; otherwise, return `false`.
+
+### Algorithm
+
+1. **Convert to Lowercase**: Convert the entire string to lowercase using `strings.ToLower`.
+2. **Loop through the Characters**: Iterate over each character in the string.
+3. **Check for Duplicates**: For each letter, check if it appears again in the remaining portion of the string using `strings.ContainsRune`. Ignore non-letter characters using `unicode.IsLetter`.
+4. **Return the Result**: If any letter is found more than once, return `false`. Otherwise, return `true`.
+
+### Implementation in Go
+
+Here’s the implementation of the `IsIsogram` function in Go:
+
+```go
+// Package isogram detects isograms
+package isogram
+
+import (
+	"strings"
+	"unicode"
+)
+
+// IsIsogram returns true if the input s is an isogram.
+func IsIsogram(s string) bool {
+	s = strings.ToLower(s)
+
+	for i, c := range s {
+		if unicode.IsLetter(c) && strings.ContainsRune(s[i+1:], c) {
+			return false
+		}
+	}
+
+	return true
+}
+```
+
+### Explanation
+
+	- **Convert to Lowercase**: The input string is first converted to lowercase using strings.ToLower to make the comparison case-insensitive.
+	- **Iterate through the String**: The function uses a for loop to iterate through each character in the string.
+	- **Check for Repeating Letters**: For each character, it checks if the character appears again in the remaining portion of the string (s[i+1:]) using strings.ContainsRune. This ensures that any letter appearing more than once will return false.
+	- **Ignore Non-Letter Characters**: The function uses unicode.IsLetter to ensure only alphabetic characters are checked for repetition, ignoring characters like spaces, dashes, or other punctuation.
+	- **Return Value**: If no duplicate letters are found, the function returns true, indicating that the input is an isogram.
+
+### Time and Space Complexity
+	- **Time Complexity**: The time complexity is O(n²), where n is the length of the string. This is because for each character, we search the rest of the string to check for duplicates, leading to a quadratic runtime.
+	- **Space Complexity**: The space complexity is O(1), as we only store a few variables for the lowercase string and loop indices. No additional space is used proportional to the input size.
+
+## Conclusion
+The "Isogram" problem is a simple yet effective exercise in string manipulation and iteration. While the current solution has a time complexity of O(n²) due to checking the remaining string for each character, it is straightforward and works well for short strings. Optimizations could be made by using a set or map for faster lookups, but the current approach effectively demonstrates basic problem-solving in Go.

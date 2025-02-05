@@ -1,0 +1,95 @@
+---
+title: Clock
+description: Solve the Clock problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The Clock problem requires creating a simple clock representation that can manage time calculations, such as adding or subtracting minutes from a given time. The clock should handle 24-hour time format, where times wrap around after 24 hours. The goal is to implement a Clock type that allows for the creation of a new clock time, as well as methods to add or subtract minutes, and to represent the time as a string.
+
+## Approach
+
+### Algorithm
+
+1. **Clock Structure**: Define a `Clock` struct that holds the total minutes since midnight.
+2. **Constructor Function**: Implement a `New` function to initialize the clock by converting hours and minutes into total minutes, ensuring it wraps correctly within a 24-hour period.
+3. **Add and Subtract Methods**: Create methods to add or subtract minutes from the clock, recalculating the time as necessary.
+4. **String Representation**: Implement a method to convert the clock time to a string format (`HH:MM`).
+
+### Implementation in Go
+
+Here is the Go implementation of the Clock:
+
+```go
+package clock
+
+import (
+	"fmt"
+)
+
+// Define the Clock type here.
+type Clock struct {
+	m int
+}
+
+// New creates a new Clock instance based on the given hours and minutes.
+func New(h, m int) Clock {
+	minutes := h*60 + m
+	minutes %= 24 * 60
+
+	if minutes < 0 {
+		minutes += 24 * 60
+	}
+
+	return Clock{m: minutes}
+}
+
+// Add adds the specified number of minutes to the Clock.
+func (c Clock) Add(m int) Clock {
+	c = New(c.hours(), c.minutes()+m)
+	return c
+}
+
+// Subtract subtracts the specified number of minutes from the Clock.
+func (c Clock) Subtract(m int) Clock {
+	c = New(c.hours(), c.minutes()-m)
+	return c
+}
+
+// String returns the time in HH:MM format.
+func (c Clock) String() string {
+	return fmt.Sprintf("%02d:%02d", c.hours(), c.minutes())
+}
+
+// hours returns the hour part of the time.
+func (c Clock) hours() int {
+	return (c.m / 60) % 24
+}
+
+// minutes returns the minute part of the time.
+func (c Clock) minutes() int {
+	return c.m % 60
+}
+```
+
+### Explanation
+
+    - **Clock Struct**: The Clock struct holds an integer m, which represents the total number of minutes since midnight.
+
+    - **New Function**: The New function computes the total minutes from the provided hours and minutes. It uses the modulus operator to ensure that the result stays within a 24-hour period and adjusts negative values to wrap around correctly.
+
+    - **Add and Subtract Methods**: The Add and Subtract methods adjust the current clock time by adding or subtracting a specified number of minutes. Each method recalculates the clock time using the New function.
+
+    - **String Representation**: The String method formats the hours and minutes into a string that adheres to the HH:MM format, ensuring two digits for both.
+
+### Time and Space Complexity
+    - #### Time Complexity: O(1)
+
+        - The operations for adding, subtracting, and creating a new clock time all take constant time since they involve basic arithmetic and modulus operations.
+    - #### Space Complexity: O(1)
+
+        - The space complexity is also O(1), as the implementation uses a fixed amount of space for the Clock struct regardless of the input values.
+## Conclusion
+The Clock problem is effectively solved with a simple yet powerful implementation in Go. By utilizing a straightforward structure to represent time and methods for time manipulation, this solution provides a clear approach to managing time calculations in a 24-hour format. The implementation is efficient, with constant time and space complexity, making it suitable for various applications requiring time management.

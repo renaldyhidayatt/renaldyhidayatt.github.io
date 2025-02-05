@@ -1,0 +1,94 @@
+---
+title: Sublist
+description: Solve the Sublist problem efficiently using Go.
+tags: ["exercism", "golang", "algorithms"]
+date: "2024-10-01"
+---
+
+## Problem Statement
+
+The **Sublist** problem is about determining the relationship between two lists (or arrays). Given two lists `s1` and `s2`, you need to determine if:
+- `s1` is a sublist of `s2`
+- `s1` is a superlist of `s2`
+- `s1` is equal to `s2`
+- `s1` and `s2` are unequal
+
+These relationships can be categorized as:
+1. **Equal**: Both lists have the same elements in the same order.
+2. **Sublist**: List `s1` is contained within list `s2` as a contiguous sequence of elements.
+3. **Superlist**: List `s1` contains list `s2` as a contiguous sequence of elements.
+4. **Unequal**: Neither list is a sublist or superlist of the other, and they are not equal.
+
+## Approach
+
+The approach involves iterating through the lists and checking if one is a sublist of the other. We use helper functions to detect if one list contains the other as a contiguous sequence.
+
+### Algorithm
+
+1. **Sublist Function**:
+   - If list `s2` is a sublist of `s1`, return **Superlist** if `s1` is larger, or **Equal** if they are the same size.
+   - If list `s1` is a sublist of `s2`, return **Sublist**.
+   - Otherwise, return **Unequal**.
+
+2. **Helper Function `contains`**:
+   - This function checks if one list is contained within the other as a contiguous sequence.
+   - It compares elements of both lists and slides the window over the main list to look for matches.
+
+### Implementation in Go
+
+```go
+package sublist
+
+// Relation type is defined in relations.go file.
+
+func Sublist(s1, s2 []int) Relation {
+	if contains(s1, s2) {
+		if len(s1) == len(s2) {
+			return RelationEqual
+		}
+		return RelationSuperlist
+	} else if contains(s2, s1) {
+		return RelationSublist
+	}
+	return RelationUnequal
+}
+
+func contains(s1, s2 []int) bool {
+	i1, i2 := 0, 0
+
+	for ; i1 < len(s1) && i2 < len(s2); i1++ {
+		if s1[i1] == s2[i2] {
+			i2++
+		} else {
+			i1, i2 = i1-i2, 0
+		}
+	}
+
+	return i2 == len(s2)
+}
+```
+
+### Explanation
+
+    - #### **Sublist Function**:
+
+        - The function first checks if list s2 is a sublist of s1 using the helper contains. If it is, it checks if their lengths are equal to decide between the Equal and Superlist relations.
+        - If s2 is not a sublist of s1, it checks if s1 is a sublist of s2, returning Sublist if true.
+        - If neither condition is met, the two lists are considered Unequal.
+
+    - #### **Contains Function**:
+
+        - This function iterates through both lists, checking if the second list s2 exists as a contiguous subsequence in the first list s1.
+        - If a match is found, it returns true. Otherwise, it returns false.
+
+### Time and Space Complexity
+    - **Time Complexity**: O(n * m), where n is the length of s1 and m is the length of s2. The contains function compares elements of both lists and may slide over the entire list.
+
+    - **Space Complexity**: O(1), as no additional space proportional to the input size is used (beyond temporary variables).
+
+### Edge Cases
+    - **Empty Lists**: An empty list is considered a sublist of any other list, and two empty lists are equal.
+    - **Single-element Lists**: The function works with single-element lists and properly compares their values.
+
+## Conclusion
+The Sublist problem can be efficiently solved using a sliding window approach to compare two lists. This implementation checks for all possible relations (Equal, Sublist, Superlist, and Unequal) and provides a clear solution using helper functions to manage the list comparisons
