@@ -42,7 +42,7 @@ The project involves multiple entities like users, cards, merchants, and financi
 ## **Preview** 📸
 
 ### **Frontend Web** 🖥️
-<img src="https://github.com/MamangRust/payment-gateway-grpc/raw/main/images/preview_payment.png?raw=true" alt="Frontend Web Preview" width={600} height={400} />
+<img src="https://github.com/MamangRust/payment-gateway-web/raw/main/images/image.png?raw=true" alt="Frontend Web Preview" width={600} height={400} />
 
 ### **Frontend Desktop** 🏢
 <img src="https://github.com/MamangRust/payment-gateway-grpc/raw/main/images/preview_payment_desktop.png?raw=true" alt="Frontend Desktop Preview" width={600} height={400} />
@@ -69,7 +69,7 @@ go run cmd/server/main.go // run server (grpc)
 
 ```
 
-### Frontend
+### Frontend-web
 ```sh
 git clone https://github.com/MamangRust/payment-gateway-web.git
 
@@ -77,16 +77,29 @@ cd payment-gateway-web
 
 npm install
 
-# Build aplikasi Tauri
-npm run tauri build
-
-# Hasil build ada di:
-ls src-tauri/target/release
-
+npm run dev
 
 ```
+
+
+### Frontend-dashboard
+```sh
+git clone https://github.com/MamangRust/payment-gateway-dashboard.git
+
+cd payment-gateway-web
+
+npm install
+
+// build tauri app
+npm run tauri build
+ 
+# Hasil build ada di:
+ls src-tauri/target/release
+```
+
 
 
 ## 🔗 Source Code & Repository
 [📌 View on GitHub (Backend)](https://github.com/MamangRust/payment-gateway-grpc)<br />
 [📌 View on GitHub (Frontend)](https://github.com/MamangRust/payment-gateway-web)
+[📌 View on GitHub (Frontend)](https://github.com/MamangRust/payment-gateway-dashboard)
