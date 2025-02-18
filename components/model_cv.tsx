@@ -29,7 +29,7 @@ export default function ModalCV() {
             </div>
             <div className="w-full h-[500px]">
               <iframe
-                src="https://drive.google.com/file/d/1RU7a6INWQ5-vezuClceV8i04NZ-Oxj58/preview"
+                src="https://drive.google.com/file/d/13194bX8sWZFmEZlo0HJZxxPKO51pEcMX/preview"
                 className="w-full h-full"
                 allow="autoplay"
                 allowFullScreen
