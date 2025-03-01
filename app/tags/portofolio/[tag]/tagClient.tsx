@@ -91,50 +91,46 @@ export default function TagPortfolioClient({ tag }: TagPortfolioClientProps) {
           <div className="lg:col-span-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {displayPosts.length > 0 ? (
-                <div className="bg-white dark:bg-[#1c1d1f] rounded-2xl shadow-md hover:shadow-lg transition-transform transform hover:scale-[1.02] overflow-hidden">
-                  {displayPosts
-                    .filter((post) =>
-                      post.title
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()),
-                    )
-                    .map((project, index) => (
-                      <div
-                        key={index}
-                        onClick={() => router.push(`/${project.slug}`)}
-                        className="bg-white dark:bg-[#1c1d1f] rounded-2xl shadow-md hover:shadow-lg transition-transform transform hover:scale-[1.02] overflow-hidden"
-                      >
-                        <Image
-                          src={project.image}
-                          alt={project.title}
-                          width={700}
-                          height={400}
-                          className="w-full h-52 object-cover"
-                        />
-                        <div className="p-5">
-                          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                            {project.title}
-                          </h2>
-                          <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                            {project.description}
-                          </p>
+                displayPosts
+                  .filter((post) =>
+                    post.title.toLowerCase().includes(searchTerm.toLowerCase()),
+                  )
+                  .map((project, index) => (
+                    <div
+                      key={index}
+                      onClick={() => router.push(`/${project.slug}`)}
+                      className="bg-white dark:bg-[#1c1d1f] rounded-2xl shadow-md hover:shadow-lg transition-transform transform hover:scale-[1.02] overflow-hidden"
+                    >
+                      <Image
+                        src={project.image}
+                        alt={project.title}
+                        width={700}
+                        height={400}
+                        className="w-full h-52 object-cover"
+                      />
+                      <div className="p-5">
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                          {project.title.length > 50
+                            ? project.title.substring(0, 47) + "..."
+                            : project.title}
+                        </h2>
 
-                          <div className="flex flex-wrap gap-2">
-                            {project.tags?.map((tag, i) => (
-                              <Tag name="portofolio" tag={tag} key={tag} />
-                            ))}
-                          </div>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                          {project.description}
+                        </p>
+
+                        <div className="flex flex-wrap gap-2">
+                          {project.tags?.map((tag, i) => (
+                            <Tag name="portofolio" tag={tag} key={tag} />
+                          ))}
                         </div>
                       </div>
-                    ))}
-                </div>
+                    </div>
+                  ))
               ) : (
-                <p className="text-center col-span-2">
-                  No portofolio found matching your search.
-                </p>
+                <p className="text-center col-span-2">No projects found.</p>
               )}
             </div>
-
             <div className="mt-8 flex justify-center">
               <Suspense fallback={<div>Loading pagination...</div>}>
                 <QueryPagination
@@ -153,8 +149,13 @@ export default function TagPortfolioClient({ tag }: TagPortfolioClientProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2 text-[#585a5c] dark:text-slate-200">
-                {sortedTags.map((t) => (
-                  <Tag name="blog" tag={t} key={t} count={tags[t]} />
+                {sortedTags.map((tag) => (
+                  <Tag
+                    name="portofolio"
+                    tag={tag}
+                    key={tag}
+                    count={tags[tag]}
+                  />
                 ))}
               </CardContent>
             </Card>
