@@ -11,7 +11,7 @@ export default function ModalCV() {
 
   return (
     <>
-      <div className="mt-4" style={{ marginLeft: "20px" }}>
+      <div className="mt-4" style={{ marginLeft: "30px" }}>
         <Button onClick={openModal}>View My CV</Button>
       </div>
 

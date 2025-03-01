@@ -12,7 +12,6 @@ interface PostItemProps {
   tags?: Array<string>;
 }
 
-
 export function PostItem({
   slug,
   title,
@@ -28,9 +27,7 @@ export function PostItem({
         </h2>
       </div>
       <div className="flex flex-wrap gap-2 ">
-        {tags?.map((tag) => (
-          <Tag tag={tag} key={tag} />
-        ))}
+        {tags?.map((tag) => <Tag name="blog" tag={tag} key={tag} />)}
       </div>
       <div className="max-w-none text-muted-foreground">{description}</div>
       <div className="flex justify-between items-center">
@@ -51,4 +48,3 @@ export function PostItem({
     </article>
   );
 }
-

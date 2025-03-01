@@ -5,7 +5,7 @@ import { PostItem } from "@/components/post-item";
 import { QueryPagination } from "@/components/query-pagination";
 import { Tag } from "@/components/tag";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAllTags, sortPosts, sortTagsByCount } from "@/lib/utils";
+import { getAllPostTags, sortPosts, sortTagsPostByCount } from "@/lib/utils";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LoadingSkeleton from "@/components/loadingSkeleton";
@@ -31,30 +31,32 @@ export default function BlogPage() {
 
   const sortedPosts = useMemo(
     () => sortPosts(posts.filter((post) => post.published)),
-    []
+    [],
   );
 
   const totalPages = useMemo(
     () => Math.ceil(sortedPosts.length / POSTS_PER_PAGE),
-    [sortedPosts]
+    [sortedPosts],
   );
 
-  const tags = useMemo(() => getAllTags(posts), []);
-  const sortedTags = useMemo(() => sortTagsByCount(tags), [tags]);
+  const tags = useMemo(() => getAllPostTags(posts), []);
+  const sortedTags = useMemo(() => sortTagsPostByCount(tags), [tags]);
 
   const displayPosts = useMemo(
-    () => sortedPosts.slice(
-      POSTS_PER_PAGE * (currentPage - 1),
-      POSTS_PER_PAGE * currentPage
-    ),
-    [sortedPosts, currentPage]
+    () =>
+      sortedPosts.slice(
+        POSTS_PER_PAGE * (currentPage - 1),
+        POSTS_PER_PAGE * currentPage,
+      ),
+    [sortedPosts, currentPage],
   );
 
   const filteredPosts = useMemo(
-    () => displayPosts.filter((post) =>
-      post.title.toLowerCase().includes(searchTerm.toLowerCase())
-    ),
-    [displayPosts, searchTerm]
+    () =>
+      displayPosts.filter((post) =>
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
+    [displayPosts, searchTerm],
   );
 
   const handlePageChange = (page: any) => {
@@ -115,12 +117,12 @@ export default function BlogPage() {
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2 text-[#585a5c] dark:text-slate-200">
               {sortedTags.map((tag) => (
-                <Tag tag={tag} key={tag} count={tags[tag]} />
+                <Tag name="blog" tag={tag} key={tag} count={tags[tag]} />
               ))}
             </CardContent>
           </Card>
         </div>
       </div>
-    </Suspense >
+    </Suspense>
   );
 }

@@ -5,7 +5,7 @@ import { PostItem } from "@/components/post-item";
 import { QueryPagination } from "@/components/query-pagination";
 import { Tag } from "@/components/tag";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAllTags, sortPosts, sortTagsByCount } from "@/lib/utils";
+import { getAllPostTags, sortPosts, sortTagsPostByCount } from "@/lib/utils";
 import { Suspense, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -18,44 +18,44 @@ const SearchParamsHandler = ({ setCurrentPage }: any) => {
     setCurrentPage(page);
   }, [searchParams, setCurrentPage]);
 
-  return null; 
+  return null;
 };
 
-interface TagClientProps {
+interface TagBlogClientProps {
   tag: string;
 }
 
-export default function TagClient({ tag }: TagClientProps) {
+export default function TagBlogClient({ tag }: TagBlogClientProps) {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredPosts = useMemo(() => {
     const tagFilteredPosts = posts.filter(
-      (post) => post.published && post.tags && post.tags.includes(tag)
+      (post) => post.published && post.tags && post.tags.includes(tag),
     );
     return sortPosts(tagFilteredPosts);
   }, [tag]);
 
   const totalPages = useMemo(
     () => Math.ceil(filteredPosts.length / POSTS_PER_PAGE),
-    [filteredPosts]
+    [filteredPosts],
   );
 
   const displayPosts = useMemo(
     () =>
       filteredPosts.slice(
         POSTS_PER_PAGE * (currentPage - 1),
-        POSTS_PER_PAGE * currentPage
+        POSTS_PER_PAGE * currentPage,
       ),
-    [filteredPosts, currentPage]
+    [filteredPosts, currentPage],
   );
 
-  const tags = useMemo(() => getAllTags(posts), []);
-  const sortedTags = useMemo(() => sortTagsByCount(tags), [tags]);
+  const tags = useMemo(() => getAllPostTags(posts), []);
+  const sortedTags = useMemo(() => sortTagsPostByCount(tags), [tags]);
 
   const handlePageChange = (page: number) => {
-    router.push(`/tags/${tag}?page=${page}`);
+    router.push(`/tags/blog/${tag}?page=${page}`);
   };
 
   return (
@@ -67,16 +67,18 @@ export default function TagClient({ tag }: TagClientProps) {
             <h1 className="inline-block font-black text-4xl lg:text-5xl capitalize text-[#585a5c] dark:text-slate-200">
               {tag}
             </h1>
+            <p className="text-xl text-muted-foreground text-[#585a5c] dark:text-slate-200">
+              My thoughts and experiments on everything web development—backend,
+              frontend, and a touch of machine learning.
+            </p>
+            <input
+              type="text"
+              placeholder="Search by title..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mt-10 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
-        </div>
-        <div className="mt-8 mb-4">
-          <input
-            type="text"
-            placeholder="Search by title..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="mt-10 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
         </div>
         <div className="grid grid-cols-12 gap-3 mt-8">
           <div className="col-span-12 col-start-1 sm:col-span-8">
@@ -85,7 +87,7 @@ export default function TagClient({ tag }: TagClientProps) {
               <ul className="flex flex-col">
                 {displayPosts
                   .filter((post) =>
-                    post.title.toLowerCase().includes(searchTerm.toLowerCase())
+                    post.title.toLowerCase().includes(searchTerm.toLowerCase()),
                   )
                   .map((post) => (
                     <li key={post.slug}>
@@ -96,8 +98,6 @@ export default function TagClient({ tag }: TagClientProps) {
             ) : (
               <p>No posts found matching your search.</p>
             )}
-
-            {/* Pagination */}
             <Suspense fallback={<div>Loading pagination...</div>}>
               <QueryPagination
                 totalPages={totalPages}
@@ -115,7 +115,7 @@ export default function TagClient({ tag }: TagClientProps) {
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2 text-[#585a5c] dark:text-slate-200">
               {sortedTags.map((t) => (
-                <Tag tag={t} key={t} count={tags[t]} />
+                <Tag name="blog" tag={t} key={t} count={tags[t]} />
               ))}
             </CardContent>
           </Card>

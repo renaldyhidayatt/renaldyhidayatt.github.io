@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 
 import "@/styles/mdx.css";
 import { Metadata } from "next";
+import { Tag } from "@/components/tag";
+import Image from "next/image";
 
 interface PortofolioPageProps {
   params: {
@@ -19,7 +21,9 @@ async function getPortofolioFromParams(params: PortofolioPageProps["params"]) {
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-export async function generateMetadata({ params }: PortofolioPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PortofolioPageProps): Promise<Metadata> {
   const project = await getPortofolioFromParams(params);
 
   if (!project) {
@@ -46,12 +50,12 @@ export async function generateMetadata({ params }: PortofolioPageProps): Promise
   };
 }
 
-
-export async function generateStaticParams(): Promise<PortofolioPageProps["params"][]> {
+export async function generateStaticParams(): Promise<
+  PortofolioPageProps["params"][]
+> {
   const params = portofolio.map((project) => ({
     slug: [project.slugAsParams],
   }));
-
 
   return params;
 }
@@ -67,19 +71,29 @@ export default async function PortofolioPage({ params }: PortofolioPageProps) {
     <article className="container py-6 prose dark:prose-invert max-w-3xl mx-auto">
       <h1 className="mb-2">{project.title}</h1>
       {project.image && (
-        <img src={project.image} alt={project.title} className="w-full rounded-lg mb-4" />
+        <Image
+          src={project.image}
+          alt={project.title}
+          className="w-full rounded-lg mb-4"
+        />
       )}
+      <div className="flex gap-2 mb-2">
+        {project.tags?.map((tag) => (
+          <Tag name="portofolio" tag={tag} key={tag} />
+        ))}
+      </div>
       {project.date && (
         <p className="text-sm text-muted-foreground mb-2">
           Published on {new Date(project.date).toLocaleDateString()}
         </p>
       )}
       {project.description && (
-        <p className="text-xl mt-0 text-muted-foreground">{project.description}</p>
+        <p className="text-xl mt-0 text-muted-foreground">
+          {project.description}
+        </p>
       )}
       <hr className="my-4" />
       <MDXContent code={project.body} />
     </article>
   );
 }
-

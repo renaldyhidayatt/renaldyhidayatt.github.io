@@ -36,6 +36,7 @@ const portofolio = defineCollection({
       description: s.string().max(999).optional(),
       date: s.isodate(),
       image: s.string(),
+      tags: s.array(s.string()).optional(),
       urlProject: s.string(),
       body: s.mdx(),
     })
