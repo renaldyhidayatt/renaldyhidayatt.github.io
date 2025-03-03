@@ -9,6 +9,9 @@ export default function HomeHeader() {
       </h2>
       <h3 className="text-2xl py-4 text-[#585a5c] dark:text-slate-200 md:text-3xl">
         <Typewriter
+            onInit={(typeswipper) => {
+                typeswipper.pauseFor(2500)
+            }}
           options={{
             strings: [
               "I'll be improving my learning in backend...",
@@ -19,7 +22,7 @@ export default function HomeHeader() {
             loop: true,
             delay: 50,
             deleteSpeed: 30,
-            pauseFor: 2000,
+            
           }}
         />
       </h3>
