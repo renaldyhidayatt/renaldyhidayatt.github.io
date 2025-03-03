@@ -17,12 +17,12 @@ export default function ModalCV() {
 
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white w-[90%] max-w-4xl rounded-md p-4">
+          <div className="bg-background text-foreground w-[90%] max-w-4xl rounded-md p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">My CV</h2>
               <button
                 onClick={closeModal}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
               >
                 ✖
               </button>

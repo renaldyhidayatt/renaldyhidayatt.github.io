@@ -79,7 +79,7 @@ export default async function PortofolioPage({ params }: PortofolioPageProps) {
           className="w-full rounded-lg mb-4"
         />
       )}
-      <div className="flex gap-2 mb-2">
+      <div className="flex flex-wrap gap-2 mb-2">
         {project.tags?.map((tag) => (
           <Tag name="portofolio" tag={tag} key={tag} />
         ))}
