@@ -1,0 +1,113 @@
+---
+title: Product of Array Except Self
+description: Compute the product of an array except self in O(n) time without division. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## 1. Problem Statement
+Given an integer array `nums`, return an array `answer` such that `answer[i]` is equal to the product of all the elements of `nums` except `nums[i]`.
+
+The product of any prefix or suffix of `nums` is guaranteed to fit in a 32-bit integer.
+
+You must write an algorithm that runs in **O(n)** time and **without using the division operation**.
+
+### Example 1:
+**Input:** `nums = [1,2,3,4]`
+**Output:** `[24,12,8,6]`
+
+### Example 2:
+**Input:** `nums = [-1,1,0,-3,3]`
+**Output:** `[0,0,9,0,0]`
+
+### Constraints:
+- `2 <= nums.length <= 10^5`
+- `-30 <= nums[i] <= 30`
+- The input is generated such that `answer[i]` is guaranteed to fit in a **32-bit integer**.
+
+### Follow-up:
+Can you solve the problem in **O(1)** extra space complexity? (The output array does not count as extra space for space complexity analysis.)
+
+## 2. Approach
+We use two passes to calculate prefix and suffix products without division:
+1. Compute the prefix product for each index.
+2. Compute the suffix product and update the result.
+
+## 3. Algorithm
+1. Initialize an output array `answer` with `1`s.
+2. Compute prefix products in the first loop.
+3. Compute suffix products in the second loop while updating `answer`.
+
+## 4. Implementations
+
+### Implementation in Go
+```go
+func productExceptSelf(nums []int) []int {
+    n := len(nums)
+    answer := make([]int, n)
+    
+    // Compute prefix products
+    answer[0] = 1
+    for i := 1; i < n; i++ {
+        answer[i] = answer[i-1] * nums[i-1]
+    }
+    
+    // Compute suffix products and update result
+    suffix := 1
+    for i := n - 1; i >= 0; i-- {
+        answer[i] *= suffix
+        suffix *= nums[i]
+    }
+    
+    return answer
+}
+```
+
+### Implementation in Java
+```java
+class Solution {
+    public int[] productExceptSelf(int[] nums) {
+        int n = nums.length;
+        int[] answer = new int[n];
+        
+        // Compute prefix products
+        answer[0] = 1;
+        for (int i = 1; i < n; i++) {
+            answer[i] = answer[i - 1] * nums[i - 1];
+        }
+        
+        // Compute suffix products and update result
+        int suffix = 1;
+        for (int i = n - 1; i >= 0; i--) {
+            answer[i] *= suffix;
+            suffix *= nums[i];
+        }
+        
+        return answer;
+    }
+}
+```
+
+## 6. Explanation
+- The **prefix pass** builds an array where `answer[i]` contains the product of all elements before index `i`.
+- The **suffix pass** multiplies `answer[i]` by the product of all elements after index `i`, giving the final result.
+
+## 7. Time and Space Complexity
+- **Time Complexity:** `O(n)`, as we traverse the array twice.
+- **Space Complexity:** `O(1)`, as we only use the output array for storage.
+
+## Conclusion
+This approach effectively computes the result in `O(n)` tim

@@ -1,0 +1,120 @@
+---
+title: Find the Highest Altitude
+description: Given an array of altitude gains, find the highest altitude a biker reaches during a trip. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+A biker is going on a road trip consisting of `n + 1` points at different altitudes. The biker starts the trip at point 0 with an altitude of 0.
+
+You are given an integer array `gain` of length `n`, where `gain[i]` is the net gain in altitude between points `i` and `i + 1`. Return the highest altitude reached.
+
+### Example 1:
+
+**Input:** gain = [-5,1,5,0,-7]  
+**Output:** 1  
+**Explanation:** The altitudes are [0,-5,-4,1,1,-6]. The highest is 1.
+
+### Example 2:
+
+**Input:** gain = [-4,-3,-2,-1,4,3,2]  
+**Output:** 0  
+**Explanation:** The altitudes are [0,-4,-7,-9,-10,-6,-3,-1]. The highest is 0.
+
+### Constraints:
+
+- `n == gain.length`
+- `1 <= n <= 100`
+- `-100 <= gain[i] <= 100`
+
+## Approach
+
+We maintain a running sum of the altitude gains and track the highest altitude encountered.
+
+## Algorithm
+
+1. Initialize `altitude = 0` and `maxAltitude = 0`.
+2. Iterate over the `gain` array and update `altitude`.
+3. Keep track of the maximum altitude encountered.
+4. Return `maxAltitude`.
+
+## Flowchart
+
+```plantuml
+@startuml
+start
+:Initialize altitude = 0, maxAltitude = 0;
+
+while (i < gain.length) do
+    :Update altitude += gain[i];
+    :Update maxAltitude = max(maxAltitude, altitude);
+    :Increment i;
+endwhile
+
+:Return maxAltitude;
+stop
+@enduml
+```
+
+## Implementations
+
+### Implementation in Go
+
+```go
+func largestAltitude(gain []int) int {
+    altitude, maxAltitude := 0, 0
+    for _, g := range gain {
+        altitude += g
+        if altitude > maxAltitude {
+            maxAltitude = altitude
+        }
+    }
+    return maxAltitude
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int largestAltitude(int[] gain) {
+        int altitude = 0, maxAltitude = 0;
+        for (int g : gain) {
+            altitude += g;
+            maxAltitude = Math.max(maxAltitude, altitude);
+        }
+        return maxAltitude;
+    }
+}
+```
+
+## Explanation
+
+By iterating through `gain`, we continuously track the altitude and update the maximum altitude reached.
+
+## Time and Space Complexity
+
+- **Time Complexity:** O(n) as we iterate through the array once.
+- **Space Complexity:** O(1) since we use only a few extra variables.
+
+## Conclusion
+
+This approach efficiently finds the highest altitude reached by a biker using simple iteration and tracking the maximum value encountered.
+

@@ -1,0 +1,107 @@
+---
+title: Increasing Triplet Subsequence
+description: Determine if there exists an increasing triplet subsequence in an array in O(n) time complexity. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+Given an integer array `nums`, return `true` if there exists a triple of indices `(i, j, k)` such that `i < j < k` and `nums[i] < nums[j] < nums[k]`. If no such indices exist, return `false`.
+
+### Example 1:
+**Input:** `nums = [1,2,3,4,5]`
+
+**Output:** `true`
+
+**Explanation:** Any triplet where `i < j < k` is valid.
+
+### Example 2:
+**Input:** `nums = [5,4,3,2,1]`
+
+**Output:** `false`
+
+**Explanation:** No triplet exists.
+
+### Example 3:
+**Input:** `nums = [2,1,5,0,4,6]`
+
+**Output:** `true`
+
+**Explanation:** The triplet `(3, 4, 5)` is valid because `nums[3] == 0 < nums[4] == 4 < nums[5] == 6`.
+
+## Approach
+- Use two variables `first` and `second` to track the smallest and second smallest elements encountered so far.
+- Iterate through `nums`, updating `first` and `second` accordingly.
+- If a number greater than `second` is found, return `true`.
+
+## Algorithm
+1. Initialize `first` as a large number and `second` as a large number.
+2. Loop through each number in `nums`:
+   - If the number is smaller than `first`, update `first`.
+   - Else if the number is smaller than `second`, update `second`.
+   - Else, return `true` (a valid triplet is found).
+3. If no triplet is found, return `false`.
+
+## Implementations
+### Implementation in Go
+```go
+func increasingTriplet(nums []int) bool {
+    first, second := int(^uint(0) >> 1), int(^uint(0) >> 1) // Initialize to max int
+    
+    for _, num := range nums {
+        if num <= first {
+            first = num
+        } else if num <= second {
+            second = num
+        } else {
+            return true
+        }
+    }
+    return false
+}
+```
+
+### Implementation in Java
+```java
+class Solution {
+    public boolean increasingTriplet(int[] nums) {
+        int first = Integer.MAX_VALUE, second = Integer.MAX_VALUE;
+        
+        for (int num : nums) {
+            if (num <= first) {
+                first = num;
+            } else if (num <= second) {
+                second = num;
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
+## Explanation
+- The approach ensures that we traverse the array once (`O(n)`) while maintaining only two variables (`O(1)` space).
+- The key idea is tracking the smallest two numbers (`first` and `second`) that can form an increasing subsequence.
+
+## Time and Space Complexity
+- **Time Complexity:** `O(n)`, as we traverse the array once.
+- **Space Complexity:** `O(1)`, since only two extra variables are used.
+
+## Conclusion
+This problem can be efficiently solved using a greedy approach in `O(n)` time and `O(1)` space. The key insight is maintaining two variables to track the increasing sequence while iterating through the array.
+

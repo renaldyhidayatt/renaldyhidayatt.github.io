@@ -1,0 +1,127 @@
+---
+title: Nearest Exit from Entrance in Maze
+description: Solve the problem of finding the nearest exit in a maze using BFS. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+You are given an `m x n` matrix `maze` (0-indexed) with empty cells (represented as `.`) and walls (represented as `+`). You are also given the `entrance` of the maze, where `entrance = [entrancerow, entrancecol]` denotes the row and column of the cell you are initially standing at.
+
+In one step, you can move one cell up, down, left, or right. You cannot step into a cell with a wall, and you cannot step outside the maze. Your goal is to find the nearest exit from the entrance. An exit is defined as an empty cell that is at the border of the maze. The entrance does not count as an exit.
+
+Return the number of steps in the shortest path from the entrance to the nearest exit, or `-1` if no such path exists.
+
+### Examples:
+
+**Example 1:**
+
+```
+Input: maze = [["+","+",".","+"],[".",".",".","+"],["+","+","+", "."]], entrance = [1,2]
+Output: 1
+```
+
+**Example 2:**
+
+```
+Input: maze = [["+","+","+"],[".",".","."],["+","+","+"]], entrance = [1,0]
+Output: 2
+```
+
+**Example 3:**
+
+```
+Input: maze = [[".","+"]], entrance = [0,0]
+Output: -1
+```
+
+### Constraints:
+
+- `1 <= m, n <= 100`
+- `maze[i][j]` is either `.` or `+`.
+- `entrance.length == 2`
+- `0 <= entrancerow < m`
+- `0 <= entrancecol < n`
+- `entrance` will always be an empty cell.
+
+## Implementation in Go
+
+```go
+func nearestExit(maze [][]byte, entrance []int) int {
+    directions := [][]int{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
+    queue := [][]int{{entrance[0], entrance[1], 0}}
+    maze[entrance[0]][entrance[1]] = '+'
+    
+    for len(queue) > 0 {
+        r, c, steps := queue[0][0], queue[0][1], queue[0][2]
+        queue = queue[1:]
+        
+        for _, d := range directions {
+            nr, nc := r+d[0], c+d[1]
+            if nr >= 0 && nr < len(maze) && nc >= 0 && nc < len(maze[0]) && maze[nr][nc] == '.' {
+                if nr == 0 || nr == len(maze)-1 || nc == 0 || nc == len(maze[0])-1 {
+                    return steps + 1
+                }
+                maze[nr][nc] = '+'
+                queue = append(queue, []int{nr, nc, steps + 1})
+            }
+        }
+    }
+    
+    return -1
+}
+```
+
+## Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public int nearestExit(char[][] maze, int[] entrance) {
+        int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        Queue<int[]> queue = new LinkedList<>();
+        queue.offer(new int[]{entrance[0], entrance[1], 0});
+        maze[entrance[0]][entrance[1]] = '+';
+        
+        while (!queue.isEmpty()) {
+            int[] current = queue.poll();
+            int r = current[0], c = current[1], steps = current[2];
+            
+            for (int[] d : directions) {
+                int nr = r + d[0], nc = c + d[1];
+                if (nr >= 0 && nr < maze.length && nc >= 0 && nc < maze[0].length && maze[nr][nc] == '.') {
+                    if (nr == 0 || nr == maze.length - 1 || nc == 0 || nc == maze[0].length - 1) {
+                        return steps + 1;
+                    }
+                    maze[nr][nc] = '+';
+                    queue.offer(new int[]{nr, nc, steps + 1});
+                }
+            }
+        }
+        
+        return -1;
+    }
+}
+```
+
+## Conclusion
+
+This problem can be efficiently solved using **Breadth-First Search (BFS)** to traverse the maze and find the shortest path. The time complexity is approximately **O(m × n)**, where `m` is the number of rows and `n` is the number of columns.
+

@@ -1,0 +1,139 @@
+---
+title: Maximum Level Sum of a Binary Tree
+description: Find the level in a binary tree with the maximum sum of node values. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+Given the root of a binary tree, the level of its root is `1`, the level of its children is `2`, and so on.
+
+Return the smallest level `x` such that the sum of all the values of nodes at level `x` is maximal.
+
+**Examples:**
+
+**Example 1:**
+```
+Input: root = [1,7,0,7,-8,null,null]
+Output: 2
+```
+
+**Example 2:**
+```
+Input: root = [989,null,10250,98693,-89388,null,null,null,-32127]
+Output: 2
+```
+
+### Constraints:
+
+- The number of nodes in the tree is in the range `[1, 10^4]`.
+- `-10^5 <= Node.val <= 10^5`
+
+## Implementation in Go
+
+```go
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func maxLevelSum(root *TreeNode) int {
+    if root == nil {
+        return 0
+    }
+    
+    maxSum, maxLevel, level := root.Val, 1, 1
+    queue := []*TreeNode{root}
+    
+    for len(queue) > 0 {
+        levelSize := len(queue)
+        currentSum := 0
+        
+        for i := 0; i < levelSize; i++ {
+            node := queue[0]
+            queue = queue[1:]
+            currentSum += node.Val
+            
+            if node.Left != nil {
+                queue = append(queue, node.Left)
+            }
+            if node.Right != nil {
+                queue = append(queue, node.Right)
+            }
+        }
+        
+        if currentSum > maxSum {
+            maxSum = currentSum
+            maxLevel = level
+        }
+        level++
+    }
+    
+    return maxLevel
+}
+```
+
+## Implementation in Java
+
+```java
+import java.util.*;
+
+class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int x) { val = x; }
+}
+
+class Solution {
+    public int maxLevelSum(TreeNode root) {
+        if (root == null) return 0;
+        
+        int maxSum = root.val, maxLevel = 1, level = 1;
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.add(root);
+        
+        while (!queue.isEmpty()) {
+            int levelSize = queue.size();
+            int currentSum = 0;
+            
+            for (int i = 0; i < levelSize; i++) {
+                TreeNode node = queue.poll();
+                currentSum += node.val;
+                
+                if (node.left != null) queue.add(node.left);
+                if (node.right != null) queue.add(node.right);
+            }
+            
+            if (currentSum > maxSum) {
+                maxSum = currentSum;
+                maxLevel = level;
+            }
+            level++;
+        }
+        
+        return maxLevel;
+    }
+}
+```
+
+## Conclusion
+
+This approach uses a level-order traversal (BFS) to ensure that each level's sum is calculated efficiently. The time complexity is `O(n)`, where `n` is the number of nodes, and the space complexity is `O(n)` due to the queue used for traversal.
+

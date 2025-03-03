@@ -1,0 +1,129 @@
+---
+title: Longest ZigZag Path in a Binary Tree
+description: Find the longest ZigZag path in a binary tree. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+A ZigZag path for a binary tree is defined as follows:
+
+- Choose any node in the binary tree and a direction (right or left).
+- If the current direction is right, move to the right child of the current node; otherwise, move to the left child.
+- Change the direction from right to left or from left to right.
+- Repeat the second and third steps until you can't move in the tree.
+
+ZigZag length is defined as the number of nodes visited - 1. (A single node has a length of 0).
+
+Return the longest ZigZag path contained in that tree.
+
+**Examples:**
+
+**Example 1:**
+```
+Input: root = [1,null,1,1,1,null,null,1,1,null,1,null,null,null,1]
+Output: 3
+```
+
+**Example 2:**
+```
+Input: root = [1,1,1,null,1,null,null,1,1,null,1]
+Output: 4
+```
+
+**Example 3:**
+```
+Input: root = [1]
+Output: 0
+```
+
+### Constraints:
+
+- The number of nodes in the tree is in the range `[1, 5 * 10^4]`.
+- `1 <= Node.val <= 100`
+
+## Implementation in Go
+
+```go
+// Definition for a binary tree node.
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func longestZigZagHelper(root *TreeNode, direction string, length int, maxLen *int) {
+    if root == nil {
+        return
+    }
+    if length > *maxLen {
+        *maxLen = length
+    }
+    if direction == "left" {
+        longestZigZagHelper(root.Left, "right", length+1, maxLen)
+        longestZigZagHelper(root.Right, "left", 1, maxLen)
+    } else {
+        longestZigZagHelper(root.Right, "left", length+1, maxLen)
+        longestZigZagHelper(root.Left, "right", 1, maxLen)
+    }
+}
+
+func longestZigZag(root *TreeNode) int {
+    maxLen := 0
+    longestZigZagHelper(root, "left", 0, &maxLen)
+    longestZigZagHelper(root, "right", 0, &maxLen)
+    return maxLen
+}
+```
+
+## Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int val) { this.val = val; }
+}
+
+class Solution {
+    int maxLen = 0;
+    
+    public int longestZigZag(TreeNode root) {
+        dfs(root, true, 0);
+        dfs(root, false, 0);
+        return maxLen;
+    }
+    
+    private void dfs(TreeNode node, boolean isLeft, int length) {
+        if (node == null) return;
+        maxLen = Math.max(maxLen, length);
+        if (isLeft) {
+            dfs(node.left, false, length + 1);
+            dfs(node.right, true, 1);
+        } else {
+            dfs(node.right, true, length + 1);
+            dfs(node.left, false, 1);
+        }
+    }
+}
+```
+
+## Conclusion
+
+This approach efficiently finds the longest ZigZag path in a binary tree using a recursive DFS approach. The time complexity is `O(n)`, where `n` is the number of nodes, and the space complexity is `O(n)` in the worst case due to recursion depth.
+

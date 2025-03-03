@@ -1,0 +1,137 @@
+---
+title: Smallest Number in Infinite Set
+description: Implementation of SmallestInfiniteSet class to manage an infinite set of numbers efficiently. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+You have a set which contains all positive integers `[1, 2, 3, 4, 5, ...]`.
+
+Implement the `SmallestInfiniteSet` class:
+
+- `SmallestInfiniteSet()` Initializes the set with all positive integers.
+- `int popSmallest()` Removes and returns the smallest integer from the set.
+- `void addBack(int num)` Adds a positive integer back into the set if it is not already present.
+
+### Examples:
+
+**Example 1:**
+
+```
+Input
+["SmallestInfiniteSet", "addBack", "popSmallest", "popSmallest", "popSmallest", "addBack", "popSmallest", "popSmallest", "popSmallest"]
+[[], [2], [], [], [], [1], [], [], []]
+Output
+[null, null, 1, 2, 3, null, 1, 4, 5]
+```
+
+### Constraints:
+
+- `1 <= num <= 1000`
+- At most `1000` calls will be made in total to `popSmallest` and `addBack`.
+
+## Implementation in Go
+
+```go
+import "container/heap"
+
+type SmallestInfiniteSet struct {
+    pq    *IntHeap
+    seen  map[int]bool
+    next  int
+}
+
+type IntHeap []int
+
+func (h IntHeap) Len() int            { return len(h) }
+func (h IntHeap) Less(i, j int) bool  { return h[i] < h[j] }
+func (h IntHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
+func (h *IntHeap) Push(x interface{}) { *h = append(*h, x.(int)) }
+func (h *IntHeap) Pop() interface{} {
+    old := *h
+    n := len(old)
+    x := old[n-1]
+    *h = old[:n-1]
+    return x
+}
+
+func Constructor() SmallestInfiniteSet {
+    pq := &IntHeap{}
+    heap.Init(pq)
+    return SmallestInfiniteSet{pq: pq, seen: make(map[int]bool), next: 1}
+}
+
+func (this *SmallestInfiniteSet) PopSmallest() int {
+    if this.pq.Len() > 0 {
+        smallest := heap.Pop(this.pq).(int)
+        delete(this.seen, smallest)
+        return smallest
+    }
+    smallest := this.next
+    this.next++
+    return smallest
+}
+
+func (this *SmallestInfiniteSet) AddBack(num int) {
+    if num < this.next && !this.seen[num] {
+        heap.Push(this.pq, num)
+        this.seen[num] = true
+    }
+}
+```
+
+## Implementation in Java
+
+```java
+import java.util.PriorityQueue;
+import java.util.HashSet;
+
+class SmallestInfiniteSet {
+    private PriorityQueue<Integer> pq;
+    private HashSet<Integer> seen;
+    private int next;
+
+    public SmallestInfiniteSet() {
+        pq = new PriorityQueue<>();
+        seen = new HashSet<>();
+        next = 1;
+    }
+
+    public int popSmallest() {
+        if (!pq.isEmpty()) {
+            int smallest = pq.poll();
+            seen.remove(smallest);
+            return smallest;
+        }
+        return next++;
+    }
+
+    public void addBack(int num) {
+        if (num < next && seen.add(num)) {
+            pq.offer(num);
+        }
+    }
+}
+```
+
+## Conclusion
+
+This problem can be efficiently solved using a **Min Heap (Priority Queue)** to manage popped elements. The time complexity for `popSmallest` and `addBack` is **O(log n)** due to heap operations.
+

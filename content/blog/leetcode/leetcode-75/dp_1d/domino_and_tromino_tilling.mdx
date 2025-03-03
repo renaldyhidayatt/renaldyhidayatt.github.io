@@ -1,0 +1,113 @@
+---
+title: Domino and Tromino Tiling
+description: Implementation of the Domino and Tromino Tiling algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+You have two types of tiles: a 2 x 1 domino shape and a tromino shape. You may rotate these shapes.
+
+Given an integer `n`, return the number of ways to tile a `2 x n` board. Since the answer may be very large, return it modulo `10^9 + 7`.
+
+### Examples
+
+**Example 1:**
+
+```
+Input: n = 3
+Output: 5
+```
+
+**Example 2:**
+
+```
+Input: n = 1
+Output: 1
+```
+
+### Constraints:
+
+- `1 <= n <= 1000`
+
+## Approach
+
+We can solve this problem using **Dynamic Programming (DP)**.
+
+## Implementation in Go
+
+```go
+func numTilings(n int) int {
+    mod := 1000000007
+    if n == 1 {
+        return 1
+    }
+    if n == 2 {
+        return 2
+    }
+    
+    dp := make([]int, n+1)
+    dp[0], dp[1], dp[2] = 1, 1, 2
+    
+    for i := 3; i <= n; i++ {
+        dp[i] = (2*dp[i-1] + dp[i-3]) % mod
+    }
+    
+    return dp[n]
+}
+```
+
+## Implementation in Java
+
+```java
+class Solution {
+    public int numTilings(int n) {
+        int MOD = 1000000007;
+        if (n == 1) return 1;
+        if (n == 2) return 2;
+        
+        int[] dp = new int[n+1];
+        dp[0] = 1;
+        dp[1] = 1;
+        dp[2] = 2;
+        
+        for (int i = 3; i <= n; i++) {
+            dp[i] = (2 * dp[i-1] + dp[i-3]) % MOD;
+        }
+        
+        return dp[n];
+    }
+}
+```
+
+## Explanation
+
+1. **Iterative DP Approach**: We maintain an array `dp` where `dp[i]` represents the number of ways to tile a `2 x i` board.
+2. **Transition Formula**: `dp[i] = (2 * dp[i-1] + dp[i-3]) % MOD`.
+3. **Final Result**: The number of ways to tile the board is stored in `dp[n]`.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(n)`, as we iterate through the array once.
+- **Space Complexity**: `O(n)`, as we use an extra array `dp`.
+
+## Conclusion
+
+Using **Dynamic Programming**, we efficiently compute the number of ways to tile a `2 x n` board using dominoes and trominoes.
+

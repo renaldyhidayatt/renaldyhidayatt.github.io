@@ -1,0 +1,137 @@
+---
+title: Is Subsequence
+description: Check if a string is a subsequence of another string. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given two strings `s` and `t`, return `true` if `s` is a subsequence of `t`, or `false` otherwise.
+
+A **subsequence** of a string is a new string that is formed from the original string by deleting some (can be none) of the characters without disturbing the relative positions of the remaining characters.
+
+### Example 1:
+```plaintext
+Input: s = "abc", t = "ahbgdc"
+Output: true
+```
+
+### Example 2:
+```plaintext
+Input: s = "axc", t = "ahbgdc"
+Output: false
+```
+
+### Constraints:
+- `0 <= s.length <= 100`
+- `0 <= t.length <= 10^4`
+- `s` and `t` consist only of lowercase English letters.
+
+## Approach
+
+We can solve this problem using a two-pointer technique:
+1. Use one pointer to traverse `s` and another pointer to traverse `t`.
+2. If the characters at both pointers match, move both pointers forward.
+3. If they don't match, move only the pointer in `t`.
+4. If we reach the end of `s`, return `true` (all characters were found in order), otherwise return `false`.
+
+This approach ensures an efficient solution in **O(n)** time complexity.
+
+## Algorithm
+
+1. Initialize two pointers: `i = 0` for `s` and `j = 0` for `t`.
+2. Traverse `t`:
+   - If `s[i]` matches `t[j]`, move `i` forward.
+   - Always move `j` forward.
+   - If `i` reaches the end of `s`, return `true`.
+3. Return `false` if `i` does not reach the end of `s`.
+
+## Flowchart
+
+```plaintext
+Start
+  |
+  v
+Initialize i = 0, j = 0
+  |
+  v
+While j < length of t
+  |
+  v
+Check if s[i] == t[j]
+  |
+ / \
+Yes   No
+ |     |
+v     v
+Move i++  Move j++
+  |
+  v
+Is i == length of s?
+  |
+ / \
+Yes   No
+ |     |
+v     v
+Return True  Return False
+```
+
+## Implementations
+
+### Implementation in Go
+```go
+func isSubsequence(s string, t string) bool {
+    i, j := 0, 0
+    for j < len(t) {
+        if i < len(s) && s[i] == t[j] {
+            i++
+        }
+        j++
+    }
+    return i == len(s)
+}
+```
+
+### Implementation in Java
+```java
+class Solution {
+    public boolean isSubsequence(String s, String t) {
+        int i = 0, j = 0;
+        while (j < t.length()) {
+            if (i < s.length() && s.charAt(i) == t.charAt(j)) {
+                i++;
+            }
+            j++;
+        }
+        return i == s.length();
+    }
+}
+```
+
+## Explanation
+
+Both implementations iterate through `t` while keeping track of characters in `s` using `i`. If all characters in `s` appear in order in `t`, the function returns `true`; otherwise, it returns `false`.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the length of `t`, since we traverse `t` once.
+- **Space Complexity:** `O(1)`, since we only use two integer variables.
+
+## Conclusion
+
+The two-pointer approach efficiently determines if `s` is a subsequence of `t` in `O(n)` time. This method avoids unnecessary memory usage and performs optimally for large inputs.
+

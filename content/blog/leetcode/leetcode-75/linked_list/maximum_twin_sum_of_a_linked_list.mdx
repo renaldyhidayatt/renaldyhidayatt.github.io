@@ -1,0 +1,141 @@
+---
+title: Maximum Twin Sum of a Linked List
+description: Find the maximum twin sum in a singly linked list. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+In a linked list of size `n`, where `n` is even, the `i-th` node (0-indexed) of the linked list is the twin of the `(n-1-i)-th` node, if `0 <= i <= (n / 2) - 1`.
+
+The **twin sum** is defined as the sum of a node and its twin.
+
+Given the head of a linked list with an even length, return the **maximum twin sum** of the linked list.
+
+**Examples:**
+
+**Example 1:**
+```
+Input: head = [5,4,2,1]
+Output: 6
+Explanation:
+Nodes 0 and 3 are twins, with twin sum 5 + 1 = 6.
+Nodes 1 and 2 are twins, with twin sum 4 + 2 = 6.
+Maximum twin sum = max(6, 6) = 6.
+```
+
+**Example 2:**
+```
+Input: head = [4,2,2,3]
+Output: 7
+Explanation:
+Nodes 0 and 3 are twins, with twin sum 4 + 3 = 7.
+Nodes 1 and 2 are twins, with twin sum 2 + 2 = 4.
+Maximum twin sum = max(7, 4) = 7.
+```
+
+**Example 3:**
+```
+Input: head = [1,100000]
+Output: 100001
+Explanation:
+Only one pair exists: twin sum = 1 + 100000 = 100001.
+```
+
+### Constraints:
+
+- The number of nodes in the list is an even integer in the range `[2, 10^5]`.
+- `1 <= Node.val <= 10^5`
+
+## Implementation in Go
+
+```go
+// Definition for singly-linked list.
+type ListNode struct {
+    Val  int
+    Next *ListNode
+}
+
+func pairSum(head *ListNode) int {
+    slow, fast := head, head
+    var prev *ListNode
+    
+    // Find the middle of the list and reverse the first half
+    for fast != nil && fast.Next != nil {
+        fast = fast.Next.Next
+        temp := slow.Next
+        slow.Next = prev
+        prev = slow
+        slow = temp
+    }
+    
+    maxSum := 0
+    for slow != nil {
+        maxSum = max(maxSum, prev.Val + slow.Val)
+        prev = prev.Next
+        slow = slow.Next
+    }
+    return maxSum
+}
+
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
+}
+```
+
+## Implementation in Java
+
+```java
+class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int val) { this.val = val; }
+}
+
+class Solution {
+    public int pairSum(ListNode head) {
+        ListNode slow = head, fast = head, prev = null;
+        
+        // Find the middle and reverse the first half
+        while (fast != null && fast.next != null) {
+            fast = fast.next.next;
+            ListNode temp = slow.next;
+            slow.next = prev;
+            prev = slow;
+            slow = temp;
+        }
+        
+        int maxSum = 0;
+        while (slow != null) {
+            maxSum = Math.max(maxSum, prev.val + slow.val);
+            prev = prev.next;
+            slow = slow.next;
+        }
+        return maxSum;
+    }
+}
+```
+
+## Conclusion
+
+This approach efficiently finds the maximum twin sum in a linked list by using a two-pointer technique to split and reverse half of the list. The solution runs in `O(n)` time complexity and uses `O(1)` extra space.
+

@@ -1,0 +1,106 @@
+---
+title: Lowest Common Ancestor of a Binary Tree
+description: Find the lowest common ancestor (LCA) of two given nodes in a binary tree. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+According to the definition of LCA on Wikipedia: "The lowest common ancestor is defined between two nodes p and q as the lowest node in T that has both p and q as descendants (where we allow a node to be a descendant of itself)."
+
+**Examples:**
+
+**Example 1:**
+```
+Input: root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1
+Output: 3
+```
+
+**Example 2:**
+```
+Input: root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 4
+Output: 5
+```
+
+**Example 3:**
+```
+Input: root = [1,2], p = 1, q = 2
+Output: 1
+```
+
+### Constraints:
+
+- The number of nodes in the tree is in the range `[2, 10^5]`.
+- `-10^9 <= Node.val <= 10^9`
+- All `Node.val` are unique.
+- `p != q`
+- `p` and `q` will exist in the tree.
+
+## Implementation in Go
+
+```go
+// Definition for a binary tree node.
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func lowestCommonAncestor(root, p, q *TreeNode) *TreeNode {
+    if root == nil || root == p || root == q {
+        return root
+    }
+    left := lowestCommonAncestor(root.Left, p, q)
+    right := lowestCommonAncestor(root.Right, p, q)
+    if left != nil && right != nil {
+        return root
+    }
+    if left != nil {
+        return left
+    }
+    return right
+}
+```
+
+## Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int val) { this.val = val; }
+}
+
+class Solution {
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        if (root == null || root == p || root == q) {
+            return root;
+        }
+        TreeNode left = lowestCommonAncestor(root.left, p, q);
+        TreeNode right = lowestCommonAncestor(root.right, p, q);
+        if (left != null && right != null) {
+            return root;
+        }
+        return left != null ? left : right;
+    }
+}
+```
+
+## Conclusion
+
+This approach efficiently finds the lowest common ancestor of two nodes in a binary tree using recursion. The time complexity is `O(n)`, where `n` is the number of nodes, and the space complexity is `O(n)` in the worst case due to recursion depth.
+

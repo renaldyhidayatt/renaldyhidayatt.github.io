@@ -1,0 +1,110 @@
+---
+title: N-th Tribonacci Number
+description: Implementation of the N-th Tribonacci Number algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+The Tribonacci sequence `Tn` is defined as follows:
+
+- `T0 = 0`, `T1 = 1`, `T2 = 1`
+- `Tn+3 = Tn + Tn+1 + Tn+2` for `n >= 0`
+
+Given `n`, return the value of `Tn`.
+
+### Examples
+
+**Example 1:**
+
+```
+Input: n = 4
+Output: 4
+```
+
+**Example 2:**
+
+```
+Input: n = 25
+Output: 1389537
+```
+
+### Constraints:
+
+- `0 <= n <= 37`
+- The answer is guaranteed to fit within a 32-bit integer, i.e., `answer <= 2^31 - 1`.
+
+## Approach
+
+We can solve this problem using **Dynamic Programming (DP)**.
+
+## Implementation in Go
+
+```go
+func tribonacci(n int) int {
+    if n == 0 {
+        return 0
+    } else if n == 1 || n == 2 {
+        return 1
+    }
+    
+    t0, t1, t2 := 0, 1, 1
+    for i := 3; i <= n; i++ {
+        t3 := t0 + t1 + t2
+        t0, t1, t2 = t1, t2, t3
+    }
+    return t2
+}
+```
+
+## Implementation in Java
+
+```java
+class Solution {
+    public int tribonacci(int n) {
+        if (n == 0) return 0;
+        if (n == 1 || n == 2) return 1;
+        
+        int t0 = 0, t1 = 1, t2 = 1;
+        for (int i = 3; i <= n; i++) {
+            int t3 = t0 + t1 + t2;
+            t0 = t1;
+            t1 = t2;
+            t2 = t3;
+        }
+        return t2;
+    }
+}
+```
+
+## Explanation
+
+1. **Iterative DP Approach**: We maintain three variables (`t0`, `t1`, `t2`) to store previous Tribonacci numbers.
+2. **Loop Iteration**: We compute the next Tribonacci number iteratively up to `n`.
+3. **Optimized Space**: Instead of using an array, we use constant space by updating the three variables in-place.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(n)`, as we iterate up to `n`.
+- **Space Complexity**: `O(1)`, as we use only three variables.
+
+## Conclusion
+
+Using **Dynamic Programming**, we efficiently compute the `n`-th Tribonacci number with constant space complexity. This approach ensures optimal performance and avoids unnecessary memory usage.
+

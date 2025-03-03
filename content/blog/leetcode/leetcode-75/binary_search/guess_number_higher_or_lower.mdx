@@ -1,0 +1,144 @@
+---
+title: Guess Number Higher or Lower
+description: Implementation of the Guess Number Higher or Lower algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+We are playing the Guess Game. The game is as follows:
+
+I pick a number from `1` to `n`. You have to guess which number I picked.
+
+Every time you guess wrong, I will tell you whether the number I picked is higher or lower than your guess.
+
+You call a pre-defined API `int guess(int num)`, which returns three possible results:
+
+- `-1`: Your guess is higher than the number I picked (i.e. `num > pick`).
+- `1`: Your guess is lower than the number I picked (i.e. `num < pick`).
+- `0`: Your guess is equal to the number I picked (i.e. `num == pick`).
+
+Return the number that I picked.
+
+### Examples
+
+**Example 1:**
+
+```
+Input: n = 10, pick = 6
+Output: 6
+```
+
+**Example 2:**
+
+```
+Input: n = 1, pick = 1
+Output: 1
+```
+
+**Example 3:**
+
+```
+Input: n = 2, pick = 1
+Output: 1
+```
+
+### Constraints:
+
+- `1 <= n <= 2^31 - 1`
+- `1 <= pick <= n`
+
+## Approach
+
+We can solve this problem using **Binary Search** because the feedback (higher/lower) helps us eliminate half of the search space at each step.
+
+## Implementation in Go
+
+```go
+/** 
+ * Forward declaration of guess API.
+ * @param  num   your guess
+ * @return       -1 if num is higher than the picked number
+ *                1 if num is lower than the picked number
+ *                otherwise return 0
+ */
+func guess(num int) int
+
+func guessNumber(n int) int {
+    left, right := 1, n
+    for left <= right {
+        mid := left + (right-left)/2
+        res := guess(mid)
+        if res == 0 {
+            return mid
+        } else if res == -1 {
+            right = mid - 1
+        } else {
+            left = mid + 1
+        }
+    }
+    return -1
+}
+```
+
+## Implementation in Java
+
+```java
+/** 
+ * Forward declaration of guess API.
+ * @param  num   your guess
+ * @return       -1 if num is higher than the picked number
+ *                1 if num is lower than the picked number
+ *                otherwise return 0
+ */
+public class Solution extends GuessGame {
+    public int guessNumber(int n) {
+        int left = 1, right = n;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            int res = guess(mid);
+            if (res == 0) {
+                return mid;
+            } else if (res == -1) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return -1;
+    }
+}
+```
+
+## Explanation
+
+- We use **Binary Search** to repeatedly halve the search space.
+- If `guess(mid) == 0`, we return `mid` because it's the correct number.
+- If `guess(mid) == -1`, we move `right` to `mid - 1`.
+- If `guess(mid) == 1`, we move `left` to `mid + 1`.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(log n)`, since Binary Search reduces the search space by half in each iteration.
+- **Space Complexity**: `O(1)`, since we use only a few integer variables.
+
+## Conclusion
+
+This problem is efficiently solved using **Binary Search**, making it an optimal solution in `O(log n)` time complexity.
+

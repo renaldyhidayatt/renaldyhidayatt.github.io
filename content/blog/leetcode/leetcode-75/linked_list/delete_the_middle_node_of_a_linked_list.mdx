@@ -1,0 +1,106 @@
+---
+title: Delete the Middle Node of a Linked List
+description: Remove the middle node from a singly linked list efficiently. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given the head of a linked list. Delete the middle node, and return the head of the modified linked list.
+
+The middle node of a linked list of size `n` is the `⌊n / 2⌋`-th node from the start using 0-based indexing, where `⌊x⌋` denotes the largest integer less than or equal to `x`.
+
+**Examples:**
+
+**Example 1:**
+```
+Input: head = [1,3,4,7,1,2,6]
+Output: [1,3,4,1,2,6]
+```
+
+**Example 2:**
+```
+Input: head = [1,2,3,4]
+Output: [1,2,4]
+```
+
+**Example 3:**
+```
+Input: head = [2,1]
+Output: [2]
+```
+
+### Constraints:
+
+- The number of nodes in the list is in the range `[1, 10^5]`.
+- `1 <= Node.val <= 10^5`
+
+## Implementation in Go
+
+```go
+// Definition for singly-linked list.
+type ListNode struct {
+    Val  int
+    Next *ListNode
+}
+
+func deleteMiddle(head *ListNode) *ListNode {
+    if head == nil || head.Next == nil {
+        return nil
+    }
+    slow, fast, prev := head, head, &ListNode{Next: head}
+    for fast != nil && fast.Next != nil {
+        prev = slow
+        slow = slow.Next
+        fast = fast.Next.Next
+    }
+    prev.Next = slow.Next
+    return head
+}
+```
+
+## Implementation in Java
+
+```java
+class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int val) { this.val = val; }
+}
+
+class Solution {
+    public ListNode deleteMiddle(ListNode head) {
+        if (head == null || head.next == null) {
+            return null;
+        }
+        ListNode slow = head, fast = head, prev = null;
+        while (fast != null && fast.next != null) {
+            prev = slow;
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        prev.next = slow.next;
+        return head;
+    }
+}
+```
+
+## Conclusion
+
+This approach efficiently removes the middle node of a singly linked list using a two-pointer technique, ensuring `O(n)` time complexity and `O(1)` space complexity.
+

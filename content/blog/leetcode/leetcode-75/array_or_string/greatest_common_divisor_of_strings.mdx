@@ -1,0 +1,171 @@
+---
+title: Greatest Common Divisor of Strings
+description: Solve Find the largest string that evenly divides both input strings using the GCD method. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## 1. Problem Statement
+
+For two strings `s` and `t`, we say "t divides s" if and only if `s = t + t + ... + t` (i.e., `t` is concatenated with itself one or more times).
+
+Given two strings `str1` and `str2`, return the largest string `x` such that `x` divides both `str1` and `str2`.
+
+### Example 1:
+
+**Input:**
+```plaintext
+str1 = "ABCABC", str2 = "ABC"
+```
+**Output:**
+```plaintext
+"ABC"
+```
+
+### Example 2:
+
+**Input:**
+```plaintext
+str1 = "ABABAB", str2 = "ABAB"
+```
+**Output:**
+```plaintext
+"AB"
+```
+
+### Example 3:
+
+**Input:**
+```plaintext
+str1 = "LEET", str2 = "CODE"
+```
+**Output:**
+```plaintext
+""
+```
+
+### Constraints:
+- `1 <= str1.length, str2.length <= 1000`
+- `str1` and `str2` consist of English uppercase letters.
+
+---
+
+## 2. Approach
+
+1. Find the greatest common divisor (GCD) of the lengths of `str1` and `str2`.
+2. Check if the prefix of this length can construct both `str1` and `str2` by repetition.
+3. If it does, return the prefix; otherwise, return an empty string.
+
+---
+
+## 3. Algorithm
+
+1. Compute the greatest common divisor (GCD) of the lengths of `str1` and `str2`.
+2. Extract the prefix of length `gcd(len(str1), len(str2))`.
+3. Check if `str1` and `str2` can be fully constructed using this prefix.
+4. If yes, return the prefix; otherwise, return an empty string.
+
+---
+
+## 4. Flowchart
+
+```plaintext
+Start
+   |
+   v
+Find gcd of lengths of str1 and str2
+   |
+   v
+Extract prefix of gcd length from str1
+   |
+   v
+Check if prefix can construct both strings
+   |     |
+   |     v
+   |   Return prefix (if valid)
+   |     |
+   v     v
+Return "" (if invalid)
+```
+
+---
+
+## 5. Implementations
+
+### **Implementation in Go**
+
+```go
+import "math"
+
+func gcdOfStrings(str1 string, str2 string) string {
+    if str1 + str2 != str2 + str1 {
+        return ""
+    }
+    gcdLen := gcd(len(str1), len(str2))
+    return str1[:gcdLen]
+}
+
+func gcd(a, b int) int {
+    for b != 0 {
+        a, b = b, a % b
+    }
+    return a
+}
+```
+
+### **Implementation in Java**
+
+```java
+class Solution {
+    public String gcdOfStrings(String str1, String str2) {
+        if (!(str1 + str2).equals(str2 + str1)) {
+            return "";
+        }
+        int gcdLength = gcd(str1.length(), str2.length());
+        return str1.substring(0, gcdLength);
+    }
+
+    private int gcd(int a, int b) {
+        while (b != 0) {
+            int temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
+}
+```
+
+---
+
+## 6. Explanation
+
+- The key observation is that if `str1 + str2` is not equal to `str2 + str1`, then there is no common divisor string.
+- The length of the largest common divisor string must be the GCD of `len(str1)` and `len(str2)`.
+- We extract this prefix and check if it forms both strings when repeated.
+
+---
+
+## 7. Time and Space Complexity
+
+- **Time Complexity:** `O(N + M)`, where `N` and `M` are the lengths of `str1` and `str2`. The GCD computation is `O(log(min(N, M)))`.
+- **Space Complexity:** `O(1)`, as we use only a few integer variables.
+
+---
+
+## 8. Conclusion
+
+This problem can be solved efficiently using string properties and GCD computation. The key insight is that if concatenating `str1` and `str2` in both orders does not result in the same string, then they do not share a common divisor.

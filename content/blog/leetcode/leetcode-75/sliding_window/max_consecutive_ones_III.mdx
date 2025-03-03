@@ -1,0 +1,142 @@
+---
+title: Max Consecutive Ones III
+description: Find the contiguous subarray of length k with the maximum consecutive ones. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given a binary array nums and an integer k, return the maximum number of consecutive 1's in the array if you can flip at most k 0's.
+
+### Example 1:
+
+**Input:** nums = [1,1,1,0,0,0,1,1,1,1,0], k = 2  
+**Output:** 6  
+**Explanation:** [1,1,1,0,0,1,1,1,1,1,1]  
+Bolded numbers were flipped from 0 to 1. The longest subarray is underlined.
+
+### Example 2:
+
+**Input:** nums = [0,0,1,1,0,0,1,1,1,0,1,1,0,0,0,1,1,1,1], k = 3  
+**Output:** 10  
+**Explanation:** [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1]  
+Bolded numbers were flipped from 0 to 1. The longest subarray is underlined.
+
+### Constraints:
+
+- 1 <= nums.length <= 10^5  
+- nums[i] is either 0 or 1.  
+- 0 <= k <= nums.length  
+
+## Approach
+
+We use the sliding window technique to find the maximum number of consecutive ones by flipping at most k zeros.
+
+## Algorithm
+
+1. Use two pointers (left and right) to maintain a sliding window.
+2. Expand the window by moving the right pointer and count the number of zeros.
+3. If the number of zeros exceeds k, move the left pointer until the number of zeros is within the limit.
+4. Keep track of the maximum window size.
+5. Return the maximum window size.
+
+## Flowchart
+
+```plantuml
+@startuml
+start
+:Initialize left pointer at 0;
+:Initialize maxOnes to 0;
+:Iterate right pointer over nums;
+while (right < nums.length) do
+    :If nums[right] is 0, increase zero count;
+    :If zero count > k, move left pointer until zero count <= k;
+    :Update maxOnes with max(maxOnes, right - left + 1);
+    :Move right pointer;
+endwhile
+:Return maxOnes;
+stop
+@enduml
+```
+
+## Implementations
+
+### Implementation in Go
+
+```go
+func longestOnes(nums []int, k int) int {
+    left, maxOnes, zeroCount := 0, 0, 0
+    for right := 0; right < len(nums); right++ {
+        if nums[right] == 0 {
+            zeroCount++
+        }
+        for zeroCount > k {
+            if nums[left] == 0 {
+                zeroCount--
+            }
+            left++
+        }
+        maxOnes = max(maxOnes, right - left + 1)
+    }
+    return maxOnes
+}
+
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
+}
+```
+
+### Implementation in Java
+
+```java
+public class Solution {
+    public int longestOnes(int[] nums, int k) {
+        int left = 0, maxOnes = 0, zeroCount = 0;
+        for (int right = 0; right < nums.length; right++) {
+            if (nums[right] == 0) {
+                zeroCount++;
+            }
+            while (zeroCount > k) {
+                if (nums[left] == 0) {
+                    zeroCount--;
+                }
+                left++;
+            }
+            maxOnes = Math.max(maxOnes, right - left + 1);
+        }
+        return maxOnes;
+    }
+}
+```
+
+## Explanation
+
+This approach efficiently finds the maximum number of consecutive ones by using a sliding window, ensuring optimal performance.
+
+## Time and Space Complexity
+
+- **Time Complexity:** O(n) as we iterate through the array once.
+- **Space Complexity:** O(1) since we only use a few extra variables.
+
+## Conclusion
+
+This solution effectively finds the maximum consecutive ones in a binary array by flipping at most k zeros, maintaining efficiency while keeping memory usage minimal.
+

@@ -74,6 +74,8 @@ export default async function PortofolioPage({ params }: PortofolioPageProps) {
         <Image
           src={project.image}
           alt={project.title}
+          width={700}
+          height={400}
           className="w-full rounded-lg mb-4"
         />
       )}

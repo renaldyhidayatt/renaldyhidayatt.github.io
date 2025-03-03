@@ -1,0 +1,112 @@
+---
+title: Counting Bits
+description: Implementation of the Counting Bits algorithm in Go and Java. 
+tags: ["leetcode", "golang", "java", "algorithms"] 
+date: "2025-03-02" 
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+Given an integer `n`, return an array `ans` of length `n + 1` such that for each `i` (`0 <= i <= n`), `ans[i]` is the number of `1`s in the binary representation of `i`.
+
+### Examples
+
+**Example 1:**
+
+```
+Input: n = 2
+Output: [0,1,1]
+Explanation:
+0 --> 0
+1 --> 1
+2 --> 10
+```
+
+**Example 2:**
+
+```
+Input: n = 5
+Output: [0,1,1,2,1,2]
+Explanation:
+0 --> 0
+1 --> 1
+2 --> 10
+3 --> 11
+4 --> 100
+5 --> 101
+```
+
+### Constraints:
+
+- `0 <= n <= 10^5`
+
+### Follow-up:
+
+- Can you do it in `O(n)` time complexity?
+- Can you do it without using built-in functions like `__builtin_popcount`?
+
+## Approach
+
+We can use **Dynamic Programming (DP)** based on the fact that:
+
+- `countBits[i] = countBits[i >> 1] + (i & 1)`
+
+## Implementation in Go
+
+```go
+func countBits(n int) []int {
+    result := make([]int, n+1)
+    for i := 1; i <= n; i++ {
+        result[i] = result[i>>1] + (i & 1)
+    }
+    return result
+}
+```
+
+## Implementation in Java
+
+```java
+class Solution {
+    public int[] countBits(int n) {
+        int[] result = new int[n + 1];
+        for (int i = 1; i <= n; i++) {
+            result[i] = result[i >> 1] + (i & 1);
+        }
+        return result;
+    }
+}
+```
+
+## Explanation
+
+1. **Using DP approach:**
+   - `result[i] = result[i >> 1] + (i & 1)`
+   - This utilizes the previously computed values.
+2. **Shifting right (`>> 1`)** reduces `i` to a smaller problem.
+3. **Checking last bit (`& 1`)** helps determine if `i` is odd or even.
+4. **Final Result:** The array contains the number of `1`s for all numbers `0` to `n`.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(n)`, since we iterate once over `n`.
+- **Space Complexity**: `O(n)`, for storing results.
+
+## Conclusion
+
+Using **Dynamic Programming**, we efficiently compute the number of `1`s in the binary representation of numbers from `0` to `n`.
+

@@ -1,9 +1,8 @@
 import Image from "next/image";
 import * as runtime from "react/jsx-runtime";
 import { Callout } from "./callout";
-import 'katex/dist/katex.min.css';
-import Latex from 'react-latex-next';
-
+import "katex/dist/katex.min.css";
+import Latex from "react-latex-next";
 
 const useMDXComponent = (code: string) => {
   const fn = new Function(code);
@@ -13,7 +12,7 @@ const useMDXComponent = (code: string) => {
 const components = {
   Image,
   Callout,
-  Latex: (props: { children: string }) => <Latex>{props.children}</Latex>, // Corrected 'Latext' to 'Latex'
+  Latex: (props: { children: string }) => <Latex>{props.children}</Latex>,
 };
 
 interface MdxProps {

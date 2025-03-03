@@ -1,0 +1,122 @@
+---
+title: Minimum Flips to Make a OR b Equal to c
+description: Implementation of the Minimum Flips algorithm in Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+
+Given 3 positive numbers `a`, `b`, and `c`, return the minimum flips required in some bits of `a` and `b` to make `(a OR b == c)`. A flip operation consists of changing any single bit `1` to `0` or `0` to `1` in their binary representation.
+
+### Examples
+
+**Example 1:**
+
+```
+Input: a = 2, b = 6, c = 5
+Output: 3
+Explanation: After flips a = 1, b = 4, c = 5 such that (a OR b == c)
+```
+
+**Example 2:**
+
+```
+Input: a = 4, b = 2, c = 7
+Output: 1
+```
+
+**Example 3:**
+
+```
+Input: a = 1, b = 2, c = 3
+Output: 0
+```
+
+### Constraints:
+
+- `1 <= a, b, c <= 10^9`
+
+## Approach
+
+We analyze the bits of `a`, `b`, and `c` one by one:
+- If `c` has a `1` in a position, at least one of `a` or `b` must have `1`.
+- If `c` has a `0`, both `a` and `b` must be `0`, requiring flips if they aren't.
+
+## Implementation in Go
+
+```go
+func minFlips(a int, b int, c int) int {
+    flips := 0
+    for i := 0; i < 32; i++ {
+        bitA := (a >> i) & 1
+        bitB := (b >> i) & 1
+        bitC := (c >> i) & 1
+        
+        if bitC == 0 {
+            flips += bitA + bitB
+        } else {
+            if bitA == 0 && bitB == 0 {
+                flips++
+            }
+        }
+    }
+    return flips
+}
+```
+
+## Implementation in Java
+
+```java
+class Solution {
+    public int minFlips(int a, int b, int c) {
+        int flips = 0;
+        for (int i = 0; i < 32; i++) {
+            int bitA = (a >> i) & 1;
+            int bitB = (b >> i) & 1;
+            int bitC = (c >> i) & 1;
+            
+            if (bitC == 0) {
+                flips += bitA + bitB;
+            } else {
+                if (bitA == 0 && bitB == 0) {
+                    flips++;
+                }
+            }
+        }
+        return flips;
+    }
+}
+```
+
+## Explanation
+
+1. **Bitwise operations** allow us to check each bit position independently.
+2. We iterate through all 32 bits (assuming 32-bit integers).
+3. If `c` has `0`, both `a` and `b` must be `0`, requiring flips if they're not.
+4. If `c` has `1`, at least one of `a` or `b` must be `1`, requiring a flip if neither is `1`.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(1)`, since we iterate through at most 32 bits.
+- **Space Complexity**: `O(1)`, as we use only a few extra variables.
+
+## Conclusion
+
+This approach efficiently determines the minimum flips needed to match `c` using bitwise operations in constant time and space.
+

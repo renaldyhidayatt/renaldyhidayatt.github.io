@@ -1,0 +1,156 @@
+---
+title: "Longest Subarray of 1's After Deleting One Element"
+description: Find the longest contiguous subarray of 1's after deleting one element. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+Given a binary array nums, you should delete one element from it.
+
+Return the size of the longest non-empty subarray containing only 1's in the resulting array. Return 0 if there is no such subarray.
+
+### Example 1:
+
+**Input:** nums = [1,1,0,1]  
+**Output:** 3  
+**Explanation:** After deleting the number in position 2, [1,1,1] contains 3 numbers with value of 1's.
+
+### Example 2:
+
+**Input:** nums = [0,1,1,1,0,1,1,0,1]  
+**Output:** 5  
+**Explanation:** After deleting the number in position 4, [0,1,1,1,1,1,0,1] longest subarray with value of 1's is [1,1,1,1,1].
+
+### Example 3:
+
+**Input:** nums = [1,1,1]  
+**Output:** 2  
+**Explanation:** You must delete one element.
+
+### Constraints:
+
+- 1 <= nums.length <= 10^5  
+- nums[i] is either 0 or 1.  
+
+## Approach
+
+We use the sliding window technique to efficiently find the longest contiguous subarray of 1's after removing one element.
+
+## Algorithm
+
+1. Maintain a sliding window with at most one zero.
+2. Expand the window by moving the right pointer.
+3. If more than one zero exists, shrink the window from the left.
+4. Keep track of the maximum window size.
+5. Since we must delete one element, return max length - 1.
+
+## Flowchart
+
+```plantuml
+@startuml
+start
+:Initialize left pointer at 0;
+:Initialize maxLength to 0;
+:Initialize zeroCount to 0;
+
+while (right < nums.length) do
+    :Expand window to the right;
+    if (nums[right] == 0) then
+        :Increment zeroCount;
+    endif
+    while (zeroCount > 1) do
+        if (nums[left] == 0) then
+            :Decrement zeroCount;
+        endif
+        :Move left pointer forward;
+    endwhile
+    :Update maxLength;
+    :Increment right pointer;
+endwhile
+
+:Return maxLength - 1;
+stop
+@enduml
+```
+
+## Implementations
+
+### Implementation in Go
+
+```go
+func longestSubarray(nums []int) int {
+    left, zeroCount, maxLength := 0, 0, 0
+    for right := 0; right < len(nums); right++ {
+        if nums[right] == 0 {
+            zeroCount++
+        }
+        for zeroCount > 1 {
+            if nums[left] == 0 {
+                zeroCount--
+            }
+            left++
+        }
+        maxLength = max(maxLength, right-left)
+    }
+    return maxLength
+}
+
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int longestSubarray(int[] nums) {
+        int left = 0, zeroCount = 0, maxLength = 0;
+        for (int right = 0; right < nums.length; right++) {
+            if (nums[right] == 0) {
+                zeroCount++;
+            }
+            while (zeroCount > 1) {
+                if (nums[left] == 0) {
+                    zeroCount--;
+                }
+                left++;
+            }
+            maxLength = Math.max(maxLength, right - left);
+        }
+        return maxLength;
+    }
+}
+```
+
+## Explanation
+
+This approach efficiently finds the longest subarray of 1's after deleting one element using the sliding window technique.
+
+## Time and Space Complexity
+
+- **Time Complexity:** O(n) as we iterate through the array once.
+- **Space Complexity:** O(1) since we use only a few extra variables.
+
+## Conclusion
+
+This solution effectively finds the longest contiguous subarray of 1's after deleting one element, ensuring optimal performance with minimal memory usage.
+
