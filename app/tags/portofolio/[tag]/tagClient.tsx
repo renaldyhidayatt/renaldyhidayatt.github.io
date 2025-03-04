@@ -1,20 +1,17 @@
 "use client";
-
 import { portofolio } from "@/.velite";
-import { PostItem } from "@/components/post-item";
 import { QueryPagination } from "@/components/query-pagination";
 import { Tag } from "@/components/tag";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getAllPortofolioTags,
-  getAllPostTags,
-  sortPosts,
   sortTagsByPortofolioCount,
 } from "@/lib/utils";
 import { Suspense, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LoadingSkeleton from "@/components/loadingSkeleton";
 import Image from "next/image";
+import ProjectList from "@/components/project-item";
 
 const POSTS_PER_PAGE = 10;
 
@@ -36,6 +33,12 @@ export default function TagPortfolioClient({ tag }: TagPortfolioClientProps) {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredPosts = useMemo(() => {
     const tagFilteredPosts = portofolio.filter(
@@ -87,80 +90,17 @@ export default function TagPortfolioClient({ tag }: TagPortfolioClientProps) {
             />
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
-          <div className="lg:col-span-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {displayPosts.length > 0 ? (
-                displayPosts
-                  .filter((post) =>
-                    post.title.toLowerCase().includes(searchTerm.toLowerCase()),
-                  )
-                  .map((project, index) => (
-                    <div
-                      key={index}
-                      onClick={() => router.push(`/${project.slug}`)}
-                      className="bg-white dark:bg-[#1c1d1f] rounded-2xl shadow-md hover:shadow-lg transition-transform transform hover:scale-[1.02] overflow-hidden"
-                    >
-                      <Image
-                        src={project.image}
-                        alt={project.title}
-                        width={700}
-                        height={400}
-                        className="w-full h-52 object-cover"
-                      />
-                      <div className="p-5">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                          {project.title.length > 50
-                            ? project.title.substring(0, 47) + "..."
-                            : project.title}
-                        </h2>
+        <ProjectList
+          currentProjects={displayPosts}
+          totalPages={totalPages}
+          currentPage={currentPage}
+          handlePageChange={handlePageChange}
+          router={router}
+          sortedTags={sortedTags}
+          tags={tags}
+          isLoading={isLoading}
+        />
 
-                        <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                          {project.description}
-                        </p>
-
-                        <div className="flex flex-wrap gap-2">
-                          {project.tags?.map((tag, i) => (
-                            <Tag name="portofolio" tag={tag} key={tag} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-              ) : (
-                <p className="text-center col-span-2">No projects found.</p>
-              )}
-            </div>
-            <div className="mt-8 flex justify-center">
-              <Suspense fallback={<div>Loading pagination...</div>}>
-                <QueryPagination
-                  totalPages={totalPages}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
-                />
-              </Suspense>
-            </div>
-          </div>
-          <div className="lg:col-span-4">
-            <Card className="col-span-12 row-start-3 h-fit sm:col-span-4 sm:col-start-9 sm:row-start-1">
-              <CardHeader>
-                <CardTitle className="text-[#585a5c] dark:text-slate-200">
-                  Tags
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2 text-[#585a5c] dark:text-slate-200">
-                {sortedTags.map((tag) => (
-                  <Tag
-                    name="portofolio"
-                    tag={tag}
-                    key={tag}
-                    count={tags[tag]}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       </div>
     </Suspense>
   );

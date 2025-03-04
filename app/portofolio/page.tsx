@@ -1,14 +1,10 @@
 "use client";
 
 import { portofolio } from "@/.velite";
-import Image from "next/image";
 import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { QueryPagination } from "@/components/query-pagination";
-import LoadingSkeleton from "@/components/loadingSkeleton";
 import { getAllPortofolioTags, sortTagsByPortofolioCount } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tag } from "@/components/tag";
+import ProjectList from "@/components/project-item";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -19,9 +15,15 @@ const PortfolioContent = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 3000);
+    
     const page = searchParams.get("page");
     setCurrentPage(page ? parseInt(page, 10) : 1);
+    
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
   const filteredProjects = portofolio.filter((project) =>
@@ -49,7 +51,7 @@ const PortfolioContent = () => {
   };
 
   return (
-    <Suspense fallback={<LoadingSkeleton />}>
+    <>
       <div className="container max-w-6xl py-10 mx-auto">
         <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between md:gap-8">
           <div className="flex-1 space-y-4">
@@ -69,78 +71,18 @@ const PortfolioContent = () => {
             />
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
-          <div className="lg:col-span-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {currentProjects.length > 0 ? (
-                currentProjects.map((project, index) => (
-                  <div
-                    key={index}
-                    onClick={() => router.push(`/${project.slug}`)}
-                    className="bg-white dark:bg-[#1c1d1f] rounded-2xl shadow-md hover:shadow-lg transition-transform transform hover:scale-[1.02] overflow-hidden"
-                  >
-                    <Image
-                      src={project.image}
-                      alt={project.title}
-                      width={700}
-                      height={400}
-                      className="w-full h-52 object-cover"
-                    />
-                    <div className="p-5">
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                        {project.title.length > 50
-                          ? project.title.substring(0, 47) + "..."
-                          : project.title}
-                      </h2>
-
-                      <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                        {project.description}
-                      </p>
-
-                      <div className="flex flex-wrap gap-2">
-                        {project.tags?.map((tag, i) => (
-                          <Tag name="portofolio" tag={tag} key={tag} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center col-span-2">No projects found.</p>
-              )}
-            </div>
-            <div className="mt-8 flex justify-center">
-              <Suspense fallback={<div>Loading pagination...</div>}>
-                <QueryPagination
-                  totalPages={totalPages}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
-                />
-              </Suspense>
-            </div>
-          </div>
-          <div className="lg:col-span-4">
-            <Card className="col-span-12 row-start-3 h-fit sm:col-span-4 sm:col-start-9 sm:row-start-1">
-              <CardHeader>
-                <CardTitle className="text-[#585a5c] dark:text-slate-200">
-                  Tags
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2 text-[#585a5c] dark:text-slate-200">
-                {sortedTags.map((tag) => (
-                  <Tag
-                    name="portofolio"
-                    tag={tag}
-                    key={tag}
-                    count={tags[tag]}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        <ProjectList
+          currentProjects={currentProjects}
+          totalPages={totalPages}
+          currentPage={currentPage}
+          handlePageChange={handlePageChange}
+          router={router}
+          sortedTags={sortedTags}
+          tags={tags}
+          isLoading={isLoading}
+        />
       </div>
-    </Suspense>
+    </>
   );
 };
 

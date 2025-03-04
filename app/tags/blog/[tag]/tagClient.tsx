@@ -1,5 +1,4 @@
 "use client";
-
 import { posts } from "@/.velite";
 import { PostItem } from "@/components/post-item";
 import { QueryPagination } from "@/components/query-pagination";
@@ -8,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAllPostTags, sortPosts, sortTagsPostByCount } from "@/lib/utils";
 import { Suspense, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const POSTS_PER_PAGE = 10;
 
@@ -29,6 +29,13 @@ export default function TagBlogClient({ tag }: TagBlogClientProps) {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredPosts = useMemo(() => {
     const tagFilteredPosts = posts.filter(
@@ -83,21 +90,27 @@ export default function TagBlogClient({ tag }: TagBlogClientProps) {
         <div className="grid grid-cols-12 gap-3 mt-8">
           <div className="col-span-12 col-start-1 sm:col-span-8">
             <hr />
-            {displayPosts.length > 0 ? (
-              <ul className="flex flex-col">
-                {displayPosts
-                  .filter((post) =>
-                    post.title.toLowerCase().includes(searchTerm.toLowerCase()),
-                  )
-                  .map((post) => (
+            <ul className="flex flex-col">
+              {isLoading
+                ? Array.from({ length: 5 }).map((_, idx) => (
+                  <li key={idx} className="first:border-t first:border-border">
+                    <PostItem isLoading />
+                  </li>
+                ))
+                : displayPosts.length > 0
+                  ? displayPosts.map((post) => (
                     <li key={post.slug}>
-                      <PostItem {...post} />
+                      <PostItem
+                        slug={post.slug}
+                        title={post.title}
+                        description={post.description}
+                        date={post.date}
+                        tags={post.tags}
+                      />
                     </li>
-                  ))}
-              </ul>
-            ) : (
-              <p>No posts found matching your search.</p>
-            )}
+                  ))
+                  : <p>No posts found matching your search.</p>}
+            </ul>
             <Suspense fallback={<div>Loading pagination...</div>}>
               <QueryPagination
                 totalPages={totalPages}
@@ -114,9 +127,18 @@ export default function TagBlogClient({ tag }: TagBlogClientProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2 text-[#585a5c] dark:text-slate-200">
-              {sortedTags.map((t) => (
-                <Tag name="blog" tag={t} key={t} count={tags[t]} />
-              ))}
+              {isLoading
+                ? Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-5 w-16" />
+                ))
+                : sortedTags.map((tag) => (
+                  <Tag
+                    name="blog"
+                    tag={tag}
+                    key={tag}
+                    count={tags[tag]}
+                  />
+                ))}
             </CardContent>
           </Card>
         </div>
