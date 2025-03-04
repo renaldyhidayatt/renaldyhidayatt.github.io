@@ -1,0 +1,143 @@
+---
+title: Partition Labels
+description: Implementation of the Partition Labels algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given a string `s`. We want to partition the string into as many parts as possible so that each letter appears in at most one part.
+
+Return a list of integers representing the size of these parts.
+
+### Example 1:
+
+**Input:**
+```
+s = "ababcbacadefegdehijhklij"
+```
+**Output:**
+```
+[9,7,8]
+```
+**Explanation:** The partitions are `"ababcbaca"`, `"defegde"`, `"hijhklij"`.
+
+### Example 2:
+
+**Input:**
+```
+s = "eccbbbbdec"
+```
+**Output:**
+```
+[10]
+```
+
+### Constraints:
+
+- `1 <= s.length <= 500`
+- `s` consists of lowercase English letters.
+
+## Approach
+
+We use a **greedy approach** by tracking the last occurrence of each character to determine partition points.
+
+## Algorithm
+
+1. Store the last occurrence of each character in a hashmap.
+2. Iterate through the string while tracking the maximum last occurrence index.
+3. If the current index reaches this maximum, a partition is formed.
+4. Store the partition length and reset for the next partition.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func partitionLabels(s string) []int {
+    lastIndex := make(map[rune]int)
+    for i, c := range s {
+        lastIndex[c] = i
+    }
+
+    var result []int
+    start, end := 0, 0
+    for i, c := range s {
+        if lastIndex[c] > end {
+            end = lastIndex[c]
+        }
+        if i == end {
+            result = append(result, end-start+1)
+            start = i + 1
+        }
+    }
+    return result
+}
+
+func main() {
+    s := "ababcbacadefegdehijhklij"
+    fmt.Println(partitionLabels(s)) // Output: [9,7,8]
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public List<Integer> partitionLabels(String s) {
+        int[] lastIndex = new int[26];
+        for (int i = 0; i < s.length(); i++) {
+            lastIndex[s.charAt(i) - 'a'] = i;
+        }
+        
+        List<Integer> result = new ArrayList<>();
+        int start = 0, end = 0;
+        for (int i = 0; i < s.length(); i++) {
+            end = Math.max(end, lastIndex[s.charAt(i) - 'a']);
+            if (i == end) {
+                result.add(end - start + 1);
+                start = i + 1;
+            }
+        }
+        return result;
+    }
+}
+```
+
+## Explanation
+
+- We use a hashmap (or array in Java) to store the last occurrence of each character.
+- As we iterate through the string, we update the `end` index of the current partition.
+- When `i` reaches `end`, we complete a partition and store its size.
+- The process repeats until the entire string is processed.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, since we iterate through the string twice.
+- **Space Complexity:** `O(1)`, as we use a fixed array of size 26 for character tracking.
+
+## Conclusion
+
+The **Partition Labels** problem can be efficiently solved using a **greedy approach**, leveraging character last occurrence tracking to determine optimal partitions. 🚀
+

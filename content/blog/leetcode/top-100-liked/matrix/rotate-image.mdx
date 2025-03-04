@@ -1,0 +1,136 @@
+---
+title: Rotate Image
+description: Implementation of the Rotate Image algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given an `n x n` 2D matrix representing an image. Rotate the image by 90 degrees (clockwise).
+
+You must rotate the image **in-place**, meaning you **cannot** allocate another 2D matrix.
+
+### Example 1:
+
+**Input:**
+```
+matrix = [[1,2,3],[4,5,6],[7,8,9]]
+```
+**Output:**
+```
+[[7,4,1],[8,5,2],[9,6,3]]
+```
+
+### Example 2:
+
+**Input:**
+```
+matrix = [[5,1,9,11],[2,4,8,10],[13,3,6,7],[15,14,12,16]]
+```
+**Output:**
+```
+[[15,13,2,5],[14,3,4,1],[12,6,8,9],[16,7,10,11]]
+```
+
+## Approach
+
+The problem can be solved by **first transposing** the matrix and then **reversing each row**.
+
+## Algorithm
+
+1. Transpose the matrix by swapping `matrix[i][j]` with `matrix[j][i]`.
+2. Reverse each row of the transposed matrix.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+func rotate(matrix [][]int) {
+    n := len(matrix)
+    for i := 0; i < n; i++ {
+        for j := i + 1; j < n; j++ {
+            matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j]
+        }
+    }
+    for i := 0; i < n; i++ {
+        reverse(matrix[i])
+    }
+}
+
+func reverse(row []int) {
+    left, right := 0, len(row)-1
+    for left < right {
+        row[left], row[right] = row[right], row[left]
+        left++
+        right--
+    }
+}
+```
+
+### Implementation in Java
+
+```java
+class RotateImage {
+    public void rotate(int[][] matrix) {
+        int n = matrix.length;
+        
+        // Transpose the matrix
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                int temp = matrix[i][j];
+                matrix[i][j] = matrix[j][i];
+                matrix[j][i] = temp;
+            }
+        }
+        
+        // Reverse each row
+        for (int i = 0; i < n; i++) {
+            reverse(matrix[i]);
+        }
+    }
+    
+    private void reverse(int[] row) {
+        int left = 0, right = row.length - 1;
+        while (left < right) {
+            int temp = row[left];
+            row[left] = row[right];
+            row[right] = temp;
+            left++;
+            right--;
+        }
+    }
+}
+```
+
+## Explanation
+
+- **Transposition** swaps elements along the diagonal, converting rows into columns.
+- **Reversing each row** achieves the 90-degree rotation.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n^2)`, since we traverse the matrix twice.
+- **Space Complexity:** `O(1)`, as we modify the matrix in place.
+
+## Conclusion
+
+The **Rotate Image** problem is efficiently solved using matrix transposition followed by row reversal. This achieves in-place rotation with `O(n^2)` time complexity. 🚀
+

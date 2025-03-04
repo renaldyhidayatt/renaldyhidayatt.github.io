@@ -1,0 +1,151 @@
+---
+title: Group Anagrams
+description: Implementation of the Group Anagrams algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an array of strings `strs`, group the anagrams together. You can return the answer in any order.
+
+### Example 1:
+
+**Input:**
+```
+strs = ["eat","tea","tan","ate","nat","bat"]
+```
+**Output:**
+```
+[["bat"],["nat","tan"],["ate","eat","tea"]]
+```
+
+### Example 2:
+
+**Input:**
+```
+strs = [""]
+```
+**Output:**
+```
+[[""]]
+```
+
+### Example 3:
+
+**Input:**
+```
+strs = ["a"]
+```
+**Output:**
+```
+[["a"]]
+```
+
+### Constraints:
+
+- `1 <= strs.length <= 10^4`
+- `0 <= strs[i].length <= 100`
+- `strs[i]` consists of lowercase English letters.
+
+## Approach
+
+We can solve this problem efficiently using **hashing**. The key idea is to use a canonical representation of anagrams to group them together.
+
+## Algorithm
+
+1. Use a hashmap where the key is the sorted version of each string and the value is a list of anagrams.
+2. Iterate through `strs`:
+   - Sort each string.
+   - Use the sorted string as a key in the hashmap.
+   - Append the original string to the corresponding list.
+3. Return the values of the hashmap as the final grouped anagrams.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+    "sort"
+    "strings"
+)
+
+func groupAnagrams(strs []string) [][]string {
+    anagramMap := make(map[string][]string)
+    for _, str := range strs {
+        sortedStr := sortString(str)
+        anagramMap[sortedStr] = append(anagramMap[sortedStr], str)
+    }
+    
+    var result [][]string
+    for _, group := range anagramMap {
+        result = append(result, group)
+    }
+    return result
+}
+
+func sortString(s string) string {
+    chars := strings.Split(s, "")
+    sort.Strings(chars)
+    return strings.Join(chars, "")
+}
+
+func main() {
+    strs := []string{"eat", "tea", "tan", "ate", "nat", "bat"}
+    fmt.Println(groupAnagrams(strs))
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public List<List<String>> groupAnagrams(String[] strs) {
+        Map<String, List<String>> anagramMap = new HashMap<>();
+        for (String str : strs) {
+            char[] charArray = str.toCharArray();
+            Arrays.sort(charArray);
+            String sortedStr = new String(charArray);
+            anagramMap.putIfAbsent(sortedStr, new ArrayList<>());
+            anagramMap.get(sortedStr).add(str);
+        }
+        return new ArrayList<>(anagramMap.values());
+    }
+}
+```
+
+## Explanation
+
+- We use a **hashmap** where the sorted version of a string serves as a unique key.
+- Each original string is added to the corresponding list in the hashmap.
+- Finally, we return all values of the hashmap as a list of lists.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n * k log k)`, where `n` is the number of strings and `k` is the average length of each string (due to sorting).
+- **Space Complexity:** `O(n * k)`, as we store all input strings in the hashmap.
+
+## Conclusion
+
+The **Group Anagrams** problem can be efficiently solved using **hashing** and **sorting** to group words with identical character compositions. 🚀
+

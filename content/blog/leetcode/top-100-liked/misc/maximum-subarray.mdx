@@ -1,0 +1,146 @@
+---
+title: Maximum Subarray
+description: Implementation of the Maximum Subarray algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+----------------
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an integer array `nums`, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.
+
+### Example 1:
+
+**Input:**
+```
+nums = [-2,1,-3,4,-1,2,1,-5,4]
+```
+**Output:**
+```
+6
+```
+**Explanation:** The subarray `[4,-1,2,1]` has the largest sum `6`.
+
+### Example 2:
+
+**Input:**
+```
+nums = [1]
+```
+**Output:**
+```
+1
+```
+
+### Example 3:
+
+**Input:**
+```
+nums = [5,4,-1,7,8]
+```
+**Output:**
+```
+23
+```
+
+## Approach
+
+- Use **Kadane’s Algorithm**, which efficiently finds the maximum subarray sum in `O(n)` time.
+- Maintain a variable `max_sum` to store the maximum subarray sum encountered so far.
+- Maintain `current_sum` to track the sum of the current subarray.
+- If `current_sum` drops below `0`, reset it to `0` and continue.
+
+## Algorithm
+
+1. Initialize `max_sum` with a very small value and `current_sum` as `0`.
+2. Iterate through the array:
+   - Add the current element to `current_sum`.
+   - Update `max_sum` if `current_sum` is greater.
+   - If `current_sum` becomes negative, reset it to `0`.
+3. Return `max_sum`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+import "fmt"
+
+func maxSubArray(nums []int) int {
+    maxSum := nums[0]
+    currentSum := 0
+    
+    for _, num := range nums {
+        if currentSum < 0 {
+            currentSum = 0
+        }
+        currentSum += num
+        if currentSum > maxSum {
+            maxSum = currentSum
+        }
+    }
+    return maxSum
+}
+
+func main() {
+    nums := []int{-2,1,-3,4,-1,2,1,-5,4}
+    fmt.Println(maxSubArray(nums)) // Output: 6
+}
+```
+
+### Implementation in Java
+
+```java
+class MaximumSubarray {
+    public int maxSubArray(int[] nums) {
+        int maxSum = nums[0];
+        int currentSum = 0;
+        
+        for (int num : nums) {
+            if (currentSum < 0) {
+                currentSum = 0;
+            }
+            currentSum += num;
+            maxSum = Math.max(maxSum, currentSum);
+        }
+        return maxSum;
+    }
+    
+    public static void main(String[] args) {
+        MaximumSubarray ms = new MaximumSubarray();
+        int[] nums = {-2,1,-3,4,-1,2,1,-5,4};
+        System.out.println(ms.maxSubArray(nums)); // Output: 6
+    }
+}
+```
+
+## Explanation
+
+- **Tracking Maximum Sum:** Iterate through `nums` while maintaining `current_sum`.
+- **Resetting on Negative Sums:** If `current_sum` falls below `0`, reset it.
+- **Updating Maximum:** Continuously update `max_sum`.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, as we traverse the array once.
+- **Space Complexity:** `O(1)`, since we use only a few extra variables.
+
+## Conclusion
+
+The **Maximum Subarray** problem is efficiently solved using **Kadane’s Algorithm**, achieving `O(n)` time complexity with minimal space usage. 🚀
+

@@ -1,0 +1,166 @@
+---
+title: Coin Change
+description: Implementation of the Coin Change algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given an integer array `coins` representing coins of different denominations and an integer `amount` representing a total amount of money.
+
+Return the **fewest number of coins** that you need to make up that amount. If that amount of money **cannot** be made up by any combination of the coins, return `-1`.
+
+You may assume that you have an **infinite number** of each kind of coin.
+
+### Example 1:
+
+**Input:**
+```
+coins = [1,2,5], amount = 11
+```
+**Output:**
+```
+3
+```
+**Explanation:** 11 = 5 + 5 + 1
+
+### Example 2:
+
+**Input:**
+```
+coins = [2], amount = 3
+```
+**Output:**
+```
+-1
+```
+
+### Example 3:
+
+**Input:**
+```
+coins = [1], amount = 0
+```
+**Output:**
+```
+0
+```
+
+### Constraints:
+
+- `1 <= coins.length <= 12`
+- `1 <= coins[i] <= 2^31 - 1`
+- `0 <= amount <= 10^4`
+
+## Approach
+
+We use **Dynamic Programming (DP)** to solve this problem efficiently.
+
+- Define `dp[i]` as the minimum number of coins needed to make up amount `i`.
+- Initialize `dp[0] = 0` (base case: 0 coins to make amount 0), and set all other values to `amount + 1` (impossible state).
+- Iterate through each amount from `1` to `amount` and for each coin, update `dp[i] = min(dp[i], dp[i - coin] + 1)`.
+
+## Algorithm
+
+1. Initialize a `dp` array of size `amount + 1` with all values set to `amount + 1`, except `dp[0] = 0`.
+2. Iterate through each `coin` in `coins` and update `dp[i]` for all amounts `i`.
+3. Return `dp[amount]` if it's not `amount + 1`, otherwise return `-1`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+)
+
+func coinChange(coins []int, amount int) int {
+    dp := make([]int, amount+1)
+    for i := range dp {
+        dp[i] = amount + 1
+    }
+    dp[0] = 0
+    
+    for _, coin := range coins {
+        for i := coin; i <= amount; i++ {
+            dp[i] = min(dp[i], dp[i-coin]+1)
+        }
+    }
+    
+    if dp[amount] == amount+1 {
+        return -1
+    }
+    return dp[amount]
+}
+
+func min(a, b int) int {
+    if a < b {
+        return a
+    }
+    return b
+}
+
+func main() {
+    fmt.Println(coinChange([]int{1,2,5}, 11)) // Output: 3
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int coinChange(int[] coins, int amount) {
+        int[] dp = new int[amount + 1];
+        Arrays.fill(dp, amount + 1);
+        dp[0] = 0;
+        
+        for (int coin : coins) {
+            for (int i = coin; i <= amount; i++) {
+                dp[i] = Math.min(dp[i], dp[i - coin] + 1);
+            }
+        }
+        
+        return dp[amount] == amount + 1 ? -1 : dp[amount];
+    }
+    
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println(sol.coinChange(new int[]{1,2,5}, 11)); // Output: 3
+    }
+}
+```
+
+## Explanation
+
+- We iterate through each `coin` and update the `dp` array for all amounts greater than or equal to `coin`.
+- The `dp` array keeps track of the minimum number of coins needed for each amount.
+- If `dp[amount]` is still `amount + 1`, it means no combination is possible, so return `-1`.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n * amount)`, where `n` is the number of coins and `amount` is the target value.
+- **Space Complexity:** `O(amount)`, due to the `dp` array.
+
+## Conclusion
+
+The **Coin Change** problem is efficiently solved using **Dynamic Programming**, allowing us to determine the minimum number of coins required in `O(n * amount)` time. 🚀
+

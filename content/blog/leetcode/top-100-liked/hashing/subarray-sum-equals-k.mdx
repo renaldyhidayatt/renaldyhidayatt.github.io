@@ -1,0 +1,138 @@
+---
+title: Subarray Sum Equals K
+description: Implementation of the Subarray Sum Equals K algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an array of integers `nums` and an integer `k`, return the total number of subarrays whose sum equals `k`.
+
+A subarray is a contiguous non-empty sequence of elements within an array.
+
+### Example 1:
+
+**Input:**
+```
+nums = [1,1,1], k = 2
+```
+**Output:**
+```
+2
+```
+
+### Example 2:
+
+**Input:**
+```
+nums = [1,2,3], k = 3
+```
+**Output:**
+```
+2
+```
+
+### Constraints:
+
+- `1 <= nums.length <= 2 * 10^4`
+- `-1000 <= nums[i] <= 1000`
+- `-10^7 <= k <= 10^7`
+
+## Approach
+
+We can solve this problem efficiently using a **hash map (prefix sum approach)**.
+
+## Algorithm
+
+1. Use a hash map to store cumulative sum frequencies.
+2. Maintain a `currentSum` variable while iterating through `nums`.
+3. Check if `currentSum - k` exists in the hash map (indicating a valid subarray).
+4. Update the hash map with `currentSum` occurrences.
+5. Return the total count of valid subarrays.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func subarraySum(nums []int, k int) int {
+    count, currentSum := 0, 0
+    prefixSum := make(map[int]int)
+    prefixSum[0] = 1
+    
+    for _, num := range nums {
+        currentSum += num
+        if val, exists := prefixSum[currentSum-k]; exists {
+            count += val
+        }
+        prefixSum[currentSum]++
+    }
+    return count
+}
+
+func main() {
+    nums := []int{1, 1, 1}
+    k := 2
+    fmt.Println(subarraySum(nums, k))
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public int subarraySum(int[] nums, int k) {
+        int count = 0, currentSum = 0;
+        Map<Integer, Integer> prefixSum = new HashMap<>();
+        prefixSum.put(0, 1);
+        
+        for (int num : nums) {
+            currentSum += num;
+            if (prefixSum.containsKey(currentSum - k)) {
+                count += prefixSum.get(currentSum - k);
+            }
+            prefixSum.put(currentSum, prefixSum.getOrDefault(currentSum, 0) + 1);
+        }
+        return count;
+    }
+}
+```
+
+## Explanation
+
+- We maintain a **prefix sum** and store its frequency in a **hash map**.
+- At each step, we check if `(currentSum - k)` exists in the hash map.
+- The hash map efficiently keeps track of subarray sums.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, as we traverse `nums` once.
+- **Space Complexity:** `O(n)`, due to storing prefix sums.
+
+## Conclusion
+
+The **Subarray Sum Equals K** problem can be efficiently solved using a **hash map and prefix sum approach** for `O(n)` complexity. 🚀
+

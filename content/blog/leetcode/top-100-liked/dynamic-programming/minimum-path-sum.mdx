@@ -1,0 +1,169 @@
+---
+title: Minimum Path Sum
+description: Implementation of the Minimum Path Sum algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an `m x n` grid filled with non-negative numbers, find a path from the **top-left** to the **bottom-right**, which minimizes the sum of all numbers along its path.
+
+**Note:** You can only move either **down** or **right** at any point in time.
+
+### Example 1:
+
+**Input:**
+```
+grid = [[1,3,1],[1,5,1],[4,2,1]]
+```
+**Output:**
+```
+7
+```
+**Explanation:** The path `1 → 3 → 1 → 1 → 1` minimizes the sum.
+
+### Example 2:
+
+**Input:**
+```
+grid = [[1,2,3],[4,5,6]]
+```
+**Output:**
+```
+12
+```
+
+### Constraints:
+
+- `m == grid.length`
+- `n == grid[i].length`
+- `1 <= m, n <= 200`
+- `0 <= grid[i][j] <= 200`
+
+## Approach
+
+We use **dynamic programming** to solve this problem efficiently. The idea is to build a `dp` table where each cell `dp[i][j]` stores the minimum path sum to reach that cell.
+
+1. Initialize `dp[0][0] = grid[0][0]`.
+2. Fill the first row and first column by accumulating the values.
+3. For each cell `(i, j)`, compute the minimum path sum using:
+   ```
+   dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1])
+   ```
+4. The answer is stored in `dp[m-1][n-1]`.
+
+## Algorithm
+
+1. Create a `dp` table with the same size as `grid`.
+2. Initialize `dp[0][0]` with `grid[0][0]`.
+3. Fill the first row and first column.
+4. Iterate over the grid and fill `dp[i][j]` using the formula.
+5. Return `dp[m-1][n-1]`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func minPathSum(grid [][]int) int {
+    m, n := len(grid), len(grid[0])
+    dp := make([][]int, m)
+    for i := range dp {
+        dp[i] = make([]int, n)
+    }
+    dp[0][0] = grid[0][0]
+    
+    for i := 1; i < m; i++ {
+        dp[i][0] = dp[i-1][0] + grid[i][0]
+    }
+    for j := 1; j < n; j++ {
+        dp[0][j] = dp[0][j-1] + grid[0][j]
+    }
+    
+    for i := 1; i < m; i++ {
+        for j := 1; j < n; j++ {
+            dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1])
+        }
+    }
+    return dp[m-1][n-1]
+}
+
+func min(a, b int) int {
+    if a < b {
+        return a
+    }
+    return b
+}
+
+func main() {
+    grid := [][]int{{1,3,1},{1,5,1},{4,2,1}}
+    fmt.Println(minPathSum(grid)) // Output: 7
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int minPathSum(int[][] grid) {
+        int m = grid.length, n = grid[0].length;
+        int[][] dp = new int[m][n];
+        dp[0][0] = grid[0][0];
+        
+        for (int i = 1; i < m; i++) {
+            dp[i][0] = dp[i-1][0] + grid[i][0];
+        }
+        for (int j = 1; j < n; j++) {
+            dp[0][j] = dp[0][j-1] + grid[0][j];
+        }
+        
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                dp[i][j] = grid[i][j] + Math.min(dp[i-1][j], dp[i][j-1]);
+            }
+        }
+        return dp[m-1][n-1];
+    }
+    
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        int[][] grid = {{1,3,1},{1,5,1},{4,2,1}};
+        System.out.println(sol.minPathSum(grid)); // Output: 7
+    }
+}
+```
+
+## Explanation
+
+- **Dynamic programming** ensures an optimal solution by solving subproblems.
+- The `dp` table stores the **minimum path sum** up to each cell.
+- The final result is in `dp[m-1][n-1]`, representing the optimal path sum from top-left to bottom-right.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(m * n)`, where `m` is the number of rows and `n` is the number of columns (each cell is processed once).
+- **Space Complexity:** `O(m * n)` for the `dp` table, which can be optimized to `O(n)` using a single-row array.
+
+## Conclusion
+
+The **Minimum Path Sum** problem is efficiently solved using **dynamic programming**. The approach ensures that we always find the optimal path sum with `O(m * n)` time complexity. 🚀
+

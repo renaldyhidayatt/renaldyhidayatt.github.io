@@ -1,0 +1,173 @@
+---
+title: Palindrome Linked List
+description: Implementation of the Palindrome Linked List algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the head of a singly linked list, return `true` if it is a palindrome, or `false` otherwise.
+
+### Example 1:
+
+**Input:**
+```
+head = [1,2,2,1]
+```
+**Output:**
+```
+true
+```
+
+### Example 2:
+
+**Input:**
+```
+head = [1,2]
+```
+**Output:**
+```
+false
+```
+
+## Approach
+
+We can solve this problem using the **fast and slow pointer technique** to find the middle of the list and then reverse the second half to compare both halves.
+
+## Algorithm
+
+1. Use two pointers, `slow` and `fast`, to find the middle of the linked list.
+2. Reverse the second half of the linked list.
+3. Compare the first half and the reversed second half.
+4. If all corresponding values match, return `true`; otherwise, return `false`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+type ListNode struct {
+    Val  int
+    Next *ListNode
+}
+
+func isPalindrome(head *ListNode) bool {
+    if head == nil || head.Next == nil {
+        return true
+    }
+    
+    slow, fast := head, head
+    for fast != nil && fast.Next != nil {
+        slow = slow.Next
+        fast = fast.Next.Next
+    }
+    
+    secondHalf := reverseList(slow)
+    firstHalf := head
+    
+    for secondHalf != nil {
+        if firstHalf.Val != secondHalf.Val {
+            return false
+        }
+        firstHalf = firstHalf.Next
+        secondHalf = secondHalf.Next
+    }
+    
+    return true
+}
+
+func reverseList(head *ListNode) *ListNode {
+    var prev *ListNode
+    current := head
+    
+    for current != nil {
+        next := current.Next
+        current.Next = prev
+        prev = current
+        current = next
+    }
+    
+    return prev
+}
+```
+
+### Implementation in Java
+
+```java
+class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int val) { this.val = val; }
+}
+
+public class PalindromeLinkedList {
+    public boolean isPalindrome(ListNode head) {
+        if (head == null || head.next == null) {
+            return true;
+        }
+        
+        ListNode slow = head, fast = head;
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        
+        ListNode secondHalf = reverseList(slow);
+        ListNode firstHalf = head;
+        
+        while (secondHalf != null) {
+            if (firstHalf.val != secondHalf.val) {
+                return false;
+            }
+            firstHalf = firstHalf.next;
+            secondHalf = secondHalf.next;
+        }
+        
+        return true;
+    }
+    
+    private ListNode reverseList(ListNode head) {
+        ListNode prev = null, curr = head;
+        while (curr != null) {
+            ListNode next = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+        return prev;
+    }
+}
+```
+
+## Explanation
+
+- The **fast and slow pointer technique** helps find the middle of the linked list efficiently.
+- The **second half is reversed** to allow comparison with the first half.
+- The **comparison step** checks if all values match to confirm palindrome status.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, since we traverse the linked list twice.
+- **Space Complexity:** `O(1)`, as we modify the list in place.
+
+## Conclusion
+
+The **Palindrome Linked List** problem can be efficiently solved using the **fast and slow pointer technique** along with **in-place reversal** of the second half. This allows achieving `O(n)` time and `O(1)` space complexity. 🚀
+

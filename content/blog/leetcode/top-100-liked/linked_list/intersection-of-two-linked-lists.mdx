@@ -1,0 +1,147 @@
+---
+title: Intersection of Two Linked Lists
+description: Implementation of the Intersection of Two Linked Lists algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the heads of two singly linked-lists `headA` and `headB`, return the node at which the two lists intersect. If the two linked lists have no intersection at all, return `null`.
+
+The test cases are generated such that there are no cycles anywhere in the entire linked structure.
+
+### Example 1:
+
+**Input:**
+```
+intersectVal = 8, listA = [4,1,8,4,5], listB = [5,6,1,8,4,5], skipA = 2, skipB = 3
+```
+**Output:**
+```
+Intersected at '8'
+```
+
+### Example 2:
+
+**Input:**
+```
+intersectVal = 2, listA = [1,9,1,2,4], listB = [3,2,4], skipA = 3, skipB = 1
+```
+**Output:**
+```
+Intersected at '2'
+```
+
+### Example 3:
+
+**Input:**
+```
+intersectVal = 0, listA = [2,6,4], listB = [1,5], skipA = 3, skipB = 2
+```
+**Output:**
+```
+No intersection
+```
+
+## Approach
+
+We can use the **two-pointer technique** to efficiently find the intersection node of two linked lists in **O(m + n) time** and **O(1) space**.
+
+## Algorithm
+
+1. Initialize two pointers `pA` and `pB` at the heads of `headA` and `headB`, respectively.
+2. Traverse the lists. If a pointer reaches the end of its list, redirect it to the head of the other list.
+3. If the lists intersect, the pointers will meet at the intersection node; otherwise, they will both reach `nil`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+type ListNode struct {
+    Val  int
+    Next *ListNode
+}
+
+func getIntersectionNode(headA, headB *ListNode) *ListNode {
+    if headA == nil || headB == nil {
+        return nil
+    }
+    
+    pA, pB := headA, headB
+    
+    for pA != pB {
+        if pA == nil {
+            pA = headB
+        } else {
+            pA = pA.Next
+        }
+        
+        if pB == nil {
+            pB = headA
+        } else {
+            pB = pB.Next
+        }
+    }
+    
+    return pA
+}
+```
+
+### Implementation in Java
+
+```java
+class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int val) { this.val = val; }
+}
+
+public class IntersectionOfTwoLinkedLists {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+        if (headA == null || headB == null) return null;
+
+        ListNode pA = headA, pB = headB;
+
+        while (pA != pB) {
+            pA = (pA == null) ? headB : pA.next;
+            pB = (pB == null) ? headA : pB.next;
+        }
+        
+        return pA;
+    }
+}
+```
+
+## Explanation
+
+- The two pointers traverse each list once.
+- If there is an intersection, they meet at the intersection node.
+- If no intersection exists, they both reach `null` at the same time.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(m + n)` (both pointers traverse the two lists once)
+- **Space Complexity:** `O(1)` (only two extra pointers are used)
+
+## Conclusion
+
+The **Intersection of Two Linked Lists** problem can be efficiently solved using the **two-pointer approach**, making it an optimal solution with `O(m + n)` time complexity and `O(1)` space complexity. 🚀
+

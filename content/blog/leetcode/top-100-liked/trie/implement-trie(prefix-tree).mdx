@@ -1,0 +1,207 @@
+---
+title: Implement Trie (Prefix Tree)
+description: Implementation of the Trie (Prefix Tree) algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+----------------
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+A **Trie** (pronounced as "try") or **prefix tree** is a tree data structure used to efficiently store and retrieve keys in a dataset of strings. It is commonly used in applications such as autocomplete and spellcheckers.
+
+Implement the `Trie` class:
+
+- `Trie()` Initializes the trie object.
+- `void insert(String word)` Inserts the string `word` into the trie.
+- `boolean search(String word)` Returns `true` if `word` is in the trie, otherwise returns `false`.
+- `boolean startsWith(String prefix)` Returns `true` if there is a previously inserted string `word` that has the prefix `prefix`, otherwise returns `false`.
+
+### Example 1:
+
+**Input:**
+
+```
+["Trie", "insert", "search", "search", "startsWith", "insert", "search"]
+[[], ["apple"], ["apple"], ["app"], ["app"], ["app"], ["app"]]
+```
+
+**Output:**
+
+```
+[null, null, true, false, true, null, true]
+```
+
+**Explanation:**
+
+```
+Trie trie = new Trie();
+trie.insert("apple");
+trie.search("apple");   // return True
+trie.search("app");     // return False
+trie.startsWith("app"); // return True
+trie.insert("app");
+trie.search("app");     // return True
+```
+
+## Approach
+
+The Trie is implemented using a tree structure where each node represents a single character of a word. We traverse the tree to insert, search, and check for prefixes efficiently.
+
+## Algorithm
+
+1. Create a TrieNode class with a hashmap for child nodes and a boolean indicating the end of a word.
+2. For insertion, traverse the Trie and add nodes as needed.
+3. For search and prefix checking, traverse the Trie to check if the word or prefix exists.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+import "fmt"
+
+type TrieNode struct {
+    children map[rune]*TrieNode
+    isEnd    bool
+}
+
+type Trie struct {
+    root *TrieNode
+}
+
+func Constructor() Trie {
+    return Trie{root: &TrieNode{children: make(map[rune]*TrieNode)}}
+}
+
+func (this *Trie) Insert(word string) {
+    node := this.root
+    for _, ch := range word {
+        if _, exists := node.children[ch]; !exists {
+            node.children[ch] = &TrieNode{children: make(map[rune]*TrieNode)}
+        }
+        node = node.children[ch]
+    }
+    node.isEnd = true
+}
+
+func (this *Trie) Search(word string) bool {
+    node := this.findNode(word)
+    return node != nil && node.isEnd
+}
+
+func (this *Trie) StartsWith(prefix string) bool {
+    return this.findNode(prefix) != nil
+}
+
+func (this *Trie) findNode(word string) *TrieNode {
+    node := this.root
+    for _, ch := range word {
+        if _, exists := node.children[ch]; !exists {
+            return nil
+        }
+        node = node.children[ch]
+    }
+    return node
+}
+
+func main() {
+    trie := Constructor()
+    trie.Insert("apple")
+    fmt.Println(trie.Search("apple"))  // true
+    fmt.Println(trie.Search("app"))    // false
+    fmt.Println(trie.StartsWith("app")) // true
+    trie.Insert("app")
+    fmt.Println(trie.Search("app"))    // true
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class TrieNode {
+    Map<Character, TrieNode> children = new HashMap<>();
+    boolean isEnd = false;
+}
+
+class Trie {
+    private TrieNode root;
+    
+    public Trie() {
+        root = new TrieNode();
+    }
+    
+    public void insert(String word) {
+        TrieNode node = root;
+        for (char ch : word.toCharArray()) {
+            node.children.putIfAbsent(ch, new TrieNode());
+            node = node.children.get(ch);
+        }
+        node.isEnd = true;
+    }
+    
+    public boolean search(String word) {
+        TrieNode node = findNode(word);
+        return node != null && node.isEnd;
+    }
+    
+    public boolean startsWith(String prefix) {
+        return findNode(prefix) != null;
+    }
+    
+    private TrieNode findNode(String word) {
+        TrieNode node = root;
+        for (char ch : word.toCharArray()) {
+            if (!node.children.containsKey(ch)) {
+                return null;
+            }
+            node = node.children.get(ch);
+        }
+        return node;
+    }
+    
+    public static void main(String[] args) {
+        Trie trie = new Trie();
+        trie.insert("apple");
+        System.out.println(trie.search("apple"));  // true
+        System.out.println(trie.search("app"));    // false
+        System.out.println(trie.startsWith("app")); // true
+        trie.insert("app");
+        System.out.println(trie.search("app"));    // true
+    }
+}
+```
+
+## Explanation
+
+- **Trie Structure:** Each node represents a character with links to its children.
+- **Efficient Lookups:** Searching and prefix checking run in `O(n)` time complexity.
+
+## Time and Space Complexity
+
+- **Time Complexity:**
+  - Insert: `O(n)`, where `n` is the word length.
+  - Search: `O(n)`.
+  - StartsWith: `O(n)`.
+- **Space Complexity:** `O(N * M)`, where `N` is the number of words and `M` is the average word length.
+
+## Conclusion
+
+The **Trie** (Prefix Tree) efficiently supports insertions, searches, and prefix lookups, making it ideal for autocomplete and dictionary applications. 🚀
+

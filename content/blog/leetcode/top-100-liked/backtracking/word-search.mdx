@@ -1,0 +1,176 @@
+---
+title: Word Search
+description: Implementation of the Word Search algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an `m x n` grid of characters `board` and a string `word`, return `true` if `word` exists in the grid.
+
+The word can be constructed from letters of sequentially adjacent cells, where adjacent cells are horizontally or vertically neighboring. The same letter cell may not be used more than once.
+
+### Example 1:
+
+**Input:**
+```
+board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]]
+word = "ABCCED"
+```
+
+**Output:** `true`
+
+### Example 2:
+
+**Input:**
+```
+board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]]
+word = "SEE"
+```
+
+**Output:** `true`
+
+### Example 3:
+
+**Input:**
+```
+board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]]
+word = "ABCB"
+```
+
+**Output:** `false`
+
+### Constraints:
+
+- `1 <= m, n <= 6`
+- `1 <= word.length <= 15`
+- `board` and `word` consist of only lowercase and uppercase English letters.
+
+## Approach
+
+We use **Depth-First Search (DFS)** with backtracking to explore paths recursively while marking visited cells.
+
+## Algorithm
+
+1. Iterate over all cells in the board.
+2. If the first letter matches, initiate a recursive DFS search.
+3. Use a helper function to check neighboring cells while marking visited cells.
+4. If a full match is found, return `true`.
+5. Backtrack if no match is found and continue searching.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func exist(board [][]byte, word string) bool {
+    rows, cols := len(board), len(board[0])
+    var dfs func(r, c, index int) bool
+    
+    dfs = func(r, c, index int) bool {
+        if index == len(word) {
+            return true
+        }
+        if r < 0 || c < 0 || r >= rows || c >= cols || board[r][c] != word[index] {
+            return false
+        }
+        
+        temp := board[r][c]
+        board[r][c] = '#'
+        found := dfs(r+1, c, index+1) || dfs(r-1, c, index+1) || dfs(r, c+1, index+1) || dfs(r, c-1, index+1)
+        board[r][c] = temp
+        
+        return found
+    }
+    
+    for i := 0; i < rows; i++ {
+        for j := 0; j < cols; j++ {
+            if dfs(i, j, 0) {
+                return true
+            }
+        }
+    }
+    return false
+}
+
+func main() {
+    board := [][]byte{{'A','B','C','E'},{'S','F','C','S'},{'A','D','E','E'}}
+    word := "ABCCED"
+    fmt.Println(exist(board, word))
+}
+```
+
+### Implementation in Java
+
+```java
+public class WordSearch {
+    public boolean exist(char[][] board, String word) {
+        int rows = board.length, cols = board[0].length;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (dfs(board, word, i, j, 0)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean dfs(char[][] board, String word, int r, int c, int index) {
+        if (index == word.length()) {
+            return true;
+        }
+        if (r < 0 || c < 0 || r >= board.length || c >= board[0].length || board[r][c] != word.charAt(index)) {
+            return false;
+        }
+
+        char temp = board[r][c];
+        board[r][c] = '#';
+        boolean found = dfs(board, word, r+1, c, index+1) ||
+                        dfs(board, word, r-1, c, index+1) ||
+                        dfs(board, word, r, c+1, index+1) ||
+                        dfs(board, word, r, c-1, index+1);
+        board[r][c] = temp;
+
+        return found;
+    }
+
+    public static void main(String[] args) {
+        WordSearch ws = new WordSearch();
+        char[][] board = {{'A','B','C','E'}, {'S','F','C','S'}, {'A','D','E','E'}};
+        System.out.println(ws.exist(board, "ABCCED"));
+    }
+}
+```
+
+## Explanation
+
+Both solutions use **Depth-First Search (DFS)** to traverse the board and search for the word while keeping track of visited cells.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(m * n * 4^k)`, where `m, n` are the board dimensions and `k` is the word length.
+- **Space Complexity:** `O(k)`, for recursion depth.
+
+## Conclusion
+
+The Word Search problem can be efficiently solved using **DFS with backtracking**. Marking visited cells prevents revisiting, ensuring an optimal solution.

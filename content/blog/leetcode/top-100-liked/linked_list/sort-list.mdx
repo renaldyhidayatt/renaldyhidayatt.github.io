@@ -1,0 +1,188 @@
+---
+title: Sort List
+description: Implementation of the Sort List algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the head of a **linked list**, return the list after sorting it in **ascending order**.
+
+### Example 1:
+
+**Input:**
+```  
+head = [4,2,1,3]
+```
+**Output:**
+```  
+[1,2,3,4]  
+```
+
+### Example 2:
+
+**Input:**
+```  
+head = [-1,5,3,4,0]
+```
+**Output:**
+```  
+[-1,0,3,4,5]  
+```
+
+### Example 3:
+
+**Input:**
+```  
+head = []
+```
+**Output:**
+```  
+[]  
+```
+
+## Approach
+
+We can efficiently **sort a linked list** using **Merge Sort**, which guarantees an **O(n log n)** time complexity. Merge Sort is preferred because it does not require random access like Quick Sort.
+
+## Algorithm
+
+1. **Find the middle** of the linked list using the slow-fast pointer approach.
+2. **Recursively sort** the left and right halves.
+3. **Merge the sorted halves** using a helper function.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+type ListNode struct {
+    Val  int
+    Next *ListNode
+}
+
+func sortList(head *ListNode) *ListNode {
+    if head == nil || head.Next == nil {
+        return head
+    }
+    mid := getMiddle(head)
+    left := sortList(head)
+    right := sortList(mid)
+    return merge(left, right)
+}
+
+func getMiddle(head *ListNode) *ListNode {
+    var prev *ListNode
+    slow, fast := head, head
+    for fast != nil && fast.Next != nil {
+        prev = slow
+        slow = slow.Next
+        fast = fast.Next.Next
+    }
+    if prev != nil {
+        prev.Next = nil
+    }
+    return slow
+}
+
+func merge(l1, l2 *ListNode) *ListNode {
+    dummy := &ListNode{}
+    curr := dummy
+    for l1 != nil && l2 != nil {
+        if l1.Val < l2.Val {
+            curr.Next = l1
+            l1 = l1.Next
+        } else {
+            curr.Next = l2
+            l2 = l2.Next
+        }
+        curr = curr.Next
+    }
+    if l1 != nil {
+        curr.Next = l1
+    } else {
+        curr.Next = l2
+    }
+    return dummy.Next
+}
+```
+
+### Implementation in Java
+
+```java
+class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int val) { this.val = val; }
+}
+
+public class SortList {
+    public ListNode sortList(ListNode head) {
+        if (head == null || head.next == null) return head;
+        ListNode mid = getMiddle(head);
+        ListNode left = sortList(head);
+        ListNode right = sortList(mid);
+        return merge(left, right);
+    }
+
+    private ListNode getMiddle(ListNode head) {
+        ListNode prev = null, slow = head, fast = head;
+        while (fast != null && fast.next != null) {
+            prev = slow;
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        if (prev != null) prev.next = null;
+        return slow;
+    }
+
+    private ListNode merge(ListNode l1, ListNode l2) {
+        ListNode dummy = new ListNode(0), curr = dummy;
+        while (l1 != null && l2 != null) {
+            if (l1.val < l2.val) {
+                curr.next = l1;
+                l1 = l1.next;
+            } else {
+                curr.next = l2;
+                l2 = l2.next;
+            }
+            curr = curr.next;
+        }
+        curr.next = (l1 != null) ? l1 : l2;
+        return dummy.next;
+    }
+}
+```
+
+## Explanation
+
+- We **find the middle node** to divide the list into two halves.
+- **Merge Sort is applied recursively** to sort both halves.
+- The **merge function** efficiently merges two sorted lists.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n log n)` (due to recursive splitting and merging)
+- **Space Complexity:** `O(1)` (modifying the list in place, no extra space used)
+
+## Conclusion
+
+The **Sort List** problem can be efficiently solved using **Merge Sort**, making it an optimal choice for sorting a linked list. 🚀
+

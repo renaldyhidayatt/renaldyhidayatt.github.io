@@ -1,0 +1,182 @@
+---
+title: Find All Anagrams in a String
+description: Implementation of the Find All Anagrams in a String algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given two strings `s` and `p`, return an array of all start indices of `p`'s anagrams in `s`. The answer can be returned in any order.
+
+### Example 1:
+
+**Input:**
+```
+s = "cbaebabacd", p = "abc"
+```
+**Output:**
+```
+[0,6]
+```
+**Explanation:**
+The substrings with start indices `0` and `6` are "cba" and "bac", both of which are anagrams of "abc".
+
+### Example 2:
+
+**Input:**
+```
+s = "abab", p = "ab"
+```
+**Output:**
+```
+[0,1,2]
+```
+**Explanation:**
+The substrings with start indices `0`, `1`, and `2` are "ab", "ba", and "ab", all of which are anagrams of "ab".
+
+## Approach
+
+We use the **sliding window technique** with a **hashmap** to count character frequencies.
+
+1. Maintain frequency counts of `p` in a hashmap.
+2. Use a second hashmap to track character counts in the current window of `s`.
+3. Slide the window over `s`, updating counts and checking for an anagram match.
+4. If the two hashmaps match, append the start index to the result.
+
+## Algorithm
+
+1. Initialize two frequency maps, one for `p` and one for `s`.
+2. Expand the window by adding characters to the current map.
+3. Shrink the window from the left if its size exceeds `p`.
+4. Compare frequency maps and store valid start indices.
+5. Continue sliding until the end of `s` is reached.
+6. Return the list of indices.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func findAnagrams(s string, p string) []int {
+    var result []int
+    if len(s) < len(p) {
+        return result
+    }
+    
+    freqP := make(map[byte]int)
+    freqS := make(map[byte]int)
+    
+    for i := 0; i < len(p); i++ {
+        freqP[p[i]]++
+        freqS[s[i]]++
+    }
+    
+    if equalMaps(freqP, freqS) {
+        result = append(result, 0)
+    }
+    
+    for i := len(p); i < len(s); i++ {
+        freqS[s[i]]++
+        freqS[s[i-len(p)]]--
+        if freqS[s[i-len(p)]] == 0 {
+            delete(freqS, s[i-len(p)])
+        }
+        if equalMaps(freqP, freqS) {
+            result = append(result, i-len(p)+1)
+        }
+    }
+    
+    return result
+}
+
+func equalMaps(a, b map[byte]int) bool {
+    if len(a) != len(b) {
+        return false
+    }
+    for k, v := range a {
+        if b[k] != v {
+            return false
+        }
+    }
+    return true
+}
+
+func main() {
+    s := "cbaebabacd"
+    p := "abc"
+    fmt.Println(findAnagrams(s, p))
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class FindAllAnagrams {
+    public List<Integer> findAnagrams(String s, String p) {
+        List<Integer> result = new ArrayList<>();
+        if (s.length() < p.length()) return result;
+        
+        int[] freqP = new int[26];
+        int[] freqS = new int[26];
+        
+        for (int i = 0; i < p.length(); i++) {
+            freqP[p.charAt(i) - 'a']++;
+            freqS[s.charAt(i) - 'a']++;
+        }
+        
+        if (Arrays.equals(freqP, freqS)) result.add(0);
+        
+        for (int i = p.length(); i < s.length(); i++) {
+            freqS[s.charAt(i) - 'a']++;
+            freqS[s.charAt(i - p.length()) - 'a']--;
+            if (Arrays.equals(freqP, freqS)) result.add(i - p.length() + 1);
+        }
+        
+        return result;
+    }
+    
+    public static void main(String[] args) {
+        FindAllAnagrams solver = new FindAllAnagrams();
+        System.out.println(solver.findAnagrams("cbaebabacd", "abc"));
+    }
+}
+```
+
+## Explanation
+
+1. **Step 1:** Create frequency maps for `p` and `s` (window size `p`).
+2. **Step 2:** Slide the window while maintaining counts.
+3. **Step 3:** Remove leftmost character when window exceeds `p`.
+4. **Step 4:** Check if frequency maps match.
+5. **Step 5:** If matched, append the starting index to results.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, as each character is processed at most twice.
+- **Space Complexity:** `O(1)`, since frequency arrays have fixed size `26`.
+
+## Conclusion
+
+The **Find All Anagrams in a String** problem is efficiently solved using a **sliding window approach** with `O(n)` time complexity. 🚀
+

@@ -1,0 +1,175 @@
+---
+title: Longest Valid Parentheses
+description: Implementation of the Longest Valid Parentheses algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given a string containing just the characters `'('` and `')'`, return the length of the longest valid (well-formed) parentheses substring.
+
+### Example 1:
+
+**Input:**
+```
+s = "(()"
+```
+**Output:**
+```
+2
+```
+**Explanation:** The longest valid parentheses substring is `"()"`.
+
+### Example 2:
+
+**Input:**
+```
+s = ")()())"
+```
+**Output:**
+```
+4
+```
+**Explanation:** The longest valid parentheses substring is `"()()"`.
+
+### Example 3:
+
+**Input:**
+```
+s = ""
+```
+**Output:**
+```
+0
+```
+
+### Constraints:
+
+- `0 <= s.length <= 3 * 10^4`
+- `s[i]` is `'('` or `')'`.
+
+## Approach
+
+To find the **longest valid parentheses substring**, we can use **dynamic programming** or **stack-based approach**.
+
+### Stack-Based Approach:
+1. Use a stack to keep track of indices of unmatched parentheses.
+2. Push `-1` initially to handle edge cases.
+3. Iterate through the string:
+   - If `(`, push index onto stack.
+   - If `)`, pop the stack.
+   - If stack is empty after popping, push the current index.
+   - Calculate the length of valid parentheses using `currentIndex - stackTop`.
+4. Return the maximum length found.
+
+## Algorithm
+
+1. Initialize a stack and push `-1`.
+2. Traverse the string and update the stack based on open `(` and close `)` brackets.
+3. Compute the maximum valid length as we traverse.
+4. Return the maximum valid length.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func longestValidParentheses(s string) int {
+    stack := []int{-1}
+    maxLen := 0
+    for i, ch := range s {
+        if ch == '(' {
+            stack = append(stack, i)
+        } else {
+            stack = stack[:len(stack)-1] // pop
+            if len(stack) == 0 {
+                stack = append(stack, i)
+            } else {
+                maxLen = max(maxLen, i-stack[len(stack)-1])
+            }
+        }
+    }
+    return maxLen
+}
+
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+func main() {
+    fmt.Println(longestValidParentheses("(()"))       // Output: 2
+    fmt.Println(longestValidParentheses(")()())"))   // Output: 4
+    fmt.Println(longestValidParentheses(""))          // Output: 0
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int longestValidParentheses(String s) {
+        int maxLen = 0;
+        Stack<Integer> stack = new Stack<>();
+        stack.push(-1);
+        
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == '(') {
+                stack.push(i);
+            } else {
+                stack.pop();
+                if (stack.isEmpty()) {
+                    stack.push(i);
+                } else {
+                    maxLen = Math.max(maxLen, i - stack.peek());
+                }
+            }
+        }
+        return maxLen;
+    }
+
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println(sol.longestValidParentheses("(()"));       // Output: 2
+        System.out.println(sol.longestValidParentheses(")()())"));   // Output: 4
+        System.out.println(sol.longestValidParentheses(""));          // Output: 0
+    }
+}
+```
+
+## Explanation
+
+- The **stack-based approach** ensures that unmatched parentheses are tracked efficiently.
+- By keeping track of indices, we can compute valid substring lengths dynamically.
+- The key idea is updating `maxLen` whenever a valid segment is found.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the length of the string (each character is processed once).
+- **Space Complexity:** `O(n)`, due to stack usage in worst case.
+
+## Conclusion
+
+The **Longest Valid Parentheses** problem can be efficiently solved using **stack-based approach**. This method ensures optimal time complexity while maintaining correctness. 🚀
+

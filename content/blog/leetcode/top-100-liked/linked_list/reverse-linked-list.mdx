@@ -1,0 +1,167 @@
+---
+title: Reverse Linked List
+description: Implementation of the Reverse Linked List algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the head of a singly linked list, reverse the list, and return the reversed list.
+
+### Example 1:
+
+**Input:**
+```
+head = [1,2,3,4,5]
+```
+**Output:**
+```
+[5,4,3,2,1]
+```
+
+### Example 2:
+
+**Input:**
+```
+head = [1,2]
+```
+**Output:**
+```
+[2,1]
+```
+
+### Example 3:
+
+**Input:**
+```
+head = []
+```
+**Output:**
+```
+[]
+```
+
+## Approach
+
+We can reverse a linked list using **iterative** and **recursive** approaches.
+
+## Algorithm
+
+### Iterative Approach:
+1. Initialize `prev` as `null` and `curr` as `head`.
+2. Iterate through the list:
+   - Store `next` as `curr.Next`.
+   - Reverse the link (`curr.Next = prev`).
+   - Move `prev` and `curr` forward.
+3. Return `prev` as the new head.
+
+### Recursive Approach:
+1. Base case: If `head` is `null` or `head.Next` is `null`, return `head`.
+2. Reverse the rest of the list recursively.
+3. Adjust the pointers to reverse the current node.
+4. Return the new head.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+type ListNode struct {
+    Val  int
+    Next *ListNode
+}
+
+// Iterative approach
+func reverseList(head *ListNode) *ListNode {
+    var prev *ListNode
+    curr := head
+    
+    for curr != nil {
+        next := curr.Next
+        curr.Next = prev
+        prev = curr
+        curr = next
+    }
+    return prev
+}
+
+// Recursive approach
+func reverseListRecursive(head *ListNode) *ListNode {
+    if head == nil || head.Next == nil {
+        return head
+    }
+    newHead := reverseListRecursive(head.Next)
+    head.Next.Next = head
+    head.Next = nil
+    return newHead
+}
+```
+
+### Implementation in Java
+
+```java
+class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int val) { this.val = val; }
+}
+
+public class ReverseLinkedList {
+    // Iterative approach
+    public ListNode reverseList(ListNode head) {
+        ListNode prev = null, curr = head;
+        while (curr != null) {
+            ListNode next = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+        return prev;
+    }
+
+    // Recursive approach
+    public ListNode reverseListRecursive(ListNode head) {
+        if (head == null || head.next == null) return head;
+        ListNode newHead = reverseListRecursive(head.next);
+        head.next.next = head;
+        head.next = null;
+        return newHead;
+    }
+}
+```
+
+## Explanation
+
+- The **iterative** method reverses pointers as it traverses the list.
+- The **recursive** method reverses the list from the end back to the beginning.
+
+## Time and Space Complexity
+
+- **Iterative Approach:**
+  - **Time Complexity:** `O(n)`, since we traverse the list once.
+  - **Space Complexity:** `O(1)`, as we use only constant extra space.
+- **Recursive Approach:**
+  - **Time Complexity:** `O(n)`, since each node is visited once.
+  - **Space Complexity:** `O(n)`, due to recursive call stack.
+
+## Conclusion
+
+The **Reverse Linked List** problem can be efficiently solved using either an **iterative** or **recursive** approach. The iterative approach is more space-efficient, while the recursive approach offers a cleaner, more intuitive implementation. 🚀
+

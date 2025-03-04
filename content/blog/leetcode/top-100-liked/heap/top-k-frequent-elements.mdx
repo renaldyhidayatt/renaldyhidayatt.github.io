@@ -1,0 +1,166 @@
+---
+title: Top K Frequent Elements
+description: Implementation of the Top K Frequent Elements algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an integer array `nums` and an integer `k`, return the `k` most frequent elements. You may return the answer in any order.
+
+### Example 1:
+
+**Input:**
+```  
+nums = [1,1,1,2,2,3], k = 2  
+```
+**Output:**
+```  
+[1,2]  
+```
+
+### Example 2:
+
+**Input:**
+```  
+nums = [1], k = 1  
+```
+**Output:**
+```  
+[1]  
+```
+
+### Constraints:
+
+- `1 <= nums.length <= 10^5`
+- `-10^4 <= nums[i] <= 10^4`
+- `k` is in the range `[1, the number of unique elements in the array]`.
+- It is guaranteed that the answer is unique.
+
+## Approach
+
+We use a **hash map** to count occurrences and a **heap (priority queue)** to retrieve the top `k` elements efficiently.
+
+## Algorithm
+
+1. Count occurrences using a hash map.
+2. Use a min-heap to keep track of the `k` most frequent elements.
+3. Extract the top `k` elements from the heap.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "container/heap"
+    "fmt"
+)
+
+type Element struct {
+    num   int
+    count int
+}
+
+type MinHeap []Element
+
+func (h MinHeap) Len() int           { return len(h) }
+func (h MinHeap) Less(i, j int) bool { return h[i].count < h[j].count }
+func (h MinHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+func (h *MinHeap) Push(x interface{}) {
+    *h = append(*h, x.(Element))
+}
+
+func (h *MinHeap) Pop() interface{} {
+    old := *h
+    n := len(old)
+    x := old[n-1]
+    *h = old[0 : n-1]
+    return x
+}
+
+func topKFrequent(nums []int, k int) []int {
+    freqMap := make(map[int]int)
+    for _, num := range nums {
+        freqMap[num]++
+    }
+    
+    h := &MinHeap{}
+    heap.Init(h)
+    for num, count := range freqMap {
+        heap.Push(h, Element{num, count})
+        if h.Len() > k {
+            heap.Pop(h)
+        }
+    }
+    
+    result := make([]int, k)
+    for i := k - 1; i >= 0; i-- {
+        result[i] = heap.Pop(h).(Element).num
+    }
+    return result
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+        Map<Integer, Integer> freqMap = new HashMap<>();
+        for (int num : nums) {
+            freqMap.put(num, freqMap.getOrDefault(num, 0) + 1);
+        }
+        
+        PriorityQueue<int[]> heap = new PriorityQueue<>(Comparator.comparingInt(a -> a[1]));
+        for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
+            heap.offer(new int[]{entry.getKey(), entry.getValue()});
+            if (heap.size() > k) {
+                heap.poll();
+            }
+        }
+        
+        int[] result = new int[k];
+        for (int i = k - 1; i >= 0; i--) {
+            result[i] = heap.poll()[0];
+        }
+        return result;
+    }
+}
+```
+
+## Explanation
+
+- **Min-Heap Approach:**
+  - The min-heap maintains `k` most frequent elements.
+  - Efficient extraction of the top `k` elements.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n log k)` for maintaining the heap.
+- **Space Complexity:** `O(n)` for storing frequency counts.
+
+## Conclusion
+
+The **Top K Frequent Elements** problem can be efficiently solved using **a hash map and a min-heap**, ensuring `O(n log k)` complexity. 🚀
+
