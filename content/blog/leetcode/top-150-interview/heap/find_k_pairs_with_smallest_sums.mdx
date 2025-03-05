@@ -1,0 +1,161 @@
+---
+title: "Find K Pairs with Smallest Sums"
+description: "Implementation of the Find K Pairs with Smallest Sums algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+The **Find K Pairs with Smallest Sums** problem requires finding `k` pairs with the smallest sums from two sorted arrays.
+
+### Example:
+
+```
+Input: nums1 = [1,7,11], nums2 = [2,4,6], k = 3
+Output: [[1,2],[1,4],[1,6]]
+```
+
+```
+Input: nums1 = [1,1,2], nums2 = [1,2,3], k = 2
+Output: [[1,1],[1,1]]
+```
+
+### Constraints:
+
+- `1 <= nums1.length, nums2.length <= 10^5`
+- `-10^9 <= nums1[i], nums2[i] <= 10^9`
+- `nums1` and `nums2` are sorted in non-decreasing order.
+- `1 <= k <= 10^4`
+- `k <= nums1.length * nums2.length`
+
+## Approach
+
+- Use a **min heap (priority queue)** to efficiently get the smallest pairs.
+- Push the smallest element combinations into the heap.
+- Extract `k` elements from the heap to get the result.
+
+## Algorithm
+
+1. Use a **min heap** to store `(sum, i, j)`, where `i` and `j` are indices of `nums1` and `nums2`.
+2. Start by pushing `(nums1[i] + nums2[0], i, 0)` for `i = 0` to `min(len(nums1), k)`.
+3. Extract `k` elements from the heap and push the next possible pair `(i, j+1)`. 
+4. Stop when `k` elements are found.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "container/heap"
+)
+
+type Pair struct {
+    sum, i, j int
+}
+
+type MinHeap []Pair
+
+func (h MinHeap) Len() int           { return len(h) }
+func (h MinHeap) Less(i, j int) bool { return h[i].sum < h[j].sum }
+func (h MinHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *MinHeap) Push(x interface{}) {
+    *h = append(*h, x.(Pair))
+}
+func (h *MinHeap) Pop() interface{} {
+    old := *h
+    n := len(old)
+    x := old[n-1]
+    *h = old[:n-1]
+    return x
+}
+
+func kSmallestPairs(nums1, nums2 []int, k int) [][]int {
+    result := [][]int{}
+    if len(nums1) == 0 || len(nums2) == 0 || k == 0 {
+        return result
+    }
+    h := &MinHeap{}
+    heap.Init(h)
+    
+    for i := 0; i < min(len(nums1), k); i++ {
+        heap.Push(h, Pair{nums1[i] + nums2[0], i, 0})
+    }
+    
+    for k > 0 && h.Len() > 0 {
+        smallest := heap.Pop(h).(Pair)
+        result = append(result, []int{nums1[smallest.i], nums2[smallest.j]})
+        k--
+        if smallest.j+1 < len(nums2) {
+            heap.Push(h, Pair{nums1[smallest.i] + nums2[smallest.j+1], smallest.i, smallest.j+1})
+        }
+    }
+    return result
+}
+
+func min(a, b int) int {
+    if a < b {
+        return a
+    }
+    return b
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public List<List<Integer>> kSmallestPairs(int[] nums1, int[] nums2, int k) {
+        List<List<Integer>> result = new ArrayList<>();
+        PriorityQueue<int[]> minHeap = new PriorityQueue<>(Comparator.comparingInt(a -> (nums1[a[0]] + nums2[a[1]])));
+        
+        for (int i = 0; i < Math.min(nums1.length, k); i++) {
+            minHeap.offer(new int[]{i, 0});
+        }
+        
+        while (k-- > 0 && !minHeap.isEmpty()) {
+            int[] smallest = minHeap.poll();
+            int i = smallest[0], j = smallest[1];
+            result.add(Arrays.asList(nums1[i], nums2[j]));
+            
+            if (j + 1 < nums2.length) {
+                minHeap.offer(new int[]{i, j + 1});
+            }
+        }
+        return result;
+    }
+}
+```
+
+## Explanation
+
+- **Min Heap** ensures we always extract the smallest sum pair.
+- **Efficiently generates the k smallest pairs** by pushing only necessary elements.
+- Avoids generating all pairs, keeping time complexity lower.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(k log k)`, as we push `k` elements into the heap.
+- **Space Complexity**: `O(k)`, due to heap storage.
+
+## Conclusion
+
+Using **Min Heap**, we efficiently extract `k` pairs with the smallest sums from two sorted arrays.

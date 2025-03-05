@@ -1,0 +1,149 @@
+---
+title: Construct Binary Tree from Preorder and Inorder Traversal
+description: Implementation of the Construct Binary Tree from Preorder and Inorder Traversal algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given two integer arrays `preorder` and `inorder` where `preorder` is the preorder traversal of a binary tree and `inorder` is the inorder traversal of the same tree, construct and return the binary tree.
+
+### Example 1:
+
+**Input:**
+```
+preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]
+```
+**Output:**
+```
+[3,9,20,null,null,15,7]
+```
+
+### Example 2:
+
+**Input:**
+```
+preorder = [-1], inorder = [-1]
+```
+**Output:**
+```
+[-1]
+```
+
+### Constraints:
+
+- `1 <= preorder.length <= 3000`
+- `inorder.length == preorder.length`
+- `-3000 <= preorder[i], inorder[i] <= 3000`
+- `preorder` and `inorder` consist of **unique** values.
+- Each value of `inorder` also appears in `preorder`.
+- `preorder` is guaranteed to be the preorder traversal of the tree.
+- `inorder` is guaranteed to be the inorder traversal of the tree.
+
+## Approach
+
+We can solve this problem using recursion. The first element of the `preorder` array is always the root. We find this element in the `inorder` array to determine the left and right subtrees.
+
+## Algorithm
+
+1. If `preorder` or `inorder` is empty, return `nil`.
+2. The first element of `preorder` is the root.
+3. Find the root's index in `inorder`.
+4. Recursively construct the left and right subtrees using appropriate slices of `preorder` and `inorder`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func buildTree(preorder []int, inorder []int) *TreeNode {
+    if len(preorder) == 0 || len(inorder) == 0 {
+        return nil
+    }
+    
+    rootVal := preorder[0]
+    root := &TreeNode{Val: rootVal}
+    
+    index := 0
+    for i, v := range inorder {
+        if v == rootVal {
+            index = i
+            break
+        }
+    }
+    
+    root.Left = buildTree(preorder[1:index+1], inorder[:index])
+    root.Right = buildTree(preorder[index+1:], inorder[index+1:])
+    
+    return root
+}
+```
+
+### Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int x) { val = x; }
+}
+
+class Solution {
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+        if (preorder.length == 0 || inorder.length == 0) return null;
+        return helper(preorder, inorder, 0, 0, inorder.length - 1);
+    }
+
+    private TreeNode helper(int[] preorder, int[] inorder, int preIndex, int inStart, int inEnd) {
+        if (inStart > inEnd) return null;
+        
+        TreeNode root = new TreeNode(preorder[preIndex]);
+        int index = inStart;
+        while (index <= inEnd && inorder[index] != root.val) index++;
+        
+        root.left = helper(preorder, inorder, preIndex + 1, inStart, index - 1);
+        root.right = helper(preorder, inorder, preIndex + (index - inStart) + 1, index + 1, inEnd);
+        
+        return root;
+    }
+}
+```
+
+## Explanation
+
+Both implementations recursively construct the tree by using `preorder` to determine root nodes and `inorder` to split left and right subtrees.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the number of nodes (each node is processed once).
+- **Space Complexity:** `O(n)`, due to recursive calls and additional space for storing tree nodes.
+
+## Conclusion
+
+The **Construct Binary Tree from Preorder and Inorder Traversal** problem can be solved efficiently using recursion. 🚀
+

@@ -1,0 +1,108 @@
+---
+title: Kth Largest Element in an Array
+description: Solve the problem of finding the kth largest element using efficient algorithms. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem statement
+
+
+Given an integer array `nums` and an integer `k`, return the **kth largest** element in the array.
+
+Note that it is the kth largest element in the **sorted order**, not the kth distinct element.
+
+### Examples:
+
+**Example 1:**
+
+```
+Input: nums = [3,2,1,5,6,4], k = 2
+Output: 5
+```
+
+**Example 2:**
+
+```
+Input: nums = [3,2,3,1,2,4,5,5,6], k = 4
+Output: 4
+```
+
+### Constraints:
+
+- `1 <= k <= nums.length <= 10^5`
+- `-10^4 <= nums[i] <= 10^4`
+
+## Implementation in Go
+
+```go
+import (
+    "container/heap"
+)
+
+type MinHeap []int
+
+func (h MinHeap) Len() int           { return len(h) }
+func (h MinHeap) Less(i, j int) bool { return h[i] < h[j] }
+func (h MinHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *MinHeap) Push(x interface{}) { *h = append(*h, x.(int)) }
+func (h *MinHeap) Pop() interface{} {
+    old := *h
+    n := len(old)
+    x := old[n-1]
+    *h = old[0 : n-1]
+    return x
+}
+
+func findKthLargest(nums []int, k int) int {
+    h := &MinHeap{}
+    heap.Init(h)
+    
+    for _, num := range nums {
+        heap.Push(h, num)
+        if h.Len() > k {
+            heap.Pop(h)
+        }
+    }
+    return heap.Pop(h).(int)
+}
+```
+
+## Implementation in Java
+
+```java
+import java.util.PriorityQueue;
+
+class Solution {
+    public int findKthLargest(int[] nums, int k) {
+        PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+        
+        for (int num : nums) {
+            minHeap.offer(num);
+            if (minHeap.size() > k) {
+                minHeap.poll();
+            }
+        }
+        return minHeap.poll();
+    }
+}
+```
+
+## Conclusion
+
+This problem can be efficiently solved using a **Min Heap (Priority Queue)** of size `k`. The time complexity is approximately **O(n log k)**, where `n` is the number of elements in the array.
+

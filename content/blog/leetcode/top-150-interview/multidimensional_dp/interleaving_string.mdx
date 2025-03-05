@@ -1,0 +1,133 @@
+---
+title: "Interleaving String"
+description: "Implementation of the Interleaving String algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+The **Interleaving String** problem requires checking whether a given string `s3` is formed by an interleaving of two other strings `s1` and `s2`.
+
+### Example:
+
+```
+Input: s1 = "aabcc", s2 = "dbbca", s3 = "aadbbcbcac"
+Output: true
+```
+
+```
+Input: s1 = "aabcc", s2 = "dbbca", s3 = "aadbbbaccc"
+Output: false
+```
+
+### Constraints:
+
+- `0 <= s1.length, s2.length <= 100`
+- `0 <= s3.length <= 200`
+- `s1`, `s2`, and `s3` consist of lowercase English letters.
+
+## Approach
+
+- Use **dynamic programming** to store intermediate results.
+- Define `dp[i][j]` as `true` if `s3[0:i+j]` is an interleaving of `s1[0:i]` and `s2[0:j]`.
+- Transition: If `s3[i + j - 1] == s1[i - 1]`, inherit from `dp[i-1][j]`. Similarly, if `s3[i + j - 1] == s2[j - 1]`, inherit from `dp[i][j-1]`.
+- Base case: `dp[0][0] = true` since an empty `s3` is an interleaving of two empty strings.
+
+## Algorithm
+
+1. Initialize `dp` table with dimensions `(len(s1)+1) x (len(s2)+1)`.
+2. Set `dp[0][0] = true`.
+3. Fill the table using transition rules.
+4. Return `dp[len(s1)][len(s2)]` as the result.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func isInterleave(s1, s2, s3 string) bool {
+    m, n := len(s1), len(s2)
+    if m+n != len(s3) {
+        return false
+    }
+    dp := make([][]bool, m+1)
+    for i := range dp {
+        dp[i] = make([]bool, n+1)
+    }
+    dp[0][0] = true
+    
+    for i := 0; i <= m; i++ {
+        for j := 0; j <= n; j++ {
+            if i > 0 {
+                dp[i][j] = dp[i][j] || (dp[i-1][j] && s1[i-1] == s3[i+j-1])
+            }
+            if j > 0 {
+                dp[i][j] = dp[i][j] || (dp[i][j-1] && s2[j-1] == s3[i+j-1])
+            }
+        }
+    }
+    return dp[m][n]
+}
+
+func main() {
+    fmt.Println(isInterleave("aabcc", "dbbca", "aadbbcbcac")) // Output: true
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public boolean isInterleave(String s1, String s2, String s3) {
+        int m = s1.length(), n = s2.length();
+        if (m + n != s3.length()) return false;
+        boolean[][] dp = new boolean[m+1][n+1];
+        dp[0][0] = true;
+        
+        for (int i = 0; i <= m; i++) {
+            for (int j = 0; j <= n; j++) {
+                if (i > 0) {
+                    dp[i][j] = dp[i][j] || (dp[i-1][j] && s1.charAt(i-1) == s3.charAt(i+j-1));
+                }
+                if (j > 0) {
+                    dp[i][j] = dp[i][j] || (dp[i][j-1] && s2.charAt(j-1) == s3.charAt(i+j-1));
+                }
+            }
+        }
+        return dp[m][n];
+    }
+}
+```
+
+## Explanation
+
+- **Dynamic programming approach:** Stores subproblem results to avoid recomputation.
+- **Character matching:** Ensures correct ordering while merging `s1` and `s2` into `s3`.
+- **Efficient traversal:** Uses a 2D table of size `(m+1) x (n+1)`.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(m * n)`, iterating through each cell.
+- **Space Complexity**: `O(m * n)`, using a DP table.
+
+## Conclusion
+
+This approach efficiently determines whether `s3` is an interleaving of `s1` and `s2` using dynamic programming.

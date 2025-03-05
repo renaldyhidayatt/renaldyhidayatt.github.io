@@ -1,0 +1,130 @@
+---
+title: "Path Sum"
+description: "Implementation of Path Sum in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the root of a binary tree and an integer `targetSum`, return `true` if the tree has a root-to-leaf path such that adding up all the values along the path equals `targetSum`.
+
+A leaf is a node with no children.
+
+### Example 1:
+
+```
+Input: root = [5,4,8,11,null,13,4,7,2,null,null,null,1], targetSum = 22
+Output: true
+```
+
+### Example 2:
+
+```
+Input: root = [1,2,3], targetSum = 5
+Output: false
+```
+
+### Example 3:
+
+```
+Input: root = [], targetSum = 0
+Output: false
+```
+
+### Constraints:
+
+- The number of nodes in the tree is in the range `[0, 5000]`.
+- `-1000 <= Node.val <= 1000`
+- `-1000 <= targetSum <= 1000`
+
+## Approach
+
+1. Perform a depth-first search (DFS) to traverse the tree.
+2. At each node, subtract the node's value from `targetSum`.
+3. If a leaf node is reached and the remaining `targetSum` is zero, return `true`.
+4. Recursively check the left and right subtrees.
+5. If any path satisfies the condition, return `true`; otherwise, return `false`.
+
+## Algorithm
+
+1. If `root` is `nil`, return `false`.
+2. If the node is a leaf and `targetSum` equals the node's value, return `true`.
+3. Recursively check left and right subtrees with the updated `targetSum`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func hasPathSum(root *TreeNode, targetSum int) bool {
+    if root == nil {
+        return false
+    }
+    
+    if root.Left == nil && root.Right == nil {
+        return targetSum == root.Val
+    }
+    
+    return hasPathSum(root.Left, targetSum-root.Val) || hasPathSum(root.Right, targetSum-root.Val)
+}
+```
+
+### Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int val) { this.val = val; }
+}
+
+public class PathSum {
+    public boolean hasPathSum(TreeNode root, int targetSum) {
+        if (root == null) return false;
+        
+        if (root.left == null && root.right == null) {
+            return targetSum == root.val;
+        }
+        
+        return hasPathSum(root.left, targetSum - root.val) || hasPathSum(root.right, targetSum - root.val);
+    }
+}
+```
+
+## Explanation
+
+- The algorithm recursively traverses the tree using DFS.
+- If a leaf node is reached and the sum matches `targetSum`, the function returns `true`.
+- Otherwise, it continues checking the left and right subtrees.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(N)`, where `N` is the number of nodes.
+- **Space Complexity:** `O(H)`, where `H` is the height of the tree (recursion depth).
+
+## Conclusion
+
+This approach efficiently determines if a root-to-leaf path exists with the given sum using DFS traversal.

@@ -1,0 +1,132 @@
+---
+title: Two Sum II - Input Array Is Sorted
+description: Implementation of the Two Sum II algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given a 1-indexed array of integers `numbers` that is already sorted in non-decreasing order, find two numbers such that they add up to a specific `target` number. Let these two numbers be `numbers[index1]` and `numbers[index2]` where `1 <= index1 < index2 <= numbers.length`.
+
+Return the indices of the two numbers, `index1` and `index2`, added by one as an integer array `[index1, index2]` of length `2`.
+
+The tests are generated such that there is exactly one solution. You may not use the same element twice.
+
+Your solution must use only constant extra space.
+
+### Example:
+
+**Input:**
+```
+numbers = [2,7,11,15], target = 9
+```
+**Output:**
+```
+[1,2]
+```
+
+**Input:**
+```
+numbers = [2,3,4], target = 6
+```
+**Output:**
+```
+[1,3]
+```
+
+## Approach
+
+1. Use the two-pointer technique.
+2. Set one pointer at the beginning (`left`) and another at the end (`right`).
+3. If `numbers[left] + numbers[right] == target`, return the indices.
+4. If the sum is less than `target`, move the `left` pointer forward.
+5. If the sum is greater than `target`, move the `right` pointer backward.
+
+## Algorithm
+
+1. Initialize `left = 0` and `right = len(numbers) - 1`.
+2. While `left < right`:
+   - If `numbers[left] + numbers[right] == target`, return `[left + 1, right + 1]`.
+   - If the sum is less than `target`, increment `left`.
+   - Otherwise, decrement `right`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func twoSum(numbers []int, target int) []int {
+    left, right := 0, len(numbers)-1
+    for left < right {
+        sum := numbers[left] + numbers[right]
+        if sum == target {
+            return []int{left + 1, right + 1}
+        } else if sum < target {
+            left++
+        } else {
+            right--
+        }
+    }
+    return []int{}
+}
+
+func main() {
+    numbers := []int{2, 7, 11, 15}
+    target := 9
+    fmt.Println(twoSum(numbers, target))
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int[] twoSum(int[] numbers, int target) {
+        int left = 0, right = numbers.length - 1;
+        while (left < right) {
+            int sum = numbers[left] + numbers[right];
+            if (sum == target) {
+                return new int[]{left + 1, right + 1};
+            } else if (sum < target) {
+                left++;
+            } else {
+                right--;
+            }
+        }
+        return new int[]{};
+    }
+}
+```
+
+## Explanation
+
+- The two-pointer approach efficiently finds the two numbers that sum up to the `target` in `O(n)` time.
+- Since the array is already sorted, we can optimize the search by adjusting pointers instead of using brute force.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, as we traverse the list at most once.
+- **Space Complexity:** `O(1)`, since no extra space is used apart from the input array.
+
+## Conclusion
+
+This two-pointer approach is optimal for solving Two Sum II in a sorted array efficiently. 🚀

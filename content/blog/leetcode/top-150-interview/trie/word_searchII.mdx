@@ -1,0 +1,214 @@
+---
+title: "Word Search II"
+description: "Implementation of Word Search II algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an `m x n` board of characters and a list of strings `words`, return all words on the board.
+
+Each word must be constructed from letters of sequentially adjacent cells, where adjacent cells are horizontally or vertically neighboring. The same letter cell may not be used more than once in a word.
+
+### Example:
+
+```
+Input: board = [["o","a","a","n"],["e","t","a","e"],["i","h","k","r"],["i","f","l","v"]], words = ["oath","pea","eat","rain"]
+Output: ["eat","oath"]
+```
+
+```
+Input: board = [["a","b"],["c","d"]], words = ["abcb"]
+Output: []
+```
+
+### Constraints:
+
+- `1 <= m, n <= 12`
+- `board[i][j]` is a lowercase English letter.
+- `1 <= words.length <= 3 * 10^4`
+- `1 <= words[i].length <= 10`
+- `words[i]` consists of lowercase English letters.
+- All words in `words` are unique.
+
+## Approach
+
+- Use **Trie** to store words efficiently.
+- Use **Backtracking with DFS** to explore all possible words.
+- Prune branches to improve efficiency.
+
+## Algorithm
+
+1. Insert all words into a **Trie**.
+2. Perform DFS from each board cell, checking for words in the **Trie**.
+3. If a valid word is found, add it to the result set and continue exploring.
+4. Use a visited matrix to ensure each cell is used only once per word.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+type TrieNode struct {
+    children map[byte]*TrieNode
+    word     string
+}
+
+type Trie struct {
+    root *TrieNode
+}
+
+func Constructor() *Trie {
+    return &Trie{root: &TrieNode{children: make(map[byte]*TrieNode)}}
+}
+
+func (t *Trie) Insert(word string) {
+    node := t.root
+    for i := 0; i < len(word); i++ {
+        ch := word[i]
+        if node.children[ch] == nil {
+            node.children[ch] = &TrieNode{children: make(map[byte]*TrieNode)}
+        }
+        node = node.children[ch]
+    }
+    node.word = word
+}
+
+func findWords(board [][]byte, words []string) []string {
+    trie := Constructor()
+    for _, word := range words {
+        trie.Insert(word)
+    }
+    result := make(map[string]bool)
+    rows, cols := len(board), len(board[0])
+    
+    var dfs func(int, int, *TrieNode)
+    dfs = func(r, c int, node *TrieNode) {
+        if r < 0 || r >= rows || c < 0 || c >= cols || board[r][c] == '#' {
+            return
+        }
+        ch := board[r][c]
+        if node.children[ch] == nil {
+            return
+        }
+        
+        nextNode := node.children[ch]
+        if nextNode.word != "" {
+            result[nextNode.word] = true
+        }
+        
+        board[r][c] = '#'
+        dfs(r+1, c, nextNode)
+        dfs(r-1, c, nextNode)
+        dfs(r, c+1, nextNode)
+        dfs(r, c-1, nextNode)
+        board[r][c] = ch
+    }
+    
+    for r := 0; r < rows; r++ {
+        for c := 0; c < cols; c++ {
+            dfs(r, c, trie.root)
+        }
+    }
+    
+    wordsFound := []string{}
+    for word := range result {
+        wordsFound = append(wordsFound, word)
+    }
+    return wordsFound
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class WordSearchII {
+    class TrieNode {
+        Map<Character, TrieNode> children = new HashMap<>();
+        String word = null;
+    }
+
+    class Trie {
+        TrieNode root = new TrieNode();
+        
+        void insert(String word) {
+            TrieNode node = root;
+            for (char c : word.toCharArray()) {
+                node.children.putIfAbsent(c, new TrieNode());
+                node = node.children.get(c);
+            }
+            node.word = word;
+        }
+    }
+
+    public List<String> findWords(char[][] board, String[] words) {
+        Trie trie = new Trie();
+        for (String word : words) {
+            trie.insert(word);
+        }
+        Set<String> result = new HashSet<>();
+        int rows = board.length, cols = board[0].length;
+        
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                dfs(board, r, c, trie.root, result);
+            }
+        }
+        return new ArrayList<>(result);
+    }
+    
+    private void dfs(char[][] board, int r, int c, TrieNode node, Set<String> result) {
+        if (r < 0 || c < 0 || r >= board.length || c >= board[0].length || board[r][c] == '#' || !node.children.containsKey(board[r][c])) {
+            return;
+        }
+        
+        char ch = board[r][c];
+        TrieNode nextNode = node.children.get(ch);
+        if (nextNode.word != null) {
+            result.add(nextNode.word);
+        }
+        
+        board[r][c] = '#';
+        dfs(board, r + 1, c, nextNode, result);
+        dfs(board, r - 1, c, nextNode, result);
+        dfs(board, r, c + 1, nextNode, result);
+        dfs(board, r, c - 1, nextNode, result);
+        board[r][c] = ch;
+    }
+}
+```
+
+## Explanation
+
+- **Trie Optimization**: Efficiently stores words.
+- **Backtracking DFS**: Explores all possible paths to find words.
+- **Pruning**: Stops early when the path does not lead to a word.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(N * M * 4^L)`, where `N` is rows, `M` is columns, and `L` is word length.
+- **Space Complexity**: `O(W * L)`, where `W` is the number of words.
+
+## Conclusion
+
+Using **Trie** and **DFS**, we efficiently solve Word Search II while optimizing for performance.

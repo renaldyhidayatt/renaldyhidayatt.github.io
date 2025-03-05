@@ -1,0 +1,126 @@
+---
+title: Longest Substring Without Repeating Characters
+description: Implementation of the Longest Substring Without Repeating Characters algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given a string `s`, find the length of the longest substring without duplicate characters.
+
+### Example:
+
+**Input:**
+```
+s = "abcabcbb"
+```
+**Output:**
+```
+3
+```
+
+**Input:**
+```
+s = "bbbbb"
+```
+**Output:**
+```
+1
+```
+
+## Approach
+
+1. Use a sliding window approach with a hash set.
+2. Maintain a `left` pointer and expand the `right` pointer.
+3. If a duplicate character is found, move `left` forward to remove duplicates.
+4. Track the maximum length found.
+
+## Algorithm
+
+1. Initialize `left = 0`, `charSet = {}` and `maxLength = 0`.
+2. Iterate with `right` over `s`:
+   - If `s[right]` is in `charSet`, remove `s[left]` and move `left` forward.
+   - Add `s[right]` to `charSet` and update `maxLength`.
+3. Return `maxLength`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func lengthOfLongestSubstring(s string) int {
+    charSet := make(map[byte]bool)
+    left, maxLength := 0, 0
+    for right := 0; right < len(s); right++ {
+        for charSet[s[right]] {
+            delete(charSet, s[left])
+            left++
+        }
+        charSet[s[right]] = true
+        if right-left+1 > maxLength {
+            maxLength = right - left + 1
+        }
+    }
+    return maxLength
+}
+
+func main() {
+    s := "abcabcbb"
+    fmt.Println(lengthOfLongestSubstring(s))
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.HashSet;
+
+class Solution {
+    public int lengthOfLongestSubstring(String s) {
+        HashSet<Character> charSet = new HashSet<>();
+        int left = 0, maxLength = 0;
+        for (int right = 0; right < s.length(); right++) {
+            while (charSet.contains(s.charAt(right))) {
+                charSet.remove(s.charAt(left++));
+            }
+            charSet.add(s.charAt(right));
+            maxLength = Math.max(maxLength, right - left + 1);
+        }
+        return maxLength;
+    }
+}
+```
+
+## Explanation
+
+- The sliding window technique ensures an optimal solution.
+- The `left` pointer moves forward when a duplicate is found.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, as we traverse the string once.
+- **Space Complexity:** `O(min(n, 26))`, since we store characters in a set.
+
+## Conclusion
+
+The sliding window approach efficiently finds the longest substring without repeating characters. 🚀
+

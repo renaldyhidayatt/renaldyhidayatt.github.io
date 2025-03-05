@@ -1,0 +1,132 @@
+---
+title: "123. Best Time to Buy and Sell Stock III"
+description: "Implementation of the Best Time to Buy and Sell Stock III algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given an array `prices` where `prices[i]` represents the price of a given stock on the `i`th day.
+
+Find the maximum profit you can achieve. You may complete **at most two transactions**.
+
+### Example:
+
+```
+Input: prices = [3,3,5,0,0,3,1,4]
+Output: 6
+```
+
+```
+Input: prices = [1,2,3,4,5]
+Output: 4
+```
+
+```
+Input: prices = [7,6,4,3,1]
+Output: 0
+```
+
+### Constraints:
+
+- `1 <= prices.length <= 10^5`
+- `0 <= prices[i] <= 10^5`
+
+## Approach
+
+- Use **dynamic programming** to keep track of **two transactions**.
+- Maintain four states:
+  - `buy1`: Max profit after first buy.
+  - `sell1`: Max profit after first sell.
+  - `buy2`: Max profit after second buy.
+  - `sell2`: Max profit after second sell.
+- Iterate through prices and update these states accordingly.
+
+## Algorithm
+
+1. Initialize `buy1`, `sell1`, `buy2`, `sell2`.
+2. Iterate over `prices` and update these values.
+3. Return `sell2` as the result.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func maxProfit(prices []int) int {
+    buy1, sell1 := -1<<31, 0
+    buy2, sell2 := -1<<31, 0
+    
+    for _, price := range prices {
+        buy1 = max(buy1, -price)
+        sell1 = max(sell1, buy1+price)
+        buy2 = max(buy2, sell1-price)
+        sell2 = max(sell2, buy2+price)
+    }
+    return sell2
+}
+
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+func main() {
+    prices := []int{3,3,5,0,0,3,1,4}
+    fmt.Println(maxProfit(prices)) // Output: 6
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        int buy1 = Integer.MIN_VALUE, sell1 = 0;
+        int buy2 = Integer.MIN_VALUE, sell2 = 0;
+        
+        for (int price : prices) {
+            buy1 = Math.max(buy1, -price);
+            sell1 = Math.max(sell1, buy1 + price);
+            buy2 = Math.max(buy2, sell1 - price);
+            sell2 = Math.max(sell2, buy2 + price);
+        }
+        return sell2;
+    }
+}
+```
+
+## Explanation
+
+- The algorithm maintains four states representing two transactions.
+- Each state is updated by evaluating the maximum possible profit at each step.
+- Efficiently computes the solution in linear time.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(n)`, iterating through the list once.
+- **Space Complexity**: `O(1)`, using constant extra space.
+
+## Conclusion
+
+This approach efficiently determines the maximum profit achievable with at most two transactions using dynamic programming.

@@ -1,0 +1,109 @@
+---
+title: "191. Number of 1 Bits"
+description: "Implementation of the Number of 1 Bits algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+The **Number of 1 Bits** problem requires counting the number of set bits (1s) in the binary representation of a given unsigned integer.
+
+### Example:
+
+```
+Input: n = 00000000000000000000000000001011
+Output: 3
+```
+
+```
+Input: n = 00000000000000000000000010000000
+Output: 1
+```
+
+### Constraints:
+
+- `0 <= n <= 2^31 - 1`
+
+## Approach
+
+- Use bitwise operations to count the number of 1s in `n`.
+- Shift `n` right iteratively and count the set bits.
+- Alternative approach: Use `n & (n - 1)` to clear the least significant bit set to 1.
+
+## Algorithm
+
+1. Initialize `count = 0`.
+2. Loop until `n` becomes 0:
+   - Increment `count` if the last bit of `n` is 1.
+   - Shift `n` right by 1.
+3. Return `count`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func hammingWeight(n uint32) int {
+    count := 0
+    for n != 0 {
+        count += int(n & 1)
+        n >>= 1
+    }
+    return count
+}
+
+func main() {
+    fmt.Println(hammingWeight(11))  // Output: 3
+    fmt.Println(hammingWeight(128)) // Output: 1
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int hammingWeight(int n) {
+        int count = 0;
+        while (n != 0) {
+            count += (n & 1);
+            n >>>= 1;
+        }
+        return count;
+    }
+}
+```
+
+## Explanation
+
+- **Bitwise operations** efficiently count set bits.
+- **Right shift (`>>`)** iterates through each bit.
+- **`n & 1`** checks if the least significant bit is 1.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(1)`, as we iterate at most 32 times.
+- **Space Complexity**: `O(1)`, as we use constant extra space.
+
+## Conclusion
+
+This approach efficiently counts the number of 1 bits in a given unsigned integer using bitwise operations.

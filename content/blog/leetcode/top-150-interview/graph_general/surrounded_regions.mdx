@@ -1,0 +1,154 @@
+---
+title: "Surrounded Regions"
+description: "Implementation of Surrounded Regions algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given an `m x n` board containing letters `'X'` and `'O'`. Capture all regions that are completely surrounded by `'X'`.
+
+### Example 1:
+
+```
+Input: board = [["X","X","X","X"],["X","O","O","X"],["X","X","O","X"],["X","O","X","X"]]
+Output: [["X","X","X","X"],["X","X","X","X"],["X","X","X","X"],["X","O","X","X"]]
+```
+
+### Example 2:
+
+```
+Input: board = [["X"]]
+Output: [["X"]]
+```
+
+### Constraints:
+
+- `1 <= m, n <= 200`
+- `board[i][j]` is `'X'` or `'O'`.
+
+## Approach
+
+- Identify `'O'` regions connected to the **border** and mark them as safe.
+- Convert remaining `'O'`s into `'X'`s (captured regions).
+- Convert safe `'O'`s back to `'O'`.
+
+## Algorithm
+
+1. Use **DFS** or **BFS** to mark border-connected `'O'`s as safe.
+2. Traverse the board:
+   - Convert `'O'` to `'X'` (captured region).
+   - Convert safe-marked `'O'` back to `'O'`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+func solve(board [][]byte) {
+    rows, cols := len(board), len(board[0])
+    directions := [][]int{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}
+
+    var dfs func(int, int)
+    dfs = func(r, c int) {
+        if r < 0 || c < 0 || r >= rows || c >= cols || board[r][c] != 'O' {
+            return
+        }
+        board[r][c] = 'S' // Mark safe
+        for _, d := range directions {
+            dfs(r+d[0], c+d[1])
+        }
+    }
+
+    for r := 0; r < rows; r++ {
+        if board[r][0] == 'O' { dfs(r, 0) }
+        if board[r][cols-1] == 'O' { dfs(r, cols-1) }
+    }
+    for c := 0; c < cols; c++ {
+        if board[0][c] == 'O' { dfs(0, c) }
+        if board[rows-1][c] == 'O' { dfs(rows-1, c) }
+    }
+    
+    for r := 0; r < rows; r++ {
+        for c := 0; c < cols; c++ {
+            if board[r][c] == 'O' {
+                board[r][c] = 'X'
+            } else if board[r][c] == 'S' {
+                board[r][c] = 'O'
+            }
+        }
+    }
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public void solve(char[][] board) {
+        int rows = board.length, cols = board[0].length;
+        int[][] directions = {{0,1}, {1,0}, {0,-1}, {-1,0}};
+
+        for (int r = 0; r < rows; r++) {
+            dfs(board, r, 0);
+            dfs(board, r, cols - 1);
+        }
+        for (int c = 0; c < cols; c++) {
+            dfs(board, 0, c);
+            dfs(board, rows - 1, c);
+        }
+        
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (board[r][c] == 'O') {
+                    board[r][c] = 'X';
+                } else if (board[r][c] == 'S') {
+                    board[r][c] = 'O';
+                }
+            }
+        }
+    }
+
+    private void dfs(char[][] board, int r, int c) {
+        if (r < 0 || c < 0 || r >= board.length || c >= board[0].length || board[r][c] != 'O') {
+            return;
+        }
+        board[r][c] = 'S';
+        dfs(board, r + 1, c);
+        dfs(board, r - 1, c);
+        dfs(board, r, c + 1);
+        dfs(board, r, c - 1);
+    }
+}
+```
+
+## Explanation
+
+- **Step 1**: Use **DFS** to mark all `'O'`s connected to the border as safe.
+- **Step 2**: Convert remaining `'O'`s into `'X'`s.
+- **Step 3**: Restore safe `'O'`s.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(m * n)`, where `m` and `n` are the board dimensions.
+- **Space Complexity:** `O(m * n)` (recursive DFS stack or explicit queue for BFS).
+
+## Conclusion
+
+By identifying and preserving `'O'`s connected to the border, we efficiently capture surrounded regions in-place.

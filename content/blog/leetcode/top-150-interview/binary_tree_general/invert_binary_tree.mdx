@@ -1,0 +1,146 @@
+---
+title: Invert Binary Tree
+description: Implementation of the Invert Binary Tree algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the root of a binary tree, invert the tree, and return its root.
+
+### Example 1:
+
+**Input:**
+```
+root = [4,2,7,1,3,6,9]
+```
+**Output:**
+```
+[4,7,2,9,6,3,1]
+```
+
+### Example 2:
+
+**Input:**
+```
+root = [2,1,3]
+```
+**Output:**
+```
+[2,3,1]
+```
+
+### Example 3:
+
+**Input:**
+```
+root = []
+```
+**Output:**
+```
+[]
+```
+
+### Constraints:
+
+- The number of nodes in the tree is in the range `[0, 100]`.
+- `-100 <= Node.val <= 100`
+
+## Approach
+
+We can solve this problem using **recursion**:
+
+1. Swap the left and right child of the current node.
+2. Recursively invert the left and right subtrees.
+3. Return the root node after inversion.
+
+Alternatively, an **iterative approach using BFS (queue) or DFS (stack)** can also be used.
+
+## Algorithm
+
+1. If the root is `nil`, return `nil`.
+2. Swap the left and right children.
+3. Recursively invert the left and right subtrees.
+4. Return the modified root.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func invertTree(root *TreeNode) *TreeNode {
+    if root == nil {
+        return nil
+    }
+    root.Left, root.Right = invertTree(root.Right), invertTree(root.Left)
+    return root
+}
+
+func main() {
+    root := &TreeNode{Val: 4, Left: &TreeNode{Val: 2, Left: &TreeNode{Val: 1}, Right: &TreeNode{Val: 3}}, Right: &TreeNode{Val: 7, Left: &TreeNode{Val: 6}, Right: &TreeNode{Val: 9}}}
+    inverted := invertTree(root)
+    fmt.Println(inverted)
+}
+```
+
+### Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int x) { val = x; }
+}
+
+class Solution {
+    public TreeNode invertTree(TreeNode root) {
+        if (root == null) return null;
+        TreeNode temp = root.left;
+        root.left = invertTree(root.right);
+        root.right = invertTree(temp);
+        return root;
+    }
+}
+```
+
+## Explanation
+
+- The recursive approach follows a **post-order traversal**, swapping left and right children at each step.
+- The iterative approach can use a queue (BFS) or stack (DFS) for level-wise traversal.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, as each node is visited once.
+- **Space Complexity:**
+  - **Recursive:** `O(h)`, where `h` is the height of the tree (log(n) for balanced trees, `O(n)` in the worst case for skewed trees).
+  - **Iterative (BFS/DFS):** `O(n)`, as we may store all nodes in the queue or stack.
+
+## Conclusion
+
+The **Invert Binary Tree** problem can be efficiently solved using recursion or iterative traversal. The recursive approach is simple and intuitive, while the iterative method is useful for large trees where recursion depth might be an issue. 🚀
+

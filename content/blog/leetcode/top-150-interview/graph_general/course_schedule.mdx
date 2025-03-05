@@ -1,0 +1,178 @@
+---
+title: Course Schedule
+description: Implementation of the Course Schedule algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+There are a total of `numCourses` courses you have to take, labeled from `0` to `numCourses - 1`. You are given an array `prerequisites` where `prerequisites[i] = [ai, bi]` indicates that you must take course `bi` first if you want to take course `ai`.
+
+Return `true` if you can finish all courses. Otherwise, return `false`.
+
+### Example 1:
+
+**Input:**
+```
+numCourses = 2, prerequisites = [[1,0]]
+```
+**Output:**
+```
+true
+```
+**Explanation:**
+There are a total of `2` courses to take. To take course `1`, you should have finished course `0`. So it is possible.
+
+### Example 2:
+
+**Input:**
+```
+numCourses = 2, prerequisites = [[1,0],[0,1]]
+```
+**Output:**
+```
+false
+```
+**Explanation:**
+There are a total of `2` courses to take. To take course `1`, you should have finished course `0`, and to take course `0`, you should have finished course `1`. This forms a cycle, making it impossible.
+
+### Constraints:
+
+- `1 <= numCourses <= 2000`
+- `0 <= prerequisites.length <= 5000`
+- `prerequisites[i].length == 2`
+- `0 <= ai, bi < numCourses`
+- All the pairs `prerequisites[i]` are unique.
+
+## Approach
+
+We use **Topological Sorting** with **Kahn's Algorithm (BFS)** or **Depth-First Search (DFS)** to detect cycles in the prerequisite graph.
+
+- If a cycle exists, return `false`.
+- Otherwise, return `true` as all courses can be taken.
+
+## Algorithm
+
+1. Build a directed graph using adjacency lists.
+2. Compute in-degrees for all courses.
+3. Use BFS (Kahn's Algorithm) or DFS to detect cycles.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func canFinish(numCourses int, prerequisites [][]int) bool {
+    graph := make(map[int][]int)
+    inDegree := make([]int, numCourses)
+    
+    for _, pre := range prerequisites {
+        graph[pre[1]] = append(graph[pre[1]], pre[0])
+        inDegree[pre[0]]++
+    }
+    
+    queue := []int{}
+    for i := 0; i < numCourses; i++ {
+        if inDegree[i] == 0 {
+            queue = append(queue, i)
+        }
+    }
+    
+    count := 0
+    for len(queue) > 0 {
+        course := queue[0]
+        queue = queue[1:]
+        count++
+        for _, next := range graph[course] {
+            inDegree[next]--
+            if inDegree[next] == 0 {
+                queue = append(queue, next)
+            }
+        }
+    }
+    
+    return count == numCourses
+}
+
+func main() {
+    prerequisites := [][]int{{1, 0}, {0, 1}}
+    fmt.Println(canFinish(2, prerequisites)) // Output: false
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public boolean canFinish(int numCourses, int[][] prerequisites) {
+        List<List<Integer>> graph = new ArrayList<>();
+        int[] inDegree = new int[numCourses];
+        
+        for (int i = 0; i < numCourses; i++) {
+            graph.add(new ArrayList<>());
+        }
+        
+        for (int[] pre : prerequisites) {
+            graph.get(pre[1]).add(pre[0]);
+            inDegree[pre[0]]++;
+        }
+        
+        Queue<Integer> queue = new LinkedList<>();
+        for (int i = 0; i < numCourses; i++) {
+            if (inDegree[i] == 0) {
+                queue.offer(i);
+            }
+        }
+        
+        int count = 0;
+        while (!queue.isEmpty()) {
+            int course = queue.poll();
+            count++;
+            for (int next : graph.get(course)) {
+                if (--inDegree[next] == 0) {
+                    queue.offer(next);
+                }
+            }
+        }
+        
+        return count == numCourses;
+    }
+}
+```
+
+## Explanation
+
+- **Topological Sorting** helps us determine if a cycle exists.
+- **BFS (Kahn's Algorithm)** iterates through the courses in the correct order.
+- **DFS** can also be used to detect back edges (cycles).
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(V + E)`, where `V` is the number of courses and `E` is the number of prerequisites.
+- **Space Complexity:** `O(V + E)`, for storing the graph.
+
+## Conclusion
+
+The **Course Schedule** problem can be efficiently solved using **Topological Sorting** via **BFS (Kahn's Algorithm) or DFS cycle detection**. 🎓📚
+

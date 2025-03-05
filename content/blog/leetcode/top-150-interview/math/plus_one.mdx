@@ -1,0 +1,126 @@
+---
+title: "Plus One"
+description: "Implementation of the Plus One algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+The **Plus One** problem requires incrementing a number represented as an array of digits by one and returning the resulting array.
+
+### Example:
+
+```
+Input: digits = [1,2,3]
+Output: [1,2,4]
+```
+
+```
+Input: digits = [4,3,2,1]
+Output: [4,3,2,2]
+```
+
+```
+Input: digits = [9]
+Output: [1,0]
+```
+
+### Constraints:
+
+- `1 <= digits.length <= 100`
+- `0 <= digits[i] <= 9`
+- `digits` does not contain leading zeros.
+
+## Approach
+
+- Iterate from the last digit towards the first.
+- If the last digit is not `9`, simply increment and return.
+- If the last digit is `9`, set it to `0` and continue to the next digit.
+- If all digits are `9`, append `1` at the beginning.
+
+## Algorithm
+
+1. Iterate from the last digit to the first.
+2. If `digits[i] < 9`, increment it and return.
+3. Otherwise, set `digits[i] = 0`.
+4. If all digits are `0`, prepend `1`.
+5. Return the modified array.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func plusOne(digits []int) []int {
+    n := len(digits)
+    for i := n - 1; i >= 0; i-- {
+        if digits[i] < 9 {
+            digits[i]++
+            return digits
+        }
+        digits[i] = 0
+    }
+    return append([]int{1}, digits...)
+}
+
+func main() {
+    fmt.Println(plusOne([]int{1, 2, 3}))  // Output: [1, 2, 4]
+    fmt.Println(plusOne([]int{4, 3, 2, 1})) // Output: [4, 3, 2, 2]
+    fmt.Println(plusOne([]int{9, 9, 9})) // Output: [1, 0, 0, 0]
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int[] plusOne(int[] digits) {
+        int n = digits.length;
+        for (int i = n - 1; i >= 0; i--) {
+            if (digits[i] < 9) {
+                digits[i]++;
+                return digits;
+            }
+            digits[i] = 0;
+        }
+        int[] result = new int[n + 1];
+        result[0] = 1;
+        return result;
+    }
+}
+```
+
+## Explanation
+
+- **Simple Increment:** If the last digit is not `9`, simply increment it.
+- **Handling Carry:** If a digit becomes `0`, continue incrementing previous digits.
+- **Handling Overflow:** If all digits are `0`, prepend `1`.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(n)`, as we iterate through the digits once.
+- **Space Complexity**: `O(1)`, modifying the input array in place, except when resizing.
+
+## Conclusion
+
+This approach efficiently handles digit increments with minimal space usage.

@@ -1,0 +1,180 @@
+---
+title: 3Sum
+description: Implementation of the 3Sum algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an integer array `nums`, return all the triplets `[nums[i], nums[j], nums[k]]` such that `i != j`, `i != k`, and `j != k`, and `nums[i] + nums[j] + nums[k] == 0`.
+
+The solution set must not contain duplicate triplets.
+
+### Example 1:
+
+**Input:**
+```
+nums = [-1,0,1,2,-1,-4]
+```
+**Output:**
+```
+[[-1,-1,2],[-1,0,1]]
+```
+
+### Example 2:
+
+**Input:**
+```
+nums = [0,1,1]
+```
+**Output:**
+```
+[]
+```
+
+### Example 3:
+
+**Input:**
+```
+nums = [0,0,0]
+```
+**Output:**
+```
+[[0,0,0]]
+```
+
+## Approach
+
+Sort the array and use a two-pointer technique to find unique triplets.
+
+## Algorithm
+
+1. Sort `nums` in ascending order.
+2. Iterate through `nums`, setting `nums[i]` as a fixed value.
+3. Use two pointers (`left` and `right`) to find pairs that sum to `-nums[i]`.
+4. Avoid duplicate triplets by skipping duplicate values.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+    "sort"
+)
+
+func threeSum(nums []int) [][]int {
+    sort.Ints(nums)
+    var result [][]int
+
+    for i := 0; i < len(nums)-2; i++ {
+        if i > 0 && nums[i] == nums[i-1] {
+            continue
+        }
+        left, right := i+1, len(nums)-1
+        for left < right {
+            sum := nums[i] + nums[left] + nums[right]
+            if sum == 0 {
+                result = append(result, []int{nums[i], nums[left], nums[right]})
+                left++
+                right--
+                for left < right && nums[left] == nums[left-1] {
+                    left++
+                }
+                for left < right && nums[right] == nums[right+1] {
+                    right--
+                }
+            } else if sum < 0 {
+                left++
+            } else {
+                right--
+            }
+        }
+    }
+    return result
+}
+
+func main() {
+    nums := []int{-1, 0, 1, 2, -1, -4}
+    fmt.Println(threeSum(nums))
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public List<List<Integer>> threeSum(int[] nums) {
+        Arrays.sort(nums);
+        List<List<Integer>> result = new ArrayList<>();
+        
+        for (int i = 0; i < nums.length - 2; i++) {
+            if (i > 0 && nums[i] == nums[i - 1]) {
+                continue;
+            }
+            int left = i + 1, right = nums.length - 1;
+            while (left < right) {
+                int sum = nums[i] + nums[left] + nums[right];
+                if (sum == 0) {
+                    result.add(Arrays.asList(nums[i], nums[left], nums[right]));
+                    left++;
+                    right--;
+                    while (left < right && nums[left] == nums[left - 1]) {
+                        left++;
+                    }
+                    while (left < right && nums[right] == nums[right + 1]) {
+                        right--;
+                    }
+                } else if (sum < 0) {
+                    left++;
+                } else {
+                    right--;
+                }
+            }
+        }
+        return result;
+    }
+    
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        int[] nums = {-1, 0, 1, 2, -1, -4};
+        System.out.println(solution.threeSum(nums));
+    }
+}
+```
+
+## Explanation
+
+- **Sorting:** Ensures duplicate values are handled efficiently.
+- **Two Pointers:** Reduce complexity from `O(n³)` to `O(n²)`.
+- **Skipping Duplicates:** Prevents duplicate triplets from appearing in the result.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n²)` due to nested loops.
+- **Space Complexity:** `O(n)` for storing results.
+
+## Conclusion
+
+The **3Sum** problem is efficiently solved using sorting and two-pointer techniques, reducing time complexity significantly. 🚀
+

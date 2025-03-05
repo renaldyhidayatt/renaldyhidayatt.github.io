@@ -1,0 +1,122 @@
+---
+title: Longest Common Prefix
+description: Implementation of the Longest Common Prefix algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Write a function to find the longest common prefix string amongst an array of strings.
+
+If there is no common prefix, return an empty string `""`.
+
+### Example:
+
+**Input:**
+```
+strs = ["flower","flow","flight"]
+```
+**Output:**
+```
+"fl"
+```
+
+## Approach
+
+1. Compare characters at the same position across all strings.
+2. Stop when a mismatch is found or the shortest string is exhausted.
+3. Return the common prefix found so far.
+
+## Algorithm
+
+1. If the input array is empty, return `""`.
+2. Take the first string as a reference.
+3. Iterate through each character position in the reference string.
+4. Compare with corresponding characters in the other strings.
+5. Stop at the first mismatch and return the common prefix found.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func longestCommonPrefix(strs []string) string {
+    if len(strs) == 0 {
+        return ""
+    }
+    prefix := strs[0]
+    for _, str := range strs[1:] {
+        for len(prefix) > 0 && len(str) > 0 && !strings.HasPrefix(str, prefix) {
+            prefix = prefix[:len(prefix)-1]
+        }
+        if prefix == "" {
+            return ""
+        }
+    }
+    return prefix
+}
+
+func main() {
+    fmt.Println(longestCommonPrefix([]string{"flower", "flow", "flight"})) // Output: "fl"
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public String longestCommonPrefix(String[] strs) {
+        if (strs.length == 0) return "";
+        String prefix = strs[0];
+        for (int i = 1; i < strs.length; i++) {
+            while (strs[i].indexOf(prefix) != 0) {
+                prefix = prefix.substring(0, prefix.length() - 1);
+                if (prefix.isEmpty()) return "";
+            }
+        }
+        return prefix;
+    }
+    
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println(sol.longestCommonPrefix(new String[]{"flower", "flow", "flight"})); // Output: "fl"
+    }
+}
+```
+
+## Explanation
+
+- **Iterative approach:** Reduces the prefix until all strings match.
+- **String manipulation:** Efficiently compares substrings.
+- **Early termination:** Stops as soon as a mismatch is found.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n * m)`, where `n` is the number of strings and `m` is the length of the shortest string.
+- **Space Complexity:** `O(1)`, since no extra space is used.
+
+## Conclusion
+
+This approach effectively finds the longest common prefix in a given list of strings using character-by-character comparison. 📂
+

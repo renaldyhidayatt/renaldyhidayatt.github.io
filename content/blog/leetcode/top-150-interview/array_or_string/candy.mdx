@@ -1,0 +1,167 @@
+---
+title: Candy
+description: Implementation of the Candy distribution algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given an array `ratings` where `ratings[i]` represents the rating of the `i`th child. 
+
+You must distribute candies to these children according to the following rules:
+- Each child must have at least **one** candy.
+- A child with a **higher rating** than its adjacent neighbor must receive **more candies**.
+
+Return the minimum number of candies needed to satisfy these conditions.
+
+### Example:
+
+**Input:**
+```
+ratings = [1,0,2]
+```
+**Output:**
+```
+5
+```
+
+**Input:**
+```
+ratings = [1,2,2]
+```
+**Output:**
+```
+4
+```
+
+## Approach
+
+1. Use **two passes** to distribute candies efficiently.
+2. Start with one candy for each child.
+3. First pass (left to right): If a child has a higher rating than the previous one, give more candies.
+4. Second pass (right to left): Adjust candies to maintain fairness while minimizing the total.
+
+## Algorithm
+
+1. Create an array `candies` initialized to `1` for each child.
+2. Traverse from **left to right**, increasing candies for higher-rated children.
+3. Traverse from **right to left**, ensuring fairness.
+4. Sum up all values in `candies` array to get the result.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func candy(ratings []int) int {
+    n := len(ratings)
+    candies := make([]int, n)
+    
+    for i := range candies {
+        candies[i] = 1
+    }
+    
+    for i := 1; i < n; i++ {
+        if ratings[i] > ratings[i-1] {
+            candies[i] = candies[i-1] + 1
+        }
+    }
+    
+    for i := n - 2; i >= 0; i-- {
+        if ratings[i] > ratings[i+1] {
+            candies[i] = max(candies[i], candies[i+1] + 1)
+        }
+    }
+    
+    sum := 0
+    for _, c := range candies {
+        sum += c
+    }
+    return sum
+}
+
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+func main() {
+    ratings := []int{1,0,2}
+    fmt.Println(candy(ratings)) // Output: 5
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int candy(int[] ratings) {
+        int n = ratings.length;
+        int[] candies = new int[n];
+        
+        for (int i = 0; i < n; i++) {
+            candies[i] = 1;
+        }
+        
+        for (int i = 1; i < n; i++) {
+            if (ratings[i] > ratings[i-1]) {
+                candies[i] = candies[i-1] + 1;
+            }
+        }
+        
+        for (int i = n - 2; i >= 0; i--) {
+            if (ratings[i] > ratings[i+1]) {
+                candies[i] = Math.max(candies[i], candies[i+1] + 1);
+            }
+        }
+        
+        int sum = 0;
+        for (int c : candies) {
+            sum += c;
+        }
+        return sum;
+    }
+    
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        int[] ratings = {1,0,2};
+        System.out.println(sol.candy(ratings)); // Output: 5
+    }
+}
+```
+
+## Explanation
+
+- **Two-pass approach:** Ensures fair and minimal candy distribution.
+- **Guaranteed Optimal Solution:** Each child gets candies based on their rating relative to neighbors.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, since we traverse the list twice.
+- **Space Complexity:** `O(n)`, using an extra array.
+
+## Conclusion
+
+Using a left-to-right and right-to-left pass ensures an optimal and fair candy distribution strategy. 🍬
+

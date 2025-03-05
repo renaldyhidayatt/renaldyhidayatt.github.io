@@ -1,0 +1,144 @@
+---
+title: Product of Array Except Self
+description: Implementation of the Product of Array Except Self algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an integer array `nums`, return an array `answer` such that `answer[i]` is equal to the product of all elements in `nums` except `nums[i]`.
+
+The solution must run in **O(n)** time without using division.
+
+### Example:
+
+**Input:**
+```
+nums = [1,2,3,4]
+```
+**Output:**
+```
+[24,12,8,6]
+```
+
+**Input:**
+```
+nums = [-1,1,0,-3,3]
+```
+**Output:**
+```
+[0,0,9,0,0]
+```
+
+## Approach
+
+1. Compute the **prefix product** for each element.
+2. Compute the **suffix product** for each element.
+3. Multiply both to get the final array.
+
+## Algorithm
+
+1. Initialize an output array `answer` with 1s.
+2. Compute the prefix product while iterating left to right.
+3. Compute the suffix product while iterating right to left.
+4. Return the `answer` array.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func productExceptSelf(nums []int) []int {
+    n := len(nums)
+    answer := make([]int, n)
+    
+    // Compute prefix products
+    prefix := 1
+    for i := 0; i < n; i++ {
+        answer[i] = prefix
+        prefix *= nums[i]
+    }
+    
+    // Compute suffix products
+    suffix := 1
+    for i := n - 1; i >= 0; i-- {
+        answer[i] *= suffix
+        suffix *= nums[i]
+    }
+    
+    return answer
+}
+
+func main() {
+    nums := []int{1, 2, 3, 4}
+    fmt.Println(productExceptSelf(nums)) // Output: [24, 12, 8, 6]
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public int[] productExceptSelf(int[] nums) {
+        int n = nums.length;
+        int[] answer = new int[n];
+        
+        // Compute prefix products
+        int prefix = 1;
+        for (int i = 0; i < n; i++) {
+            answer[i] = prefix;
+            prefix *= nums[i];
+        }
+        
+        // Compute suffix products
+        int suffix = 1;
+        for (int i = n - 1; i >= 0; i--) {
+            answer[i] *= suffix;
+            suffix *= nums[i];
+        }
+        
+        return answer;
+    }
+    
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println(Arrays.toString(sol.productExceptSelf(new int[]{1,2,3,4}))); // Output: [24,12,8,6]
+    }
+}
+```
+
+## Explanation
+
+- **Prefix and Suffix Multiplication:** Ensures O(n) complexity.
+- **No Division Used:** Follows the problem constraint strictly.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, since we iterate over `nums` twice.
+- **Space Complexity:** `O(1)`, excluding output storage.
+
+## Conclusion
+
+Using prefix and suffix multiplication, we efficiently compute the result without division, keeping time complexity at O(n). 🚀
+

@@ -1,0 +1,136 @@
+---
+title: Valid Palindrome
+description: Implementation of the Valid Palindrome algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+----------------
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward. Alphanumeric characters include letters and numbers.
+
+Given a string `s`, return `true` if it is a palindrome, or `false` otherwise.
+
+### Example:
+
+**Input:**
+```
+s = "A man, a plan, a canal: Panama"
+```
+**Output:**
+```
+true
+```
+
+**Input:**
+```
+s = "race a car"
+```
+**Output:**
+```
+false
+```
+
+## Approach
+
+1. Convert all characters to lowercase.
+2. Remove all non-alphanumeric characters.
+3. Use two pointers to check if the string is a palindrome.
+
+## Algorithm
+
+1. Initialize two pointers, one at the beginning and one at the end.
+2. While the pointers have not crossed:
+   - If characters at the pointers are different, return `false`.
+   - Move the pointers inward.
+3. Return `true` if the entire string is checked successfully.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+    "unicode"
+)
+
+func isPalindrome(s string) bool {
+    var filtered []rune
+    for _, ch := range s {
+        if unicode.IsLetter(ch) || unicode.IsDigit(ch) {
+            filtered = append(filtered, unicode.ToLower(ch))
+        }
+    }
+    
+    left, right := 0, len(filtered)-1
+    for left < right {
+        if filtered[left] != filtered[right] {
+            return false
+        }
+        left++
+        right--
+    }
+    return true
+}
+
+func main() {
+    s := "A man, a plan, a canal: Panama"
+    fmt.Println(isPalindrome(s))
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public boolean isPalindrome(String s) {
+        StringBuilder filtered = new StringBuilder();
+        for (char ch : s.toCharArray()) {
+            if (Character.isLetterOrDigit(ch)) {
+                filtered.append(Character.toLowerCase(ch));
+            }
+        }
+        
+        int left = 0, right = filtered.length() - 1;
+        while (left < right) {
+            if (filtered.charAt(left) != filtered.charAt(right)) {
+                return false;
+            }
+            left++;
+            right--;
+        }
+        return true;
+    }
+}
+```
+
+## Explanation
+
+- The solution processes the input by filtering valid characters.
+- Two-pointer technique ensures efficient palindrome checking.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the length of `s`.
+- **Space Complexity:** `O(n)`, since we store a filtered version of `s`.
+
+## Conclusion
+
+This approach ensures an optimal palindrome check with simple yet effective logic. 🚀

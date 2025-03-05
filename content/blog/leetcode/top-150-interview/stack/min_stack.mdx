@@ -1,0 +1,176 @@
+---
+title: Min Stack
+description: Implementation of the Min Stack algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Design a stack that supports push, pop, top, and retrieving the minimum element in constant time.
+
+Implement the `MinStack` class:
+
+- `MinStack()` initializes the stack object.
+- `void push(int val)` pushes the element `val` onto the stack.
+- `void pop()` removes the element on the top of the stack.
+- `int top()` gets the top element of the stack.
+- `int getMin()` retrieves the minimum element in the stack.
+
+### Example 1:
+
+**Input:**
+```
+["MinStack","push","push","push","getMin","pop","top","getMin"]
+[[],[-2],[0],[-3],[],[],[],[]]
+```
+**Output:**
+```
+[null,null,null,null,-3,null,0,-2]
+```
+
+## Approach
+
+To achieve `O(1)` time complexity for `getMin()`, we maintain an additional stack that tracks the minimum values.
+
+## Algorithm
+
+1. Use two stacks: one for storing values and another for tracking the minimum element at each step.
+2. When pushing a value:
+   - Push it onto the value stack.
+   - Push the minimum of the current value and the top of the min stack.
+3. When popping a value:
+   - Pop from both stacks.
+4. `top()` retrieves the last pushed value from the value stack.
+5. `getMin()` retrieves the top value from the min stack.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+type MinStack struct {
+    stack    []int
+    minStack []int
+}
+
+func Constructor() MinStack {
+    return MinStack{}
+}
+
+func (this *MinStack) Push(val int) {
+    this.stack = append(this.stack, val)
+    if len(this.minStack) == 0 || val <= this.minStack[len(this.minStack)-1] {
+        this.minStack = append(this.minStack, val)
+    } else {
+        this.minStack = append(this.minStack, this.minStack[len(this.minStack)-1])
+    }
+}
+
+func (this *MinStack) Pop() {
+    this.stack = this.stack[:len(this.stack)-1]
+    this.minStack = this.minStack[:len(this.minStack)-1]
+}
+
+func (this *MinStack) Top() int {
+    return this.stack[len(this.stack)-1]
+}
+
+func (this *MinStack) GetMin() int {
+    return this.minStack[len(this.minStack)-1]
+}
+
+func main() {
+    minStack := Constructor()
+    minStack.Push(-2)
+    minStack.Push(0)
+    minStack.Push(-3)
+    fmt.Println(minStack.GetMin()) // Output: -3
+    minStack.Pop()
+    fmt.Println(minStack.Top())    // Output: 0
+    fmt.Println(minStack.GetMin()) // Output: -2
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class MinStack {
+    private Stack<Integer> stack;
+    private Stack<Integer> minStack;
+    
+    public MinStack() {
+        stack = new Stack<>();
+        minStack = new Stack<>();
+    }
+    
+    public void push(int val) {
+        stack.push(val);
+        if (minStack.isEmpty() || val <= minStack.peek()) {
+            minStack.push(val);
+        } else {
+            minStack.push(minStack.peek());
+        }
+    }
+    
+    public void pop() {
+        stack.pop();
+        minStack.pop();
+    }
+    
+    public int top() {
+        return stack.peek();
+    }
+    
+    public int getMin() {
+        return minStack.peek();
+    }
+    
+    public static void main(String[] args) {
+        MinStack minStack = new MinStack();
+        minStack.push(-2);
+        minStack.push(0);
+        minStack.push(-3);
+        System.out.println(minStack.getMin()); // Output: -3
+        minStack.pop();
+        System.out.println(minStack.top());    // Output: 0
+        System.out.println(minStack.getMin()); // Output: -2
+    }
+}
+```
+
+## Explanation
+
+- **Stack Usage:** Two stacks maintain values and minimums.
+- **Tracking Min:** Each value pushed has an associated minimum value in `minStack`.
+- **Constant Time Retrieval:** All operations (`push`, `pop`, `top`, `getMin`) run in `O(1)` time.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(1)` for all operations.
+- **Space Complexity:** `O(n)`, where `n` is the number of elements in the stack.
+
+## Conclusion
+
+The **Min Stack** problem is solved using two stacks, ensuring `O(1)` time complexity for all operations. 🚀
+

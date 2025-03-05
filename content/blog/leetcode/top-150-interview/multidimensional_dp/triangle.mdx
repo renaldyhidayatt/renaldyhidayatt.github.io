@@ -1,0 +1,120 @@
+---
+title: "Triangle"
+description: "Implementation of the Triangle Minimum Path Sum algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+The **Triangle** problem requires finding the minimum path sum from top to bottom in a given triangle array.
+
+### Example:
+
+```
+Input: triangle = [[2],[3,4],[6,5,7],[4,1,8,3]]
+Output: 11
+Explanation: The minimum path sum is 2 + 3 + 5 + 1 = 11.
+```
+
+```
+Input: triangle = [[-10]]
+Output: -10
+```
+
+### Constraints:
+
+- `1 <= triangle.length <= 200`
+- `triangle[0].length == 1`
+- `triangle[i].length == triangle[i - 1].length + 1`
+- `-10^4 <= triangle[i][j] <= 10^4`
+
+## Approach
+
+- Use **bottom-up dynamic programming** to avoid recursion overhead.
+- Modify the triangle in-place to save space.
+- Iterate from the second-last row to the top, updating each cell with the minimum path sum.
+
+## Algorithm
+
+1. Start from the second-last row of the triangle.
+2. Update each cell with the minimum sum possible from the row below.
+3. Continue moving up until reaching the top.
+4. Return the top element as the final minimum path sum.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func minimumTotal(triangle [][]int) int {
+    for i := len(triangle) - 2; i >= 0; i-- {
+        for j := 0; j < len(triangle[i]); j++ {
+            triangle[i][j] += min(triangle[i+1][j], triangle[i+1][j+1])
+        }
+    }
+    return triangle[0][0]
+}
+
+func min(a, b int) int {
+    if a < b {
+        return a
+    }
+    return b
+}
+
+func main() {
+    triangle := [][]int{{2}, {3, 4}, {6, 5, 7}, {4, 1, 8, 3}}
+    fmt.Println(minimumTotal(triangle)) // Output: 11
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public int minimumTotal(List<List<Integer>> triangle) {
+        for (int i = triangle.size() - 2; i >= 0; i--) {
+            for (int j = 0; j < triangle.get(i).size(); j++) {
+                int minSum = Math.min(triangle.get(i+1).get(j), triangle.get(i+1).get(j+1));
+                triangle.get(i).set(j, triangle.get(i).get(j) + minSum);
+            }
+        }
+        return triangle.get(0).get(0);
+    }
+}
+```
+
+## Explanation
+
+- **Dynamic programming approach:** Starts from the bottom and updates each cell with the minimum path sum.
+- **In-place modification:** Avoids extra space usage.
+- **Efficient traversal:** Only `O(n^2)` operations required.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(n^2)`, iterating through each row.
+- **Space Complexity**: `O(1)`, modifying the triangle in-place.
+
+## Conclusion
+
+This approach efficiently finds the minimum path sum using bottom-up dynamic programming while optimizing space complexity.

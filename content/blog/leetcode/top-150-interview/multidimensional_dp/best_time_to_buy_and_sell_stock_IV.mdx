@@ -1,0 +1,163 @@
+---
+title: "188. Best Time to Buy and Sell Stock IV"
+description: "Implementation of the Best Time to Buy and Sell Stock IV algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given an integer `k` and an array `prices` where `prices[i]` represents the price of a given stock on the `i`th day.
+
+Find the maximum profit you can achieve. You may complete **at most `k` transactions**.
+
+### Example:
+
+```
+Input: k = 2, prices = [2,4,1]
+Output: 2
+```
+
+```
+Input: k = 2, prices = [3,2,6,5,0,3]
+Output: 7
+```
+
+### Constraints:
+
+- `1 <= k <= 100`
+- `1 <= prices.length <= 1000`
+- `0 <= prices[i] <= 1000`
+
+## Approach
+
+- Use **dynamic programming** with a `dp` table where `dp[i][j]` represents the maximum profit on day `j` with at most `i` transactions.
+- Iterate through `prices` and update the `dp` table accordingly.
+- Use space optimization to reduce memory usage.
+
+## Algorithm
+
+1. If `k >= len(prices)/2`, use the greedy approach.
+2. Initialize `dp[k+1][n]` with zero.
+3. Iterate over `k` and `prices` to update `dp` values.
+4. Return `dp[k][n-1]` as the result.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func maxProfit(k int, prices []int) int {
+    if len(prices) == 0 {
+        return 0
+    }
+    
+    if k >= len(prices)/2 {
+        return quickSolve(prices)
+    }
+    
+    dp := make([][]int, k+1)
+    for i := range dp {
+        dp[i] = make([]int, len(prices))
+    }
+    
+    for i := 1; i <= k; i++ {
+        maxDiff := -prices[0]
+        for j := 1; j < len(prices); j++ {
+            dp[i][j] = max(dp[i][j-1], prices[j]+maxDiff)
+            maxDiff = max(maxDiff, dp[i-1][j]-prices[j])
+        }
+    }
+    
+    return dp[k][len(prices)-1]
+}
+
+func quickSolve(prices []int) int {
+    profit := 0
+    for i := 1; i < len(prices); i++ {
+        if prices[i] > prices[i-1] {
+            profit += prices[i] - prices[i-1]
+        }
+    }
+    return profit
+}
+
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+func main() {
+    prices := []int{3,2,6,5,0,3}
+    k := 2
+    fmt.Println(maxProfit(k, prices)) // Output: 7
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int maxProfit(int k, int[] prices) {
+        if (prices.length == 0) return 0;
+        
+        if (k >= prices.length / 2) return quickSolve(prices);
+        
+        int[][] dp = new int[k + 1][prices.length];
+        
+        for (int i = 1; i <= k; i++) {
+            int maxDiff = -prices[0];
+            for (int j = 1; j < prices.length; j++) {
+                dp[i][j] = Math.max(dp[i][j-1], prices[j] + maxDiff);
+                maxDiff = Math.max(maxDiff, dp[i-1][j] - prices[j]);
+            }
+        }
+        
+        return dp[k][prices.length - 1];
+    }
+    
+    private int quickSolve(int[] prices) {
+        int profit = 0;
+        for (int i = 1; i < prices.length; i++) {
+            if (prices[i] > prices[i - 1]) {
+                profit += prices[i] - prices[i - 1];
+            }
+        }
+        return profit;
+    }
+}
+```
+
+## Explanation
+
+- The algorithm uses a DP table to keep track of the best possible profit for each transaction.
+- Optimized for large inputs using greedy approach when `k` is large.
+- Efficiently computes the solution with reduced space complexity.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(k * n)`, iterating through `prices` for each transaction.
+- **Space Complexity**: `O(k * n)`, using a 2D DP table.
+
+## Conclusion
+
+This approach efficiently determines the maximum profit achievable with at most `k` transactions using dynamic programming.

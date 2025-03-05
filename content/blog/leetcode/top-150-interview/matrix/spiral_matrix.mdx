@@ -1,0 +1,159 @@
+---
+title: Spiral Matrix
+description: Implementation of the Spiral Matrix algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an `m x n` matrix, return all elements of the matrix in spiral order.
+
+### Example:
+
+**Input:**
+```
+matrix = [[1,2,3],[4,5,6],[7,8,9]]
+```
+**Output:** `[1,2,3,6,9,8,7,4,5]`
+
+## Approach
+
+1. Define boundaries: `top`, `bottom`, `left`, and `right`.
+2. Traverse the matrix in spiral order.
+3. Adjust boundaries accordingly.
+4. Stop when all elements are visited.
+
+## Algorithm
+
+1. Initialize `top = 0`, `bottom = m-1`, `left = 0`, `right = n-1`.
+2. Traverse:
+   - From left to right.
+   - From top to bottom.
+   - From right to left (if applicable).
+   - From bottom to top (if applicable).
+3. Update boundaries and repeat.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func spiralOrder(matrix [][]int) []int {
+    if len(matrix) == 0 {
+        return []int{}
+    }
+    
+    var result []int
+    top, bottom, left, right := 0, len(matrix)-1, 0, len(matrix[0])-1
+    
+    for top <= bottom && left <= right {
+        for i := left; i <= right; i++ {
+            result = append(result, matrix[top][i])
+        }
+        top++
+        
+        for i := top; i <= bottom; i++ {
+            result = append(result, matrix[i][right])
+        }
+        right--
+        
+        if top <= bottom {
+            for i := right; i >= left; i-- {
+                result = append(result, matrix[bottom][i])
+            }
+            bottom--
+        }
+        
+        if left <= right {
+            for i := bottom; i >= top; i-- {
+                result = append(result, matrix[i][left])
+            }
+            left++
+        }
+    }
+    
+    return result
+}
+
+func main() {
+    matrix := [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+    fmt.Println(spiralOrder(matrix))
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public List<Integer> spiralOrder(int[][] matrix) {
+        List<Integer> result = new ArrayList<>();
+        if (matrix.length == 0) return result;
+        
+        int top = 0, bottom = matrix.length - 1;
+        int left = 0, right = matrix[0].length - 1;
+        
+        while (top <= bottom && left <= right) {
+            for (int i = left; i <= right; i++) {
+                result.add(matrix[top][i]);
+            }
+            top++;
+            
+            for (int i = top; i <= bottom; i++) {
+                result.add(matrix[i][right]);
+            }
+            right--;
+            
+            if (top <= bottom) {
+                for (int i = right; i >= left; i--) {
+                    result.add(matrix[bottom][i]);
+                }
+                bottom--;
+            }
+            
+            if (left <= right) {
+                for (int i = bottom; i >= top; i--) {
+                    result.add(matrix[i][left]);
+                }
+                left++;
+            }
+        }
+        return result;
+    }
+}
+```
+
+## Explanation
+
+- Traverse layer by layer, adjusting boundaries at each step.
+- Stop when all elements are collected.
+- Efficiently handles different matrix sizes.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(m * n)` since each element is visited once.
+- **Space Complexity:** `O(1)`, excluding the output list.
+
+## Conclusion
+
+This approach efficiently extracts elements in a spiral order using boundary tracking. 🚀

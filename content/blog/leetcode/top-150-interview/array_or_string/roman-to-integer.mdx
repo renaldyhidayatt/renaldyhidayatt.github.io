@@ -1,0 +1,152 @@
+---
+title: Roman to Integer
+description: Implementation of the Roman to Integer conversion algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given a Roman numeral `s`, convert it to an integer.
+
+### Roman Numerals:
+
+| Symbol | Value |
+|--------|-------|
+| I      | 1     |
+| V      | 5     |
+| X      | 10    |
+| L      | 50    |
+| C      | 100   |
+| D      | 500   |
+| M      | 1000  |
+
+Rules:
+- If a smaller numeral appears before a larger numeral, subtract it (e.g., `IV = 4`, `IX = 9`).
+- Otherwise, add the values.
+
+### Example:
+
+**Input:**
+```
+s = "III"
+```
+**Output:**
+```
+3
+```
+
+**Input:**
+```
+s = "MCMXCIV"
+```
+**Output:**
+```
+1994
+```
+
+## Approach
+
+1. Iterate through the string from left to right.
+2. If the current numeral is smaller than the next, subtract it.
+3. Otherwise, add it.
+
+## Algorithm
+
+1. Create a map of Roman numerals and their values.
+2. Initialize `result = 0`.
+3. Iterate through the string:
+   - If `s[i]` < `s[i+1]`, subtract `s[i]`.
+   - Otherwise, add `s[i]`.
+4. Return `result`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func romanToInt(s string) int {
+    roman := map[byte]int{
+        'I': 1, 'V': 5, 'X': 10, 'L': 50,
+        'C': 100, 'D': 500, 'M': 1000,
+    }
+    result := 0
+    n := len(s)
+    
+    for i := 0; i < n; i++ {
+        if i < n-1 && roman[s[i]] < roman[s[i+1]] {
+            result -= roman[s[i]]
+        } else {
+            result += roman[s[i]]
+        }
+    }
+    return result
+}
+
+func main() {
+    s := "MCMXCIV"
+    fmt.Println(romanToInt(s)) // Output: 1994
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int romanToInt(String s) {
+        Map<Character, Integer> roman = Map.of(
+            'I', 1, 'V', 5, 'X', 10, 'L', 50,
+            'C', 100, 'D', 500, 'M', 1000
+        );
+        int result = 0, n = s.length();
+        
+        for (int i = 0; i < n; i++) {
+            if (i < n - 1 && roman.get(s.charAt(i)) < roman.get(s.charAt(i + 1))) {
+                result -= roman.get(s.charAt(i));
+            } else {
+                result += roman.get(s.charAt(i));
+            }
+        }
+        return result;
+    }
+    
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println(sol.romanToInt("MCMXCIV")); // Output: 1994
+    }
+}
+```
+
+## Explanation
+
+- **Left-to-right iteration:** Ensures correct interpretation of subtraction cases.
+- **HashMap lookup:** Allows quick numeral value retrieval.
+- **Optimized for performance.**
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the length of the string.
+- **Space Complexity:** `O(1)`, as we use a fixed-sized map.
+
+## Conclusion
+
+This approach efficiently converts Roman numerals to integers using a simple loop and conditional checks. 🏛️
+

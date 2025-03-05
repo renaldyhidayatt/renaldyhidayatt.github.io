@@ -1,0 +1,150 @@
+---
+title: Rotate List
+description: Implementation of the Rotate List algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the head of a linked list, rotate the list to the right by `k` places.
+
+### Example:
+
+**Input:**
+
+```
+head = [1,2,3,4,5], k = 2
+```
+
+**Output:**
+
+```
+[4,5,1,2,3]
+```
+
+## Approach
+
+1. Calculate the length of the linked list.
+2. Compute `k % length` to optimize rotations.
+3. Find the new head by traversing to `length - k` position.
+4. Adjust pointers to rotate the list.
+
+## Algorithm
+
+1. Compute the length of the list.
+2. Reduce `k` by taking `k % length`.
+3. Traverse to the `(length - k)`-th node.
+4. Update the pointers to complete the rotation.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+type ListNode struct {
+    Val  int
+    Next *ListNode
+}
+
+func rotateRight(head *ListNode, k int) *ListNode {
+    if head == nil || head.Next == nil || k == 0 {
+        return head
+    }
+    
+    length, tail := 1, head
+    for tail.Next != nil {
+        tail = tail.Next
+        length++
+    }
+    
+    k = k % length
+    if k == 0 {
+        return head
+    }
+    
+    prev, newHead := head, head
+    for i := 0; i < length-k-1; i++ {
+        prev = prev.Next
+    }
+    
+    newHead = prev.Next
+    prev.Next = nil
+    tail.Next = head
+    
+    return newHead
+}
+```
+
+### Implementation in Java
+
+```java
+class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int val) { this.val = val; this.next = null; }
+}
+
+class Solution {
+    public ListNode rotateRight(ListNode head, int k) {
+        if (head == null || head.next == null || k == 0) {
+            return head;
+        }
+        
+        int length = 1;
+        ListNode tail = head;
+        while (tail.next != null) {
+            tail = tail.next;
+            length++;
+        }
+        
+        k = k % length;
+        if (k == 0) {
+            return head;
+        }
+        
+        ListNode prev = head;
+        for (int i = 0; i < length - k - 1; i++) {
+            prev = prev.next;
+        }
+        
+        ListNode newHead = prev.next;
+        prev.next = null;
+        tail.next = head;
+        
+        return newHead;
+    }
+}
+```
+
+## Explanation
+
+- Calculate the length to determine the effective rotation.
+- Traverse to the node before the new head.
+- Adjust pointers to rotate the list while maintaining order.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the number of nodes in the list.
+- **Space Complexity:** `O(1)`, as we use only a few pointers.
+
+## Conclusion
+
+This approach efficiently rotates a linked list while maintaining `O(1)` extra space usage. 🚀
+

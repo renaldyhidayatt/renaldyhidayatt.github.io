@@ -1,0 +1,145 @@
+---
+title: Valid Sudoku
+description: Implementation of the Valid Sudoku algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Determine if a 9 x 9 Sudoku board is valid. Only the filled cells need to be validated according to the following rules:
+
+- Each row must contain the digits 1-9 without repetition.
+- Each column must contain the digits 1-9 without repetition.
+- Each of the nine 3 x 3 sub-boxes of the grid must contain the digits 1-9 without repetition.
+
+### Example:
+
+**Input:**
+```
+board =
+[["5","3",".",".","7",".",".",".","."]
+,["6",".",".","1","9","5",".",".","."]
+,[".","9","8",".",".",".",".","6","."]
+,["8",".",".",".","6",".",".",".","3"]
+,["4",".",".","8",".","3",".",".","1"]
+,["7",".",".",".","2",".",".",".","6"]
+,[".","6",".",".",".",".","2","8","."]
+,[".",".",".","4","1","9",".",".","5"]
+,[".",".",".",".","8",".",".","7","9"]]
+```
+**Output:** `true`
+
+## Approach
+
+1. Use hash sets to track seen numbers in rows, columns, and sub-boxes.
+2. Iterate through the board and validate conditions.
+3. Return `true` if valid, otherwise `false`.
+
+## Algorithm
+
+1. Iterate through each cell of the board.
+2. Check if the number is already present in the respective row, column, or sub-box.
+3. Use hash sets to store seen numbers.
+4. If any condition fails, return `false`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func isValidSudoku(board [][]byte) bool {
+    rows, cols, boxes := make([]map[byte]bool, 9), make([]map[byte]bool, 9), make([]map[byte]bool, 9)
+    for i := range rows {
+        rows[i], cols[i], boxes[i] = make(map[byte]bool), make(map[byte]bool), make(map[byte]bool)
+    }
+    for i := 0; i < 9; i++ {
+        for j := 0; j < 9; j++ {
+            if board[i][j] == '.' {
+                continue
+            }
+            num := board[i][j]
+            boxIdx := (i/3)*3 + j/3
+            if rows[i][num] || cols[j][num] || boxes[boxIdx][num] {
+                return false
+            }
+            rows[i][num], cols[j][num], boxes[boxIdx][num] = true, true, true
+        }
+    }
+    return true
+}
+
+func main() {
+    board := [][]byte{
+        {'5', '3', '.', '.', '7', '.', '.', '.', '.'},
+        {'6', '.', '.', '1', '9', '5', '.', '.', '.'},
+        {'.', '9', '8', '.', '.', '.', '.', '6', '.'},
+        {'8', '.', '.', '.', '6', '.', '.', '.', '3'},
+        {'4', '.', '.', '8', '.', '3', '.', '.', '1'},
+        {'7', '.', '.', '.', '2', '.', '.', '.', '6'},
+        {'.', '6', '.', '.', '.', '.', '2', '8', '.'},
+        {'.', '.', '.', '4', '1', '9', '.', '.', '5'},
+        {'.', '.', '.', '.', '8', '.', '.', '7', '9'},
+    }
+    fmt.Println(isValidSudoku(board))
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class Solution {
+    public boolean isValidSudoku(char[][] board) {
+        Set<String> seen = new HashSet<>();
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                char num = board[i][j];
+                if (num != '.') {
+                    if (!seen.add(num + " in row " + i) ||
+                        !seen.add(num + " in column " + j) ||
+                        !seen.add(num + " in box " + (i / 3) + "-" + (j / 3))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+}
+```
+
+## Explanation
+
+- We use hash sets to check for duplicate values.
+- Each value must be unique in its row, column, and sub-box.
+- If any condition fails, return `false`.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(1)` since the board size is fixed (9x9).
+- **Space Complexity:** `O(1)`, using a hash set to track values.
+
+## Conclusion
+
+This method efficiently validates a Sudoku board using hash sets. 🚀
+

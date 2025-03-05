@@ -1,0 +1,127 @@
+---
+title: Remove Element
+description: Implementation of the Remove Element algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+----------------
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an integer array `nums` and an integer `val`, remove all occurrences of `val` in `nums` in-place. The order of the elements may be changed. Then return the number of elements in `nums` which are not equal to `val`.
+
+### Example 1:
+
+**Input:**
+```
+nums = [3,2,2,3], val = 3
+```
+**Output:**
+```
+2, nums = [2,2,_,_]
+```
+
+### Example 2:
+
+**Input:**
+```
+nums = [0,1,2,2,3,0,4,2], val = 2
+```
+**Output:**
+```
+5, nums = [0,1,4,0,3,_,_,_]
+```
+
+## Approach
+
+- **Two Pointers:**
+  - Use one pointer to iterate over the array.
+  - Use another pointer to track the position of elements that are not equal to `val`.
+
+## Algorithm
+
+1. Initialize a pointer `k` to 0.
+2. Iterate over `nums`:
+   - If `nums[i]` is not equal to `val`, assign `nums[i]` to `nums[k]` and increment `k`.
+3. Return `k`, which represents the count of elements that are not `val`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+import "fmt"
+
+func removeElement(nums []int, val int) int {
+    k := 0
+    for _, num := range nums {
+        if num != val {
+            nums[k] = num
+            k++
+        }
+    }
+    return k
+}
+
+func main() {
+    nums := []int{3,2,2,3}
+    val := 3
+    k := removeElement(nums, val)
+    fmt.Println(k, nums[:k]) // Output: 2, [2,2]
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class RemoveElement {
+    public int removeElement(int[] nums, int val) {
+        int k = 0;
+        for (int num : nums) {
+            if (num != val) {
+                nums[k++] = num;
+            }
+        }
+        return k;
+    }
+
+    public static void main(String[] args) {
+        RemoveElement re = new RemoveElement();
+        int[] nums = {3,2,2,3};
+        int val = 3;
+        int k = re.removeElement(nums, val);
+        System.out.println(k + ", " + Arrays.toString(Arrays.copyOf(nums, k))); // Output: 2, [2,2]
+    }
+}
+```
+
+## Explanation
+
+- **Two-Pointer Approach:** Ensures `O(n)` time complexity.
+- **In-place modification:** Uses `O(1)` space.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, as we iterate through the array once.
+- **Space Complexity:** `O(1)`, since we do not use extra space.
+
+## Conclusion
+
+The **Remove Element** problem can be efficiently solved using a **Two-Pointer Approach**, achieving `O(n)` time complexity and `O(1)` space complexity. 🚀
+

@@ -1,0 +1,145 @@
+---
+title: "Flatten Binary Tree to Linked List"
+description: "Implementation of Flatten Binary Tree to Linked List in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the root of a binary tree, flatten the tree into a "linked list":
+
+- The "linked list" should use the same `TreeNode` class where the right child pointer points to the next node in the list and the left child pointer is always `null`.
+- The "linked list" should be in the same order as a pre-order traversal of the binary tree.
+
+### Example 1:
+
+```
+Input: root = [1,2,5,3,4,null,6]
+Output: [1,null,2,null,3,null,4,null,5,null,6]
+```
+
+### Example 2:
+
+```
+Input: root = []
+Output: []
+```
+
+### Example 3:
+
+```
+Input: root = [0]
+Output: [0]
+```
+
+### Constraints:
+
+- The number of nodes in the tree is in the range `[0, 2000]`.
+- `-100 <= Node.val <= 100`
+- Follow-up: Can you flatten the tree in-place (with O(1) extra space)?
+
+## Approach
+
+1. Use a recursive approach or Morris traversal to flatten the tree.
+2. Modify the tree in-place by reassigning right pointers.
+3. Use a stack or track the rightmost node to reconstruct the linked list order.
+
+## Algorithm
+
+1. If `root` is `nil`, return.
+2. Recursively flatten the left and right subtrees.
+3. Store the right subtree.
+4. Move the left subtree to the right and update pointers.
+5. Attach the stored right subtree at the end.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func flatten(root *TreeNode) {
+    if root == nil {
+        return
+    }
+    
+    flatten(root.Left)
+    flatten(root.Right)
+    
+    temp := root.Right
+    root.Right = root.Left
+    root.Left = nil
+    
+    cur := root
+    for cur.Right != nil {
+        cur = cur.Right
+    }
+    cur.Right = temp
+}
+```
+
+### Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int val) { this.val = val; }
+}
+
+public class FlattenBinaryTree {
+    public void flatten(TreeNode root) {
+        if (root == null) return;
+        
+        flatten(root.left);
+        flatten(root.right);
+        
+        TreeNode temp = root.right;
+        root.right = root.left;
+        root.left = null;
+        
+        TreeNode cur = root;
+        while (cur.right != null) {
+            cur = cur.right;
+        }
+        cur.right = temp;
+    }
+}
+```
+
+## Explanation
+
+- The algorithm recursively processes the left and right subtrees.
+- The left subtree is moved to the right.
+- The original right subtree is attached at the end.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(N)`, where `N` is the number of nodes.
+- **Space Complexity:** `O(1)`, as the tree is modified in place.
+
+## Conclusion
+
+This approach efficiently flattens a binary tree into a linked list with in-place modifications.

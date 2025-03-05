@@ -1,0 +1,181 @@
+---
+title: Set Matrix Zeroes
+description: Implementation of the Set Matrix Zeroes algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an `m x n` integer matrix, if an element is `0`, set its entire row and column to `0`'s.
+
+You must do it **in-place**.
+
+### Example:
+
+**Input:**
+```
+matrix = [[1,1,1],[1,0,1],[1,1,1]]
+```
+**Output:**
+```
+[[1,0,1],[0,0,0],[1,0,1]]
+```
+
+## Approach
+
+1. Use the first row and first column as markers to track which rows and columns should be set to zero.
+2. Iterate through the matrix and mark the corresponding row and column in the first row/column if a `0` is found.
+3. Iterate again and update the matrix based on the markers.
+4. Handle the first row and column separately to avoid overwriting early.
+
+## Algorithm
+
+1. Use the first row and first column as flags.
+2. Traverse the matrix and mark rows and columns that should be zeroed.
+3. Update the matrix accordingly.
+4. Handle edge cases separately for the first row and column.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "fmt"
+
+func setZeroes(matrix [][]int) {
+    m, n := len(matrix), len(matrix[0])
+    firstRowZero, firstColZero := false, false
+
+    for i := 0; i < m; i++ {
+        if matrix[i][0] == 0 {
+            firstColZero = true
+            break
+        }
+    }
+    for j := 0; j < n; j++ {
+        if matrix[0][j] == 0 {
+            firstRowZero = true
+            break
+        }
+    }
+
+    for i := 1; i < m; i++ {
+        for j := 1; j < n; j++ {
+            if matrix[i][j] == 0 {
+                matrix[i][0] = 0
+                matrix[0][j] = 0
+            }
+        }
+    }
+
+    for i := 1; i < m; i++ {
+        for j := 1; j < n; j++ {
+            if matrix[i][0] == 0 || matrix[0][j] == 0 {
+                matrix[i][j] = 0
+            }
+        }
+    }
+
+    if firstRowZero {
+        for j := 0; j < n; j++ {
+            matrix[0][j] = 0
+        }
+    }
+    if firstColZero {
+        for i := 0; i < m; i++ {
+            matrix[i][0] = 0
+        }
+    }
+}
+
+func main() {
+    matrix := [][]int{{1, 1, 1}, {1, 0, 1}, {1, 1, 1}}
+    setZeroes(matrix)
+    fmt.Println(matrix)
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public void setZeroes(int[][] matrix) {
+        int m = matrix.length, n = matrix[0].length;
+        boolean firstRowZero = false, firstColZero = false;
+
+        for (int i = 0; i < m; i++) {
+            if (matrix[i][0] == 0) {
+                firstColZero = true;
+                break;
+            }
+        }
+        for (int j = 0; j < n; j++) {
+            if (matrix[0][j] == 0) {
+                firstRowZero = true;
+                break;
+            }
+        }
+
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                if (matrix[i][j] == 0) {
+                    matrix[i][0] = 0;
+                    matrix[0][j] = 0;
+                }
+            }
+        }
+
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                if (matrix[i][0] == 0 || matrix[0][j] == 0) {
+                    matrix[i][j] = 0;
+                }
+            }
+        }
+
+        if (firstRowZero) {
+            for (int j = 0; j < n; j++) {
+                matrix[0][j] = 0;
+            }
+        }
+        if (firstColZero) {
+            for (int i = 0; i < m; i++) {
+                matrix[i][0] = 0;
+            }
+        }
+    }
+}
+```
+
+## Explanation
+
+- **Step 1:** Identify rows and columns that should be set to zero using markers.
+- **Step 2:** Update the matrix using the markers.
+- **Step 3:** Handle the first row and first column separately to prevent early modification.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(m * n)`, since we traverse the matrix multiple times.
+- **Space Complexity:** `O(1)`, as we use the matrix itself for marking instead of extra space.
+
+## Conclusion
+
+This approach efficiently sets matrix zeroes in-place using minimal extra space. 🚀
+

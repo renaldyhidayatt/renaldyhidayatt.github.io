@@ -1,0 +1,110 @@
+---
+title: "190. Reverse Bits"
+description: "Implementation of the Reverse Bits algorithm in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+The **Reverse Bits** problem requires reversing the bits of a given 32-bit unsigned integer.
+
+### Example:
+
+```
+Input: n = 00000010100101000001111010011100
+Output:  964176192 (00111001011110000010100101000000)
+```
+
+```
+Input: n = 11111111111111111111111111111101
+Output:  3221225471 (10111111111111111111111111111111)
+```
+
+### Constraints:
+
+- The input is a binary string of length 32.
+
+## Approach
+
+- Iterate through each bit of the number.
+- Shift the result left and add the current bit.
+- Continue until all bits are reversed.
+
+## Algorithm
+
+1. Initialize `result = 0`.
+2. Loop through 32 iterations:
+   - Shift `result` left by 1.
+   - Extract the last bit of `n` and add it to `result`.
+   - Shift `n` right by 1.
+3. Return `result`.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+func reverseBits(num uint32) uint32 {
+    var result uint32 = 0
+    for i := 0; i < 32; i++ {
+        result = (result << 1) | (num & 1)
+        num >>= 1
+    }
+    return result
+}
+
+func main() {
+    fmt.Println(reverseBits(43261596))  // Output: 964176192
+    fmt.Println(reverseBits(4294967293)) // Output: 3221225471
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int reverseBits(int n) {
+        int result = 0;
+        for (int i = 0; i < 32; i++) {
+            result = (result << 1) | (n & 1);
+            n >>= 1;
+        }
+        return result;
+    }
+}
+```
+
+## Explanation
+
+- **Bitwise operations** efficiently reverse bits.
+- **Shift left** accumulates the reversed bits.
+- **Shift right** extracts bits from `n`.
+
+## Time and Space Complexity
+
+- **Time Complexity**: `O(1)`, as we iterate exactly 32 times.
+- **Space Complexity**: `O(1)`, as we use constant extra space.
+
+## Conclusion
+
+This approach efficiently reverses a 32-bit unsigned integer's bits using bitwise operations.

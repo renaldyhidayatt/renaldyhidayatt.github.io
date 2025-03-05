@@ -1,0 +1,154 @@
+---
+title: Symmetric Tree
+description: Implementation of the Symmetric Tree algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the root of a binary tree, check whether it is a mirror of itself (i.e., symmetric around its center).
+
+### Example 1:
+
+**Input:**
+```
+root = [1,2,2,3,4,4,3]
+```
+**Output:**
+```
+true
+```
+
+### Example 2:
+
+**Input:**
+```
+root = [1,2,2,null,3,null,3]
+```
+**Output:**
+```
+false
+```
+
+### Constraints:
+
+- The number of nodes in the tree is in the range `[1, 1000]`.
+- `-100 <= Node.val <= 100`
+
+**Follow-up:** Can you solve it both recursively and iteratively?
+
+## Approach
+
+To determine if a tree is symmetric, we need to check if the left and right subtrees are mirror images of each other.
+
+### Recursive Approach
+
+1. If both subtrees are `null`, return `true`.
+2. If one is `null` and the other is not, return `false`.
+3. Compare the root values of both subtrees.
+4. Recursively check if:
+   - The left subtree of the left node matches the right subtree of the right node.
+   - The right subtree of the left node matches the left subtree of the right node.
+
+### Iterative Approach
+
+1. Use a queue (BFS) or stack (DFS) to compare nodes level by level.
+2. Compare nodes in a mirrored fashion.
+3. If any mismatch occurs, return `false`.
+
+## Algorithm
+
+### Recursive Approach
+1. Base case: If both nodes are `null`, return `true`.
+2. If one is `null` and the other is not, return `false`.
+3. Check if the current nodes have the same value.
+4. Recursively compare mirrored subtrees.
+
+### Iterative Approach
+1. Use a queue to compare nodes in mirrored order.
+2. If both nodes are `null`, continue.
+3. If one is `null` or values are different, return `false`.
+4. Push children into the queue in mirrored fashion.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func isSymmetric(root *TreeNode) bool {
+    if root == nil {
+        return true
+    }
+    return isMirror(root.Left, root.Right)
+}
+
+func isMirror(t1, t2 *TreeNode) bool {
+    if t1 == nil && t2 == nil {
+        return true
+    }
+    if t1 == nil || t2 == nil {
+        return false
+    }
+    return (t1.Val == t2.Val) && isMirror(t1.Left, t2.Right) && isMirror(t1.Right, t2.Left)
+}
+```
+
+### Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int x) { val = x; }
+}
+
+class Solution {
+    public boolean isSymmetric(TreeNode root) {
+        if (root == null) return true;
+        return isMirror(root.left, root.right);
+    }
+
+    private boolean isMirror(TreeNode t1, TreeNode t2) {
+        if (t1 == null && t2 == null) return true;
+        if (t1 == null || t2 == null) return false;
+        return (t1.val == t2.val) && isMirror(t1.left, t2.right) && isMirror(t1.right, t2.left);
+    }
+}
+```
+
+## Explanation
+
+Both implementations use **recursive DFS** to compare mirrored subtrees. The iterative version would utilize a **queue for BFS traversal**.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the number of nodes (we visit each node once).
+- **Space Complexity:** `O(n)` in the worst case (skewed tree due to recursion or queue storage).
+
+## Conclusion
+
+The **Symmetric Tree** problem can be efficiently solved using a recursive or iterative approach. 🚀
+

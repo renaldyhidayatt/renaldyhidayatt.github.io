@@ -1,0 +1,158 @@
+---
+title: Merge Sorted Array
+description: Implementation of the Merge Sorted Array algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+----------------
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+You are given two integer arrays `nums1` and `nums2`, sorted in non-decreasing order, and two integers `m` and `n`, representing the number of elements in `nums1` and `nums2` respectively.
+
+Merge `nums1` and `nums2` into a single array sorted in non-decreasing order.
+
+The final sorted array should not be returned by the function, but instead be stored inside the array `nums1`. To accommodate this, `nums1` has a length of `m + n`, where the first `m` elements denote the elements that should be merged, and the last `n` elements are set to `0` and should be ignored. `nums2` has a length of `n`.
+
+### Example 1:
+
+**Input:**
+```
+nums1 = [1,2,3,0,0,0], m = 3, nums2 = [2,5,6], n = 3
+```
+**Output:**
+```
+[1,2,2,3,5,6]
+```
+
+### Example 2:
+
+**Input:**
+```
+nums1 = [1], m = 1, nums2 = [], n = 0
+```
+**Output:**
+```
+[1]
+```
+
+### Example 3:
+
+**Input:**
+```
+nums1 = [0], m = 0, nums2 = [1], n = 1
+```
+**Output:**
+```
+[1]
+```
+
+## Approach
+
+- **Two Pointers from the End:**
+  - Start merging from the last valid position of `nums1`.
+  - Compare the largest elements from `nums1` and `nums2` and place them in the correct position.
+  - Continue until all elements are merged.
+
+## Algorithm
+
+1. Set three pointers:
+   - `p1` at index `m - 1` in `nums1`
+   - `p2` at index `n - 1` in `nums2`
+   - `p` at index `m + n - 1` in `nums1`
+2. Compare `nums1[p1]` and `nums2[p2]`, place the larger at `nums1[p]`.
+3. Move the pointer that placed an element and `p` backward.
+4. If `nums2` is not fully merged, copy the remaining elements.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+import "fmt"
+
+func merge(nums1 []int, m int, nums2 []int, n int) {
+    p1, p2, p := m-1, n-1, m+n-1
+    for p1 >= 0 && p2 >= 0 {
+        if nums1[p1] > nums2[p2] {
+            nums1[p] = nums1[p1]
+            p1--
+        } else {
+            nums1[p] = nums2[p2]
+            p2--
+        }
+        p--
+    }
+    for p2 >= 0 {
+        nums1[p] = nums2[p2]
+        p2--
+        p--
+    }
+}
+
+func main() {
+    nums1 := []int{1,2,3,0,0,0}
+    nums2 := []int{2,5,6}
+    merge(nums1, 3, nums2, 3)
+    fmt.Println(nums1) // Output: [1,2,2,3,5,6]
+}
+```
+
+### Implementation in Java
+
+```java
+import java.util.*;
+
+class MergeSortedArray {
+    public void merge(int[] nums1, int m, int[] nums2, int n) {
+        int p1 = m - 1, p2 = n - 1, p = m + n - 1;
+        while (p1 >= 0 && p2 >= 0) {
+            if (nums1[p1] > nums2[p2]) {
+                nums1[p--] = nums1[p1--];
+            } else {
+                nums1[p--] = nums2[p2--];
+            }
+        }
+        while (p2 >= 0) {
+            nums1[p--] = nums2[p2--];
+        }
+    }
+
+    public static void main(String[] args) {
+        MergeSortedArray msa = new MergeSortedArray();
+        int[] nums1 = {1,2,3,0,0,0};
+        int[] nums2 = {2,5,6};
+        msa.merge(nums1, 3, nums2, 3);
+        System.out.println(Arrays.toString(nums1)); // Output: [1,2,2,3,5,6]
+    }
+}
+```
+
+## Explanation
+
+- **Two-Pointer Merge:** Ensures `O(m + n)` time complexity.
+- **Efficient in-place merge:** Uses existing space in `nums1`.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(m + n)`, as we iterate through the arrays once.
+- **Space Complexity:** `O(1)`, since we do not use extra space.
+
+## Conclusion
+
+The **Merge Sorted Array** problem can be efficiently solved using a **Two-Pointer Approach**, achieving `O(m + n)` time complexity and `O(1)` space complexity. 🚀
+

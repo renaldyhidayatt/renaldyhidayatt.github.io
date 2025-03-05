@@ -1,0 +1,105 @@
+---
+title: Length of Last Word
+description: Implementation of the Length of Last Word algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+----------------
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given a string `s` consisting of words and spaces, return the length of the last word in the string.
+
+A word is a maximal substring consisting of non-space characters only.
+
+### Example:
+
+**Input:**
+```
+s = "Hello World"
+```
+**Output:**
+```
+5
+```
+
+## Approach
+
+1. Trim any trailing spaces from the string.
+2. Split the string into words based on spaces.
+3. Return the length of the last word.
+
+## Algorithm
+
+1. Trim trailing spaces from `s`.
+2. Split `s` into words by spaces.
+3. Return the length of the last word.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+    "strings"
+)
+
+func lengthOfLastWord(s string) int {
+    s = strings.TrimSpace(s)
+    words := strings.Fields(s)
+    return len(words[len(words)-1])
+}
+
+func main() {
+    fmt.Println(lengthOfLastWord("Hello World")) // Output: 5
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public int lengthOfLastWord(String s) {
+        s = s.trim();
+        String[] words = s.split(" ");
+        return words[words.length - 1].length();
+    }
+
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println(sol.lengthOfLastWord("Hello World")); // Output: 5
+    }
+}
+```
+
+## Explanation
+
+- **Trimming spaces:** Removes unnecessary trailing spaces.
+- **Splitting words:** Breaks the string into words efficiently.
+- **Accessing last word:** Returns its length directly.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the length of `s`.
+- **Space Complexity:** `O(1)`, as we store only a few variables.
+
+## Conclusion
+
+This approach efficiently finds the length of the last word in a string using basic string manipulation techniques. ✂️
+

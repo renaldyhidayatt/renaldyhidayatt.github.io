@@ -1,0 +1,117 @@
+---
+title: Reverse Words in a String
+description: Implementation of the Reverse Words in a String algorithm with Go and Java.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given an input string `s`, reverse the order of the words.
+
+A word is defined as a sequence of non-space characters. The words in `s` will be separated by at least one space.
+
+Return a string of the words in reverse order concatenated by a single space.
+
+Note that `s` may contain leading or trailing spaces or multiple spaces between two words. The returned string should only have a single space separating the words. Do not include any extra spaces.
+
+### Example:
+
+**Input:**
+```
+s = "the sky is blue"
+```
+**Output:**
+```
+"blue is sky the"
+```
+
+## Approach
+
+1. Trim leading and trailing spaces.
+2. Split the string into words.
+3. Reverse the order of words.
+4. Join the words with a single space.
+
+## Algorithm
+
+1. Trim spaces from the input string.
+2. Split the string by spaces.
+3. Reverse the array of words.
+4. Join the words using a single space separator.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import (
+    "fmt"
+    "strings"
+)
+
+func reverseWords(s string) string {
+    words := strings.Fields(s)
+    for i, j := 0, len(words)-1; i < j; i, j = i+1, j-1 {
+        words[i], words[j] = words[j], words[i]
+    }
+    return strings.Join(words, " ")
+}
+
+func main() {
+    fmt.Println(reverseWords("the sky is blue")) // Output: "blue is sky the"
+}
+```
+
+### Implementation in Java
+
+```java
+class Solution {
+    public String reverseWords(String s) {
+        String[] words = s.trim().split("\\s+");
+        StringBuilder reversed = new StringBuilder();
+        for (int i = words.length - 1; i >= 0; i--) {
+            reversed.append(words[i]).append(" ");
+        }
+        return reversed.toString().trim();
+    }
+
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println(sol.reverseWords("the sky is blue")); // Output: "blue is sky the"
+    }
+}
+```
+
+## Explanation
+
+- **Trimming spaces:** Ensures no leading or trailing spaces.
+- **Splitting words:** Extracts meaningful words.
+- **Reversing words:** Reorders the extracted words.
+- **Joining words:** Constructs the final reversed sentence.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(n)`, where `n` is the length of the string.
+- **Space Complexity:** `O(n)`, since we store the words separately before joining.
+
+## Conclusion
+
+This approach efficiently reverses the words in a given string while ensuring proper formatting. 🚀
+

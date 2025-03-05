@@ -1,0 +1,147 @@
+---
+title: "Count Complete Tree Nodes"
+description: "Implementation of Count Complete Tree Nodes in Go and Java."
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-03"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+5. [Explanation](#explanation)
+6. [Time and Space Complexity](#time-and-space-complexity)
+7. [Conclusion](#conclusion)
+
+## Problem Statement
+
+Given the root of a **complete binary tree**, return the number of nodes in the tree.
+
+A **complete binary tree** is a binary tree in which every level, except possibly the last, is completely filled, and all nodes in the last level are as far left as possible.
+
+Design an algorithm that runs in less than `O(n)` time complexity.
+
+### Example 1:
+
+```
+Input: root = [1,2,3,4,5,6]
+Output: 6
+```
+
+### Example 2:
+
+```
+Input: root = []
+Output: 0
+```
+
+### Constraints:
+
+- The number of nodes is in the range `[0, 5 * 10^4]`.
+- `0 <= Node.val <= 5 * 10^4`
+- The tree is guaranteed to be complete.
+
+## Approach
+
+- Use a **binary search approach** to count nodes efficiently.
+- Compute the depth of the tree.
+- Use binary search to check the existence of nodes in the last level.
+
+## Algorithm
+
+1. Compute the tree depth.
+2. Use binary search to count nodes in the last level.
+3. Return the total number of nodes.
+
+## Implementations
+
+### Implementation in Go
+
+```go
+package main
+
+import "math"
+
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func countNodes(root *TreeNode) int {
+    if root == nil {
+        return 0
+    }
+    leftDepth := getDepth(root.Left)
+    rightDepth := getDepth(root.Right)
+    
+    if leftDepth == rightDepth {
+        return (1 << leftDepth) + countNodes(root.Right)
+    } else {
+        return (1 << rightDepth) + countNodes(root.Left)
+    }
+}
+
+func getDepth(node *TreeNode) int {
+    depth := 0
+    for node != nil {
+        depth++
+        node = node.Left
+    }
+    return depth
+}
+```
+
+### Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int val) { this.val = val; }
+}
+
+class Solution {
+    public int countNodes(TreeNode root) {
+        if (root == null) return 0;
+        int leftDepth = getDepth(root.left);
+        int rightDepth = getDepth(root.right);
+        
+        if (leftDepth == rightDepth) {
+            return (1 << leftDepth) + countNodes(root.right);
+        } else {
+            return (1 << rightDepth) + countNodes(root.left);
+        }
+    }
+    
+    private int getDepth(TreeNode node) {
+        int depth = 0;
+        while (node != null) {
+            depth++;
+            node = node.left;
+        }
+        return depth;
+    }
+}
+```
+
+## Explanation
+
+- The algorithm calculates the depth of the left and right subtrees.
+- If they are equal, the left subtree is full, and we compute the right subtree recursively.
+- If not, the right subtree is full, and we compute the left subtree recursively.
+- This runs in `O(log n * log n)` complexity.
+
+## Time and Space Complexity
+
+- **Time Complexity:** `O(log n * log n)` due to binary search.
+- **Space Complexity:** `O(log n)` due to recursion.
+
+## Conclusion
+
+This solution efficiently counts nodes in a complete binary tree using binary search, ensuring better performance than `O(n)`. It leverages depth computation and recursive calls to minimize operations.

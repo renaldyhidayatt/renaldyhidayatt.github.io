@@ -1,0 +1,96 @@
+---
+title: Maximum Depth of Binary Tree
+description: Find the maximum depth of a binary tree. Includes Go and Java implementations.
+tags: ["leetcode", "golang", "java", "algorithms"]
+date: "2025-03-02"
+published: false
+---
+
+## Table of Contents
+
+1. [Problem Statement](#problem-statement)
+2. [Approach](#approach)
+3. [Algorithm](#algorithm)
+4. [Flowchart](#flowchart)
+5. [Implementations](#implementations)
+   - [Go](#implementation-in-go)
+   - [Java](#implementation-in-java)
+6. [Explanation](#explanation)
+7. [Time and Space Complexity](#time-and-space-complexity)
+8. [Conclusion](#conclusion)
+
+## Problem Statement
+A binary tree's maximum depth is the number of nodes along the longest path from the root node down to the farthest leaf node.
+
+**Examples:**
+
+**Example 1:**
+```
+Input: root = [3,9,20,null,null,15,7]
+Output: 3
+```
+
+**Example 2:**
+```
+Input: root = [1,null,2]
+Output: 2
+```
+
+### Constraints:
+
+- The number of nodes in the tree is in the range `[0, 10^4]`.
+- `-100 <= Node.val <= 100`
+
+## Implementation in Go
+
+```go
+// Definition for a binary tree node.
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+
+func maxDepth(root *TreeNode) int {
+    if root == nil {
+        return 0
+    }
+    leftDepth := maxDepth(root.Left)
+    rightDepth := maxDepth(root.Right)
+    return max(leftDepth, rightDepth) + 1
+}
+
+func max(a, b int) int {
+    if a > b {
+        return a
+    }
+    return b
+}
+```
+
+## Implementation in Java
+
+```java
+class TreeNode {
+    int val;
+    TreeNode left;
+    TreeNode right;
+    TreeNode(int val) { this.val = val; }
+}
+
+class Solution {
+    public int maxDepth(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int leftDepth = maxDepth(root.left);
+        int rightDepth = maxDepth(root.right);
+        return Math.max(leftDepth, rightDepth) + 1;
+    }
+}
+```
+
+## Conclusion
+
+This recursive approach efficiently computes the maximum depth of a binary tree in `O(n)` time complexity, where `n` is the number of nodes. The space complexity is `O(h)`, where `h` is the height of the tree due to the recursive call stack.
+
