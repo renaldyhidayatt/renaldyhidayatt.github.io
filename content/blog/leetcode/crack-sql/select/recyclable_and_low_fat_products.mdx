@@ -1,0 +1,79 @@
+---
+title: "1757. Recyclable and Low Fat Products"
+description: "Introduction to the SQL SELECT statement, including basic queries, filtering data, sorting, and using aggregate functions."
+tags: ["SQL", "SELECT", "queries", "database", "filtering", "sorting", "aggregate functions"]
+date: "2025-03-03"
+published: false
+---
+
+
+# 1757. Recyclable and Low Fat Products
+
+## Sql
+
+
+### Problem Statement
+
+The task is to identify products that are both low-fat and recyclable from a given dataset. The input is structured as a table with three columns:
+
+1. **`product_id`**: Unique identifier for each product.
+2. **`low_fats`**: ENUM type indicating whether the product is low-fat (`'Y'` for yes, `'N'` for no).
+3. **`recyclable`**: ENUM type indicating whether the product is recyclable (`'Y'` for yes, `'N'` for no).
+
+### Constraints
+
+- Return only the `product_id` for products that satisfy both conditions (`low_fats = 'Y'` and `recyclable = 'Y'`).
+- The result order does not matter.
+
+### Example Input
+
+```table
+| product_id | low_fats | recyclable |
+|------------|----------|------------|
+| 0          | Y        | N          |
+| 1          | Y        | Y          |
+| 2          | N        | Y          |
+| 3          | Y        | Y          |
+| 4          | N        | N          |
+
+```
+
+### Sql Query
+
+```sql
+SELECT product_id
+FROM Products
+WHERE low_fats = 'Y' AND recyclable = 'Y';
+```
+
+
+## No Sql(MongoDB)
+
+In MongoDB, the equivalent query uses the ``find`` method to filter documents based on the required conditions.
+
+### Example Dataset
+
+```json
+[
+  { "product_id": 0, "low_fats": "Y", "recyclable": "N" },
+  { "product_id": 1, "low_fats": "Y", "recyclable": "Y" },
+  { "product_id": 2, "low_fats": "N", "recyclable": "Y" },
+  { "product_id": 3, "low_fats": "Y", "recyclable": "Y" },
+  { "product_id": 4, "low_fats": "N", "recyclable": "N" }
+]
+```
+
+### MongoDB Query
+
+```js
+db.Products.find(
+  { low_fats: "Y", recyclable: "Y" },
+  { _id: 0, product_id: 1 }
+);
+```
+
+### Explanation
+{ low_fats: "Y", recyclable: "Y" }: Filters documents where low_fats and recyclable are both 'Y'.
+{ _id: 0, product_id: 1 }: Projects only the product_id field in the output, excluding the default _id.
+
+-----

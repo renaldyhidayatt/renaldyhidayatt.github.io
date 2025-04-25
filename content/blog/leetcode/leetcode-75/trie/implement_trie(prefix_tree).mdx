@@ -1,9 +1,9 @@
 ---
 title: Implement Trie (Prefix Tree)
 description: Implementation of the Trie (Prefix Tree) data structure in Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -65,7 +66,7 @@ trie.search("app");     // return True
 
 We use a **TrieNode** structure, where each node stores a mapping of characters to children nodes and a flag indicating the end of a word.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 type TrieNode struct {
@@ -113,7 +114,7 @@ func (t *Trie) findNode(word string) *TrieNode {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Trie {
@@ -160,6 +161,42 @@ class TrieNode {
     boolean isEnd = false;
 }
 ```
+### Implementation in Python
+
+```python
+class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self.isEnd = False
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def insert(self, word: str) -> None:
+        node = self.root
+        for ch in word:
+            if ch not in node.children:
+                node.children[ch] = TrieNode()
+            node = node.children[ch]
+        node.isEnd = True
+
+    def search(self, word: str) -> bool:
+        node = self._findNode(word)
+        return node is not None and node.isEnd
+
+    def startsWith(self, prefix: str) -> bool:
+        return self._findNode(prefix) is not None
+
+    def _findNode(self, word: str) -> TrieNode:
+        node = self.root
+        for ch in word:
+            if ch not in node.children:
+                return None
+            node = node.children[ch]
+        return node
+```
+
 
 ## Explanation
 

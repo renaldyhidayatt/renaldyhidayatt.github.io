@@ -1,9 +1,9 @@
 ---
 title: House Robber
 description: Implementation of the House Robber algorithm with Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -50,7 +51,7 @@ Output: 12
 
 We can solve this problem using **Dynamic Programming (DP)**.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func rob(nums []int) int {
@@ -79,7 +80,7 @@ func max(a, b int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Solution {
@@ -99,6 +100,27 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def rob(self, nums: list[int]) -> int:
+        if not nums:
+            return 0
+        if len(nums) == 1:
+            return nums[0]
+
+        dp = [0] * len(nums)
+        dp[0] = nums[0]
+        dp[1] = max(nums[0], nums[1])
+
+        for i in range(2, len(nums)):
+            dp[i] = max(dp[i - 1], dp[i - 2] + nums[i])
+
+        return dp[-1]
+```
+
 
 ## Explanation
 

@@ -121,6 +121,33 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+from collections import defaultdict
+
+class Solution:
+    def subarraySum(self, nums: list[int], k: int) -> int:
+        count = 0
+        current_sum = 0
+        prefix_sum = defaultdict(int)
+        prefix_sum[0] = 1
+        
+        for num in nums:
+            current_sum += num
+            if current_sum - k in prefix_sum:
+                count += prefix_sum[current_sum - k]
+            prefix_sum[current_sum] += 1
+        
+        return count
+
+# Example usage
+if __name__ == "__main__":
+    sol = Solution()
+    print(sol.subarraySum([1, 2, 3], 3))  # Output: 2
+```
+
+
 ## Explanation
 
 - We maintain a **prefix sum** and store its frequency in a **hash map**.

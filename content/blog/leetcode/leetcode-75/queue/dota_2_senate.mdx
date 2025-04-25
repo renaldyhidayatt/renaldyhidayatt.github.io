@@ -1,9 +1,9 @@
 ---
 title: Dota2 Senate
 description: Predict the winning party in the Dota2 Senate voting system. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -57,7 +58,7 @@ senate = "RDD"
 - `1 <= senate.length <= 10^4`
 - `senate[i]` is either 'R' or 'D'.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func predictPartyVictory(senate string) string {
@@ -90,7 +91,7 @@ func predictPartyVictory(senate string) string {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -120,6 +121,35 @@ class Solution {
         return rQueue.isEmpty() ? "Dire" : "Radiant";
     }
 }
+```
+
+### Implementation in Python
+
+```python
+from collections import deque
+
+class Solution:
+    def predictPartyVictory(self, senate: str) -> str:
+        r_queue = deque()
+        d_queue = deque()
+        n = len(senate)
+
+        for i, ch in enumerate(senate):
+            if ch == 'R':
+                r_queue.append(i)
+            else:
+                d_queue.append(i)
+
+        while r_queue and d_queue:
+            r_turn = r_queue.popleft()
+            d_turn = d_queue.popleft()
+            if r_turn < d_turn:
+                r_queue.append(r_turn + n)
+            else:
+                d_queue.append(d_turn + n)
+
+        return "Dire" if not r_queue else "Radiant"
+
 ```
 
 ## Conclusion

@@ -136,6 +136,39 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class Solution:
+    def swapPairs(self, head: ListNode) -> ListNode:
+        dummy = ListNode(0)
+        dummy.next = head
+        prev = dummy
+        
+        while head and head.next:
+            first = head
+            second = head.next
+            
+            # Swap the pair
+            prev.next = second
+            first.next = second.next
+            second.next = first
+            
+            # Move prev and head forward
+            prev = first
+            head = first.next
+        
+        return dummy.next
+```
+
+
+
+
 ## Explanation
 
 - **Iterative Pointer Approach:**

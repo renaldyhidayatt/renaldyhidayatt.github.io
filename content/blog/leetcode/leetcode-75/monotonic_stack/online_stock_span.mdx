@@ -1,9 +1,9 @@
 ---
 title: Online Stock Span
 description: Solution for computing the stock span problem in Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -47,7 +48,7 @@ Output
 
 We use a **monotonic stack** to keep track of stock prices and their spans.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 type StockSpanner struct {
@@ -69,7 +70,7 @@ func (this *StockSpanner) Next(price int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.Stack;
@@ -91,6 +92,22 @@ class StockSpanner {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class StockSpanner:
+    def __init__(self):
+        self.stack = []
+
+    def next(self, price: int) -> int:
+        span = 1
+        while self.stack and self.stack[-1][0] <= price:
+            span += self.stack.pop()[1]
+        self.stack.append((price, span))
+        return span
+```
+
 
 ## Explanation
 

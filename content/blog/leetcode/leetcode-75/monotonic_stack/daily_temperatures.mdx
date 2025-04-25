@@ -1,9 +1,9 @@
 ---
 title: Daily Temperatures
 description: Solution for finding the number of days to wait for a warmer temperature in Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -56,7 +57,7 @@ Output: [1,1,0]
 
 We use a **monotonic stack** to efficiently track temperatures and determine the number of days to wait for a warmer temperature.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func dailyTemperatures(temperatures []int) []int {
@@ -76,7 +77,7 @@ func dailyTemperatures(temperatures []int) []int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.Stack;
@@ -98,6 +99,27 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def dailyTemperatures(self, temperatures: List[int]) -> List[int]:
+        n = len(temperatures)
+        answer = [0] * n
+        stack = []
+
+        for i in range(n):
+            while stack and temperatures[stack[-1]] < temperatures[i]:
+                idx = stack.pop()
+                answer[idx] = i - idx
+            stack.append(i)
+        
+        return answer
+```
+
 
 ## Explanation
 

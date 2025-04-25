@@ -138,6 +138,36 @@ class MergeIntervals {
 }
 ```
 
+### Implementation in Python
+
+```python
+class MergeIntervals:
+    def merge(self, intervals):
+        if not intervals:
+            return intervals
+        
+        # Sort intervals based on the starting value
+        intervals.sort(key=lambda x: x[0])
+        merged = []
+        
+        for interval in intervals:
+            # If merged is empty or the current interval does not overlap with the last one, add it to the merged list
+            if not merged or merged[-1][1] < interval[0]:
+                merged.append(interval)
+            else:
+                # Otherwise, merge the intervals by updating the end of the last interval
+                merged[-1][1] = max(merged[-1][1], interval[1])
+        
+        return merged
+
+# Example usage
+if __name__ == "__main__":
+    mi = MergeIntervals()
+    intervals = [[1,3],[2,6],[8,10],[15,18]]
+    print(mi.merge(intervals))  # Output: [[1, 6], [8, 10], [15, 18]]
+```
+
+
 ## Explanation
 
 - **Sorting First:** Sorting helps in processing intervals in order.

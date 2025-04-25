@@ -1,9 +1,9 @@
 ---
 title: Maximum Twin Sum of a Linked List
 description: Find the maximum twin sum in a singly linked list. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -63,10 +64,9 @@ Only one pair exists: twin sum = 1 + 100000 = 100001.
 - The number of nodes in the list is an even integer in the range `[2, 10^5]`.
 - `1 <= Node.val <= 10^5`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for singly-linked list.
 type ListNode struct {
     Val  int
     Next *ListNode
@@ -102,7 +102,7 @@ func max(a, b int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class ListNode {
@@ -134,6 +134,39 @@ class Solution {
     }
 }
 ```
+
+
+### Implementation in Python
+
+```python
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class Solution:
+    def pairSum(self, head: ListNode) -> int:
+        slow = head
+        fast = head
+        prev = None
+
+        while fast and fast.next:
+            fast = fast.next.next
+            temp = slow.next
+            slow.next = prev
+            prev = slow
+            slow = temp
+
+        max_sum = 0
+        while slow:
+            max_sum = max(max_sum, prev.val + slow.val)
+            prev = prev.next
+            slow = slow.next
+
+        return max_sum
+
+```
+
 
 ## Conclusion
 

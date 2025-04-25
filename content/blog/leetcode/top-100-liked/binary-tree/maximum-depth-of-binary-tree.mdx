@@ -117,6 +117,25 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, x: int):
+        self.val = x
+        self.left = None
+        self.right = None
+
+class Solution:
+    def maxDepth(self, root: TreeNode) -> int:
+        if root is None:
+            return 0
+        left_depth = self.maxDepth(root.left)
+        right_depth = self.maxDepth(root.right)
+        return 1 + max(left_depth, right_depth)
+```
+
+
 ## Explanation
 
 Both implementations use **DFS recursion** to find the depth of left and right subtrees and return the maximum depth.

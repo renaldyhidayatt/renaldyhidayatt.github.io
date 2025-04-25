@@ -1,9 +1,9 @@
 ---
-title: Product of Array Except Self
+title: "238.Product of Array Except Self"
 description: Compute the product of an array except self in O(n) time without division. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -14,6 +14,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -99,6 +100,29 @@ class Solution {
         return answer;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def productExceptSelf(self, nums: List[int]) -> List[int]:
+        n = len(nums)
+        answer = [1] * n
+
+        # Compute prefix products
+        for i in range(1, n):
+            answer[i] = answer[i - 1] * nums[i - 1]
+
+        # Compute suffix products and update result
+        suffix = 1
+        for i in range(n - 1, -1, -1):
+            answer[i] *= suffix
+            suffix *= nums[i]
+
+        return answer
 ```
 
 ## 6. Explanation

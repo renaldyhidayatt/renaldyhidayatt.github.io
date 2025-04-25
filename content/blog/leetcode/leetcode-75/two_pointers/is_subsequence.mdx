@@ -1,9 +1,9 @@
 ---
 title: Is Subsequence
 description: Check if a string is a subsequence of another string. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -14,6 +14,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -121,6 +122,20 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def isSubsequence(self, s: str, t: str) -> bool:
+        i, j = 0, 0
+        while j < len(t):
+            if i < len(s) and s[i] == t[j]:
+                i += 1
+            j += 1
+        return i == len(s)
+```
+
 
 ## Explanation
 

@@ -1,9 +1,9 @@
 ---
 title: Minimum Number of Arrows to Burst Balloons
 description: Solution for finding the minimum number of arrows required to burst all balloons in Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -66,7 +67,7 @@ Explanation: The balloons can be burst by 2 arrows:
 
 We use a **greedy algorithm** to sort the balloons by their end coordinate and keep track of overlapping intervals. By always shooting an arrow at the earliest possible position, we minimize the number of arrows required.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 import "sort"
@@ -91,7 +92,7 @@ func findMinArrowShots(points [][]int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.Arrays;
@@ -115,6 +116,28 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def findMinArrowShots(self, points):
+        if not points:
+            return 0
+
+        points.sort(key=lambda x: x[1])
+
+        arrows = 1
+        end = points[0][1]
+
+        for i in range(1, len(points)):
+            if points[i][0] > end:
+                arrows += 1
+                end = points[i][1]
+
+        return arrows
+```
+
 
 ## Explanation
 

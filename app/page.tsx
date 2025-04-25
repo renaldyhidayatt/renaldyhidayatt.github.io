@@ -4,11 +4,15 @@ import { posts } from "@/.velite";
 import { PostItem } from "@/components/post-item";
 import HomeHeader from "@/components/header-home";
 import { useEffect, useState } from "react";
+import { SparklesCore } from "@/components/sparkles";
+import { Button } from "@/components/ui/button";
+import { ChevronUp } from "lucide-react";
 
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const latestPosts = sortPosts(posts).slice(0, 5);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -17,9 +21,27 @@ export default function Home() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <>
       <div className="w-full h-screen bg-background text-foreground">
+        <SparklesCore
+          id="hero-sparkles"
+          background="transparent"
+          minSize={0.6}
+          maxSize={1.4}
+          particleDensity={50}
+          className="absolute inset-0 w-full h-full"
+        />
         <div className="max-w-5xl mx-auto px-8 flex flex-col justify-center h-full">
           <HomeHeader />
         </div>
@@ -51,7 +73,17 @@ export default function Home() {
                 )
             )}
         </ul>
-
+        {scrolled && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-4 right-4 rounded-full shadow-md z-40"
+            aria-label="Back to top"
+          >
+            <ChevronUp className="h-5 w-5" />
+          </Button>
+        )}
       </section>
 
     </>

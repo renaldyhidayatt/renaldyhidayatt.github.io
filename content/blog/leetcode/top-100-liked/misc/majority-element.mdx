@@ -115,6 +115,29 @@ class MajorityElement {
 }
 ```
 
+### Implementation in Python
+
+```python
+class MajorityElement:
+    def majorityElement(self, nums):
+        count = 0
+        candidate = 0
+        
+        for num in nums:
+            if count == 0:
+                candidate = num
+            count += 1 if num == candidate else -1
+        
+        return candidate
+
+# Example usage
+if __name__ == "__main__":
+    me = MajorityElement()
+    nums = [2, 2, 1, 1, 1, 2, 2]
+    print(me.majorityElement(nums))  # Output: 2
+```
+
+
 ## Explanation
 
 - **Boyer-Moore Voting Algorithm:** Efficiently finds the majority element in `O(n)` time.

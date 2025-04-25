@@ -139,6 +139,39 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+from collections import defaultdict
+
+class TreeNode:
+    def __init__(self, val: int):
+        self.val = val
+        self.left = None
+        self.right = None
+
+class Solution:
+    def pathSum(self, root: TreeNode, targetSum: int) -> int:
+        prefixSum = defaultdict(int)
+        prefixSum[0] = 1
+        return self.pathSumHelper(root, targetSum, 0, prefixSum)
+
+    def pathSumHelper(self, node: TreeNode, targetSum: int, currentSum: int, prefixSum: dict) -> int:
+        if node is None:
+            return 0
+        
+        currentSum += node.val
+        count = prefixSum.get(currentSum - targetSum, 0)
+        prefixSum[currentSum] += 1
+        
+        count += self.pathSumHelper(node.left, targetSum, currentSum, prefixSum)
+        count += self.pathSumHelper(node.right, targetSum, currentSum, prefixSum)
+        
+        prefixSum[currentSum] -= 1
+        return count
+```
+
+
 ## Explanation
 
 Both implementations use **recursive DFS** to compare mirrored subtrees. The iterative version would utilize a **queue for BFS traversal**.

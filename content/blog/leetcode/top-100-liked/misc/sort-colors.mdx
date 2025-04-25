@@ -133,6 +133,35 @@ class SortColors {
 }
 ```
 
+### Implementation in Python
+
+```python
+class SortColors:
+    def sortColors(self, nums):
+        left, right, current = 0, len(nums) - 1, 0
+        
+        while current <= right:
+            if nums[current] == 0:
+                self.swap(nums, left, current)
+                left += 1
+                current += 1
+            elif nums[current] == 2:
+                self.swap(nums, right, current)
+                right -= 1
+            else:
+                current += 1
+
+    def swap(self, nums, i, j):
+        nums[i], nums[j] = nums[j], nums[i]
+
+# Example usage
+if __name__ == "__main__":
+    sc = SortColors()
+    nums = [2, 0, 2, 1, 1, 0]
+    sc.sortColors(nums)
+    print(nums)  # Output: [0, 0, 1, 1, 2, 2]
+```
+
 ## Explanation
 
 - **Using Three Pointers:** Ensures a single pass sorting mechanism.

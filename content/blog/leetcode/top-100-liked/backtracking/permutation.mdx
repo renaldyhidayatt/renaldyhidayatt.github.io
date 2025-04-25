@@ -133,6 +133,31 @@ public class Permutations {
     }
 }
 ```
+### Implementation in Python
+
+```python
+from typing import List
+
+class Permutations:
+    def permute(self, nums: List[int]) -> List[List[int]]:
+        result = []
+        used = [False] * len(nums)
+        self.backtrack(result, [], nums, used)
+        return result
+
+    def backtrack(self, result: List[List[int]], current: List[int], nums: List[int], used: List[bool]):
+        if len(current) == len(nums):
+            result.append(list(current))
+            return
+        for i in range(len(nums)):
+            if not used[i]:
+                used[i] = True
+                current.append(nums[i])
+                self.backtrack(result, current, nums, used)
+                current.pop()
+                used[i] = False
+```
+
 
 ## Explanation
 

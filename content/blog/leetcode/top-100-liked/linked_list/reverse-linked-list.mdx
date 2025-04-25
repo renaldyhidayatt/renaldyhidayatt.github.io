@@ -147,6 +147,38 @@ public class ReverseLinkedList {
 }
 ```
 
+### Implementation in Python
+
+```python
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class Solution:
+    # Iterative approach
+    def reverseList(self, head: ListNode) -> ListNode:
+        prev, curr = None, head
+        while curr:
+            next_node = curr.next
+            curr.next = prev
+            prev = curr
+            curr = next_node
+        return prev
+
+    # Recursive approach
+    def reverseListRecursive(self, head: ListNode) -> ListNode:
+        if not head or not head.next:
+            return head
+        new_head = self.reverseListRecursive(head.next)
+        head.next.next = head
+        head.next = None
+        return new_head
+```
+
+
+
+
 ## Explanation
 
 - The **iterative** method reverses pointers as it traverses the list.

@@ -1,9 +1,9 @@
 ---
 title: Maximum Number of Vowels in a Substring of Given Length
 description: Find the contiguous subarray of length k with the maximum number of vowels. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -133,6 +134,25 @@ public class Solution {
     }
 }
 ```
+
+### Implementation in Python
+```python
+class Solution:
+    def maxVowels(self, s: str, k: int) -> int:
+        vowels = {'a', 'e', 'i', 'o', 'u'}
+        count = sum(1 for i in range(k) if s[i] in vowels)
+        max_count = count
+
+        for i in range(k, len(s)):
+            if s[i] in vowels:
+                count += 1
+            if s[i - k] in vowels:
+                count -= 1
+            max_count = max(max_count, count)
+
+        return max_count
+```
+
 
 ## Explanation
 

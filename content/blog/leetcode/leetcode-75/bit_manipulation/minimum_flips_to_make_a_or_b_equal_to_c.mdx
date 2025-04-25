@@ -1,9 +1,9 @@
 ---
 title: Minimum Flips to Make a OR b Equal to c
 description: Implementation of the Minimum Flips algorithm in Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -58,7 +59,8 @@ We analyze the bits of `a`, `b`, and `c` one by one:
 - If `c` has a `1` in a position, at least one of `a` or `b` must have `1`.
 - If `c` has a `0`, both `a` and `b` must be `0`, requiring flips if they aren't.
 
-## Implementation in Go
+
+### Implementation in Go
 
 ```go
 func minFlips(a int, b int, c int) int {
@@ -80,7 +82,7 @@ func minFlips(a int, b int, c int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Solution {
@@ -102,6 +104,24 @@ class Solution {
         return flips;
     }
 }
+```
+
+### Implementation in Python
+```python
+class Solution:
+    def minFlips(self, a: int, b: int, c: int) -> int:
+        flips = 0
+        for i in range(32):
+            bitA = (a >> i) & 1
+            bitB = (b >> i) & 1
+            bitC = (c >> i) & 1
+
+            if bitC == 0:
+                flips += bitA + bitB
+            else:
+                if bitA == 0 and bitB == 0:
+                    flips += 1
+        return flips
 ```
 
 ## Explanation

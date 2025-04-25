@@ -1,9 +1,9 @@
 ---
 title: Determine if Two Strings Are Close
 description: Check if two strings are close using character swaps and transformations. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -148,6 +149,38 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def closeStrings(self, word1: str, word2: str) -> bool:
+        if len(word1) != len(word2):
+            return False
+        
+        freq1 = [0] * 26
+        freq2 = [0] * 26
+        set1 = set()
+        set2 = set()
+        
+        for ch in word1:
+            freq1[ord(ch) - ord('a')] += 1
+            set1.add(ch)
+        
+        for ch in word2:
+            freq2[ord(ch) - ord('a')] += 1
+            set2.add(ch)
+        
+        if set1 != set2:
+            return False
+        
+        freq1.sort()
+        freq2.sort()
+        
+        return freq1 == freq2
+
+```
+
 
 ## Explanation
 

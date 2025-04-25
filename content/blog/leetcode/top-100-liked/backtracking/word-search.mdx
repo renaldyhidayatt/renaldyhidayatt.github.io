@@ -162,6 +162,38 @@ public class WordSearch {
 }
 ```
 
+### Implementation in Python
+```python
+from typing import List
+
+class WordSearch:
+    def exist(self, board: List[List[str]], word: str) -> bool:
+        rows, cols = len(board), len(board[0])
+        for i in range(rows):
+            for j in range(cols):
+                if self.dfs(board, word, i, j, 0):
+                    return True
+        return False
+
+    def dfs(self, board: List[List[str]], word: str, r: int, c: int, index: int) -> bool:
+        if index == len(word):
+            return True
+        if (r < 0 or c < 0 or r >= len(board) or c >= len(board[0]) or 
+            board[r][c] != word[index]):
+            return False
+
+        temp = board[r][c]
+        board[r][c] = '#' 
+
+        found = (self.dfs(board, word, r+1, c, index+1) or
+                 self.dfs(board, word, r-1, c, index+1) or
+                 self.dfs(board, word, r, c+1, index+1) or
+                 self.dfs(board, word, r, c-1, index+1))
+
+        board[r][c] = temp 
+        return found
+```
+
 ## Explanation
 
 Both solutions use **Depth-First Search (DFS)** to traverse the board and search for the word while keeping track of visited cells.

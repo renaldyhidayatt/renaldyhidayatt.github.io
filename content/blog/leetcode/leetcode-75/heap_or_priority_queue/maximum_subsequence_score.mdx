@@ -1,9 +1,9 @@
 ---
 title: Maximum Subsequence Score
 description: Implementation of Maximum Subsequence Score algorithm with Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -51,7 +52,7 @@ Output: 30
 - `0 <= nums1[i], nums2[j] <= 10^5`
 - `1 <= k <= n`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 import (
@@ -113,7 +114,7 @@ func max(a, b int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -144,6 +145,36 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+import heapq
+
+class Solution:
+    def maxScore(self, nums1: list[int], nums2: list[int], k: int) -> int:
+        n = len(nums1)
+        pairs = [(nums1[i], nums2[i]) for i in range(n)]
+        
+        pairs.sort(key=lambda x: x[1], reverse=True)
+        
+        min_heap = []
+        sum_values = 0
+        result = 0
+        
+        for pair in pairs:
+            sum_values += pair[0]
+            heapq.heappush(min_heap, pair[0])
+            if len(min_heap) > k:
+                sum_values -= heapq.heappop(min_heap)
+            if len(min_heap) == k:
+                result = max(result, sum_values * pair[1])
+        
+        return result
+
+```
+
+
 
 ## Conclusion
 

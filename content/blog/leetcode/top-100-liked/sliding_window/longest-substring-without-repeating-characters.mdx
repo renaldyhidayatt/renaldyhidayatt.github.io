@@ -133,6 +133,31 @@ class LongestSubstring {
 }
 ```
 
+### Implementation in Python
+
+```python
+class LongestSubstring:
+    def lengthOfLongestSubstring(self, s: str) -> int:
+        charSet = set()
+        left = 0
+        maxLen = 0
+        
+        for right in range(len(s)):
+            while s[right] in charSet:
+                charSet.remove(s[left])
+                left += 1
+            charSet.add(s[right])
+            maxLen = max(maxLen, right - left + 1)
+        
+        return maxLen
+
+# Example usage
+if __name__ == "__main__":
+    solver = LongestSubstring()
+    print(solver.lengthOfLongestSubstring("abcabcbb"))  # Output: 3
+```
+
+
 ## Explanation
 
 1. **Step 1:** Start with two pointers (`left` and `right`) at the beginning.

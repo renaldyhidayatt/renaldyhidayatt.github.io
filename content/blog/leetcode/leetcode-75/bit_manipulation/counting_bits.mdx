@@ -1,9 +1,9 @@
 ---
 title: Counting Bits
 description: Implementation of the Counting Bits algorithm in Go and Java. 
-tags: ["leetcode", "golang", "java", "algorithms"] 
-date: "2025-03-02" 
-published: false
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
+date: "2025-03-02"
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -66,7 +67,7 @@ We can use **Dynamic Programming (DP)** based on the fact that:
 
 - `countBits[i] = countBits[i >> 1] + (i & 1)`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func countBits(n int) []int {
@@ -78,7 +79,7 @@ func countBits(n int) []int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Solution {
@@ -91,6 +92,17 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+```python
+class Solution:
+    def countBits(self, n: int) -> list[int]:
+        result = [0] * (n + 1)
+        for i in range(1, n + 1):
+            result[i] = result[i >> 1] + (i & 1)
+        return result
+```
+
 
 ## Explanation
 

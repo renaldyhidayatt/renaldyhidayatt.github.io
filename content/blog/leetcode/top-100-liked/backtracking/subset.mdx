@@ -124,6 +124,24 @@ public class Subsets {
     }
 }
 ```
+### Implementation in Python
+```python
+from typing import List
+
+class Subsets:
+    def subsets(self, nums: List[int]) -> List[List[int]]:
+        result = []
+        self.backtrack(result, [], nums, 0)
+        return result
+
+    def backtrack(self, result: List[List[int]], temp_list: List[int], nums: List[int], start: int):
+        result.append(list(temp_list))
+        for i in range(start, len(nums)):
+            temp_list.append(nums[i])
+            self.backtrack(result, temp_list, nums, i + 1)
+            temp_list.pop()
+
+```
 
 ## Explanation
 

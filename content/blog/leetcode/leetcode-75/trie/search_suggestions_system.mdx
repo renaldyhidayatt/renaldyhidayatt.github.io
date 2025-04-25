@@ -1,9 +1,9 @@
 ---
 title: Search Suggestions System
 description: Implementation of the Search Suggestions System using Trie in Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -58,7 +59,7 @@ Output: [["havana"],["havana"],["havana"],["havana"],["havana"],["havana"]]
 
 We use a **Trie** structure to efficiently store and retrieve words with a given prefix. Sorting the product list beforehand allows efficient retrieval of lexicographically smallest suggestions.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 import (
@@ -88,7 +89,7 @@ func suggestedProducts(products []string, searchWord string) [][]string {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -117,6 +118,32 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def suggestedProducts(self, products, searchWord):
+        products.sort()
+        result = []
+        prefix = ""
+        
+        for ch in searchWord:
+            prefix += ch
+            suggestions = []
+            
+            for product in products:
+                if len(suggestions) == 3:
+                    break
+                if product.startswith(prefix):
+                    suggestions.append(product)
+            
+            result.append(suggestions)
+        
+        return result
+
+```
+
 
 ## Explanation
 

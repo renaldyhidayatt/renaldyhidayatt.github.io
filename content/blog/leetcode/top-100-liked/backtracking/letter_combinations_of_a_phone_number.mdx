@@ -57,7 +57,7 @@ Output: ["a","b","c"]
 
 We can solve this problem using **Backtracking**.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 var phoneMap = map[byte]string{
@@ -86,7 +86,7 @@ func backtrack(digits string, index int, current string, result *[]string) {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -118,6 +118,35 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+```python
+from typing import List
+
+class Solution:
+    phone_map = {
+        '2': "abc", '3': "def", '4': "ghi", '5': "jkl",
+        '6': "mno", '7': "pqrs", '8': "tuv", '9': "wxyz"
+    }
+
+    def letter_combinations(self, digits: str) -> List[str]:
+        if not digits:
+            return []
+        result = []
+        self.backtrack(digits, 0, [], result)
+        return result
+
+    def backtrack(self, digits: str, index: int, current: List[str], result: List[str]):
+        if index == len(digits):
+            result.append("".join(current))
+            return
+        letters = self.phone_map.get(digits[index], "")
+        for c in letters:
+            current.append(c)
+            self.backtrack(digits, index + 1, current, result)
+```
+
+
 
 ## Explanation
 

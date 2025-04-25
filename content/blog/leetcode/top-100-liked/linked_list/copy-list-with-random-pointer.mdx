@@ -169,6 +169,73 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+class Node:
+    def __init__(self, val=0, next=None, random=None):
+        self.val = val
+        self.next = next
+        self.random = random
+
+class Solution:
+    def copyRandomList(self, head):
+        if not head:
+            return None
+        
+        # Step 1: Create a new node for each node in the original list
+        curr = head
+        while curr:
+            new_node = Node(curr.val)
+            new_node.next = curr.next
+            curr.next = new_node
+            curr = new_node.next
+        
+        # Step 2: Assign random pointers to the new nodes
+        curr = head
+        while curr:
+            if curr.random:
+                curr.next.random = curr.random.next
+            curr = curr.next.next
+        
+        # Step 3: Separate the new list from the original list
+        dummy = Node(0)
+        new_curr = dummy
+        old_curr = head
+        while old_curr:
+            new_curr.next = old_curr.next
+            old_curr.next = old_curr.next.next
+            old_curr = old_curr.next
+            new_curr = new_curr.next
+        
+        return dummy.next
+
+# Example usage:
+# Creating a list: 1 -> 2 -> 3
+node1 = Node(1)
+node2 = Node(2)
+node3 = Node(3)
+node1.next = node2
+node2.next = node3
+
+# Setting random pointers
+node1.random = node3
+node2.random = node1
+node3.random = node2
+
+sol = Solution()
+new_head = sol.copyRandomList(node1)
+
+# Print the new list
+curr = new_head
+while curr:
+    print(f"Value: {curr.val}, Random: {curr.random.val if curr.random else None}")
+    curr = curr.next
+```
+
+
+
+
 ## Explanation
 
 - **Step 1:** Insert copied nodes between original nodes.

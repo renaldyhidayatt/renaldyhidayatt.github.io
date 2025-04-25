@@ -144,6 +144,27 @@ public class CombinationSum {
 }
 ```
 
+### Implementation in Python
+```python
+from typing import List
+
+class CombinationSum:
+    def combination_sum(self, candidates: List[int], target: int) -> List[List[int]]:
+        result = []
+        self.backtrack(result, [], candidates, target, 0)
+        return result
+
+    def backtrack(self, result: List[List[int]], current: List[int], candidates: List[int], remaining: int, start: int):
+        if remaining == 0:
+            result.append(list(current))
+            return
+        for i in range(start, len(candidates)):
+            if remaining >= candidates[i]:
+                current.append(candidates[i])
+                self.backtrack(result, current, candidates, remaining - candidates[i], i)
+                current.pop()
+```
+
 ## Explanation
 
 The recursive function ensures that we generate all possible valid combinations by:

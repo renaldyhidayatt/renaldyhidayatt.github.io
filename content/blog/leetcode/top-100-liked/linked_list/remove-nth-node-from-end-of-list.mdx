@@ -135,6 +135,40 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+class ListNode:
+    def __init__(self, x):
+        self.val = x
+        self.next = None
+
+class Solution:
+    def removeNthFromEnd(self, head: ListNode, n: int) -> ListNode:
+        # Create a dummy node pointing to the head
+        dummy = ListNode(0)
+        dummy.next = head
+        fast = slow = dummy
+        
+        # Move the fast pointer n+1 steps ahead
+        for _ in range(n + 1):
+            fast = fast.next
+        
+        # Move both fast and slow pointers until fast reaches the end
+        while fast:
+            fast = fast.next
+            slow = slow.next
+        
+        # Remove the nth node from the end
+        slow.next = slow.next.next
+        
+        # Return the new head
+        return dummy.next
+```
+
+
+
+
 ## Explanation
 
 - **Two Pointer Approach:**

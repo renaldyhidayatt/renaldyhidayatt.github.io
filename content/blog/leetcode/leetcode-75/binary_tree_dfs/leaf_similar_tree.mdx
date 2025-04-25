@@ -1,9 +1,9 @@
 ---
 title: Leaf-Similar Trees
 description: Check if two binary trees have the same leaf sequence. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -47,10 +48,9 @@ Output: false
 - The number of nodes in each tree will be in the range `[1, 200]`.
 - Both of the given trees will have values in the range `[0, 200]`.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for a binary tree node.
 type TreeNode struct {
     Val   int
     Left  *TreeNode
@@ -76,7 +76,7 @@ func leafSimilar(root1 *TreeNode, root2 *TreeNode) bool {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -106,6 +106,32 @@ class Solution {
         return leaves1.equals(leaves2);
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def getLeaves(self, root, leaves):
+        if root is None:
+            return
+        if root.left is None and root.right is None:
+            leaves.append(root.val)
+        self.getLeaves(root.left, leaves)
+        self.getLeaves(root.right, leaves)
+
+    def leafSimilar(self, root1, root2):
+        leaves1, leaves2 = [], []
+        self.getLeaves(root1, leaves1)
+        self.getLeaves(root2, leaves2)
+        return leaves1 == leaves2
+
 ```
 
 ## Conclusion

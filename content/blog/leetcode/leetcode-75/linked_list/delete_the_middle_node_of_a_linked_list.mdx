@@ -1,9 +1,9 @@
 ---
 title: Delete the Middle Node of a Linked List
 description: Remove the middle node from a singly linked list efficiently. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -50,10 +51,9 @@ Output: [2]
 - The number of nodes in the list is in the range `[1, 10^5]`.
 - `1 <= Node.val <= 10^5`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for singly-linked list.
 type ListNode struct {
     Val  int
     Next *ListNode
@@ -74,7 +74,7 @@ func deleteMiddle(head *ListNode) *ListNode {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class ListNode {
@@ -99,6 +99,34 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class Solution:
+    def deleteMiddle(self, head: ListNode) -> ListNode:
+        if not head or not head.next:
+            return None
+
+        slow = head
+        fast = head
+        prev = None
+
+        while fast and fast.next:
+            prev = slow
+            slow = slow.next
+            fast = fast.next.next
+
+        prev.next = slow.next
+        return head
+
+```
+
 
 ## Conclusion
 

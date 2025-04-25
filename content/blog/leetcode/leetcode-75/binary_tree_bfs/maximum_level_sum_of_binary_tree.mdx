@@ -1,9 +1,9 @@
 ---
 title: Maximum Level Sum of a Binary Tree
 description: Find the level in a binary tree with the maximum sum of node values. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -45,7 +46,7 @@ Output: 2
 - The number of nodes in the tree is in the range `[1, 10^4]`.
 - `-10^5 <= Node.val <= 10^5`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 type TreeNode struct {
@@ -90,7 +91,7 @@ func maxLevelSum(root *TreeNode) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -131,6 +132,47 @@ class Solution {
         return maxLevel;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def maxLevelSum(self, root: TreeNode) -> int:
+        if root is None:
+            return 0
+
+        max_sum = root.val
+        max_level = 1
+        level = 1
+        queue = [root]
+
+        while queue:
+            level_size = len(queue)
+            current_sum = 0
+
+            for _ in range(level_size):
+                node = queue.pop(0)
+                current_sum += node.val
+
+                if node.left:
+                    queue.append(node.left)
+                if node.right:
+                    queue.append(node.right)
+
+            if current_sum > max_sum:
+                max_sum = current_sum
+                max_level = level
+
+            level += 1
+
+        return max_level
 ```
 
 ## Conclusion

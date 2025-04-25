@@ -1,9 +1,9 @@
 ---
 title: Combination Sum III
 description: Implementation of the Combination Sum III algorithm with Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -61,7 +62,7 @@ Output: []
 
 We can solve this problem using **Backtracking**.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func combinationSum3(k int, n int) [][]int {
@@ -86,7 +87,7 @@ func backtrack(k, n, start int, current []int, result *[][]int) {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -114,6 +115,31 @@ class Solution {
     }
 }
 ```
+
+### Implemenation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def combinationSum3(self, k: int, n: int) -> List[List[int]]:
+        result = []
+        self.backtrack(k, n, 1, [], result)
+        return result
+
+    def backtrack(self, k: int, n: int, start: int, current: List[int], result: List[List[int]]):
+        if k == 0 and n == 0:
+            result.append(list(current)) 
+            return
+        for i in range(start, 10):
+            if i > n:
+                break
+            current.append(i)
+            self.backtrack(k - 1, n - i, i + 1, current, result)
+            current.pop() 
+
+```
+
 
 ## Explanation
 

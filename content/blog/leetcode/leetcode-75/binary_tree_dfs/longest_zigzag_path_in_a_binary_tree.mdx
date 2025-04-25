@@ -1,9 +1,9 @@
 ---
 title: Longest ZigZag Path in a Binary Tree
 description: Find the longest ZigZag path in a binary tree. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -57,10 +58,9 @@ Output: 0
 - The number of nodes in the tree is in the range `[1, 5 * 10^4]`.
 - `1 <= Node.val <= 100`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for a binary tree node.
 type TreeNode struct {
     Val   int
     Left  *TreeNode
@@ -91,7 +91,7 @@ func longestZigZag(root *TreeNode) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class TreeNode {
@@ -121,6 +121,35 @@ class Solution {
         }
     }
 }
+```
+### Implementatsi in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def longestZigZag(self, root: TreeNode) -> int:
+        self.maxLen = 0
+
+        def dfs(node, direction, length):
+            if not node:
+                return
+            self.maxLen = max(self.maxLen, length)
+            if direction == 'left':
+                dfs(node.left, 'right', length + 1)
+                dfs(node.right, 'left', 1)
+            else:
+                dfs(node.right, 'left', length + 1)
+                dfs(node.left, 'right', 1)
+
+        dfs(root, 'left', 0)
+        dfs(root, 'right', 0)
+
+        return self.maxLen
 ```
 
 ## Conclusion

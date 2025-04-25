@@ -1,9 +1,9 @@
 ---
 title: N-th Tribonacci Number
 description: Implementation of the N-th Tribonacci Number algorithm with Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -54,7 +55,7 @@ Output: 1389537
 
 We can solve this problem using **Dynamic Programming (DP)**.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func tribonacci(n int) int {
@@ -73,7 +74,7 @@ func tribonacci(n int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Solution {
@@ -91,6 +92,24 @@ class Solution {
         return t2;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def tribonacci(self, n: int) -> int:
+        if n == 0:
+            return 0
+        if n == 1 or n == 2:
+            return 1
+
+        t0, t1, t2 = 0, 1, 1
+        for _ in range(3, n + 1):
+            t3 = t0 + t1 + t2
+            t0, t1, t2 = t1, t2, t3
+        
+        return t2
 ```
 
 ## Explanation

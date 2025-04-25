@@ -1,9 +1,9 @@
 ---
 title: Maximum Average Subarray I
 description: Find the contiguous subarray of length k with the maximum average value. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -111,6 +112,21 @@ public class Solution {
     }
 }
 ```
+
+### Implementation in Python
+```python
+class Solution:
+    def findMaxAverage(self, nums: list[int], k: int) -> float:
+        total = sum(nums[:k])
+        max_sum = total
+
+        for i in range(k, len(nums)):
+            total += nums[i] - nums[i - k]
+            max_sum = max(max_sum, total)
+
+        return max_sum / k
+```
+
 
 ## Explanation
 

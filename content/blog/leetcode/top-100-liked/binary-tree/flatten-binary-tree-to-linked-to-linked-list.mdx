@@ -154,6 +154,36 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+from typing import Optional
+
+class TreeNode:
+    def __init__(self, val: int = 0, left: Optional['TreeNode'] = None, right: Optional['TreeNode'] = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def flatten(self, root: Optional[TreeNode]) -> None:
+        if not root:
+            return
+        
+        self.flatten(root.left)
+        self.flatten(root.right)
+        
+        temp = root.right
+        root.right = root.left
+        root.left = None
+        
+        curr = root
+        while curr.right:
+            curr = curr.right
+        curr.right = temp
+```
+
+
 ## Explanation
 
 - Both implementations first flatten the left and right subtrees recursively.

@@ -137,6 +137,31 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+import heapq
+
+class Solution:
+    def findKthLargest(self, nums, k):
+        min_heap = []
+        
+        for num in nums:
+            heapq.heappush(min_heap, num)  # Push element to the min heap
+            if len(min_heap) > k:
+                heapq.heappop(min_heap)  # Remove the smallest element if heap exceeds size k
+                
+        return min_heap[0]  # The root of the heap is the k-th largest element
+
+# Example usage:
+sol = Solution()
+print(sol.findKthLargest([3,2,1,5,6,4], 2))  # Output: 5
+
+```
+
+
+
+
 ## Explanation
 
 - **Min-Heap Approach:**

@@ -14,9 +14,9 @@ export default function HomeHeader() {
             }}
           options={{
             strings: [
-              "I'll be improving my learning in backend...",
-              "Machine learning...",
-              "And a little bit of frontend.",
+              "Continuously advancing my backend development skills...",
+              "Exploring machine learning...",
+              "strengthening my frontend capabilities..",
             ],
             autoStart: true,
             loop: true,

@@ -1,9 +1,9 @@
 ---
 title: Find Peak Element
 description: Implementation of the Find Peak Element algorithm with Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -58,7 +59,7 @@ Explanation: Your function can return either index number 1 where the peak eleme
 
 We can solve this problem efficiently using **Binary Search**.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func findPeakElement(nums []int) int {
@@ -77,7 +78,7 @@ func findPeakElement(nums []int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Solution {
@@ -97,6 +98,23 @@ class Solution {
     }
 }
 ```
+### Implementation in Python
+
+```python
+class Solution:
+    def findPeakElement(self, nums: List[int]) -> int:
+        left, right = 0, len(nums) - 1
+
+        while left < right:
+            mid = left + (right - left) // 2
+            if nums[mid] > nums[mid + 1]:
+                right = mid
+            else:
+                left = mid + 1
+
+        return left
+```
+
 
 ## Explanation
 

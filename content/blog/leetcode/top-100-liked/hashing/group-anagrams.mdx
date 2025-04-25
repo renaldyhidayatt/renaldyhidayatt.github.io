@@ -134,6 +134,28 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+from collections import defaultdict
+
+class Solution:
+    def groupAnagrams(self, strs: list[str]) -> list[list[str]]:
+        anagram_map = defaultdict(list)
+        for str in strs:
+            sorted_str = ''.join(sorted(str))
+            anagram_map[sorted_str].append(str)
+        
+        return list(anagram_map.values())
+
+# Contoh penggunaan
+if __name__ == "__main__":
+    sol = Solution()
+    print(sol.groupAnagrams(["eat", "tea", "tan", "ate", "nat", "bat"]))
+    # Output: [['eat', 'tea', 'ate'], ['tan', 'nat'], ['bat']]
+```
+
+
 ## Explanation
 
 - We use a **hashmap** where the sorted version of a string serves as a unique key.

@@ -1,9 +1,9 @@
 ---
 title: Reorder Routes to Make All Paths Lead to the City Zero
 description: Find the minimum number of edges that need to be changed to ensure all paths lead to city 0. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -63,7 +64,7 @@ Output: 0
 - `0 <= ai, bi <= n - 1`
 - `ai != bi`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func minReorder(n int, connections [][]int) int {
@@ -91,7 +92,7 @@ func minReorder(n int, connections [][]int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Solution {
@@ -100,8 +101,8 @@ class Solution {
         for (int i = 0; i < n; i++) graph[i] = new ArrayList<>();
         
         for (int[] conn : connections) {
-            graph[conn[0]].add(new int[]{conn[1], 1}); // directed edge
-            graph[conn[1]].add(new int[]{conn[0], 0}); // reverse direction
+            graph[conn[0]].add(new int[]{conn[1], 1});
+            graph[conn[1]].add(new int[]{conn[0], 0}); 
         }
         
         boolean[] visited = new boolean[n];
@@ -120,6 +121,33 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def minReorder(self, n: int, connections: List[List[int]]) -> int:
+        graph = [[] for _ in range(n)]
+        
+        for conn in connections:
+            graph[conn[0]].append((conn[1], 1))  
+            graph[conn[1]].append((conn[0], 0)) 
+        
+        visited = [False] * n
+        
+        def dfs(city: int) -> int:
+            visited[city] = True
+            count = 0
+            for next_city, reorder_needed in graph[city]:
+                if not visited[next_city]:
+                    count += reorder_needed + dfs(next_city)
+            return count
+        
+        return dfs(0)
+```
+
 
 ## Conclusion
 

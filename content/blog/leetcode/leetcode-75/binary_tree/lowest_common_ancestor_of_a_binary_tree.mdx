@@ -1,9 +1,9 @@
 ---
 title: Lowest Common Ancestor of a Binary Tree
 description: Find the lowest common ancestor (LCA) of two given nodes in a binary tree. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -50,10 +51,9 @@ Output: 1
 - `p != q`
 - `p` and `q` will exist in the tree.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for a binary tree node.
 type TreeNode struct {
     Val   int
     Left  *TreeNode
@@ -76,7 +76,7 @@ func lowestCommonAncestor(root, p, q *TreeNode) *TreeNode {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class TreeNode {
@@ -98,6 +98,28 @@ class Solution {
         return left != null ? left : right;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def lowestCommonAncestor(self, root: TreeNode, p: TreeNode, q: TreeNode) -> TreeNode:
+        if root is None or root == p or root == q:
+            return root
+        
+        left = self.lowestCommonAncestor(root.left, p, q)
+        right = self.lowestCommonAncestor(root.right, p, q)
+        
+        if left and right:
+            return root
+        return left if left else right
 ```
 
 ## Conclusion

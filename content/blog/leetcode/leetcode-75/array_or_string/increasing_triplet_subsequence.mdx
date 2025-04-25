@@ -1,7 +1,7 @@
 ---
-title: Increasing Triplet Subsequence
+title: "334.Increasing Triplet Subsequence"
 description: Determine if there exists an increasing triplet subsequence in an array in O(n) time complexity. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
 published: false
 ---
@@ -14,6 +14,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -55,11 +56,36 @@ Given an integer array `nums`, return `true` if there exists a triple of indices
    - Else, return `true` (a valid triplet is found).
 3. If no triplet is found, return `false`.
 
+## Flowchart
+
+```plaintext
+@startuml
+start
+:Initialize first = MAX_INT;
+:Initialize second = MAX_INT;
+:Iterate through each num in nums;
+
+while (More elements in nums?) is (Yes)
+    if (num <= first?) then (Yes)
+        :Update first = num;
+    else if (num <= second?) then (Yes)
+        :Update second = num;
+    else
+        :Return true (Triplet found);
+        stop
+    endif
+endwhile
+
+:Return false (No triplet found);
+stop
+@enduml
+```
+
 ## Implementations
-### Implementation in Go
+### **Implementation in Go**
 ```go
 func increasingTriplet(nums []int) bool {
-    first, second := int(^uint(0) >> 1), int(^uint(0) >> 1) // Initialize to max int
+    first, second := int(^uint(0) >> 1), int(^uint(0) >> 1)
     
     for _, num := range nums {
         if num <= first {
@@ -74,7 +100,7 @@ func increasingTriplet(nums []int) bool {
 }
 ```
 
-### Implementation in Java
+### **Implementation in Java**
 ```java
 class Solution {
     public boolean increasingTriplet(int[] nums) {
@@ -92,6 +118,25 @@ class Solution {
         return false;
     }
 }
+```
+
+### **Implementation in Python**
+
+```python
+from typing import List
+
+class Solution:
+    def increasingTriplet(self, nums: List[int]) -> bool:
+        first = second = float('inf') 
+
+        for num in nums:
+            if num <= first:
+                first = num
+            elif num <= second:
+                second = num
+            else:
+                return True
+        return False
 ```
 
 ## Explanation

@@ -113,11 +113,6 @@ func findMin(nums []int) int {
     }
     return nums[left]
 }
-
-func main() {
-    nums := []int{3,4,5,1,2}
-    fmt.Println(findMin(nums)) // Output: 1
-}
 ```
 
 ### Implementation in Java
@@ -137,14 +132,28 @@ class Solution {
         }
         return nums[left];
     }
-    
-    public static void main(String[] args) {
-        Solution sol = new Solution();
-        int[] nums = {4,5,6,7,0,1,2};
-        System.out.println(sol.findMin(nums)); // Output: 0
-    }
 }
 ```
+
+### Implementation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def findMin(self, nums: List[int]) -> int:
+        left, right = 0, len(nums) - 1
+        
+        while left < right:
+            mid = left + (right - left) // 2
+            if nums[mid] > nums[right]:
+                left = mid + 1
+            else:
+                right = mid
+        
+        return nums[left]
+```
+
 
 ## Explanation
 

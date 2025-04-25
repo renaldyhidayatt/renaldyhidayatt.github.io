@@ -1,0 +1,156 @@
+---
+title: "Basic Joins in SQL"
+description: "Introduction to fundamental SQL joins, including INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN, with examples and use cases."
+tags: ["SQL", "joins", "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN", "database"]
+date: "2025-03-03"
+published: false
+---
+
+
+
+
+## 1661. Average Time of Process per Machine
+
+### Problem Statement
+
+The objective is to calculate the average time each machine takes to complete a process. Each process has a `start` and `end` timestamp, and the time to complete a process is the difference between the `end` and `start` timestamps. The average time for a machine is the total time for all its processes divided by the number of processes, rounded to 3 decimal places.
+
+---
+
+### Input Table Structure
+
+#### Activity Table
+
+| Column Name    | Type    | Description                                 |
+|----------------|---------|---------------------------------------------|
+| `machine_id`   | `int`   | Unique ID of the machine.                  |
+| `process_id`   | `int`   | Unique ID of the process running on the machine. |
+| `activity_type`| `enum`  | Can be `'start'` or `'end'`.               |
+| `timestamp`    | `float` | Time in seconds for the activity.          |
+
+- **Primary Key**: (`machine_id`, `process_id`, `activity_type`)
+- Each (`machine_id`, `process_id`) pair always has a `'start'` and `'end'` activity.
+- `'start'` timestamp will always precede `'end'`.
+
+---
+
+### Example Input and Output
+
+#### Input Table
+
+```table
+| machine_id | process_id | activity_type | timestamp |
+|------------|------------|---------------|-----------|
+| 0          | 0          | start         | 0.712     |
+| 0          | 0          | end           | 1.520     |
+| 0          | 1          | start         | 3.140     |
+| 0          | 1          | end           | 4.120     |
+| 1          | 0          | start         | 0.550     |
+| 1          | 0          | end           | 1.550     |
+| 1          | 1          | start         | 0.430     |
+| 1          | 1          | end           | 1.420     |
+| 2          | 0          | start         | 4.100     |
+| 2          | 0          | end           | 4.512     |
+| 2          | 1          | start         | 2.500     |
+| 2          | 1          | end           | 5.000     |
+```
+
+#### Output Table
+
+```table
+| machine_id | processing_time |
+|------------|-----------------|
+| 0          | 0.894           |
+| 1          | 0.995           |
+| 2          | 1.456           |
+```
+
+
+### SQL Solution
+The task can be solved by grouping the processes by machine_id and calculating the difference between the end and start timestamps for each process_id.
+
+### SQL Query
+
+```sql
+WITH ProcessTime AS (
+    SELECT
+        machine_id,
+        process_id,
+        MAX(CASE WHEN activity_type = 'end' THEN timestamp END) -
+        MAX(CASE WHEN activity_type = 'start' THEN timestamp END) AS process_time
+    FROM Activity
+    GROUP BY machine_id, process_id
+)
+SELECT
+    machine_id,
+    ROUND(AVG(process_time), 3) AS processing_time
+FROM ProcessTime
+GROUP BY machine_id;
+```
+
+
+### Explanation
+1. WITH ProcessTime:
+  - Calculate the process time for each machine_id and process_id.
+  - Use conditional aggregation (CASE WHEN) to extract the end and start timestamps and compute their difference.
+
+
+2. Final Selection:
+
+  - Calculate the average process time for each machine_id using AVG and round the result to 3 decimal places using ROUND.
+
+
+### MongoDB Solution
+In MongoDB, we can use the aggregation framework to calculate the average processing time per machine.
+
+### MongoDB Query
+
+```javascript
+db.activity.aggregate([
+  {
+    $group: {
+      _id: { machine_id: "$machine_id", process_id: "$process_id" },
+      start_time: { $max: { $cond: [{ $eq: ["$activity_type", "start"] }, "$timestamp", null] } },
+      end_time: { $max: { $cond: [{ $eq: ["$activity_type", "end"] }, "$timestamp", null] } }
+    }
+  },
+  {
+    $project: {
+      machine_id: "$_id.machine_id",
+      process_time: { $subtract: ["$end_time", "$start_time"] }
+    }
+  },
+  {
+    $group: {
+      _id: "$machine_id",
+      avg_processing_time: { $avg: "$process_time" }
+    }
+  },
+  {
+    $project: {
+      machine_id: "$_id",
+      processing_time: { $round: ["$avg_processing_time", 3] }
+    }
+  }
+]);
+```
+
+
+### Explanation
+1. $group (First Stage):
+
+  - Group by machine_id and process_id to compute the start_time and end_time for each process.
+
+2. $project (Second Stage):
+
+  - Calculate the process time (end_time - start_time) for each process.
+
+3. $group (Third Stage):
+
+  - Group by machine_id to calculate the average processing time across all processes for each machine.
+
+4. $project (Final Stage):
+
+  - Round the result to 3 decimal places using $round.
+
+------------

@@ -1,9 +1,9 @@
 ---
 title: Reverse Linked List
 description: Reverse a singly linked list using iterative and recursive approaches. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -51,16 +52,15 @@ Output: []
 
 **Follow-up:** Can you implement both iterative and recursive solutions?
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for singly-linked list.
 type ListNode struct {
     Val  int
     Next *ListNode
 }
 
-// Iterative approach
+
 func reverseList(head *ListNode) *ListNode {
     var prev *ListNode
     current := head
@@ -73,7 +73,7 @@ func reverseList(head *ListNode) *ListNode {
     return prev
 }
 
-// Recursive approach
+
 func reverseListRecursive(head *ListNode) *ListNode {
     if head == nil || head.Next == nil {
         return head
@@ -85,7 +85,7 @@ func reverseListRecursive(head *ListNode) *ListNode {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class ListNode {
@@ -95,7 +95,6 @@ class ListNode {
 }
 
 class Solution {
-    // Iterative approach
     public ListNode reverseList(ListNode head) {
         ListNode prev = null, current = head;
         while (current != null) {
@@ -107,7 +106,6 @@ class Solution {
         return prev;
     }
 
-    // Recursive approach
     public ListNode reverseListRecursive(ListNode head) {
         if (head == null || head.next == null) {
             return head;
@@ -118,6 +116,35 @@ class Solution {
         return newHead;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class Solution:
+    def reverseList(self, head: ListNode) -> ListNode:
+        prev = None
+        current = head
+        while current:
+            next_node = current.next
+            current.next = prev
+            prev = current
+            current = next_node
+        return prev
+
+    def reverseListRecursive(self, head: ListNode) -> ListNode:
+        if not head or not head.next:
+            return head
+        new_head = self.reverseListRecursive(head.next)
+        head.next.next = head
+        head.next = None
+        return new_head
+
 ```
 
 ## Conclusion

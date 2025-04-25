@@ -1,9 +1,9 @@
 ---
 title: Evaluate Division
 description: Solve the problem of evaluating division using graph-based approaches. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -62,7 +63,7 @@ Output: [0.50000,2.00000,-1.00000,-1.00000]
 - `1 <= Cj.length, Dj.length <= 5`
 - `Ai, Bi, Cj, Dj` consist of lowercase English letters and digits.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func calcEquation(equations [][]string, values []float64, queries [][]string) []float64 {
@@ -109,7 +110,7 @@ func calcEquation(equations [][]string, values []float64, queries [][]string) []
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -147,6 +148,40 @@ class Solution {
         return -1.0;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+from typing import List
+from collections import defaultdict
+
+class Solution:
+    def calcEquation(self, equations: List[List[str]], values: List[float], queries: List[List[str]]) -> List[float]:
+        graph = defaultdict(dict)
+
+       
+        for (a, b), value in zip(equations, values):
+            graph[a][b] = value
+            graph[b][a] = 1.0 / value
+
+        def dfs(src: str, dst: str, visited: set) -> float:
+            if src not in graph or dst not in graph:
+                return -1.0
+            if dst in graph[src]:
+                return graph[src][dst]
+            visited.add(src)
+            for neighbor, weight in graph[src].items():
+                if neighbor not in visited:
+                    res = dfs(neighbor, dst, visited)
+                    if res != -1.0:
+                        return weight * res
+            return -1.0
+
+        result = []
+        for a, b in queries:
+            result.append(dfs(a, b, set()))
+        return result
 ```
 
 ## Conclusion

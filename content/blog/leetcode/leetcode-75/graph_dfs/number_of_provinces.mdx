@@ -1,9 +1,9 @@
 ---
 title: Number of Provinces
 description: Find the number of connected components (provinces) in a graph representation of cities. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -53,7 +54,7 @@ Output: 3
 - `isConnected[i][i] == 1`
 - `isConnected[i][j] == isConnected[j][i]`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func findCircleNum(isConnected [][]int) int {
@@ -83,7 +84,7 @@ func findCircleNum(isConnected [][]int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Solution {
@@ -111,6 +112,33 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def findCircleNum(self, isConnected: List[List[int]]) -> int:
+        n = len(isConnected)
+        visited = [False] * n
+        count = 0
+
+        def dfs(i: int):
+            for j in range(n):
+                if isConnected[i][j] == 1 and not visited[j]:
+                    visited[j] = True
+                    dfs(j)
+
+        for i in range(n):
+            if not visited[i]:
+                visited[i] = True
+                dfs(i)
+                count += 1
+
+        return count
+```
+
 
 ## Conclusion
 

@@ -142,6 +142,35 @@ class BinaryTreeMaximumPathSum {
 }
 ```
 
+### Implementation in Python
+
+```python
+from typing import Optional
+
+class TreeNode:
+    def __init__(self, val: int, left: Optional['TreeNode']=None, right: Optional['TreeNode']=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class BinaryTreeMaximumPathSum:
+    def __init__(self):
+        self.maxSum = float('-inf')
+
+    def maxPathSum(self, root: Optional[TreeNode]) -> int:
+        def dfs(node: Optional[TreeNode]) -> int:
+            if not node:
+                return 0
+            left = max(0, dfs(node.left))
+            right = max(0, dfs(node.right))
+            self.maxSum = max(self.maxSum, node.val + left + right)
+            return node.val + max(left, right)
+        
+        dfs(root)
+        return self.maxSum
+```
+
+
 ## Explanation
 
 Both implementations use **DFS** to compute the maximum path sum efficiently. The key idea is to avoid negative contributions and always consider the maximum contribution a subtree can provide.

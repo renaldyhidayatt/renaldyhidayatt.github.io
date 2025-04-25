@@ -1,9 +1,9 @@
 ---
 title: Maximum Depth of Binary Tree
 description: Find the maximum depth of a binary tree. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -41,10 +42,9 @@ Output: 2
 - The number of nodes in the tree is in the range `[0, 10^4]`.
 - `-100 <= Node.val <= 100`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for a binary tree node.
 type TreeNode struct {
     Val   int
     Left  *TreeNode
@@ -68,7 +68,7 @@ func max(a, b int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class TreeNode {
@@ -89,6 +89,26 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def maxDepth(self, root: TreeNode) -> int:
+        if root is None:
+            return 0
+        left_depth = self.maxDepth(root.left)
+        right_depth = self.maxDepth(root.right)
+        return max(left_depth, right_depth) + 1
+
+```
+
 
 ## Conclusion
 

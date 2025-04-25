@@ -1,9 +1,9 @@
 ---
 title: Search in a Binary Search Tree
 description: Given the root of a Binary Search Tree (BST) and a value, find the node with that value and return its subtree. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -45,7 +46,7 @@ Output: []
 - `root` is a **binary search tree**.
 - `1 <= val <= 10^7`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 type TreeNode struct {
@@ -65,7 +66,7 @@ func searchBST(root *TreeNode, val int) *TreeNode {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class TreeNode {
@@ -83,6 +84,25 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def searchBST(self, root: TreeNode, val: int) -> TreeNode:
+        if root is None or root.val == val:
+            return root
+        if val < root.val:
+            return self.searchBST(root.left, val)
+        return self.searchBST(root.right, val)
+```
+
 
 ## Conclusion
 

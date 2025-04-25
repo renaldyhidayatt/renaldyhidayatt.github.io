@@ -1,9 +1,9 @@
 ---
 title: Removing Stars From a String
 description: Remove stars from a string by deleting the closest non-star character to its left. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -117,6 +118,21 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def removeStars(self, s: str) -> str:
+        stack = []
+        for ch in s:
+            if ch == '*':
+                stack.pop()
+            else:
+                stack.append(ch)
+        return ''.join(stack)
+```
+
 
 ## Explanation
 

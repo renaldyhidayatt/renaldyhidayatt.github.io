@@ -1,9 +1,9 @@
 ---
 title: Total Cost to Hire K Workers
 description: Implementation of Total Cost to Hire K Workers algorithm with Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -53,7 +54,7 @@ Output: 4
 - `1 <= costs[i] <= 10^5`
 - `1 <= k, candidates <= costs.length`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 import (
@@ -90,7 +91,7 @@ func totalCost(costs []int, k int, candidates int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -112,6 +113,26 @@ class Solution {
     }
 }
 ```
+### Implementation in Python
+
+```python
+import heapq
+
+class Solution:
+    def totalCost(self, costs, k, candidates):
+        min_heap = []
+        total_cost = 0
+
+        for i in range(k):
+            heapq.heappush(min_heap, costs[i])
+
+        for _ in range(k):
+            total_cost += heapq.heappop(min_heap)
+
+        return total_cost
+
+```
+
 
 ## Conclusion
 

@@ -1,9 +1,9 @@
 ---
 title: Pivot Index
 description: Find the pivot index in an array where the sum of the left elements equals the sum of the right elements. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -125,6 +126,23 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def pivotIndex(self, nums: list[int]) -> int:
+        total_sum = sum(nums)
+        left_sum = 0
+        
+        for i, num in enumerate(nums):
+            if left_sum * 2 + num == total_sum:
+                return i
+            left_sum += num
+        
+        return -1
+```
+
 
 ## Explanation
 

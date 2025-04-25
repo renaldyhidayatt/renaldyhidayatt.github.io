@@ -1,9 +1,9 @@
 ---
 title: Find the Highest Altitude
 description: Given an array of altitude gains, find the highest altitude a biker reaches during a trip. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -104,6 +105,20 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+```python
+class Solution:
+    def largestAltitude(self, gain: list[int]) -> int:
+        altitude = 0
+        max_altitude = 0
+        for g in gain:
+            altitude += g
+            max_altitude = max(max_altitude, altitude)
+        return max_altitude
+
+```
+
 
 ## Explanation
 

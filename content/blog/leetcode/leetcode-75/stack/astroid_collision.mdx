@@ -1,9 +1,9 @@
 ---
 title: Asteroid Collision
 description: Determine the final state of asteroids after collisions based on their size and direction. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -138,6 +139,30 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+```python
+from typing import List
+
+class Solution:
+    def asteroidCollision(self, asteroids: List[int]) -> List[int]:
+        stack = []
+        for ast in asteroids:
+            while stack and ast < 0 < stack[-1]:
+                top = stack.pop()
+                if top > -ast:
+                    stack.append(top)
+                    ast = 0
+                    break
+                elif top == -ast:
+                    ast = 0
+                    break
+            if ast != 0:
+                stack.append(ast)
+        return stack
+```
+
+
 
 ## Explanation
 

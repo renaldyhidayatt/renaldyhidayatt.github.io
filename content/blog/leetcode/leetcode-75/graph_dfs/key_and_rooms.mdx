@@ -1,9 +1,9 @@
 ---
 title: Keys and Rooms
 description: Determine if all rooms in a graph can be visited using keys found in other rooms. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -51,7 +52,7 @@ Output: false
 - `0 <= rooms[i][j] < n`
 - All the values of `rooms[i]` are unique.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func canVisitAllRooms(rooms [][]int) bool {
@@ -78,7 +79,7 @@ func canVisitAllRooms(rooms [][]int) bool {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -103,6 +104,27 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def canVisitAllRooms(self, rooms: List[List[int]]) -> bool:
+        visited = [False] * len(rooms)
+
+        def dfs(room: int):
+            if visited[room]:
+                return
+            visited[room] = True
+            for key in rooms[room]:
+                dfs(key)
+
+        dfs(0)
+        return all(visited)
+```
+
 
 ## Conclusion
 

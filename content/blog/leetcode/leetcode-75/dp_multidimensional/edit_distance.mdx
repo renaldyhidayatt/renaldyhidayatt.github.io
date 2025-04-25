@@ -1,9 +1,9 @@
 ---
 title: Edit Distance
 description: Implementation of the Edit Distance algorithm in Go and Java. 
-tags: ["leetcode", "golang", "java", "algorithms"] 
-date: "2025-03-02" 
-published: false
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
+date: "2025-03-02"
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -65,7 +66,7 @@ exection -> execution (insert 'u')
 
 We can solve this problem using **Dynamic Programming (DP)**.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func minDistance(word1 string, word2 string) int {
@@ -104,7 +105,7 @@ func min(a, b, c int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class Solution {
@@ -129,6 +130,32 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def minDistance(self, word1: str, word2: str) -> int:
+        m, n = len(word1), len(word2)
+        dp = [[0] * (n + 1) for _ in range(m + 1)]
+
+        for i in range(m + 1):
+            for j in range(n + 1):
+                if i == 0:
+                    dp[i][j] = j  
+                elif j == 0:
+                    dp[i][j] = i 
+                elif word1[i - 1] == word2[j - 1]:
+                    dp[i][j] = dp[i - 1][j - 1] 
+                else:
+                    dp[i][j] = 1 + min(
+                        dp[i - 1][j],    
+                        dp[i][j - 1],    
+                        dp[i - 1][j - 1]  
+                    )
+        return dp[m][n]
+```
+
 
 ## Explanation
 

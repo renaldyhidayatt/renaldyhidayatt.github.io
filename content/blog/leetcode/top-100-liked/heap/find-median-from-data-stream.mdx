@@ -131,6 +131,48 @@ class MedianFinder {
 }
 ```
 
+### Implementation in Python
+
+```python
+import heapq
+
+class MedianFinder:
+    def __init__(self):
+        # Max heap for the left half (invert values for max heap functionality)
+        self.left = []
+        # Min heap for the right half
+        self.right = []
+
+    def addNum(self, num: int):
+        if len(self.left) == 0 or num <= -self.left[0]:
+            heapq.heappush(self.left, -num)  # Use negative for max heap
+        else:
+            heapq.heappush(self.right, num)
+
+        # Balance the heaps
+        if len(self.left) > len(self.right) + 1:
+            heapq.heappush(self.right, -heapq.heappop(self.left))
+        elif len(self.right) > len(self.left):
+            heapq.heappush(self.left, -heapq.heappop(self.right))
+
+    def findMedian(self) -> float:
+        if len(self.left) > len(self.right):
+            return -self.left[0]
+        return (-self.left[0] + self.right[0]) / 2.0
+
+# Example usage:
+if __name__ == "__main__":
+    mf = MedianFinder()
+    mf.addNum(1)
+    mf.addNum(2)
+    print(mf.findMedian())  # Output: 1.5
+    mf.addNum(3)
+    print(mf.findMedian())  # Output: 2
+```
+
+
+
+
 ## Explanation
 
 - **Two Heap Approach:**

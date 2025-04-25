@@ -1,9 +1,9 @@
 ---
 title: Unique Number of Occurrences
 description: Check if the number of occurrences of each value in an array is unique. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -114,6 +115,23 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def uniqueOccurrences(self, arr: list[int]) -> bool:
+        count_map = {}
+        
+        for num in arr:
+            count_map[num] = count_map.get(num, 0) + 1
+        
+        occurrence_set = set(count_map.values())
+        
+        return len(count_map) == len(occurrence_set)
+
+```
+
 
 ## Explanation
 

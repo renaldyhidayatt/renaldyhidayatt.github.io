@@ -1,9 +1,9 @@
 ---
 title: Odd Even Linked List
 description: Group nodes of a singly linked list by odd and even indices while maintaining relative order. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -49,10 +50,9 @@ Output: [2,3,6,7,1,5,4]
 - The number of nodes in the linked list is in the range `[0, 10^4]`.
 - `-10^6 <= Node.val <= 10^6`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for singly-linked list.
 type ListNode struct {
     Val  int
     Next *ListNode
@@ -74,7 +74,7 @@ func oddEvenList(head *ListNode) *ListNode {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class ListNode {
@@ -100,6 +100,35 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class Solution:
+    def oddEvenList(self, head: ListNode) -> ListNode:
+        if not head:
+            return None
+
+        odd = head
+        even = head.next
+        even_head = even
+
+        while even and even.next:
+            odd.next = even.next
+            odd = odd.next
+            even.next = odd.next
+            even = even.next
+
+        odd.next = even_head
+        return head
+
+```
+
 
 ## Conclusion
 

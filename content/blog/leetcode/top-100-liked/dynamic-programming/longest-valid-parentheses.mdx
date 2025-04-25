@@ -158,6 +158,35 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+class Solution:
+    def longestValidParentheses(self, s: str) -> int:
+        max_len = 0
+        stack = [-1]  # Initializing the stack with -1
+        
+        for i in range(len(s)):
+            if s[i] == '(':
+                stack.append(i)
+            else:
+                stack.pop()
+                if not stack:
+                    stack.append(i)
+                else:
+                    max_len = max(max_len, i - stack[-1])
+        
+        return max_len
+
+# Testing the solution
+sol = Solution()
+print(sol.longestValidParentheses("(()"))       # Output: 2
+print(sol.longestValidParentheses(")()())"))    # Output: 4
+print(sol.longestValidParentheses(""))          # Output: 0
+
+```
+
+
 ## Explanation
 
 - The **stack-based approach** ensures that unmatched parentheses are tracked efficiently.

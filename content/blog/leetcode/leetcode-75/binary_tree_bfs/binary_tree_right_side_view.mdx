@@ -1,9 +1,9 @@
 ---
 title: Binary Tree Right Side View
 description: Return the values of the nodes visible from the right side of a binary tree. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -54,7 +55,7 @@ Output: []
 - The number of nodes in the tree is in the range `[0, 100]`.
 - `-100 <= Node.val <= 100`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 type TreeNode struct {
@@ -91,7 +92,7 @@ func rightSideView(root *TreeNode) []int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -125,6 +126,37 @@ class Solution {
     }
 }
 ```
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def rightSideView(self, root: TreeNode):
+        if root is None:
+            return []
+        
+        result = []
+        queue = [root]
+        
+        while queue:
+            level_size = len(queue)
+            for i in range(level_size):
+                node = queue.pop(0)
+                if i == level_size - 1:
+                    result.append(node.val)
+                if node.left:
+                    queue.append(node.left)
+                if node.right:
+                    queue.append(node.right)
+        
+        return result
+```
+
 
 ## Conclusion
 

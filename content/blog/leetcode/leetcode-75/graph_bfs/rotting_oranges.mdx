@@ -1,9 +1,9 @@
 ---
 title: Rotting Oranges
 description: Solve the problem of simulating the rotting of oranges using BFS. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -60,7 +61,7 @@ Output: 0
 - `1 <= m, n <= 10`
 - `grid[i][j]` is `0`, `1`, or `2`.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func orangesRotting(grid [][]int) int {
@@ -101,7 +102,7 @@ func orangesRotting(grid [][]int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -142,6 +143,42 @@ class Solution {
     }
 }
 ```
+
+
+### Implementation in Python
+
+```python
+from collections import deque
+
+class Solution:
+    def orangesRotting(self, grid: list[list[int]]) -> int:
+        rows, cols = len(grid), len(grid[0])
+        queue = deque()
+        fresh_oranges = 0
+        minutes = 0
+
+        for i in range(rows):
+            for j in range(cols):
+                if grid[i][j] == 2:
+                    queue.append((i, j, 0))  
+                elif grid[i][j] == 1:
+                    fresh_oranges += 1
+
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        while queue:
+            r, c, time = queue.popleft()
+
+            for dr, dc in directions:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:
+                    grid[nr][nc] = 2
+                    fresh_oranges -= 1
+                    queue.append((nr, nc, time + 1))
+                    minutes = time + 1
+
+        return minutes if fresh_oranges == 0 else -1
+```
+
 
 ## Conclusion
 

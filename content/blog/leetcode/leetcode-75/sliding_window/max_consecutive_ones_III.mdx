@@ -1,9 +1,9 @@
 ---
 title: Max Consecutive Ones III
 description: Find the contiguous subarray of length k with the maximum consecutive ones. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -125,6 +126,29 @@ public class Solution {
         return maxOnes;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def longestOnes(self, nums: list[int], k: int) -> int:
+        left = 0
+        max_ones = 0
+        zero_count = 0
+
+        for right in range(len(nums)):
+            if nums[right] == 0:
+                zero_count += 1
+
+            while zero_count > k:
+                if nums[left] == 0:
+                    zero_count -= 1
+                left += 1
+
+            max_ones = max(max_ones, right - left + 1)
+
+        return max_ones
 ```
 
 ## Explanation

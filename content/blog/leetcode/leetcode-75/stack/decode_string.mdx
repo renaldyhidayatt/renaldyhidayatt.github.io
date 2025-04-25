@@ -1,9 +1,9 @@
 ---
 title: Decode String
 description: Decode an encoded string using a stack-based approach. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,13 +15,14 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
 
 ## Problem Statement
 
-### 394. Decode String
+
 
 Given an encoded string, return its decoded string.
 
@@ -56,7 +57,7 @@ Output: "abcabccdcdcdef"
 - `s` is guaranteed to be a valid input.
 - All the integers in `s` are in the range `[1, 300]`.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 import "strings"
@@ -88,7 +89,7 @@ func decodeString(s string) string {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -122,6 +123,36 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def decodeString(self, s: str) -> str:
+        num_stack = []
+        str_stack = []
+        num = 0
+        curr_str = ""
+        
+        for ch in s:
+            if ch.isdigit():
+                num = num * 10 + int(ch)
+            elif ch == '[':
+                num_stack.append(num)
+                str_stack.append(curr_str)
+                num = 0
+                curr_str = ""
+            elif ch == ']':
+                repeat_count = num_stack.pop()
+                prev_str = str_stack.pop()
+                curr_str = prev_str + curr_str * repeat_count
+            else:
+                curr_str += ch
+        
+        return curr_str
+```
+
+
 
 ## Conclusion
 

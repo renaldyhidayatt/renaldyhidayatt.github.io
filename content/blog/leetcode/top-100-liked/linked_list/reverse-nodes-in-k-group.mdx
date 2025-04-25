@@ -140,6 +140,47 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+class ListNode:
+    def __init__(self, x):
+        self.val = x
+        self.next = None
+
+class Solution:
+    def reverseKGroup(self, head: ListNode, k: int) -> ListNode:
+        curr = head
+        count = 0
+        
+        # First, check if there are at least k nodes
+        while count < k and curr:
+            curr = curr.next
+            count += 1
+        
+        if count < k:
+            return head
+        
+        prev = None
+        curr = head
+        
+        # Reverse k nodes
+        for _ in range(k):
+            temp = curr.next
+            curr.next = prev
+            prev = curr
+            curr = temp
+        
+        # Recursively call for the remaining nodes
+        head.next = self.reverseKGroup(curr, k)
+        
+        return prev
+
+```
+
+
+
+
 ## Explanation
 
 - **Recursive Reversal Approach:**

@@ -113,6 +113,23 @@ class SingleNumber {
 }
 ```
 
+### Implementation in Python
+
+```python
+class SingleNumber:
+    def singleNumber(self, nums):
+        result = 0
+        for num in nums:
+            result ^= num
+        return result
+
+# Example usage
+if __name__ == "__main__":
+    sn = SingleNumber()
+    nums = [4, 1, 2, 1, 2]
+    print(sn.singleNumber(nums))  # Output: 4
+```
+
 ## Explanation
 
 - **Using XOR Operation:** Efficiently finds the unique element in `O(n)` time.

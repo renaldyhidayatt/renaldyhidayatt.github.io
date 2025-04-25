@@ -1,0 +1,125 @@
+---
+title: "Basic Joins in SQL"
+description: "Introduction to fundamental SQL joins, including INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN, with examples and use cases."
+tags: ["SQL", "joins", "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN", "database"]
+date: "2025-03-03"
+published: false
+---
+
+
+## 1068. Product Sales Analysis I
+
+### Problem Statement
+
+The task is to report the **product name**, **year**, and **price** for each sale in the **Sales** table. Each sale record corresponds to a product sold in a specific year. The product names are stored in a separate **Product** table. Your goal is to join the **Sales** table with the **Product** table and return the desired details.
+
+### Input Tables Structure
+
+#### Sales Table
+
+The `Sales` table contains the following columns:
+
+- **`sale_id`**: The unique identifier for the sale (Primary Key).
+- **`product_id`**: The identifier of the product sold (Foreign Key to `Product` table).
+- **`year`**: The year in which the sale occurred.
+- **`quantity`**: The quantity of the product sold.
+- **`price`**: The price per unit of the product sold.
+
+#### Product Table
+
+The `Product` table contains the following columns:
+
+- **`product_id`**: The unique identifier for the product (Primary Key).
+- **`product_name`**: The name of the product.
+
+### Constraints
+
+- The `sale_id` and `year` combination in the `Sales` table is unique, meaning each sale record is unique.
+- The `product_id` in the `Sales` table references a `product_id` in the `Product` table, establishing a relationship between products and their sales.
+
+---
+
+### Example Input
+
+#### Sales Table
+
+```table
+| sale_id | product_id | year | quantity | price |
+|---------|------------|------|----------|-------|
+| 1       | 100        | 2008 | 10       | 5000  |
+| 2       | 100        | 2009 | 12       | 5000  |
+| 7       | 200        | 2011 | 15       | 9000  |
+```
+
+#### Product Table
+
+```table
+| product_id | product_name |
+|------------|--------------|
+| 100        | Nokia        |
+| 200        | Apple        |
+| 300        | Samsung      |
+
+```
+
+#### Example Output
+
+```table
+| product_name | year  | price |
+|--------------|-------|-------|
+| Nokia        | 2008  | 5000  |
+| Nokia        | 2009  | 5000  |
+| Apple        | 2011  | 9000  |
+```
+
+### SQL Implementation
+To solve this problem in SQL, we will use a JOIN operation to combine the Sales and Product tables based on the product_id field. The query will then select the required columns: product_name, year, and price.
+
+
+### SQL Query
+
+```sql
+SELECT p.product_name, s.year, s.price
+FROM Sales s
+JOIN Product p ON s.product_id = p.product_id;
+```
+
+### Explanation
+- ``JOIN``: This operation joins the Sales table and the Product table on the product_id column. This allows us to access the product names from the Product table and match them with the sales in the Sales table.
+- ``s.year and s.price``: These fields are selected from the Sales table, and they represent the year of the sale and the price of the product for that sale.
+
+### NOSQL(MongoDB) Implementation
+
+In MongoDB, we can use an aggregation pipeline to achieve the same result. We will use the $lookup stage to join the Sales collection with the Product collection, and then project the necessary fields.
+
+### MongoDB Query
+
+```javascript
+db.sales.aggregate([
+  {
+    $lookup: {
+      from: "product",
+      localField: "product_id",
+      foreignField: "product_id",
+      as: "product_info"
+    }
+  },
+  {
+    $unwind: "$product_info"
+  },
+  {
+    $project: {
+      product_name: "$product_info.product_name",
+      year: 1,
+      price: 1
+    }
+  }
+]);
+```
+
+### Explanation
+1. ``$lookup``: This stage joins the sales collection with the product collection based on the product_id field. The result is stored in the product_info array.
+2. ``$unwind``: Since $lookup returns an array, we use $unwind to flatten the array into individual documents.
+3. ``$project``: This stage reshapes the output, selecting the product_name from the product_info array and the year and price fields from the sales collection.
+
+---------------

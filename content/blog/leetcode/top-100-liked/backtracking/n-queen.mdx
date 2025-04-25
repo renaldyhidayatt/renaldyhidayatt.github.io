@@ -171,6 +171,41 @@ public class NQueens {
 }
 ```
 
+### Implementation in Python
+```python
+from typing import List, Set
+
+class NQueens:
+    def solve_n_queens(self, n: int) -> List[List[str]]:
+        result = []
+        board = [['.' for _ in range(n)] for _ in range(n)]
+        self.backtrack(result, board, 0, set(), set(), set())
+        return result
+
+    def backtrack(self, result: List[List[str]], board: List[List[str]], row: int,
+                  cols: Set[int], diag1: Set[int], diag2: Set[int]):
+        if row == len(board):
+            solution = ["".join(r) for r in board]
+            result.append(solution)
+            return
+        
+        for col in range(len(board)):
+            if col in cols or (row - col) in diag1 or (row + col) in diag2:
+                continue
+
+            board[row][col] = 'Q'
+            cols.add(col)
+            diag1.add(row - col)
+            diag2.add(row + col)
+
+            self.backtrack(result, board, row + 1, cols, diag1, diag2)
+
+            board[row][col] = '.'
+            cols.remove(col)
+            diag1.remove(row - col)
+            diag2.remove(row + col)
+```
+
 ## Explanation
 
 The recursive function attempts to place queens row by row, ensuring that no two queens attack each other. If a valid placement is found, we store the board configuration and backtrack to explore other solutions.

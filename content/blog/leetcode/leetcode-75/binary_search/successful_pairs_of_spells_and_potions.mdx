@@ -1,9 +1,9 @@
 ---
 title: Successful Pairs of Spells and Potions
 description: Implementation of the Successful Pairs of Spells and Potions algorithm with Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -56,7 +57,7 @@ Output: [2,0,2]
 
 We can solve this problem efficiently using **Binary Search** after sorting the potions array. For each spell, we determine the minimum potion strength needed for a successful pair and use binary search to count valid pairs.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 import "sort"
@@ -75,7 +76,7 @@ func successfulPairs(spells []int, potions []int, success int64) []int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -98,6 +99,36 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def minEatingSpeed(self, piles: List[int], h: int) -> int:
+        left, right = 1, self.getMax(piles)
+
+        while left < right:
+            mid = left + (right - left) // 2
+            if self.canEatAll(piles, h, mid):
+                right = mid
+            else:
+                left = mid + 1
+
+        return left
+
+    def getMax(self, piles: List[int]) -> int:
+        return max(piles)
+
+    def canEatAll(self, piles: List[int], h: int, k: int) -> bool:
+        hours = 0
+        for bananas in piles:
+            hours += (bananas + k - 1) // k  
+        return hours <= h
+```
+
+
 
 ## Explanation
 

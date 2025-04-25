@@ -1,9 +1,9 @@
 ---
 title: Reverse Vowels of a String
 description: Reverse all vowels in a given string while maintaining the order of other characters. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -14,6 +14,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -155,6 +156,33 @@ class ReverseVowels {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def reverseVowels(self, s: str) -> str:
+        vowels = set("aeiouAEIOU")
+
+        def is_vowel(c: str) -> bool:
+            return c in vowels
+
+        chars = list(s)
+        left, right = 0, len(chars) - 1
+
+        while left < right:
+            while left < right and not is_vowel(chars[left]):
+                left += 1
+            while left < right and not is_vowel(chars[right]):
+                right -= 1
+            chars[left], chars[right] = chars[right], chars[left]
+            left += 1
+            right -= 1
+
+        return ''.join(chars)
+
+```
+
 
 ---
 

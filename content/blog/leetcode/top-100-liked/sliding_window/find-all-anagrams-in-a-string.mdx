@@ -127,6 +127,12 @@ func main() {
 }
 ```
 
+### Implementation in Python
+
+```python
+
+```
+
 ### Implementation in Java
 
 ```java
@@ -161,6 +167,49 @@ class FindAllAnagrams {
         System.out.println(solver.findAnagrams("cbaebabacd", "abc"));
     }
 }
+```
+
+### Implementation in Python
+
+```python
+from collections import defaultdict
+
+class FindAllAnagrams:
+    def findAnagrams(self, s: str, p: str):
+        result = []
+        if len(s) < len(p):
+            return result
+        
+        # Frequency arrays for p and the current window in s
+        freqP = [0] * 26
+        freqS = [0] * 26
+        
+        # Fill frequency arrays for p and the first window of s
+        for i in range(len(p)):
+            freqP[ord(p[i]) - ord('a')] += 1
+            freqS[ord(s[i]) - ord('a')] += 1
+        
+        # If initial window matches, add the index
+        if freqP == freqS:
+            result.append(0)
+        
+        # Sliding window
+        for i in range(len(p), len(s)):
+            # Include the next character in the window
+            freqS[ord(s[i]) - ord('a')] += 1
+            # Remove the character that's no longer in the window
+            freqS[ord(s[i - len(p)]) - ord('a')] -= 1
+            
+            # If the frequency arrays match, add the index to the result
+            if freqP == freqS:
+                result.append(i - len(p) + 1)
+        
+        return result
+
+# Example usage
+if __name__ == "__main__":
+    solver = FindAllAnagrams()
+    print(solver.findAnagrams("cbaebabacd", "abc"))  # Output: [0, 6]
 ```
 
 ## Explanation

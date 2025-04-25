@@ -128,6 +128,34 @@ class ProductExceptSelf {
 }
 ```
 
+### Implementation in Python
+
+```python
+class ProductExceptSelf:
+    def productExceptSelf(self, nums):
+        n = len(nums)
+        result = [1] * n
+        
+        prefix = 1
+        for i in range(n):
+            result[i] = prefix
+            prefix *= nums[i]
+        
+        suffix = 1
+        for i in range(n - 1, -1, -1):
+            result[i] *= suffix
+            suffix *= nums[i]
+        
+        return result
+
+# Example usage
+if __name__ == "__main__":
+    pes = ProductExceptSelf()
+    nums = [1, 2, 3, 4]
+    print(pes.productExceptSelf(nums))  # Output: [24, 12, 8, 6]
+```
+
+
 ## Explanation
 
 - **Prefix-Suffix Method:** Avoids division and ensures `O(n)` complexity.

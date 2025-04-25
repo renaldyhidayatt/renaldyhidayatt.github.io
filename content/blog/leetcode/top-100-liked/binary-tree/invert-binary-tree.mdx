@@ -128,6 +128,28 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+from typing import Optional
+
+class TreeNode:
+    def __init__(self, val: int = 0, left: Optional['TreeNode'] = None, right: Optional['TreeNode'] = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def invertTree(self, root: Optional[TreeNode]) -> Optional[TreeNode]:
+        if root is None:
+            return None
+        temp = root.left
+        root.left = self.invertTree(root.right)
+        root.right = self.invertTree(temp)
+        return root
+```
+
+
 ## Explanation
 
 - The recursive approach follows a **post-order traversal**, swapping left and right children at each step.

@@ -159,6 +159,30 @@ class ValidParentheses {
 }
 ```
 
+### Implementation in Python
+
+```python
+class ValidParentheses:
+    def isValid(self, s: str) -> bool:
+        stack = []
+        matching = {')': '(', '}': '{', ']': '['}
+
+        for ch in s:
+            if ch in matching.values():
+                stack.append(ch)
+            else:
+                if not stack or stack.pop() != matching[ch]:
+                    return False
+
+        return not stack
+
+# Contoh penggunaan
+if __name__ == "__main__":
+    vp = ValidParentheses()
+    print(vp.isValid("()[]{}"))  # Output: True
+    print(vp.isValid("(]"))      # Output: False
+```
+
 ## Explanation
 
 1. **Stack Usage:** Keeps track of open brackets.

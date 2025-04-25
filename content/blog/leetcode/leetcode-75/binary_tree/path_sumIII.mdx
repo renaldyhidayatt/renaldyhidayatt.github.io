@@ -1,9 +1,9 @@
 ---
 title: Path Sum III
 description: Count the number of paths in a binary tree that sum to a given target. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -42,10 +43,9 @@ Output: 3
 - `-10^9 <= Node.val <= 10^9`
 - `-1000 <= targetSum <= 1000`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for a binary tree node.
 type TreeNode struct {
     Val   int
     Left  *TreeNode
@@ -72,7 +72,7 @@ func pathSum(root *TreeNode, targetSum int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.HashMap;
@@ -101,6 +101,40 @@ class Solution {
         return count;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def pathSumHelper(self, root: TreeNode, targetSum: int, currentSum: int, prefixSum: dict) -> int:
+        if root is None:
+            return 0
+        
+        currentSum += root.val
+        count = prefixSum.get(currentSum - targetSum, 0)
+        
+        # Update the prefixSum map with the current sum
+        prefixSum[currentSum] = prefixSum.get(currentSum, 0) + 1
+        
+        # Recur on left and right subtrees
+        count += self.pathSumHelper(root.left, targetSum, currentSum, prefixSum)
+        count += self.pathSumHelper(root.right, targetSum, currentSum, prefixSum)
+        
+        # Backtrack: revert the current sum for the current path
+        prefixSum[currentSum] -= 1
+        
+        return count
+    
+    def pathSum(self, root: TreeNode, targetSum: int) -> int:
+        prefixSum = {0: 1}  # Initialize the prefixSum map with 0 having one occurrence
+        return self.pathSumHelper(root, targetSum, 0, prefixSum)
 ```
 
 ## Conclusion

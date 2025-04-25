@@ -1,0 +1,129 @@
+---
+title: "Basic Joins in SQL"
+description: "Introduction to fundamental SQL joins, including INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN, with examples and use cases."
+tags: ["SQL", "joins", "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN", "database"]
+date: "2025-03-03"
+published: false
+---
+
+
+
+## 1378. Replace Employee ID With The Unique Identifier
+
+
+### Problem Statement
+
+The task is to replace the employee ID with the **unique ID** for each employee. If an employee does not have a unique ID, then the result should show `null` for their unique ID. The task involves joining two tables: one containing employee details and another with employee IDs and their corresponding unique identifiers.
+
+### Input Tables Structure
+
+#### Employees Table
+
+The `Employees` table contains the following columns:
+
+- **`id`**: The unique identifier for the employee (Primary Key).
+- **`name`**: The name of the employee.
+
+#### EmployeeUNI Table
+
+The `EmployeeUNI` table contains the following columns:
+
+- **`id`**: The unique identifier for the employee (Primary Key).
+- **`unique_id`**: The unique identifier assigned to the employee.
+
+### Constraints
+
+- If the employee has a corresponding unique ID in the `EmployeeUNI` table, it should be returned. Otherwise, return `null`.
+
+---
+
+### Example Input
+
+#### Employees Table
+
+```table
+| id  | name     |
+|-----|----------|
+| 1   | Alice    |
+| 7   | Bob      |
+| 11  | Meir     |
+| 90  | Winston  |
+| 3   | Jonathan |
+```
+
+
+#### EmployeeUNI Table
+
+```table
+| id  | unique_id |
+|-----|-----------|
+| 3   | 1         |
+| 11  | 2         |
+| 90  | 3         |
+```
+
+#### Example Output
+
+```table
+| unique_id | name     |
+|-----------|----------|
+| null      | Alice    |
+| null      | Bob      |
+| 2         | Meir     |
+| 3         | Winston  |
+| 1         | Jonathan |
+```
+
+### SQL Implementation
+To solve this problem in SQL, we can use a LEFT JOIN between the Employees and EmployeeUNI tables. This will allow us to include all employees from the Employees table, and for those that do not have a corresponding unique ID in the EmployeeUNI table, the result will show null.
+
+### SQL Query
+
+```sql
+SELECT
+    e.name,
+    u.unique_id
+FROM Employees e
+LEFT JOIN EmployeeUNI u ON e.id = u.id;
+```
+
+
+### Explanation
+- ``LEFT JOIN``N: This ensures that all rows from the Employees table are returned, even if there is no matching row in the EmployeeUNI table.
+- ``e.id = u.id``: We join the tables on the id column.
+- ``u.unique_id``: If a matching id is found in the EmployeeUNI table, the corresponding unique_id is returned. If no match is found, null is returned for unique_id.
+
+
+### NoSQL(MongoDB) Implementation
+
+In MongoDB, we can achieve this using a $lookup stage in the aggregation pipeline to join the Employees collection with the EmployeeUNI collection. The result will include the employee's unique_id, if available, otherwise null.
+
+### MongoDB Query
+
+```javascript
+db.employees.aggregate([
+  {
+    $lookup: {
+      from: "employeeuni",
+      localField: "id",
+      foreignField: "id",
+      as: "unique_info"
+    }
+  },
+  {
+    $project: {
+      name: 1,
+      unique_id: { $ifNull: [{ $arrayElemAt: ["$unique_info.unique_id", 0] }, null] }
+    }
+  }
+]);
+```
+
+
+### Explanation
+
+1. ``$lookup``: This stage performs the join between the employees collection and the employeeuni collection based on the id field. The results of the join are stored in the unique_info array.
+2. ``$project``: This stage reshapes the output, selecting the name field and extracting the unique_id from the unique_info array. If no unique ID is found (i.e., the array is empty), the $ifNull operator will return null instead.
+3. ``$arrayElemAt``: This operator is used to retrieve the first element from the unique_info array (which contains the joined data). If no match is found, it returns null.
+
+-----

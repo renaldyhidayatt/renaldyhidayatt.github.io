@@ -142,6 +142,35 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+from typing import Optional
+
+class TreeNode:
+    def __init__(self, val: int = 0, left: Optional['TreeNode'] = None, right: Optional['TreeNode'] = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def __init__(self):
+        self.maxDiameter = 0
+
+    def diameterOfBinaryTree(self, root: Optional[TreeNode]) -> int:
+        def height(node: Optional[TreeNode]) -> int:
+            if not node:
+                return 0
+            left = height(node.left)
+            right = height(node.right)
+            self.maxDiameter = max(self.maxDiameter, left + right)
+            return 1 + max(left, right)
+        
+        height(root)
+        return self.maxDiameter
+```
+
+
 ## Explanation
 
 - The function **height()** computes the height of each subtree.

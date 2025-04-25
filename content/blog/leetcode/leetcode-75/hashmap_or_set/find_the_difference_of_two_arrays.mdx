@@ -1,9 +1,9 @@
 ---
 title: Find the Difference of Two Arrays
 description: Find the distinct elements that appear in one array but not the other. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -134,6 +135,21 @@ class Solution {
         return Arrays.asList(res1, res2);
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class Solution:
+    def findDifference(self, nums1: list[int], nums2: list[int]) -> list[list[int]]:
+        set1 = set(nums1)
+        set2 = set(nums2)
+        
+        res1 = [num for num in set1 if num not in set2]
+        res2 = [num for num in set2 if num not in set1]
+        
+        return [res1, res2]
+
 ```
 
 ## Explanation

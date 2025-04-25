@@ -149,6 +149,35 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+import heapq
+from collections import Counter
+
+class Solution:
+    def topKFrequent(self, nums, k):
+        # Count the frequency of each element using Counter
+        freq_map = Counter(nums)
+        
+        # Use a min-heap to keep track of the k most frequent elements
+        min_heap = []
+        
+        for num, freq in freq_map.items():
+            heapq.heappush(min_heap, (freq, num))  # Push (frequency, num) tuple
+            if len(min_heap) > k:
+                heapq.heappop(min_heap)  # Remove the smallest frequency element
+        
+        # Extract the elements from the heap and return them
+        return [num for freq, num in min_heap]
+
+# Example usage:
+sol = Solution()
+print(sol.topKFrequent([1,1,1,2,2,3], 2))  # Output: [1, 2]
+```
+
+
+
 ## Explanation
 
 - **Min-Heap Approach:**

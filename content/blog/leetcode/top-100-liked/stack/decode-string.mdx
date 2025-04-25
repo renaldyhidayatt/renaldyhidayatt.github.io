@@ -123,6 +123,40 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+class Solution:
+    def decodeString(self, s: str) -> str:
+        num_stack = []
+        str_stack = []
+        num = 0
+        curr_str = ""
+
+        for ch in s:
+            if ch.isdigit():
+                num = num * 10 + int(ch)
+            elif ch == '[':
+                num_stack.append(num)
+                str_stack.append(curr_str)
+                num = 0
+                curr_str = ""
+            elif ch == ']':
+                repeat_count = num_stack.pop()
+                prev_str = str_stack.pop()
+                curr_str = prev_str + curr_str * repeat_count
+            else:
+                curr_str += ch
+
+        return curr_str
+
+# Example usage:
+if __name__ == "__main__":
+    solver = Solution()
+    print(solver.decodeString("3[a2[c]]"))  # Output: "accaccacc"
+```
+
+
 ## Conclusion
 
 This approach efficiently decodes the string using a stack-based technique to handle nested brackets. The time complexity is `O(n)`, where `n` is the length of the string, and the space complexity is also `O(n)` due to the use of stacks for storing intermediate results.

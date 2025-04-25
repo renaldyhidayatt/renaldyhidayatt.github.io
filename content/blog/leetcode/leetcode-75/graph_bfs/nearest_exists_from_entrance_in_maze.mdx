@@ -1,9 +1,9 @@
 ---
 title: Nearest Exit from Entrance in Maze
 description: Solve the problem of finding the nearest exit in a maze using BFS. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -60,7 +61,7 @@ Output: -1
 - `0 <= entrancecol < n`
 - `entrance` will always be an empty cell.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 func nearestExit(maze [][]byte, entrance []int) int {
@@ -88,7 +89,7 @@ func nearestExit(maze [][]byte, entrance []int) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -120,6 +121,33 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+from collections import deque
+
+class Solution:
+    def nearestExit(self, maze: list[list[str]], entrance: list[int]) -> int:
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        queue = deque()
+        queue.append((entrance[0], entrance[1], 0))
+        maze[entrance[0]][entrance[1]] = '+'
+        
+        while queue:
+            r, c, steps = queue.popleft()
+            
+            for dr, dc in directions:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < len(maze) and 0 <= nc < len(maze[0]) and maze[nr][nc] == '.':
+                    if nr == 0 or nr == len(maze) - 1 or nc == 0 or nc == len(maze[0]) - 1:
+                        return steps + 1
+                    maze[nr][nc] = '+'
+                    queue.append((nr, nc, steps + 1))
+        
+        return -1
+```
+
 
 ## Conclusion
 

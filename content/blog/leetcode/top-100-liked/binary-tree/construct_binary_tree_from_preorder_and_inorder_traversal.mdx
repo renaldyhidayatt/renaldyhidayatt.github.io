@@ -134,6 +134,39 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+from typing import List, Optional
+
+class TreeNode:
+    def __init__(self, val: int = 0, left: Optional['TreeNode'] = None, right: Optional['TreeNode'] = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def buildTree(self, preorder: List[int], inorder: List[int]) -> Optional[TreeNode]:
+        if not preorder or not inorder:
+            return None
+        
+        def helper(preIndex: int, inStart: int, inEnd: int) -> Optional[TreeNode]:
+            if inStart > inEnd:
+                return None
+
+            root = TreeNode(preorder[preIndex])
+            index = inorder_index[root.val]
+            
+            left_subtree_size = index - inStart
+            root.left = helper(preIndex + 1, inStart, index - 1)
+            root.right = helper(preIndex + left_subtree_size + 1, index + 1, inEnd)
+            
+            return root
+
+        inorder_index = {val: idx for idx, val in enumerate(inorder)}
+        return helper(0, 0, len(inorder) - 1)
+```
+
 ## Explanation
 
 Both implementations recursively construct the tree by using `preorder` to determine root nodes and `inorder` to split left and right subtrees.

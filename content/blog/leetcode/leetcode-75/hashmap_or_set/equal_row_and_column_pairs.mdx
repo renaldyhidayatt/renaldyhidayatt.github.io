@@ -1,9 +1,9 @@
 ---
 title: Equal Row and Column Pairs
 description: Count the number of equal row and column pairs in an n x n matrix. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -119,6 +120,30 @@ class Solution {
         return count;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+from collections import defaultdict
+
+class Solution:
+    def equalPairs(self, grid: list[list[int]]) -> int:
+        n = len(grid)
+        count = 0
+        row_freq = defaultdict(int)
+        
+        for row in grid:
+            key = tuple(row)
+            row_freq[key] += 1
+        
+        for j in range(n):
+            col = [grid[i][j] for i in range(n)]
+            key = tuple(col)
+            count += row_freq[key]
+        
+        return count
+
 ```
 
 ## Explanation

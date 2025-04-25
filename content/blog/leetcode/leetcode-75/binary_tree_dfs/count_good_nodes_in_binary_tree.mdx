@@ -1,9 +1,9 @@
 ---
 title: Count Good Nodes in Binary Tree
 description: Count the number of good nodes in a binary tree. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -52,10 +53,9 @@ Output: 1
 - The number of nodes in the binary tree is in the range `[1, 10^5]`.
 - Each node's value is between `[-10^4, 10^4]`.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
-// Definition for a binary tree node.
 type TreeNode struct {
     Val   int
     Left  *TreeNode
@@ -79,7 +79,7 @@ func goodNodes(root *TreeNode) int {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class TreeNode {
@@ -104,6 +104,27 @@ class Solution {
         return countGoodNodes(root, root.val);
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def goodNodes(self, root: TreeNode) -> int:
+        def countGoodNodes(node: TreeNode, max_val: int) -> int:
+            if node is None:
+                return 0
+            good = 1 if node.val >= max_val else 0
+            max_val = max(max_val, node.val)
+            return good + countGoodNodes(node.left, max_val) + countGoodNodes(node.right, max_val)
+        
+        return countGoodNodes(root, root.val)
 ```
 
 ## Conclusion

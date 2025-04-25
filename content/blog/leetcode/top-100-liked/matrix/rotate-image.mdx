@@ -120,6 +120,31 @@ class RotateImage {
 }
 ```
 
+### Implementation in Python
+
+```python
+class RotateImage:
+    def rotate(self, matrix):
+        n = len(matrix)
+        
+        # Transpose the matrix
+        for i in range(n):
+            for j in range(i + 1, n):
+                matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j]
+        
+        # Reverse each row
+        for i in range(n):
+            self.reverse(matrix[i])
+    
+    def reverse(self, row):
+        left, right = 0, len(row) - 1
+        while left < right:
+            row[left], row[right] = row[right], row[left]
+            left += 1
+            right -= 1
+```
+
+
 ## Explanation
 
 - **Transposition** swaps elements along the diagonal, converting rows into columns.

@@ -99,6 +99,31 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+class Solution:
+    def dailyTemperatures(self, temperatures):
+        n = len(temperatures)
+        answer = [0] * n
+        stack = []
+        
+        for i in range(n):
+            while stack and temperatures[stack[-1]] < temperatures[i]:
+                idx = stack.pop()
+                answer[idx] = i - idx
+            stack.append(i)
+        
+        return answer
+
+# Example usage
+if __name__ == "__main__":
+    solver = Solution()
+    temperatures = [73, 74, 75, 71, 69, 72, 76, 73]
+    print(solver.dailyTemperatures(temperatures))  # Output: [1, 1, 4, 2, 1, 1, 0, 0]
+
+```
+
 ## Explanation
 
 1. **Use a stack** to keep track of indices of temperature values.

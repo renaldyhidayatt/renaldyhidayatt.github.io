@@ -1,13 +1,12 @@
 ---
 title: Delete Node in a BST
 description: Delete a node with a given key from a Binary Search Tree (BST). Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
-
 1. [Problem Statement](#problem-statement)
 2. [Approach](#approach)
 3. [Algorithm](#algorithm)
@@ -15,6 +14,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -57,7 +57,7 @@ Output: []
 - `root` is a valid binary search tree.
 - `-10^5 <= key <= 10^5`
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 type TreeNode struct {
@@ -97,7 +97,7 @@ func findMin(node *TreeNode) *TreeNode {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 class TreeNode {
@@ -132,6 +132,42 @@ class Solution {
         return node;
     }
 }
+```
+
+### Implementation in Python
+
+```python
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def deleteNode(self, root: TreeNode, key: int) -> TreeNode:
+        if root is None:
+            return None
+        
+        if key < root.val:
+            root.left = self.deleteNode(root.left, key)
+        elif key > root.val:
+            root.right = self.deleteNode(root.right, key)
+        else:
+            if root.left is None:
+                return root.right
+            elif root.right is None:
+                return root.left
+            
+            min_node = self.findMin(root.right)
+            root.val = min_node.val
+            root.right = self.deleteNode(root.right, min_node.val)
+
+        return root
+    
+    def findMin(self, node: TreeNode) -> TreeNode:
+        while node.left:
+            node = node.left
+        return node
 ```
 
 ## Conclusion

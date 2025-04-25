@@ -1,9 +1,9 @@
 ---
 title: Guess Number Higher or Lower
 description: Implementation of the Guess Number Higher or Lower algorithm with Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -71,15 +72,7 @@ We can solve this problem using **Binary Search** because the feedback (higher/l
 ## Implementation in Go
 
 ```go
-/** 
- * Forward declaration of guess API.
- * @param  num   your guess
- * @return       -1 if num is higher than the picked number
- *                1 if num is lower than the picked number
- *                otherwise return 0
- */
 func guess(num int) int
-
 func guessNumber(n int) int {
     left, right := 1, n
     for left <= right {
@@ -100,13 +93,6 @@ func guessNumber(n int) int {
 ## Implementation in Java
 
 ```java
-/** 
- * Forward declaration of guess API.
- * @param  num   your guess
- * @return       -1 if num is higher than the picked number
- *                1 if num is lower than the picked number
- *                otherwise return 0
- */
 public class Solution extends GuessGame {
     public int guessNumber(int n) {
         int left = 1, right = n;

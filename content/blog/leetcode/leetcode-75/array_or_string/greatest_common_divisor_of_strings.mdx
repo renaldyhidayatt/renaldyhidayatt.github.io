@@ -1,9 +1,9 @@
 ---
-title: Greatest Common Divisor of Strings
+title: "1071.Greatest Common Divisor of Strings"
 description: Solve Find the largest string that evenly divides both input strings using the GCD method. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -14,6 +14,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -83,22 +84,19 @@ str1 = "LEET", str2 = "CODE"
 ## 4. Flowchart
 
 ```plaintext
-Start
-   |
-   v
-Find gcd of lengths of str1 and str2
-   |
-   v
-Extract prefix of gcd length from str1
-   |
-   v
-Check if prefix can construct both strings
-   |     |
-   |     v
-   |   Return prefix (if valid)
-   |     |
-   v     v
-Return "" (if invalid)
+@startuml
+start
+:Calculate GCD of lengths str1 and str2;
+:Extract prefix with GCD length of str1;
+
+if (Is str1 + str2 == str2 + str1?) then (No)
+:Return "";
+stop
+else (Yes)
+:Return prefix;
+stop
+endif
+@enduml
 ```
 
 ---
@@ -147,6 +145,17 @@ class Solution {
         return a;
     }
 }
+```
+
+### **Implementation in Python**
+
+```python
+class Solution:
+    def gcdOfStrings(self, str1: str, str2: str) -> str:
+        if str1 + str2 != str2 + str1:
+            return ""
+        gcd_len = math.gcd(len(str1), len(str2))
+        return str1[:gcd_len]
 ```
 
 ---

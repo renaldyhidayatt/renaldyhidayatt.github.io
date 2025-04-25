@@ -1,9 +1,9 @@
 ---
 title: Letter Combinations of a Phone Number
 description: Implementation of the Letter Combinations of a Phone Number algorithm with Go and Java.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -57,7 +58,7 @@ Output: ["a","b","c"]
 
 We can solve this problem using **Backtracking**.
 
-## Implementation in Go
+### Implementation in Go
 
 ```go
 var phoneMap = map[byte]string{
@@ -86,7 +87,7 @@ func backtrack(digits string, index int, current string, result *[]string) {
 }
 ```
 
-## Implementation in Java
+### Implementation in Java
 
 ```java
 import java.util.*;
@@ -118,6 +119,35 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+
+```python
+from typing import List
+
+class Solution:
+    def __init__(self):
+        self.phone_map = {
+            '2': "abc", '3': "def", '4': "ghi", '5': "jkl", '6': "mno",
+            '7': "pqrs", '8': "tuv", '9': "wxyz"
+        }
+
+    def letterCombinations(self, digits: str) -> List[str]:
+        if len(digits) == 0:
+            return []
+        result = []
+        self.backtrack(digits, 0, "", result)
+        return result
+
+    def backtrack(self, digits: str, index: int, current: str, result: List[str]):
+        if index == len(digits):
+            result.append(current)
+            return
+        letters = self.phone_map[digits[index]]
+        for letter in letters:
+            self.backtrack(digits, index + 1, current + letter, result)
+```
+
 
 ## Explanation
 

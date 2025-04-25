@@ -1,9 +1,9 @@
 ---
 title: "Longest Subarray of 1's After Deleting One Element"
 description: Find the longest contiguous subarray of 1's after deleting one element. Includes Go and Java implementations.
-tags: ["leetcode", "golang", "java", "algorithms"]
+tags: ["leetcode-75", "golang", "java", "algorithms", "interview", "python", "leetcode"]
 date: "2025-03-02"
-published: false
+published: true
 ---
 
 ## Table of Contents
@@ -15,6 +15,7 @@ published: false
 5. [Implementations](#implementations)
    - [Go](#implementation-in-go)
    - [Java](#implementation-in-java)
+   - [Python](#implementation-in-python)
 6. [Explanation](#explanation)
 7. [Time and Space Complexity](#time-and-space-complexity)
 8. [Conclusion](#conclusion)
@@ -140,6 +141,30 @@ class Solution {
     }
 }
 ```
+
+### Implementation in Python
+```python
+class Solution:
+    def longestSubarray(self, nums: list[int]) -> int:
+        left = 0
+        zero_count = 0
+        max_length = 0
+
+        for right in range(len(nums)):
+            if nums[right] == 0:
+                zero_count += 1
+
+            while zero_count > 1:
+                if nums[left] == 0:
+                    zero_count -= 1
+                left += 1
+
+            max_length = max(max_length, right - left)
+
+        return max_length
+
+```
+
 
 ## Explanation
 

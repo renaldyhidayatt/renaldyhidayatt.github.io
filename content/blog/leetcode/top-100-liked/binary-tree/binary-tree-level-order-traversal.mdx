@@ -165,6 +165,50 @@ class Solution {
 }
 ```
 
+### Implementation in Python
+
+```python
+from collections import deque
+from typing import Optional, List
+
+class TreeNode:
+    def __init__(self, val: int = 0, left: Optional['TreeNode'] = None, right: Optional['TreeNode'] = None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:
+        result = []
+        if root is None:
+            return result
+        
+        queue = deque([root])
+        
+        while queue:
+            level = []
+            size = len(queue)
+            
+            for _ in range(size):
+                node = queue.popleft()
+                level.append(node.val)
+                
+                if node.left:
+                    queue.append(node.left)
+                if node.right:
+                    queue.append(node.right)
+            
+            result.append(level)
+        
+        return result
+
+# Contoh penggunaan:
+# root = TreeNode(3, TreeNode(9), TreeNode(20, TreeNode(15), TreeNode(7)))
+# sol = Solution()
+# print(sol.levelOrder(root))  # Output: [[3], [9, 20], [15, 7]]
+
+```
+
 ## Explanation
 
 Both implementations use **BFS traversal with a queue** to process nodes level by level.
