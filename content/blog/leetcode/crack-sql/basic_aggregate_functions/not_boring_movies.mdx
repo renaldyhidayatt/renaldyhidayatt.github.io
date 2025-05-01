@@ -1,0 +1,24 @@
+---
+title: "Not Boring Movies"
+description: "Learn how to filter and sort movie records using basic SQL conditions. We'll select only movies with odd-numbered IDs and non-boring descriptions, ordered by rating."
+tags: ["SQL", "SELECT", "WHERE", "ORDER BY", "Database Basics"]
+date: "2025-04-26"
+published: false
+---
+
+import { CodeBlock } from '@components/CodeBlock'
+
+# 🎬 Not Boring Movies
+
+In this article, we’ll walk through a simple SQL query to filter and sort movie records from a table named `Cinema`. The task is to **select movies with an odd-numbered ID** and a **description that is not `'boring'`**, then sort them by their `rating` in **descending order**.
+
+## 🧾 Table Schema
+
+```sql
+CREATE TABLE Cinema (
+  id INT PRIMARY KEY,
+  movie VARCHAR,
+  description VARCHAR,
+  rating FLOAT
+);
+```

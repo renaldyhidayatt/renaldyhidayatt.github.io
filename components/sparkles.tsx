@@ -1,6 +1,7 @@
-"use client"
+"use client";
 import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { MoonIcon, SunIcon } from "lucide-react";
 
 interface SparklesCoreProps {
   id: string;
@@ -19,12 +20,28 @@ export const SparklesCore = ({
   particleDensity = 50,
   className = "",
 }: SparklesCoreProps) => {
-  const { theme } = useTheme();
-  const [particleColor, setParticleColor] = useState("#000000"); 
+  const { theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [particleColor, setParticleColor] = useState("#000000");
+  const [sunVisible, setSunVisible] = useState(false);
+  const [moonVisible, setMoonVisible] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     setParticleColor(theme === "dark" ? "#FFFFFF" : "#000000");
-  }, [theme]);
+
+    if (theme === "light") {
+      setMoonVisible(false);
+      setTimeout(() => setSunVisible(true), 100);
+    } else if (theme === "dark") {
+      setSunVisible(false);
+      setTimeout(() => setMoonVisible(true), 100);
+    }
+  }, [theme, mounted]);
 
   useEffect(() => {
     const canvas = document.getElementById(id) as HTMLCanvasElement;
@@ -80,7 +97,7 @@ export const SparklesCore = ({
       particles = [];
       for (let i = 0; i < particleCount; i++) {
         const particle = new Particle();
-        particle.color = particleColor; 
+        particle.color = particleColor;
         particles.push(particle);
       }
     }
@@ -88,7 +105,7 @@ export const SparklesCore = ({
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (let i = 0; i < particles.length; i++) {
-        particles[i].color = particleColor; 
+        particles[i].color = particleColor;
         particles[i].update();
         particles[i].draw();
       }
@@ -109,21 +126,74 @@ export const SparklesCore = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [id, minSize, maxSize, particleDensity, particleColor]);
+  }, [id, minSize, maxSize, particleDensity, particleColor, mounted]);
 
   return (
-    <canvas
-      id={id}
-      className={className}
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-        background,
-      }}
-    />
+    <>
+      <canvas
+        id={id}
+        className={className}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+          background,
+        }}
+      />
+      {mounted && sunVisible && (
+        <div className="absolute top-20 right-10">
+          <svg
+            width="50"
+            height="50"
+            viewBox="0 0 24 24"
+            style={{
+              animation: "rotateSun 10s linear infinite, pulseSun 3s ease-in-out infinite",
+              filter: "drop-shadow(0 0 6px rgba(255, 204, 0, 0.8))"
+            }}
+          >
+            <circle cx="12" cy="12" r="5" fill="#FBBF24" />
+            {[...Array(8)].map((_, i) => (
+              <rect
+                key={i}
+                x="11"
+                y="1"
+                width="2"
+                height="4"
+                fill="#F59E0B"
+                transform={`rotate(${i * 45} 12 12)`}
+                style={{
+                  animation: `pulseRay 2s ease-in-out ${i * 0.1}s infinite alternate`
+                }}
+              />
+            ))}
+          </svg>
+        </div>
+      )}
+
+      {mounted && moonVisible && (
+        <div className="absolute top-20 left-10">
+          <svg
+            width="50"
+            height="50"
+            viewBox="0 0 24 24"
+            style={{
+              animation: "floatMoon 6s ease-in-out infinite",
+              filter: "drop-shadow(0 0 6px rgba(147, 197, 253, 0.6))"
+            }}
+          >
+            <path
+              d="M12 3a9 9 0 1 0 9 9 7.5 7.5 0 0 1-9-9z"
+              fill="#93C5FD"
+            />
+            <circle cx="16" cy="9" r="1.5" fill="#BFDBFE" opacity="0.8" />
+            <circle cx="13" cy="6" r="1" fill="#BFDBFE" opacity="0.6" />
+            <circle cx="10" cy="10" r="1.2" fill="#BFDBFE" opacity="0.7" />
+          </svg>
+        </div>
+      )}
+    </>
   );
 };

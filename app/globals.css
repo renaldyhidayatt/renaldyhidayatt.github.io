@@ -3,6 +3,26 @@
 @tailwind utilities;
 
 
+@keyframes rotateSun {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+@keyframes pulseSun {
+    0%, 100% { transform: translateY(0) rotate(-5deg); filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8)); }
+    50% { transform: translateY(-10px) rotate(5deg); filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.9)); }
+}
+
+@keyframes pulseRay {
+    0% { opacity: 0.7; height: 4px; }
+    100% { opacity: 1; height: 6px; }
+}
+
+@keyframes floatMoon {
+    0%, 100% { transform: translateY(0) rotate(-5deg); filter: drop-shadow(0 0 15px rgba(147, 197, 253, 0.6)); }
+    50% { transform: translateY(-10px) rotate(5deg); filter: drop-shadow(0 0 25px rgba(96, 165, 250, 0.8)); }
+}
+
 @layer base {
     :root {
         --background: 0 0% 100%;

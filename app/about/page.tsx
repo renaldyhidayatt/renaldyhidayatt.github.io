@@ -33,29 +33,14 @@ export default function AboutPage() {
           <h2 className="text-2xl font-bold text-center text-foreground">
             {siteConfig.author}
           </h2>
-          <p className="text-muted-foreground text-center">Software Enginner</p>
+          <p className="text-muted-foreground text-center">Software Engineer</p>
           <ModalCV />
         </div>
         <p className="text-muted-foreground text-lg py-4">
-        I&apos;m a Computer Science candidate at Nusa Mandiri University, and
-          I&apos;m deeply passionate about programming. My journey in the world
-          of technology has been an exciting adventure, driven by the endless
-          opportunities for learning. Whether it&apos;s exploring cutting-edge
-          programming languages, leveraging groundbreaking frameworks, or
-          applying technology in innovative ways, I&apos;m always up for the
-          challenge. Staying updated with the latest developments is a priority,
-          as I strive to incorporate them into my work.
+        I&apos;m a <strong>Software Engineer</strong> with a deep passion for backend development and building reliable, scalable systems. I enjoy working with modern programming languages and technologies to create clean, maintainable, and high-performing applications.
 
           <br /> <br />
-          My dedication to turning hobbies into meaningful projects is a source
-          of fulfillment. It allows me to merge creativity with technical
-          expertise. Crafting web applications and developing software solutions
-          are areas where I find immense satisfaction, bringing ideas to life
-          through code. Above all, my commitment to continuous improvement
-          drives my journey. I firmly believe that success in the tech world is
-          rooted in lifelong learning. Every day is an opportunity to expand my
-          knowledge, refine my skills, and embrace new challenges head-on. This
-          unwavering dedication keeps me pushing the boundaries.
+          Skilled in <strong>Golang, Python, Java, and Rust</strong>, I focus on developing APIs, designing microservices architectures, and integrating robust messaging systems like <strong>Kafka</strong> and <strong>RabbitMQ</strong>. My enthusiasm for programming drives me to turn hobbies into impactful, real-world projects—combining creativity with strong technical execution. I stay actively engaged with the latest tech trends, continuously refining my skills and applying them across a wide range of use cases—from payment systems to recommendation engines and developer tools.
         </p>
       </div>
      
