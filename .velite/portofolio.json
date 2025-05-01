@@ -1,21 +1,5 @@
 [
   {
-    "slug": "portofolio/booking-schedule-spring",
-    "title": "Booking Hotel",
-    "description": "A hotel booking management system with user authentication, built using Spring Boot and PostgreSQL, running in a Docker environment.",
-    "date": "2025-01-31T00:00:00.000Z",
-    "image": "/portofolio/booking-scheduling.png",
-    "tags": [
-      "spring-boot",
-      "postgres",
-      "docker",
-      "java"
-    ],
-    "urlProject": "https://github.com/MamangRust/booking-spring-schedule",
-    "body": "const{Fragment:e,jsx:n,jsxs:o}=arguments[0];function _createMdxContent(r){const i={a:\"a\",code:\"code\",figure:\"figure\",h1:\"h1\",h2:\"h2\",li:\"li\",p:\"p\",pre:\"pre\",span:\"span\",strong:\"strong\",ul:\"ul\",...r.components};return o(e,{children:[n(i.h1,{id:\"-booking-hotel\",children:n(i.a,{className:\"subheading-anchor\",\"aria-label\":\"Link to section\",href:\"#-booking-hotel\",children:\"🏨 Booking Hotel\"})}),\"\\n\",o(i.p,{children:[n(i.strong,{children:\"Booking Hotel\"}),\" is a hotel booking management system that includes user authentication and various related features. This application is built with \",n(i.strong,{children:\"Spring Boot\"}),\" and uses \",n(i.strong,{children:\"PostgreSQL\"}),\" as the main database. The system also provides \",n(i.strong,{children:\"OpenAPI\"}),\" documentation and can be easily deployed in a \",n(i.strong,{children:\"Docker\"}),\" environment.\"]}),\"\\n\",n(i.h2,{id:\"-features\",children:n(i.a,{className:\"subheading-anchor\",\"aria-label\":\"Link to section\",href:\"#-features\",children:\"✨ Features\"})}),\"\\n\",o(i.ul,{children:[\"\\n\",o(i.li,{children:[n(i.strong,{children:\"Hotel Booking Management\"}),\" – Users can book hotel rooms with multiple available options.\"]}),\"\\n\",o(i.li,{children:[n(i.strong,{children:\"User Authentication\"}),\" – Supports user registration, login, and account management.\"]}),\"\\n\",o(i.li,{children:[n(i.strong,{children:\"API Documentation\"}),\" – Uses \",n(i.strong,{children:\"OpenAPI\"}),\" for documentation and API exploration.\"]}),\"\\n\",o(i.li,{children:[n(i.strong,{children:\"Relational Database\"}),\" – Stores user and booking data using \",n(i.strong,{children:\"PostgreSQL\"}),\".\"]}),\"\\n\",o(i.li,{children:[n(i.strong,{children:\"Containerized Deployment\"}),\" – Easily deployable with \",n(i.strong,{children:\"Docker\"}),\".\"]}),\"\\n\"]}),\"\\n\",n(i.h2,{id:\"-how-to-run\",children:n(i.a,{className:\"subheading-anchor\",\"aria-label\":\"Link to section\",href:\"#-how-to-run\",children:\"🚀 How to Run\"})}),\"\\n\",n(i.p,{children:\"Run the application using Docker:\"}),\"\\n\",n(i.figure,{\"data-rehype-pretty-code-figure\":\"\",children:n(i.pre,{style:{backgroundColor:\"#1E1E1E\",color:\"#D4D4D4\"},tabIndex:\"0\",\"data-language\":\"sh\",\"data-theme\":\"dark-plus\",children:n(i.code,{\"data-language\":\"sh\",\"data-theme\":\"dark-plus\",style:{display:\"grid\"},children:o(i.span,{\"data-line\":\"\",children:[n(i.span,{style:{color:\"#DCDCAA\"},children:\"docker-compose\"}),n(i.span,{style:{color:\"#CE9178\"},children:\" up\"}),n(i.span,{style:{color:\"#569CD6\"},children:\" -d\"}),n(i.span,{style:{color:\"#569CD6\"},children:\" --build\"})]})})})}),\"\\n\",n(i.h2,{id:\"-source-code--repository\",children:n(i.a,{className:\"subheading-anchor\",\"aria-label\":\"Link to section\",href:\"#-source-code--repository\",children:\"🔗 Source Code & Repository\"})}),\"\\n\",n(i.p,{children:n(i.a,{href:\"https://github.com/MamangRust/booking-spring-schedule\",children:\"📌 View on GitHub\"})})]})}return{default:function(e={}){const{wrapper:o}=e.components||{};return o?n(o,{...e,children:n(_createMdxContent,{...e})}):_createMdxContent(e)}};",
-    "slugAsParams": "booking-schedule-spring"
-  },
-  {
     "slug": "portofolio/ecommerce-fastapi",
     "title": "Ecommerce FastAPI React",
     "description": "An e-commerce project built with the FastAPI framework, known for its speed and Express.js-like syntax.",
