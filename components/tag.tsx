@@ -15,7 +15,7 @@ export function Tag({ tag, current, count, name }: TagProps) {
     <Link
       className={badgeVariants({
         variant: current ? "default" : "secondary",
-        className: "no-underline rounded-md text-[#585a5c] dark:text-slate-200",
+        className: "no-underline rounded-md text-[#585a5c] dark:text-slate-200 whitespace-nowrap",
       })}
       href={`/tags/${name}/${slug(tag)}`}
       onClick={(e) => e.stopPropagation()}

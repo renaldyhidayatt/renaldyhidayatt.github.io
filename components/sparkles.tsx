@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { MoonIcon, SunIcon } from "lucide-react";
 
 interface SparklesCoreProps {
   id: string;
@@ -26,22 +25,26 @@ export const SparklesCore = ({
   const [sunVisible, setSunVisible] = useState(false);
   const [moonVisible, setMoonVisible] = useState(false);
 
+  const currentTheme = theme === "system" ? systemTheme : theme;
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
-    setParticleColor(theme === "dark" ? "#FFFFFF" : "#000000");
+    
+    setParticleColor(currentTheme === "dark" ? "#FFFFFF" : "#000000");
 
-    if (theme === "light") {
+
+    if (currentTheme === "light") {
       setMoonVisible(false);
       setTimeout(() => setSunVisible(true), 100);
-    } else if (theme === "dark") {
+    } else if (currentTheme === "dark") {
       setSunVisible(false);
       setTimeout(() => setMoonVisible(true), 100);
     }
-  }, [theme, mounted]);
+  }, [currentTheme, mounted]);
 
   useEffect(() => {
     const canvas = document.getElementById(id) as HTMLCanvasElement;
