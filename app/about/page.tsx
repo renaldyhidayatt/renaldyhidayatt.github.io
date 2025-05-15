@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
- 
+
 
   return (
     <div className="container max-w-6xl py-6 lg:py-10 bg-background text-foreground">
@@ -37,13 +37,13 @@ export default function AboutPage() {
           <ModalCV />
         </div>
         <p className="text-muted-foreground text-lg py-4">
-        I&apos;m a <strong>Software Engineer</strong> with a deep passion for backend development and building reliable, scalable systems. I enjoy working with modern programming languages and technologies to create clean, maintainable, and high-performing applications.
+          I&apos;m a <strong>Software Engineer</strong> with a deep passion for backend development and building reliable, scalable systems. I enjoy working with modern programming languages and technologies to create clean, maintainable, and high-performing applications.
 
           <br /> <br />
-          Skilled in <strong>Golang, Python, Java, and Rust</strong>, I focus on developing APIs, designing microservices architectures, and integrating robust messaging systems like <strong>Kafka</strong> and <strong>RabbitMQ</strong>. My enthusiasm for programming drives me to turn hobbies into impactful, real-world projects—combining creativity with strong technical execution. I stay actively engaged with the latest tech trends, continuously refining my skills and applying them across a wide range of use cases—from payment systems to recommendation engines and developer tools.
+          Skilled in <strong>Golang, Python, Java, Rust, PHP, JavaScript, and TypeScript</strong>, I focus on developing APIs, designing microservices architectures, and integrating robust messaging systems like <strong>Kafka</strong> and <strong>RabbitMQ</strong>. My enthusiasm for programming drives me to turn hobbies into impactful, real-world projects—combining creativity with strong technical execution. I stay actively engaged with the latest tech trends, continuously refining my skills and applying them across a wide range of use cases—from payment systems to recommendation engines and developer tools.
         </p>
       </div>
-     
+
     </div>
   );
 }
