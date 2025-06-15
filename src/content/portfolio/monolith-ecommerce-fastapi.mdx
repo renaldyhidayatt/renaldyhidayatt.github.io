@@ -1,0 +1,88 @@
+---
+title: "Monolith E-commerce Project"
+excerpt: "A monolithic e-commerce application built with FastAPI, PostgreSQL, and Kafka."
+date: "2025-01-31"
+tags: ["python", "fastapi", "postgresql", "kafka", "docker-compose", "keycloak", "prometheus", "grafana", "opentelemetry", "jaeger"]
+status: "selesai"
+image: "https://github.com/MamangRust/monolith-ecommerce-example/raw/main/images/jaeger.png?raw=true"
+---
+
+# Monolith E-commerce Project
+
+This project is a monolithic e-commerce application that integrates multiple services using **FastAPI** and **SQLAlchemy**. It leverages **PostgreSQL** as the database, and the architecture is containerized with **Docker Compose** for seamless setup and scaling. The system includes key components such as authentication, order processing, and product management, with observability tools for monitoring and debugging.
+
+## Fitur Utama
+- **Authentication**: Login and verify tokens using Keycloak.
+- **Product Management**: Get all products.
+- **Order Management**: Create orders and send emails to customers using Apache Kafka.
+- **Email Notifications**: Asynchronous email sending for transactional updates.
+- **API Gateway**: A centralized entry point for all services.
+- **Observability**: Integrated tools like Prometheus, Grafana, Jaeger, and OpenTelemetry.
+
+## Teknologi yang Digunakan
+- **Backend Framework**: FastAPI
+- **Database**: PostgreSQL
+- **ORM**: SQLAlchemy
+- **Message Broker**: Kafka
+- **Monitoring and Observability**: Prometheus, Grafana, OpenTelemetry, Jaeger
+- **Authentication**: Keycloak
+- **Containerization**: Docker Compose
+
+## Instalasi
+```bash
+# Clone the repository
+$ git clone https://github.com/MamangRust/monolith-ecommerce-example.git
+$ cd monolith-ecommerce
+
+# Start the application
+$ docker-compose up --build
+```
+
+### Akses Layanan
+- **API Gateway**: [http://localhost:8084](http://localhost:8084)
+- **Keycloak**: [http://localhost:8080](http://localhost:8080)
+- **Grafana**: [http://localhost:3000](http://localhost:3000)
+- **Prometheus**: [http://localhost:9090](http://localhost:9090)
+- **Jaeger**: [http://localhost:16686](http://localhost:16686)
+
+## Layanan
+### Authentication Service
+- **Path**: `./auth-service`
+- **Deskripsi**: Manages user authentication and roles using Keycloak.
+- **Database**: PostgreSQL with SQLAlchemy ORM.
+- **Port**: `8088`
+
+### Product Service
+- **Path**: `./product-service`
+- **Deskripsi**: Get all products.
+- **Database**: PostgreSQL with SQLAlchemy ORM.
+- **Port**: `8081`
+
+### Order Service
+- **Path**: `./order-service`
+- **Deskripsi**: Create orders and send emails to customers using Apache Kafka.
+- **Database**: PostgreSQL with SQLAlchemy ORM.
+- **Port**: `8082`
+
+### Email Service
+- **Path**: `./email-service`
+- **Deskripsi**: Sends emails to customers using Apache Kafka.
+- **Dependencies**: Kafka for message queueing.
+- **Port**: `8083`
+
+## Observability dan Monitoring
+- **Prometheus**: Collects metrics from all services and Kafka.
+- **Grafana**: Displays collected metrics in interactive dashboards.
+- **Jaeger**: Traces requests across services for debugging.
+- **OpenTelemetry**: Ensures consistent telemetry data across services.
+
+## Demo
+### Jaeger UI in Grafana
+![Jaeger](https://github.com/MamangRust/monolith-ecommerce-example/raw/main/images/jaeger.png?raw=true)
+
+### Prometheus in Grafana
+![Prometheus](https://github.com/MamangRust/monolith-ecommerce-example/blob/main/images/promethus.png?raw=true)
+
+
+## 🔗 Source Code & Repository
+[📌 View on GitHub](https://github.com/MamangRust/monolith-ecommerce-example)

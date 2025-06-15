@@ -1,0 +1,99 @@
+---
+title: "Payment Gateway Project"
+excerpt: "A payment gateway system handling transactions, top-ups, withdrawals, and transfers using Go and sync.Mutex."
+date: "2025-01-31"
+tags: ["golang", "sync.Mutex"]
+status: "selesai"
+image: "/portofolio/payment_gateway_grpc.png"
+---
+
+# Payment Gateway Project
+
+This project simulates a payment gateway handling operations like card transactions, top-ups, withdrawals, and transfers. The system includes users, cards, merchants, and financial transactions while ensuring data consistency with **Go's sync.Mutex**.
+
+## Fitur Utama
+- **Card Transactions**: Process payments using credit/debit cards.
+- **Top-ups**: Add balance to cards via multiple methods.
+- **Withdrawals**: Withdraw funds from a card securely.
+- **Transfers**: Transfer funds between registered cards.
+- **Merchant Integration**: Allow merchants to process payments.
+
+## Teknologi yang Digunakan
+- **Backend**: Golang
+- **Concurrency Handling**: sync.Mutex
+- **Database**: PostgreSQL
+- **API**: RESTful
+- **Containerization**: Docker
+
+## Instalasi
+```bash
+# Clone the repository
+$ git clone https://github.com/MamangRust/golang-payment-mutex.git
+$ cd payment-gateway
+
+# Build the project
+$ go build
+
+# Run the project
+$ ./payment-gateway
+```
+
+## Model Data
+### Card
+- `CardID`: Unique identifier for the card.
+- `UserID`: Card owner's identifier.
+- `CardNumber`: The card number.
+- `CardType`: Type of card (Visa, MasterCard, etc.).
+- `ExpireDate`: Expiration date.
+- `CVV`: Card verification value.
+- `CardProvider`: The provider of the card.
+
+### Merchant
+- `MerchantID`: Unique identifier for the merchant.
+- `Name`: Merchant name.
+- `ApiKey`: API key for authentication.
+- `UserID`: Merchant owner's identifier.
+- `Status`: Active/Inactive.
+
+### Saldo
+- `SaldoID`: Unique identifier.
+- `CardNumber`: Associated card number.
+- `TotalBalance`: Current balance.
+- `WithdrawAmount`: Withdrawn amount.
+- `WithdrawTime`: Timestamp of withdrawal.
+
+### Topup
+- `TopupID`: Unique identifier.
+- `CardNumber`: Target card number.
+- `TopupNo`: Unique top-up number.
+- `TopupAmount`: Amount added.
+- `TopupMethod`: Method used (Bank Transfer, Credit Card, etc.).
+- `TopupTime`: Timestamp of top-up.
+
+### Transaction
+- `TransactionID`: Unique identifier.
+- `CardNumber`: Card used.
+- `Amount`: Transaction amount.
+- `PaymentMethod`: Payment method.
+- `MerchantID`: Merchant ID.
+- `TransactionTime`: Timestamp of transaction.
+
+### Transfer
+- `TransferID`: Unique identifier.
+- `TransferFrom`: Sender's card number.
+- `TransferTo`: Recipient's card number.
+- `TransferAmount`: Transferred amount.
+- `TransferTime`: Timestamp.
+
+### User
+- `UserID`: Unique user identifier.
+- `FirstName`: User's first name.
+- `LastName`: User's last name.
+- `Email`: User's email.
+- `Password`: Authentication password.
+
+### Withdraw
+- `WithdrawID`: Unique identifier.
+- `CardNumber`: Card number.
+- `WithdrawAmount`: Withdrawn amount.
+- `WithdrawTime`: Timestamp.

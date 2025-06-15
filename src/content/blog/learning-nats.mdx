@@ -1,0 +1,407 @@
+---
+title: "Understanding NATS with Golang and Docker"
+excerpt: "A comprehensive guide on how to implement NATS using Golang and Docker, showcasing a simple order processing system."
+tags: ["nats", "golang", "docker", "microservices"]
+date: "2024-10-03"
+readTime: "15 min read"
+---
+
+# Understanding NATS with Golang and Docker
+
+NATS is a high-performance messaging system that facilitates communication in microservices, distributed systems, and cloud-native applications. This guide demonstrates how to integrate NATS with a Golang-based microservices architecture and containerize the setup using Docker. We’ll also build a simple order processing system as an example.
+
+### What You'll Learn:
+
+1. What NATS is and how it works
+2. Setting up a NATS server using Docker
+3. Building a Golang service with NATS
+4. Dockerizing the services and running them in a multi-service environment
+
+---
+
+## 1. What is NATS?
+
+NATS is a simple, secure, and scalable cloud-native messaging system. It supports messaging patterns like Publish-Subscribe (Pub/Sub), Request-Reply, and Load Balancing, making it an excellent tool for building distributed applications. Its low-latency communication makes it ideal for real-time systems.
+
+### Key Features of NATS:
+
+- **Publish/Subscribe**: One-to-many communication, where publishers send messages to multiple subscribers.
+- **Request/Reply**: One-to-one messaging, where the requestor expects a response.
+- **Persistence and Queueing**: NATS JetStream adds persistence, making it suitable for scenarios requiring durability.
+- **Ease of Use**: It offers a simple setup and client libraries for many languages, including Golang.
+
+---
+
+## 2. Setting Up NATS with Docker
+
+Let's begin by setting up a NATS server using Docker. We will use Docker Compose to manage the components of our system, which includes a NATS server, an `order-service`, and an `email-service`.
+
+### Docker Compose Setup:
+
+Below is the `docker-compose.yml` file, defining a multi-service architecture:
+
+```yaml
+version: '3.8'
+
+services:
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+    networks:
+      - my-network
+
+  email-service:
+    build:
+      context: ./email-service
+    restart: always
+    container_name: email-service
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
+    networks:
+      - my-network
+
+  order-service:
+    build:
+      context: ./order-service
+    restart: always
+    container_name: order-service
+    ports:
+      - "5000:5000"
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge
+```
+
+### Services Overview:
+- **NATS**: The core message broker, running on port 4222.
+- **Email Service**: Listens for order events and sends confirmation emails.
+- **Order Service**: Publishes order-related events (like placed or processed orders) to the NATS server.
+
+## 3. Implementing the Golang Services
+Now, let's implement the order-service and email-service using Golang. These services will interact with the NATS server, one for publishing orders and the other for processing them.
+
+#### 3.1 Order Service (Producer)
+The order-service will handle placing orders and publishing them to the NATS server.
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/nats-io/nats.go"
+)
+
+type Order struct {
+	ID     int    `json:"id"`
+	Status string `json:"status"`
+}
+
+var natsConn *nats.Conn
+
+func main() {
+	setupNATSProducer()
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Order Service"))
+	})
+	http.HandleFunc("/placeOrder", placeOrderHandler)
+
+	log.Fatal(http.ListenAndServe(":5000", nil))
+}
+
+func setupNATSProducer() {
+	var err error
+	natsConn, err = nats.Connect(nats.DefaultURL)
+	if err != nil {
+		log.Fatal("Error connecting to NATS:", err)
+	}
+	log.Println("Connected to NATS successfully")
+}
+
+func placeOrderHandler(w http.ResponseWriter, r *http.Request) {
+	var order Order
+	err := json.NewDecoder(r.Body).Decode(&order)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	publishOrderToNATS(order)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order placed successfully"))
+}
+
+func publishOrderToNATS(order Order) {
+	message, err := json.Marshal(order)
+	if err != nil {
+		log.Println("Error marshaling order:", err)
+		return
+	}
+
+	err = natsConn.Publish("orders", message)
+	if err != nil {
+		log.Println("Error publishing message to NATS:", err)
+		return
+	}
+	log.Println("Order published to NATS successfully")
+}
+```
+
+```dockerfile
+FROM golang:1.21-alpine
+
+COPY . /app
+
+WORKDIR /app
+
+RUN go mod download
+
+RUN go build -o main .
+
+CMD ["./main"] 
+```
+
+
+####  3.2 Order Processing Service (Consumer)
+This service listens for order events from NATS, processes the order, and updates its status.
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/nats-io/nats.go"
+)
+
+type Order struct {
+	ID     int    `json:"id"`
+	Status string `json:"status"`
+}
+
+func main() {
+	setupNATSConsumer()
+}
+
+func setupNATSConsumer() {
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		log.Fatal("Error connecting to NATS:", err)
+	}
+	defer nc.Close()
+
+	_, err = nc.Subscribe("orders", func(msg *nats.Msg) {
+		var order Order
+		err := json.Unmarshal(msg.Data, &order)
+		if err != nil {
+			log.Println("Error unmarshaling order:", err)
+			return
+		}
+		processOrder(order)
+	})
+	if err != nil {
+		log.Fatal("Error subscribing to orders:", err)
+	}
+
+	log.Println("NATS consumer is now consuming messages from the 'orders' topic")
+	select {}
+}
+
+func processOrder(order Order) {
+	fmt.Printf("Processing Order ID: %d, Status: %s\n", order.ID, order.Status)
+
+	time.Sleep(2 * time.Second)  // Simulate order processing
+
+	order.Status = "processed"
+	log.Printf("Order ID %d processed successfully\n", order.ID)
+}
+```
+
+```dockerfile
+FROM golang:1.21-alpine
+
+COPY . /app
+
+WORKDIR /app
+
+RUN go mod download
+
+RUN go build -o main .
+
+CMD ["./main"] 
+```
+
+#### 3.3 Email Service
+This service listens for processed order events and sends an email to the customer.
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"html/template"
+	"log"
+	"net/smtp"
+
+	"github.com/nats-io/nats.go"
+)
+
+type Order struct {
+	ID     int    `json:"id"`
+	Status string `json:"status"`
+}
+
+func main() {
+	setupNATSConsumer()
+}
+
+func setupNATSConsumer() {
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		log.Fatal("Error connecting to NATS:", err)
+	}
+	defer nc.Close()
+
+	_, err = nc.Subscribe("orders", func(msg *nats.Msg) {
+		var order Order
+		err := json.Unmarshal(msg.Data, &order)
+		if err != nil {
+			log.Println("Error unmarshaling order:", err)
+			return
+		}
+		if order.Status == "processed" {
+			sendEmail(order)
+		}
+	})
+	if err != nil {
+		log.Fatal("Error subscribing to orders:", err)
+	}
+
+	log.Println("NATS consumer is now listening for processed orders")
+	select {}
+}
+
+func sendEmail(order Order) {
+	to := "customer@example.com"
+	subject := "Order Processed"
+	emailBody := createEmailBody(order)
+
+	emailUser := "your_email@example.com"
+	emailPassword := "your_password"
+	emailServer := "smtp.example.com"
+	emailPort := "587"
+
+	auth := smtp.PlainAuth("", emailUser, emailPassword, emailServer)
+	err := smtp.SendMail(emailServer+":"+emailPort, auth, emailUser, []string{to}, []byte(emailBody))
+	if err != nil {
+		log.Println("Error sending email:", err)
+	} else {
+		log.Println("Email sent successfully")
+	}
+}
+
+func createEmailBody(order Order) string {
+	templateStr := `
+	Subject: {{.Subject}}
+	MIME-version: 1.0;
+	Content-Type: text/html; charset="UTF-8";
+
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Order Confirmation</title>
+	</head>
+	<body>
+		<h1>Order Processed</h1>
+		<p>Your order with ID: <strong>{{.ID}}</strong> has been successfully processed.</p>
+	</body>
+	</html>`
+
+	tmpl, err := template.New("email").Parse(templateStr)
+	if err != nil {
+		log.Fatal("Error parsing email template:", err)
+	}
+
+	var body bytes.Buffer
+	err = tmpl.Execute(&body, map[string]interface{}{"Subject": "Order Processed", "ID": order.ID})
+	err != nil {
+		log.Fatal("Error executing email template:", err)
+	}
+
+	return body.String()
+
+}
+```
+
+```dockerfile
+FROM golang:1.21-alpine
+
+COPY . /app
+
+WORKDIR /app
+
+RUN go mod download
+
+RUN go build -o main .
+
+CMD ["./main"] 
+```
+
+## 4. Running Everything Together
+
+Once the services are set up, follow these steps to run everything:
+
+1. Create the `docker-compose.yml` file as defined earlier.
+
+2. Place the code for `order-service`, `order-processing-service`, and `email-service` in separate directories (e.g., `./order-service`, `./order-processing-service`, and `./email-service`).
+
+3. Build and start the services using Docker Compose: 
+	```bash
+	docker-compose up --build
+	```
+
+This command will build your Docker images and start all the services: the Nats server, `order-service`, `order-processing-service`, and `email-service`. The `order-service` will publish order messages, which will be processed by the `order-processing-service`, and confirmation emails will be sent by the `email-service`.
+
+
+
+### 5 Visualize Flow
+![Sequence Diagram](/posts/nats.png)
+
+
+
+### Test Curl
+
+```bash
+curl -X POST -H "Content-Type: application/json
+" -d '{"id": 235, "status": "processed"}' http://localhost:5000/placeOrder
+```
+
+
+
+## Conclusion
+In this guide, we’ve successfully implemented a simple order processing system using NATS, Golang, and Docker. This example demonstrates how to leverage NATS for real-time communication between microservices. By containerizing your services with Docker, you can easily scale and manage them in a distributed environment.
+
+NATS offers a powerful, lightweight messaging system that is easy to set up and use. Whether you’re building microservices, IoT applications, or cloud-native solutions, NATS can handle messaging needs efficiently.
+
+By applying the concepts here, you can extend this example to create more complex workflows and build resilient, scalable systems.

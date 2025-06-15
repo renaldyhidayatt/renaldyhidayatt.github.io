@@ -1,0 +1,196 @@
+---
+title: "Running a Golang Application in Minikube"
+excerpt: "A step-by-step guide to running a simple Golang application in a Minikube Kubernetes cluster."
+tags: ["minikube", "golang", "kubernetes", "devops"]
+date: "2024-10-03"
+readTime: "15 min read"
+---
+
+## Introduction
+
+In this guide, we'll walk through deploying a Golang application on a Kubernetes cluster using `Minikube`. `Minikube` i`s perfect for setting up a local Kubernetes environment to test applications before deploying them in production.
+
+### Prerequisites
+
+- Basic knowledge of Go and Kubernetes.
+- Installed Minikube and `kubectl`.
+- Installed Docker for containerizing your application.
+
+## Step 1: Create a Simple Golang Application
+
+First, let's create a simple Golang HTTP server.
+
+Create a directory for the project:
+
+```bash
+mkdir golang-minikube-app
+cd golang-minikube-app
+```
+
+Create a file named `main.go`:
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, Kubernetes from Go!")
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
+}
+```
+This is a simple HTTP server that listens on port 8080 and responds with `"Hello, Kubernetes from Go!"`.
+
+## Step 2: Dockerize the Application
+
+To run this Golang application in Kubernetes, we need to containerize it using Docker. Create a `Dockerfile` in the project directory:
+
+```dockerfile
+# Start from the official Golang base image
+FROM golang:1.20-alpine
+
+# Set the current working directory inside the container
+WORKDIR /app
+
+# Copy go.mod and go.sum, then install dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the application
+COPY . .
+
+# Build the application
+RUN go build -o main .
+
+# Expose port 8080
+EXPOSE 8080
+
+# Command to run the application
+CMD ["./main"]
+```
+
+Build the Docker image:
+
+```bash
+docker build -t golang-minikube-app .
+```
+
+### Step 3: Start Minikube
+
+```bash
+minikube start
+```
+
+Once Minikube is running, you may need to use Minikube's Docker daemon to avoid pushing the image to a remote registry:
+
+```bash
+eval $(minikube docker-env)
+```
+
+Now, build the Docker image again inside the Minikube environment:
+
+```bash
+docker build -t golang-minikube-app .
+```
+
+### Step 4: Create Kubernetes Deployment and Service
+
+#### Create Deployment YAML
+
+Create a new file `deployment.yaml` to define the deployment for the Golang application:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: golang-app-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: golang-app
+  template:
+    metadata:
+      labels:
+        app: golang-app
+    spec:
+      containers:
+      - name: golang-app
+        image: golang-minikube-app
+        ports:
+        - containerPort: 8080
+```
+
+#### Create Service YAML
+
+Create a `service.yaml` file for exposing the application as a service within the Kubernetes cluster:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: golang-app-service
+spec:
+  selector:
+    app: golang-app
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: NodePort
+```
+
+### Step 5: Apply Kubernetes Configuration
+
+Now, apply the Kubernetes deployment and service configuration:
+
+```bash
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+```
+
+Check the status of the deployment:
+
+```bash
+kubectl get deployments
+kubectl get pods
+```
+
+### Step 6: Access The Application
+
+Minikube provides a handy command to access the service URL:
+
+```bash
+minikube service golang-app-service --url
+```
+
+This will output the URL where the Golang app is running. Open it in your browser, and you should see:
+
+```plaintext
+Hello, Kubernetes from Go!
+```
+
+### Step 7: Scaling the Application
+You can easily scale the application by adjusting the replica count in the deployment file or using the kubectl command:
+
+```bash
+kubectl scale deployment golang-app-deployment --replicas=3
+```
+
+Verify that more pods are running:
+
+```bash
+kubectl get pods
+```
+
+## Conclusion
+**Minikube** is an excellent tool for running Kubernetes locally, making it easy to develop and test applications before deploying to production. This guide showed you how to create a simple Golang application, Dockerize it, and deploy it using Minikube.
+
+Now that you've got the basics down, you can explore more Kubernetes features like health checks, autoscaling, and advanced networking with Minikube.

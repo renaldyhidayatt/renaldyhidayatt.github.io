@@ -1,0 +1,241 @@
+---
+title: "Docker Basics and Cheatsheet"
+excerpt: "Learn Docker essentials with this guide and quick reference."
+date: "2024-10-03"
+tags: ["docker", "devops", "containerization", "cheatsheet"]
+readTime: "15 min read"
+---
+
+## Docker Basics + Cheatsheet
+
+### Introduction
+
+**Docker** is a platform for developing, shipping, and running applications in isolated environments called containers. Containers package up an application and all of its dependencies, ensuring that it works uniformly across different computing environments.
+
+This guide will cover Docker’s core concepts, how to install it, and provide a **cheatsheet** to help you get started and manage containers quickly.
+
+
+### Prerequisites
+
+Before you dive into Docker, ensure you have:
+
+- **Basic Linux/Unix commands** knowledge.
+- A **64-bit operating system** with virtualization enabled.
+
+---
+
+### Installing Docker
+
+Docker is available for multiple operating systems, including Linux, macOS, and Windows. Here’s how to install it on different platforms:
+
+#### For macOS:
+```bash
+brew install --cask docker
+```
+
+#### For Linux(Ubuntu):
+
+```bash
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+
+# Install Docker Engine:
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+#### Running Docker:
+
+```bash 
+docker run hello-world
+```
+
+
+### Key Docker Concepts
+    - **Image**: A Docker image is a blueprint for containers. It includes the application code, libraries, dependencies, and environment settings.
+    - **Container**: A lightweight, executable package of software that contains everything needed to run the application.
+    - **Dockerfile**: A text file that contains a set of instructions to build a Docker image.
+    - **Docker Hub**: A public registry that hosts Docker images for download.
+
+
+### Docker Cheatsheet
+
+#### Basic Docker commands
+
+```bash
+docker --version          # Check Docker version
+docker info               # Get system-wide information about Docker
+```
+
+#### Working with images:
+
+```bash
+docker images                        # List all images
+docker pull <image-name>             # Download an image from Docker Hub
+docker rmi <image-name>              # Remove an image
+```
+
+#### Running Containers:
+
+```bash
+docker run <image-name>              # Run a container from an image
+docker run -it <image-name> bash     # Run a container with an interactive terminal
+docker run -d <image-name>           # Run container in detached mode (background)
+docker run -p 8080:80 <image-name>   # Map container port 80 to local port 8080
+docker ps                            # List running containers
+docker stop <container-id>           # Stop a running container
+docker rm <container-id>             # Remove a stopped container
+```
+
+#### Container Management:
+
+```bash
+docker logs <container-id>           # View logs of a container
+docker exec -it <container-id> bash  # Run commands inside a running container
+docker inspect <container-id>        # Detailed information about a container
+docker stats <container-id>          # Monitor container resource usage
+```
+
+#### Volumes and Data Persistence:
+
+```bash
+docker volume create <volume-name>           # Create a volume
+docker run -v <volume-name>:/data <image>    # Mount a volume to a container
+docker volume ls                             # List all Docker volumes
+docker volume rm <volume-name>               # Remove a volume
+```
+
+#### Docker Networking
+
+```bash
+docker network ls                # List all Docker networks
+docker network create <name>     # Create a custom network
+docker network inspect <name>    # Get detailed info about a network
+docker run --network=<name> <image>   # Run container on a specific network
+```
+
+
+#### Clean Up docker Resource
+
+
+```bash
+docker system prune -f           # Remove all unused containers, images, and networks
+docker container prune -f        # Remove stopped containers
+docker image prune -f            # Remove unused images
+```
+
+## Example: Building and Running a Dockerized Go Application
+
+Let’s walk through building and running a basic Go application with Docker.
+
+### 1. Create a Simple Go Application
+
+Create a simple Go application in a file named `main.go`:
+
+```go
+package main
+
+import (
+    "fmt"
+    "net/http"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "Hello, Dockerized Go!")
+}
+
+func main() {
+    http.HandleFunc("/", handler)
+    fmt.Println("Server starting at :8080")
+    http.ListenAndServe(":8080", nil)
+}
+```
+
+### 2. Create a Dockerfile
+
+Create a Dockerfile in your project root:
+
+```dockerfile
+# Start from the official Go image
+FROM golang:1.20
+
+# Set the Current Working Directory inside the container
+WORKDIR /app
+
+# Copy go.mod and go.sum files to the workspace
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the Go application
+RUN go build -o main .
+
+# Expose port 8080 to the outside world
+EXPOSE 8080
+
+# Command to run the executable
+CMD ["./main"]
+```
+
+### 3. Build the Image
+
+In the same directory as your Dockerfile, run the following command to build your Docker image:
+
+```bash
+docker build -t my-go-app .
+```
+This command will create a new `Docker` image named my-go-app using the instructions from your `Dockerfile`.
+
+
+### 4. Run the Image
+
+In the same directory as your Dockerfile, run the following command to run your Docker image:
+
+```bash
+docker run -p 8080:8080 my-go-app
+```
+
+### 5. Look at Logs
+
+In the same directory as your Dockerfile, run the following command to view the logs of your Docker image:
+
+```bash
+docker logs my-go-app
+```
+
+### 6. Clean Up
+
+In the same directory as your Dockerfile, run the following command to remove your Docker image:
+
+```bash
+
+docker rmi my-go-app
+```
+
+### 7. Stop the Image
+
+In the same directory as your Dockerfile, run the following command to stop the Docker image:
+
+```bash
+
+docker stop my-go-app
+```
+
+## Conclusion
+**Docker** is a powerful tool for creating, managing, and shipping applications in containers. Whether you're developing locally, testing, or deploying to production, Docker simplifies the process by providing a consistent environment for your app to run in.
+
+Use the above cheatsheet to quickly get started with Docker commands and feel free to explore Docker Compose for more complex, multi-container setups!

@@ -1,0 +1,481 @@
+---
+title: "Case Study: Room Reservation Management System"
+excerpt: Case study of database usage to manage Room Reservation Management System.
+tags: ["database", "sql"]
+date: "2024-10-05"
+readTime: "15 min read"
+published: true
+---
+
+**Scenario**
+A company develops a room booking system to allow employees to book meeting rooms or workspaces. The system must be able to manage room bookings, manage room availability, and manage users who can book rooms. In addition, the system must provide reports on bookings made.
+
+## Usage Scenarios
+1. **User Management**:
+
+    - New user registration.
+    - Setting user roles (admin, user, etc.).
+    - Ensuring user data security.
+
+2. **Room Management**:
+
+    - Add, edit, and delete room information.
+    - Set room status (available, booked, etc.).
+    - Manage room capacity.
+
+3. **Booking Management**:
+
+    - Create new bookings for specific rooms.
+    - Edit and cancel bookings.
+    - Store booking information including booking time, check-in time, and check-out time.
+
+4. **Reporting**:
+
+    - Generate booking reports based on specific users, rooms, and time periods.
+    - Calculate booking statistics (e.g., most frequently booked rooms, active users, etc.).
+
+## Sql
+
+```sql
+-- Create the roles table
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,  -- Use SERIAL for auto-increment
+    name VARCHAR(20),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_by VARCHAR(255)
+);
+
+-- Create the users table
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,  -- Use BIGSERIAL for auto-increment
+    username VARCHAR(20) NOT NULL UNIQUE,
+    email VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(120) NOT NULL,
+    verification_code VARCHAR(50),
+    is_verified BOOLEAN,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_by VARCHAR(255)
+);
+
+-- Create the user_roles junction table
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_id BIGINT,
+    role_id INT,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
+
+-- Create the rooms table
+CREATE TABLE IF NOT EXISTS rooms (
+    room_id BIGSERIAL PRIMARY KEY,  -- Use BIGSERIAL for auto-increment
+    room_name VARCHAR(255) NOT NULL,
+    room_capacity INT NOT NULL,
+    photo VARCHAR(255) NOT NULL,
+    room_status VARCHAR(255) DEFAULT 'ready',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Optional: Automatically set timestamp
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Optional: Automatically set timestamp
+    created_by VARCHAR(255),
+    updated_by VARCHAR(255)
+);
+
+
+-- Create the bookings table
+CREATE TABLE IF NOT EXISTS bookings (
+    booking_id BIGSERIAL PRIMARY KEY,  -- Use BIGSERIAL for auto-increment
+    order_id VARCHAR(255) NOT NULL,
+    user_id BIGINT NOT NULL,
+    room_id BIGINT NOT NULL,
+    total_person INT NOT NULL,
+    booking_time TIMESTAMP NOT NULL,  -- Use TIMESTAMP for consistency
+    noted VARCHAR(255),
+    check_in_time TIMESTAMP,
+    check_out_time TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_by VARCHAR(255),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
+);
+
+-- Add indexes for better query performance
+CREATE INDEX idx_booking_user ON bookings(user_id);
+CREATE INDEX idx_booking_room ON bookings(room_id);
+CREATE INDEX idx_room_status ON rooms(room_status);
+
+
+INSERT INTO roles (name, created_at, updated_at, created_by, updated_by)
+VALUES
+    ('Admin', NOW(), NOW(), 'system', 'system'),
+    ('User', NOW(), NOW(), 'system', 'system'),
+    ('Manager', NOW(), NOW(), 'system', 'system'),
+    ('Guest', NOW(), NOW(), 'system', 'system'),
+    ('Staff', NOW(), NOW(), 'system', 'system'),
+    ('Supervisor', NOW(), NOW(), 'system', 'system'),
+    ('Owner', NOW(), NOW(), 'system', 'system'),
+    ('Operator', NOW(), NOW(), 'system', 'system'),
+    ('Customer', NOW(), NOW(), 'system', 'system'),
+    ('Vendor', NOW(), NOW(), 'system', 'system');
+
+
+INSERT INTO users (username, email, password, verification_code, is_verified, created_at, updated_at, created_by, updated_by)
+VALUES
+    ('user1', 'user1@example.com', 'password1', 'code1', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user2', 'user2@example.com', 'password2', 'code2', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user3', 'user3@example.com', 'password3', 'code3', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user4', 'user4@example.com', 'password4', 'code4', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user5', 'user5@example.com', 'password5', 'code5', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user6', 'user6@example.com', 'password6', 'code6', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user7', 'user7@example.com', 'password7', 'code7', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user8', 'user8@example.com', 'password8', 'code8', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user9', 'user9@example.com', 'password9', 'code9', TRUE, NOW(), NOW(), 'system', 'system'),
+    ('user10', 'user10@example.com', 'password10', 'code10', TRUE, NOW(), NOW(), 'system', 'system');
+
+
+INSERT INTO user_roles (user_id, role_id)
+VALUES
+    (1, 1),  -- user1 is Admin
+    (2, 2),  -- user2 is User
+    (3, 3),  -- user3 is Manager
+    (4, 4),  -- user4 is Guest
+    (5, 5),  -- user5 is Staff
+    (6, 6),  -- user6 is Supervisor
+    (7, 7),  -- user7 is Owner
+    (8, 8),  -- user8 is Operator
+    (9, 9),  -- user9 is Customer
+    (10, 10); -- user10 is Vendor
+
+
+INSERT INTO rooms (room_name, room_capacity, photo, room_status, created_at, updated_at, created_by, updated_by)
+VALUES
+    ('Room A', 2, 'room_a.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room B', 4, 'room_b.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room C', 3, 'room_c.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room D', 5, 'room_d.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room E', 1, 'room_e.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room F', 2, 'room_f.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room G', 6, 'room_g.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room H', 4, 'room_h.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room I', 3, 'room_i.jpg', 'ready', NOW(), NOW(), 'system', 'system'),
+    ('Room J', 5, 'room_j.jpg', 'ready', NOW(), NOW(), 'system', 'system');
+
+
+INSERT INTO bookings (order_id, user_id, room_id, total_person, booking_time, noted, check_in_time, check_out_time, created_at, updated_at, created_by, updated_by)
+VALUES
+    ('ORD001', 1, 1, 2, NOW(), 'First booking', '2024-10-05 14:00:00', '2024-10-10 11:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD002', 2, 2, 4, NOW(), 'Second booking', '2024-10-06 15:00:00', '2024-10-11 12:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD003', 3, 3, 3, NOW(), 'Third booking', '2024-10-07 16:00:00', '2024-10-12 13:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD004', 4, 4, 5, NOW(), 'Fourth booking', '2024-10-08 17:00:00', '2024-10-13 14:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD005', 5, 5, 1, NOW(), 'Fifth booking', '2024-10-09 18:00:00', '2024-10-14 15:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD006', 6, 6, 2, NOW(), 'Sixth booking', '2024-10-10 19:00:00', '2024-10-15 16:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD007', 7, 7, 6, NOW(), 'Seventh booking', '2024-10-11 20:00:00', '2024-10-16 17:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD008', 8, 8, 4, NOW(), 'Eighth booking', '2024-10-12 21:00:00', '2024-10-17 18:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD009', 9, 9, 3, NOW(), 'Ninth booking', '2024-10-13 22:00:00', '2024-10-18 19:00:00', NOW(), NOW(), 'system', 'system'),
+    ('ORD010', 10, 10, 5, NOW(), 'Tenth booking', '2024-10-14 23:00:00', '2024-10-19 20:00:00', NOW(), NOW(), 'system', 'system');
+
+```
+
+## Langkah-langkah untuk Easy, Medium, dan Hard Case
+
+### Easy Case 1: Menampilkan Semua Ruang
+Deskripsi: Sistem perlu menampilkan semua ruang yang tersedia dalam database.
+
+```sql
+SELECT * FROM rooms;
+```
+
+#### Steps:
+
+1. Develop an endpoint to display all rooms.
+2. Query the database to retrieve all data from the rooms table.
+3. Return the results in a usable format (JSON, XML, etc.).
+
+### Easy Case 2: Displaying Available Rooms
+Description: The system wants to display a list of rooms that have the status "ready".
+
+```sql
+SELECT * FROM rooms WHERE room_status = 'ready';
+```
+
+#### Steps:
+
+1. Develop an endpoint to display available rooms.
+2. Query the database to retrieve all rooms with ready status.
+3. Return the results in a usable format.
+
+### Medium Case 1: Create a New Booking
+#### Description
+The system allows a user to create a new booking for a specific room. This process must ensure that the room is available before making a booking.
+
+#### Scenario
+A user wants to make a booking for a specific meeting room and enter information about the number of people who will be using the room and the check-in and check-out times.
+
+#### Key Steps to Handle
+    1. **Validate Room Availability**:
+
+        - Ensure that the selected room is available at the requested time.
+
+    2. **Create Booking**:
+
+        - Insert the new booking data into the bookings table.
+
+    3. **Handle Errors**:
+
+        - Provide feedback if the room is not available or if there is any other error in the booking.
+
+
+#### Steps for this Medium Case
+    1. **Develop Endpoint for New Booking**:
+
+        - Create an API endpoint to receive new booking requests from users.
+
+    2. **Validate Input from User**:
+
+        - Check if the requested room is available for the requested time range:
+
+        ```sql
+        SELECT COUNT(*) 
+        FROM bookings 
+        WHERE room_id = 101 
+        AND (check_in_time < '2024-10-5 14:00:00' AND check_out_time > '2024-10-10 11:00:00');
+
+
+        ```
+        - If the above query result is more than 0, the room is not available.
+    3. **Perform a Query to Enter Booking Data**:
+
+        - If the room is available, enter the booking data into the table:
+    ```sql
+    INSERT INTO bookings (order_id, user_id, room_id, total_person, booking_time, noted, check_in_time, check_out_time) VALUES (?, ?, ?, ?, NOW(), ?, ?, ?);
+
+    ```
+
+
+### Medium Case 2: Editing a Booking
+    #### Description
+    The system allows users to edit an existing booking. Users can update booking details such as the room selected, number of people, check-in and check-out times.
+
+    #### Scenario
+    A user wants to change their booking details, such as selecting a different room or updating the number of people and check-in time.
+
+    #### Key Steps to Handle
+    1. **Validate Booking**:
+
+        - Ensure that the booking you want to edit is valid and available.
+
+    2. **Update Booking**:
+
+        - Perform a query to update the booking data in the bookings table.
+
+    3. **Handle Errors**:
+
+        - Provide feedback if an error occurs while updating the booking.
+
+    #### Steps for this Medium Case
+    1. **Develop Endpoint to Edit Booking**:
+
+        - Create an API endpoint to receive edit requests from users.
+
+    2. **Validate User Input**:
+
+        - Check if the order you want to edit is valid:
+    ```sql
+    SELECT COUNT(*) 
+    FROM bookings 
+    WHERE booking_id = ?;
+
+    ```
+    
+    3. **Check Room Availability (If Changing Rooms)**:
+
+        - If the user changes rooms, check the room availability as in Medium Case 1.
+
+    4. **Perform Query to Update Booking Data**:
+
+        - If validation is successful, perform a query to update the booking:
+
+    ```sql
+    UPDATE bookings
+    SET room_id = ?, total_person = ?, check_in_time = ?, check_out_time = ?, noted = ?
+    WHERE booking_id = ?;
+
+    ```
+
+    5. **Respond to User Requests**:
+
+    - Return an appropriate response to the user, including confirmation of the booking change or an error message if there is a problem.
+
+
+### Hard Case 1: Calculating Room Utilization
+#### Description
+The system wants to calculate the utilization rate of each room based on the number of reservations made compared to the total time available during a given period. High room utilization indicates that the room is frequently used, while low utilization may indicate that the room is not very popular.
+
+#### Scenario
+A room manager wants to get a report on the utilization rate of each room in the system to determine if any adjustments to pricing, promotions, or changes to the types of rooms offered are needed.
+
+### Key Steps to Handle
+    1. **Calculating the Number of Bookings**:
+
+        - Calculating the total bookings for each room in a given period.
+
+    2. **Calculating the Total Available Time**:
+
+        - Determining the total available time for each room based on the booking time capacity.
+
+    3. **Calculating the Utilization Rate**:
+
+        - Calculating the utilization rate based on the total bookings compared to the total available time.
+
+### Steps for this Hard Case
+    1. **Prepare Data for Calculation**:
+
+        - Develop a query to calculate the number of reservations per room:
+    
+    ```sql
+    WITH total_bookings AS (
+    SELECT room_id, COUNT(booking_id) AS total_bookings
+    FROM bookings
+    WHERE check_in_time >= '2024-10-05 14:00:00' 
+      AND check_out_time <= '2024-10-10 11:00:00'
+    GROUP BY room_id
+    )
+    SELECT *
+    FROM total_bookings;
+
+    ```
+
+    2. **Calculating Total Available Time**:
+
+        - Calculate the total available time for each room in the same period. For example, if a room is available 8 hours per day and calculated for a number of days in the period:
+
+    ```sql
+    SELECT room_id, 
+       COUNT(DISTINCT DATE(check_in_time)) * 8 AS total_available_hours
+    FROM bookings
+    WHERE check_in_time >= '2024-10-05 00:00:00' AND check_out_time <= '2024-10-10 23:59:59'  -- Adjust as needed
+    GROUP BY room_id;
+
+
+    ```
+
+    3. **Calculating Utilization Rate**:
+
+        - Calculate the utilization rate by comparing the number of orders to the total time available:
+
+    ```sql
+    WITH total_bookings AS (
+    SELECT room_id, COUNT(booking_id) AS total_bookings
+    FROM bookings
+    WHERE check_in_time >= '2024-10-05 00:00:00' AND check_out_time <= '2024-10-10 23:59:59'  -- Adjust as needed
+    GROUP BY room_id
+    )
+    SELECT r.room_name, 
+        COALESCE(tb.total_bookings, 0) AS total_bookings,  
+        (COALESCE(tb.total_bookings, 0)::float / total_available_hours * 100) AS utilization_rate
+    FROM public.rooms r  -- Specify schema if needed
+    LEFT JOIN total_bookings tb ON r.room_id = tb.room_id;
+
+    ```
+
+    4. **Handling Errors**:
+
+        - Ensure that all rooms are accounted for, even if there are no reservations, by using a LEFT JOIN.
+
+    5. **Displaying Results to Room Manager**:
+
+        - Return results that include room name, number of reservations, and utilization rate in a readable format. This can be the table generated from the final query above.
+
+### Hard Case 2: Viewing Booking History by User
+
+#### Description
+The system allows users to view the history of bookings they have made. This aims to provide transparency in managing room bookings.
+
+#### Scenario
+A registered user wants to view a list of their previous room bookings, including information about the booking time, check-in time, and check-out time.
+
+#### Key Steps to Handle
+
+1. **Retrieve Booking History Data**:
+
+    - Retrieve data from the bookings table containing booking information.
+
+    - Join the rooms table to get information about the name of the booked room.
+
+2. **Display Data**:
+
+    - Present the results in a table format that is easy to read.
+
+3. **Error Handling**:
+
+    - Handle the condition where no bookings are found for a particular user.
+
+### Steps for this Hard Case
+1. **Determine User ID**:
+
+    - The user ID who wants to view the order history must be known after the authentication process.
+
+2. **Query Database to Retrieve Order History**:
+
+    - Create a SQL query to retrieve order data based on user ID:
+
+```sql
+SELECT 
+    b.booking_id, 
+    r.room_name, 
+    b.check_in_time, 
+    b.check_out_time, 
+    b.booking_time
+FROM 
+    bookings b
+JOIN 
+    rooms r ON b.room_id = r.id
+WHERE 
+    b.user_id = ?; -- Ganti dengan ID pengguna yang sesuai
+```
+
+3. **Query Explanation**:
+
+- **SELECT**: Selects the desired columns to display, including booking ID, room name, check-in time, check-out time, and booking time.
+- **FROM**: Gets data from the bookings table and joins it with the rooms table to get the room name.
+- **JOIN**: Uses INNER JOIN to connect the bookings table with rooms based on the same room ID.
+- **WHERE**: Filters the results based on the given user ID.
+
+4. **Query Execution**:
+
+- Execute the query using a database mechanism appropriate to the programming language used (for example, JDBC in Java or using an ORM such as JPA/Hibernate).
+
+5. **Query Result Handling**:
+
+- If the query results return one or more rows, process the data and display it in a table.
+- If there are no results, prepare logic to handle the situation where the user has no booking history.
+
+6. **Result Table**
+
+After executing the query to calculate the space utilization rate, the results can be displayed in tabular form as follows:
+
+| Booking ID | Room Name | Check-In Time       | Check-Out Time      | Booking Time         |
+|------------|-----------|---------------------|---------------------|-----------------------|
+| 1          | Ruang A   | 2024-10-01 14:00:00 | 2024-10-01 16:00:00 | 2024-09-28 10:00:00   |
+| 2          | Ruang B   | 2024-10-05 09:00:00 | 2024-10-05 11:00:00 | 2024-09-30 11:00:00   |
+
+
+## Conclusion
+In summary, the development of a room booking system tailored to the needs of the company offers a structured approach to managing room reservations efficiently. The systematic methodology outlined in this case study emphasizes several key areas:
+
+    1. **Comprehensive User and Room Management**: By implementing robust user and room management features, the system ensures that employees can easily navigate their booking options while administrators maintain control over room availability and user roles.
+
+    2. **Flexible Booking Management**: The system allows users to create, edit, and cancel bookings seamlessly, promoting flexibility and accommodating changes in scheduling. This responsiveness enhances user satisfaction and encourages more frequent use of the system.
+
+    3. **Data-Driven Reporting**: The ability to generate detailed reports on bookings and room utilization equips management with valuable insights. These insights enable informed decisions regarding resource allocation, pricing strategies, and promotional activities based on actual usage patterns.
+
+    4. **Error Handling and User Feedback**: The emphasis on validating inputs and providing clear feedback on booking statuses ensures that users are well-informed throughout the booking process. This reduces frustration and increases confidence in the system's reliability.
+
+    5. **Scalability and Future-Proofing**: The system is designed with scalability in mind, allowing for future enhancements, such as integrating advanced analytics, adding new functionalities, or expanding room offerings without significant disruptions.
+
+
+By focusing on these elements, the room booking system not only enhances operational efficiency but also contributes to a more organized and productive work environment. The outcome of this case study serves as a foundation for ongoing improvements and adaptations, ensuring that the system remains relevant and effective in meeting the evolving needs of the organization. Overall, the successful implementation of this system will likely lead to increased employee satisfaction and optimized usage of workspace resources.
