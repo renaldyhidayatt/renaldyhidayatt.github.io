@@ -10,11 +10,11 @@ const Index = () => {
     "Software Engineer",
     "Full-Stack Developer",
     "Tech Enthusiast",
-    "Problem Solver"
+    "Problem Solver",
   ];
 
   const { data: posts, isLoading } = useQuery({
-    queryKey: ['blog-posts'],
+    queryKey: ["blog-posts"],
     queryFn: getBlogPosts,
   });
 
@@ -36,7 +36,8 @@ const Index = () => {
               />
             </div>
             <p className="text-lg text-gray-600 dark:text-gray-400 italic font-light max-w-2xl mx-auto">
-              Tech experiments, lessons, and reflections—carefully crafted by a mind that never stops learning.
+              Tech experiments, lessons, and reflections—carefully crafted by a
+              mind that never stops learning.
             </p>
           </div>
 
@@ -55,7 +56,6 @@ const Index = () => {
             </Link>
           </div>
         </section>
-
 
         <section className="py-20 border-t border-gray-200 dark:border-gray-800 transition-colors duration-300">
           <div className="max-w-3xl mx-auto">
@@ -102,7 +102,6 @@ const Index = () => {
                   </div>
                 )}
               </article>
-
             </div>
 
             <div className="text-center mt-12">
@@ -115,7 +114,6 @@ const Index = () => {
             </div>
           </div>
         </section>
-
       </main>
 
       <Footer />
