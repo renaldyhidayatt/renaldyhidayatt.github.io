@@ -1,0 +1,90 @@
+---
+title: "Movie gRPC"
+excerpt: "A lightweight gRPC service for managing movie data using Axum and Tonic, with full observability via OpenTelemetry, Jaeger, Prometheus, and Node Exporter — all containerized with Docker."
+date: "2025-06-20"
+tags: ["rust", "tonic", "grpc", "axum", "opentelemetry", "jaeger", "prometheus", "otel-collector", "node-exporter", "docker"]
+status: "selesai"
+image: "https://github.com/MamangRust/movie-grpc/raw/main/images/prometheus.png?raw=true"
+---
+
+## 🧩 Project Overview
+
+**Movie gRPC** is a lightweight **gRPC microservice** built using **Rust**, with **Tonic** for the gRPC layer and **Axum** as the HTTP gateway. The project demonstrates observability practices using **OpenTelemetry**, **Jaeger**, **Prometheus**, and **Node Exporter**, all running inside a **Dockerized** environment.
+
+All movie data is stored **in-memory**, making it perfect for demos, testing observability setups, or learning about tracing and monitoring in microservices.
+
+---
+
+## 🔧 Key Features
+
+- 🧠 **In-Memory Movie CRUD**  
+  Manage movie records without any external database — data resets on restart.
+
+- 🚀 **gRPC API with Tonic**  
+  Built with `tonic`, a high-performance gRPC implementation in Rust.
+
+- 🌐 **Axum HTTP Gateway**  
+  REST endpoints, healthchecks, or service introspection via `axum`.
+
+- 🐾 **Distributed Tracing with OpenTelemetry + Jaeger**  
+  See request spans and traces for gRPC calls with full context propagation.
+
+- 📊 **Monitoring with Prometheus**  
+  Collect runtime and custom metrics from your gRPC service.
+
+- 🖥️ **System Metrics with Node Exporter**  
+  Track CPU, memory, and system-level metrics from the host environment.
+
+- 🐳 **Fully Containerized**  
+  All components — app, Otel Collector, Jaeger, Prometheus, Node Exporter — run inside Docker.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer             | Technology                              |
+|------------------:|:-----------------------------------------|
+| Language           | 🦀 Rust                                  |
+| RPC Framework      | 🔌 Tonic (gRPC)                          |
+| HTTP Gateway       | ⚡ Axum                                  |
+| Tracing            | 🌐 OpenTelemetry, 🐆 Jaeger              |
+| Metrics            | 📊 Prometheus, 🖥️ Node Exporter         |
+| Containerization   | 🐋 Docker + Docker Compose              |
+
+---
+
+## 📸 Screenshots
+
+### Jaeger - Distributed Tracing
+![Jaeger](https://github.com/MamangRust/movie-grpc-tonic-axum/raw/main/image/example.png?raw=true)
+
+### Prometheus - Metrics Monitoring
+![Prometheus](https://github.com/MamangRust/movie-grpc-tonic-axum/raw/main/image/jaeger.png?raw=true)
+
+### Node-Exporter
+![Node-Exporter](https://github.com/MamangRust/movie-grpc-tonic-axum/raw/main/image/node-exporter.png?raw=true)
+
+
+---
+
+## 🚀 Running Locally
+
+```bash
+git clone https://github.com/MamangRust/movie-grpc-tonic-axum.git
+cd movie-grpc-tonic-axum
+docker compose up --build
+```
+
+## 🧪 Available Services
+
+| Service       | URL / Port                                      |
+| ------------- | ----------------------------------------------- |
+| gRPC Server   | `localhost:50051`                               |
+| REST Gateway  | `localhost:5000`                                |
+| Prometheus    | [localhost:9090](http://localhost:9090)         |
+| Jaeger UI     | [localhost:16686](http://localhost:16686)       |
+| Node Exporter | [localhost:9100](http://localhost:9100/metrics) |
+
+
+## 🔗 Source Code & Repository
+[📌 View on GitHub](https://github.com/MamangRust/movie-grpc-tonic-axum)

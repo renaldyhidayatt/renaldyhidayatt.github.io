@@ -71,16 +71,19 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
 
 export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
   try {
-    const portfolioProjects = portofolio.map((project) => ({
-      slug: project.slugAsParams,
-      title: project.title,
-      excerpt: project.excerpt,
-      date: project.date,
-      image: project.image,
-      status: project.status,
-      tags: project.tags || [],
-      content: project.body,
-    }));
+    const portfolioProjects = portofolio
+      .slice() 
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) 
+      .map((project) => ({
+        slug: project.slugAsParams,
+        title: project.title,
+        excerpt: project.excerpt,
+        date: project.date,
+        image: project.image,
+        status: project.status,
+        tags: project.tags || [],
+        content: project.body,
+      }));
 
     return portfolioProjects;
   } catch (error) {
@@ -88,6 +91,7 @@ export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
     return [];
   }
 }
+
 
 export async function getPortfolioProject(slug: string): Promise<PortfolioProject | null> {
   try {

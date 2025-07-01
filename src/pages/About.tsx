@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import profileImage from "@/assets/profile.jpg"; 
 import { Link } from "react-router-dom";
 
 const About = () => {
