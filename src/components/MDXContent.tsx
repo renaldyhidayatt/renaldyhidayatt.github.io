@@ -5,7 +5,13 @@ import Latex from "react-latex";
 import "katex/dist/katex.min.css";
 
 const sharedComponents = {
-  Latex: (props: { children: string }) => <Latex>{props.children}</Latex>,
+  Latex: ({ children }: { children: string }) => (
+    <div className="overflow-x-auto mb-6">
+      <div className="whitespace-pre-wrap break-words text-base text-gray-800 dark:text-gray-100">
+        <Latex>{children}</Latex>
+      </div>
+    </div>
+  ),
   table: ({ children }: { children: React.ReactNode }) => (
     <div className="overflow-x-auto mb-6">
       <table className="w-full text-sm text-left border-collapse border border-gray-300 dark:border-gray-600">
@@ -43,17 +49,9 @@ const sharedComponents = {
       {children}
     </td>
   ),
-  code: ({ className, children }: { className?: string; children: string }) => {
-    if (!className) {
-      return (
-        <code className="text-amber-300 bg-gray-800 px-1 py-0.5 rounded text-sm font-mono">
-          {children}
-        </code>
-      );
-    }
+  code: ({ className, children }: { className?: string; children: React.ReactNode }) => {
     return <CodeBlock className={className}>{children}</CodeBlock>;
   },
-
   pre: ({ children }: { children: React.ReactNode }) => {
     const child = React.Children.only(children) as React.ReactElement;
     if (child.props?.className?.startsWith('language-')) {
@@ -113,8 +111,6 @@ const sharedComponents = {
       {children}
     </blockquote>
   ),
-
-
   a: ({ href, children }: { href?: string; children: React.ReactNode }) => (
     <a
       href={href}
