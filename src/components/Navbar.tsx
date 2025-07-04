@@ -21,13 +21,13 @@ const Navbar = () => {
     <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-800 dark:bg-gray-900/80 transition-colors">
       <div className="max-w-4xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-        <Link
-  to="/"
-  className="flex items-center space-x-2 text-xl font-serif font-semibold text-gray-900 dark:text-gray-100 hover:text-amber-600 dark:hover:text-blue-300 transition-colors"
->
-  <MinecraftIcon />
-  <span>RH</span>
-</Link>
+          <Link
+            to="/"
+            className="flex items-center space-x-2 text-xl font-serif font-semibold text-gray-900 dark:text-gray-100 hover:text-amber-600 dark:hover:text-blue-300 transition-colors"
+          >
+            <MinecraftIcon />
+            <span>RH</span>
+          </Link>
 
           <div className="hidden md:flex items-center space-x-8">
             <div className="flex space-x-6">

@@ -1,8 +1,12 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
+import { useTheme } from "@/hooks/use-theme";
+
 
 const About = () => {
+  const { theme} = useTheme();
+
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
       <Navbar />
@@ -10,11 +14,21 @@ const About = () => {
       <main className="max-w-3xl mx-auto px-6 py-12">
         <header className="mb-16">
           <div className="md:grid md:grid-cols-[auto_1fr] md:gap-8 items-center">
-            <img
-              src="https://avatars.githubusercontent.com/u/46998157?v=4"
-              alt="Profile"
-              className="w-32 h-32 rounded-full object-cover border-4 border-amber-500 dark:border-blue-300"
-            />
+            {theme == "dark"
+              ? (
+                <img
+                  src="/dark.png"
+                  alt="Profile"
+                  className="w-32 h-32 rounded-full object-cover border-4 border-amber-500 dark:border-blue-300"
+                />
+              )
+              : (
+                <img
+                  src="/light.png"
+                  alt="Profile"
+                  className="w-32 h-32 rounded-full object-cover border-4 border-amber-500 dark:border-blue-300"
+                />
+              )}
             <div className="mt-6 md:mt-0">
               <h1 className="text-3xl font-serif font-light text-amber-500 dark:text-blue-200 mb-2">
                 About Me
