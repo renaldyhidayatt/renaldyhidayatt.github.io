@@ -5,7 +5,7 @@ import { useTheme } from "@/hooks/use-theme";
 
 
 const About = () => {
-  const { theme} = useTheme();
+  const { theme } = useTheme();
 
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
@@ -37,7 +37,7 @@ const About = () => {
                 Software engineer, backend enthusiast, lifelong learner.
               </p>
               <Link
-                to="https://drive.google.com/file/d/13194bX8sWZFmEZlo0HJZxxPKO51pEcMX/preview"
+                to="https://drive.google.com/file/d/1EVEu6ileCpoY0L-FF_zcg33y-PsggsRa/preview"
                 target="_blank"
                 className="inline-block px-4 py-2 text-sm rounded bg-amber-600 text-white dark:bg-blue-500 hover:bg-amber-700 dark:hover:bg-blue-600 transition"
               >
