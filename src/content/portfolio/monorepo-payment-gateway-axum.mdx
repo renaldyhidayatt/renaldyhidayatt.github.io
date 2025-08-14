@@ -1,6 +1,6 @@
 ---
 title: "Example Sea Query Tonic Payment Gateway"
-excerpt: "A monolithic payment gateway built with Rust, gRPC, PostgreSQL, and with full observability stack."
+excerpt: "A monorepo payment gateway built with Rust, gRPC, PostgreSQL, and with full observability stack."
 date: "2025-05-18"
 tags: [
   "rust", "grpc", "tonic", "axum", "postgresql", "docker", "docker-compose",
@@ -13,7 +13,7 @@ image: "https://github.com/MamangRust/example-axum-seaquery_payment_gateway-toni
 
 # Example Sea Query Tonic Payment Gateway
 
-The **Digital Payment Platform** is a reliable, scalable, and secure integrated system designed to streamline various digital financial transactions. Built using a **monolithic Rust-based architecture**, all core functionalities—such as card management, transactions, fund transfers, and merchant operations—are consolidated into a single application. This simplifies development and deployment, while maintaining high performance and observability.
+I developed a modern, high-performance Payment Gateway service in Rust, structured as a monorepo. The backend uses Axum for REST APIs and Tonic for gRPC services, enabling flexible and efficient communication. Database access is type-safe and robust, implemented with SeaQuery and SQLx on top of PostgreSQL, complemented by Redis caching for improved performance. Authentication is securely managed using JWT tokens and bcrypt for password hashing. Additionally, the monorepo contains dedicated Rust clients for both Axum REST and Tonic gRPC, facilitating seamless integration and consistent API consumption across the system.
 
 ## 🛠️ Technologies Used
 - 🔧 **Axum** — Web framework for building high-performant RESTful APIs in Rust.
