@@ -7,7 +7,7 @@ tags: [
   "docker", "docker-compose"
 ]
 status: "development"
-image: "/portofolio/modular-monolith-payment-gateway-rust.png"
+image: "/portofolio/distributed-modular-monolith-paymentgateway-rust_1.png"
 ---
 
 # Example Payment Gateway System (Modular Monolith)
@@ -40,144 +40,13 @@ Sistem ini dirancang sebagai monolit modular. Meskipun berada dalam satu reposit
 
 `APIGateway` adalah satu-satunya titik masuk untuk semua permintaan HTTP eksternal. Gateway ini melakukan autentikasi permintaan dan meneruskannya ke layanan internal yang sesuai melalui gRPC. Semua layanan berbagi satu database PostgreSQL.
 
-```mermaid
-graph TD
-    subgraph "Klien (Web/Desktop)"
-        A[Dashboard / API Client]
-    end
-
-    subgraph "Sistem Payment Gateway"
-        B(API Gateway <br> HTTP/REST)
-
-        subgraph "Layanan gRPC (Modul Internal)"
-            C[Auth Service]
-            D[User Service]
-            E[Card Service]
-            F[Saldo Service]
-            G[Merchant Service]
-            H[Role Service]
-            I[Topup Service]
-            J[Transaction Service]
-            K[Transfer Service]
-            L[Withdraw Service]
-        end
-
-        M[(Database <br> PostgreSQL)]
-    end
-
-    A --> B
-
-    B -- gRPC --> C
-    B -- gRPC --> D
-    B -- gRPC --> E
-    B -- gRPC --> F
-    B -- gRPC --> G
-    B -- gRPC --> H
-    B -- gRPC --> I
-    B -- gRPC --> J
-    B -- gRPC --> K
-    B -- gRPC --> L
-
-    C --> M
-    D --> M
-    E --> M
-    F --> M
-    G --> M
-    H --> M
-    I --> M
-    J --> M
-    K --> M
-    L --> M
-```
-
+[![](https://mermaid.ink/img/pako:eNp1k1-PmkAUxb_KZJ400VVUEEmziYL_NbFKs0lhH64yK2RhhgxDt9b43TsstWW7w33yd86Zizc394pPLCDYwmcOaYhcx6dIVpYfS8HH6zgiFDWeyLHjkOxVsLTp4zJV1NhzIAuPDHiAOmi8WyK7eCCeywihgU8_9TxEmSAJ2sElkVE0B0He4FJtO2kUrf4Y6MuRP6KF6-46--nBbd47_td1AxegQNF5v7NRY8uCPEZLKginEH_4z0XZ3jgXIToQ_iM6keePpuN9ywivMaeeXQyrNmfeAeKA1bhzb0v4KQQ5szqw8PYsJjXm0nNZmqc17spzOdAMTiJitCazLjMvtbNtvKdIhAGHN0Wgssuitl7DAQFHyEi5oB3LxJmTw9dN8_P2x6jdfkSTO04klosqZFslOipxqhJnKnGuEhcqcakSVypxrRI395lK3JbgVGFahVkV5lVYVGFZhVUV1lXYlIBb8oKjAFsvEGekhRPCEygYX4ucj0VIEuJjS_4MgL8W53CTj1Kg3xlLsCV4Lp9xlp_Dv03yNJAH6EQgL-xfRC6VcJvlVGBL67-3wNYV_8RWuz960Ie9QU8zR11jVJgXqQ4GD7o-MHTT6Gqmqff7xq2Ff71_VXvomVrXHA51Q9ONUU8b3H4DuvI6tg?type=png)](https://mermaid.live/edit#pako:eNp1k1-PmkAUxb_KZJ400VVUEEmziYL_NbFKs0lhH64yK2RhhgxDt9b43TsstWW7w33yd86Zizc394pPLCDYwmcOaYhcx6dIVpYfS8HH6zgiFDWeyLHjkOxVsLTp4zJV1NhzIAuPDHiAOmi8WyK7eCCeywihgU8_9TxEmSAJ2sElkVE0B0He4FJtO2kUrf4Y6MuRP6KF6-46--nBbd47_td1AxegQNF5v7NRY8uCPEZLKginEH_4z0XZ3jgXIToQ_iM6keePpuN9ywivMaeeXQyrNmfeAeKA1bhzb0v4KQQ5szqw8PYsJjXm0nNZmqc17spzOdAMTiJitCazLjMvtbNtvKdIhAGHN0Wgssuitl7DAQFHyEi5oB3LxJmTw9dN8_P2x6jdfkSTO04klosqZFslOipxqhJnKnGuEhcqcakSVypxrRI395lK3JbgVGFahVkV5lVYVGFZhVUV1lXYlIBb8oKjAFsvEGekhRPCEygYX4ucj0VIEuJjS_4MgL8W53CTj1Kg3xlLsCV4Lp9xlp_Dv03yNJAH6EQgL-xfRC6VcJvlVGBL67-3wNYV_8RWuz960Ie9QU8zR11jVJgXqQ4GD7o-MHTT6Gqmqff7xq2Ff71_VXvomVrXHA51Q9ONUU8b3H4DuvI6tg)
 ## Entity Relationship Diagram (ERD)
 
 Diagram berikut menggambarkan hubungan antar tabel dalam database.
 
-```mermaid
-erDiagram
-    users {
-        INT user_id PK
-        VARCHAR firstname
-        VARCHAR lastname
-        VARCHAR email
-        VARCHAR password
-    }
-    roles {
-        INT role_id PK
-        VARCHAR role_name
-    }
-    user_roles {
-        INT user_role_id PK
-        INT user_id FK
-        INT role_id FK
-    }
-    refresh_tokens {
-        INT refresh_token_id PK
-        INT user_id FK
-        VARCHAR token
-        TIMESTAMP expiration
-    }
-    cards {
-        INT card_id PK
-        INT user_id FK
-        VARCHAR card_number
-        VARCHAR card_type
-        DATE expire_date
-    }
-    saldos {
-        INT saldo_id PK
-        VARCHAR card_number FK
-        INT total_balance
-    }
-    merchants {
-        INT merchant_id PK
-        UUID merchant_no
-        VARCHAR name
-        VARCHAR api_key
-        INT user_id FK
-    }
-    topups {
-        INT topup_id PK
-        UUID topup_no
-        VARCHAR card_number FK
-        INT topup_amount
-        VARCHAR topup_method
-    }
-    transactions {
-        INT transaction_id PK
-        UUID transaction_no
-        VARCHAR card_number FK
-        INT amount
-        INT merchant_id FK
-    }
-    transfers {
-        INT transfer_id PK
-        UUID transfer_no
-        VARCHAR transfer_from FK
-        VARCHAR transfer_to FK
-        INT transfer_amount
-    }
-    withdraws {
-        INT withdraw_id PK
-        UUID withdraw_no
-        VARCHAR card_number FK
-        INT withdraw_amount
-    }
+[![](https://mermaid.ink/img/pako:eNqVll2PojAUhv8K6bUaUUHkzoyzWTOZzWTW2YuNCTkDVYjQklLWcR3_-1K-ocCO3BjOez6etqcHr8imDkYmwmzjwZFBsCdK8sQRZpFyzV7Es_2xS42W5ygvT5X91_r14fv6VTl4LOIEAixLPvQpOADPl80hRNGZMidTbtkPoz6WiISxjyjVqrq3amFWZ65SaSesL_3bUzdAYS9g8YHhyLU4PWEiU9fVr1YrlpUGVebd9vnx5279_KLgj9BjwD1KGig2MEciEMZ7C6cxJA7eMesR-SWsHfJmvXvMoLDlAG8eQwS-QyWs1Np3nrX60jFwysG33sEHYjcLBZjZLhAu1SqEdrm3t-2mEgmVQbp7GULPOuHL8H7mUJyGcSgRpdZOnEzpYhneFBEFAY0J7-ojoQaYu7R50TgDEoEtGklGrLRu0Jp-L24btH1I7T0UpQ4dU6oQ-gGF2EVXigdGg-7LV3hwKm93odUXksOePe46DM4SbCF0wpbivVtZBrZQ6rP983M8ptf6PDSVPXIh2qP6wP2vWyNba-4NuWZzacijurrCi55J6ZbF5m75KGllarjk923Qpd71LccKpM-ZYRt7f_BA6rRThWuEifMVv8GUVT-VqGiEjsxzkHkAP8IjlEAnX9fkHaUtt0fcxcncQiLAAXYSeW9JUAjkN6UBMjmLkzBG46NbJolDMbnzfwalS7ICzB5EZyFzlWZA5hV9IHM8X0205WwxU43VVF-p8xG6JNbFYqJpC10z9KlqGNp8rt9G6G9aVJ3MDHVqLJearmr6aqYubv8A6iOSyQ?type=png)](https://mermaid.live/edit#pako:eNqVll2PojAUhv8K6bUaUUHkzoyzWTOZzWTW2YuNCTkDVYjQklLWcR3_-1K-ocCO3BjOez6etqcHr8imDkYmwmzjwZFBsCdK8sQRZpFyzV7Es_2xS42W5ygvT5X91_r14fv6VTl4LOIEAixLPvQpOADPl80hRNGZMidTbtkPoz6WiISxjyjVqrq3amFWZ65SaSesL_3bUzdAYS9g8YHhyLU4PWEiU9fVr1YrlpUGVebd9vnx5279_KLgj9BjwD1KGig2MEciEMZ7C6cxJA7eMesR-SWsHfJmvXvMoLDlAG8eQwS-QyWs1Np3nrX60jFwysG33sEHYjcLBZjZLhAu1SqEdrm3t-2mEgmVQbp7GULPOuHL8H7mUJyGcSgRpdZOnEzpYhneFBEFAY0J7-ojoQaYu7R50TgDEoEtGklGrLRu0Jp-L24btH1I7T0UpQ4dU6oQ-gGF2EVXigdGg-7LV3hwKm93odUXksOePe46DM4SbCF0wpbivVtZBrZQ6rP983M8ptf6PDSVPXIh2qP6wP2vWyNba-4NuWZzacijurrCi55J6ZbF5m75KGllarjk923Qpd71LccKpM-ZYRt7f_BA6rRThWuEifMVv8GUVT-VqGiEjsxzkHkAP8IjlEAnX9fkHaUtt0fcxcncQiLAAXYSeW9JUAjkN6UBMjmLkzBG46NbJolDMbnzfwalS7ICzB5EZyFzlWZA5hV9IHM8X0205WwxU43VVF-p8xG6JNbFYqJpC10z9KlqGNp8rt9G6G9aVJ3MDHVqLJearmr6aqYubv8A6iOSyQ)
 
-    users ||--o{ user_roles : "has"
-    roles ||--o{ user_roles : "has"
-    users ||--o{ refresh_tokens : "has"
-    users ||--o{ cards : "has"
-    users ||--o{ merchants : "owns"
-    cards ||--o{ saldos : "has"
-    cards ||--o{ topups : "has"
-    cards ||--o{ transactions : "has"
-    merchants ||--o{ transactions : "receives"
-    cards ||--o{ transfers : "sends"
-    cards ||--o{ transfers : "receives"
-    cards ||--o{ withdraws : "has"
-```
 
 ## Teknologi yang Digunakan
 
