@@ -7,7 +7,7 @@ tags: [
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "kubernetes",
   "loki", "otel-collector", "zap", "sqlc", "goose", "swago", "zookeeper", "nginx", "node-exporter", "postman"
 ]
-status: "development"
+status: "finished"
 image: "https://github.com/MamangRust/monolith-pointofsale-grpc/raw/main/images/archictecture_kubernetes_pointofsale.png"
 ---
 

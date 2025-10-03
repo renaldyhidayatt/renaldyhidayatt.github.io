@@ -1,57 +1,272 @@
 ---
-title: "Monolith Point of sale"
-excerpt: "A monolithic Point of sale built with Go, gRPC, PostgreSQL, and Kafka with full observability stack."
-date: "2025-05-18"
+title: "Distributed Modular Monolith Point Of Sale"
+excerpt: "A Distributed Modular Monolith Point Of Sale built with Go, gRPC, PostgreSQL, and Kafka with full observability stack."
+date: "2025-08-18"
 tags: [
   "golang", "grpc", "echo", "postgresql", "kafka", "docker", "docker-compose",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "kubernetes",
   "loki", "otel-collector", "zap", "sqlc", "goose", "swago", "zookeeper", "nginx", "node-exporter", "postman"
 ]
 status: "development"
-image: "https://github.com/MamangRust/monolith-pointofsale-grpc/raw/main/images/archictecture_kubernetes_pointofsale.png"
+image: "/portofolio/distributed-modular-monolith-pointofsale.png"
 ---
 
-# Point of sale Platform
+# ✨ Distributed Modular Monolith Point Of Sale
 
-The **Point of sale Platform** is a robust, scalable, and secure integrated system designed to provide a comprehensive online shopping experience. Built using a monolithic architecture, all core functionalities—such as user management, product catalog, shopping cart, order processing, and merchant interactions—are consolidated within a single application. This approach simplifies development,  and deployment, ensuring a consistent and efficient delivery of Point of sale services within a unified environment.
+Proyek ini adalah **Implementasi Distributed Modular Monolith Point Of Sale** dari **Sistem Point of Sale (POS)**. Prinsip desain intinya adalah mempertahankan **pemisahan modular** (otentikasi, pengguna, merchant, produk, transaksi, dll.) sambil tetap di-deploy sebagai **monolit tunggal** untuk kesederhanaan operasional.
 
-## 🛠️ Technologies Used
-- 🚀 **gRPC** — Provides high-performance, strongly-typed APIs.
-- 📡 **Kafka** — Used to publish balance-related events (e.g., after card creation).
-- 📈 **Prometheus** — Collects metrics like request count and latency for each RPC method.
-- 🛰️ **OpenTelemetry (OTel)** — Enables distributed tracing for observability.
-- 🦫 **Go (Golang)** — Implementation language.
-- 🌐 **Echo** — HTTP framework for Go.
-- 🪵 **Zap Logger** — Structured logging for debugging and operations.
-- 📦 **Sqlc** — SQL code generator for Go.
-- 🧳 **Goose** — Database migration tool.
-- 🐳 **Docker** — Containerization tool.
-- 🧱 **Docker Compose** — Simplifies containerization for development and production environments.
-- 🐘 **PostgreSQL** — Relational database for storing user data.
-- 📃 **Swago** — API documentation generator.
-- 🧭 **Zookeeper** — Distributed configuration management.
-- 🔀 **Nginx** — Reverse proxy for HTTP traffic.
-- 🔍 **Jaeger** — Distributed tracing for observability.
-- 📊 **Grafana** — Monitoring and visualization tool.
-- 🧪 **Postman** — API client for testing and debugging endpoints.
-- ☸️ **Kubernetes** — Container orchestration platform for deployment, scaling, and management.
-- 🧰 **Redis** — In-memory key-value store used for caching and fast data access.
-- 📥 **Loki** — Log aggregation system for collecting and querying logs.
-- 📤 **Promtail** — Log shipping agent that sends logs to Loki.
-- 🔧 **OTel Collector** — Vendor-agnostic collector for receiving, processing, and exporting telemetry data (metrics, traces, logs).
-- 🖥️ **Node Exporter** — Exposes system-level (host) metrics such as CPU, memory, disk, and network stats for Prometheus.
+Tidak seperti monolit tradisional, implementasi ini mengadopsi **struktur modular dengan batasan domain yang jelas** dan memanfaatkan **gRPC** untuk komunikasi internal antar-layanan. Hal ini memungkinkan arsitektur untuk diskalakan seperti layanan mikro tetapi tanpa kompleksitas mengelola sistem yang sepenuhnya terdistribusi di awal. Seiring waktu, setiap modul dapat diekstraksi menjadi layanan mikro independennya sendiri jika diperlukan.
+
+Sistem ini dirancang untuk menangani **operasi POS dalam skala besar**, termasuk otentikasi, akses berbasis peran, manajemen merchant, pelacakan inventaris, operasi kasir, pemrosesan pesanan, dan penanganan pembayaran.
+
+Di tingkat infrastruktur, proyek ini terintegrasi dengan:
+
+*   **PostgreSQL** untuk penyimpanan data relasional yang persisten.
+*   **Redis** untuk caching dan manajemen sesi.
+*   **Kafka** (dengan Zookeeper) untuk komunikasi berbasis peristiwa di seluruh modul.
+*   **Tumpukan Observability** (Prometheus, Grafana, Loki, Jaeger, OpenTelemetry) untuk metrik, log, dan jejak penuh.
+
+Deployment didukung di dua lingkungan:
+
+*   **Docker Compose** untuk pengembangan lokal.
+*   **Kubernetes** untuk lingkungan tingkat produksi yang dapat diskalakan dengan Horizontal Pod Autoscalers (HPA).
+
+---
+
+## 🎯 Fitur Utama
+
+*   **🔐 Otentikasi & Manajemen Peran**
+
+    *   Otentikasi pengguna berbasis JWT.
+    *   Otorisasi berbasis peran (admin, merchant, kasir).
+    *   Izin didefinisikan per modul.
+
+*   **🏬 Manajemen Merchant & Kasir**
+
+    *   Pendaftaran merchant dan pengaturan toko.
+    *   Manajemen akun kasir di bawah setiap merchant.
+    *   Peristiwa penyelesaian merchant terintegrasi dengan Layanan Transaksi.
+
+*   **📦 Manajemen Inventaris & Produk**
+
+    *   Operasi CRUD untuk produk dan kategori.
+    *   Pelacakan stok dan harga.
+    *   Akses berbasis peran untuk merchant dan kasir.
+
+*   **🧾 Penanganan Pesanan & Transaksi**
+
+    *   Pembuatan pesanan POS dan checkout.
+    *   Integrasi dengan modul pembayaran dan transaksi.
+    *   Penyelesaian berbasis peristiwa (dibayar/dikembalikan).
+
+*   **🛒 Operasi Khusus POS**
+
+    *   Item pesanan ditautkan ke produk dan kasir.
+    *   Pembaruan cepat ke Redis untuk status sesi/keranjang waktu nyata.
+
+*   **⚡ Komunikasi Terdistribusi**
+
+    *   Layanan internal berkomunikasi melalui **gRPC**.
+    *   Alur berbasis peristiwa melalui **topik Kafka**.
+    *   API REST eksternal diekspos melalui **NGINX API Gateway**.
+
+*   **📊 Observability & Pemantauan**
+
+    *   Metrik diekspos melalui endpoint `/metrics`.
+    *   Log dikumpulkan dengan Promtail → Loki.
+    *   Metrik divisualisasikan melalui Prometheus → Grafana.
+    *   Jejak dikumpulkan dengan OpenTelemetry → Jaeger.
+
+---
+
+## 🏗️ Arsitektur Deployment
+
+### **1. Docker Compose (Pengembangan Lokal)**
+
+*   Menggunakan `docker-compose` untuk mengatur **API Gateway, Layanan Inti, Layanan POS, PostgreSQL, Redis, Kafka, dan tumpukan Observability**.
+*   Memastikan pengembang dapat menjalankan **seluruh tumpukan** secara lokal untuk pengujian integrasi.
+*   Peristiwa layanan (auth-user, merchant-settlement, order-paid) diproses dalam **namespace monolitik** yang terdistribusi.
+
+### **2. Kubernetes (Produksi)**
+
+*   Setiap layanan berjalan di **Pod-nya sendiri**, dipisahkan oleh domain.
+*   Redis, PostgreSQL, Kafka, dan Zookeeper di-deploy sebagai Pod infrastruktur stateful.
+*   Tumpukan Observability berjalan sebagai DaemonSets/Deployments untuk log, metrik, dan jejak.
+*   Horizontal Pod Autoscalers (HPA) secara otomatis menskalakan layanan seperti Pesanan, Transaksi, atau Merchant di bawah beban berat.
+*   Kafka memastikan alur berbasis peristiwa tetap **terpisah** bahkan di bawah beban terdistribusi.
+---
 
 
-## Architecture Point Of Sale Platform
 
-### Docker
+## 🛠️ Teknologi yang Digunakan
+- 🚀 **gRPC** — Menyediakan API berkinerja tinggi dan bertipe kuat.
+- 📡 **Kafka** — Digunakan untuk mempublikasikan peristiwa terkait saldo (misalnya, setelah pembuatan kartu).
+- 📈 **Prometheus** — Mengumpulkan metrik seperti jumlah permintaan dan latensi untuk setiap metode RPC.
+- 🛰️ **OpenTelemetry (OTel)** — Memungkinkan pelacakan terdistribusi untuk observability.
+- 🦫 **Go (Golang)** — Bahasa implementasi.
+- 🌐 **Echo** — Kerangka kerja HTTP untuk Go.
+- 🪵 **Zap Logger** — Pencatatan terstruktur untuk debugging dan operasi.
+- 📦 **Sqlc** — Generator kode SQL untuk Go.
+- 🧳 **Goose** — Alat migrasi basis data.
+- 🐳 **Docker** — Alat kontainerisasi.
+- 🧱 **Docker Compose** — Menyederhanakan kontainerisasi untuk lingkungan pengembangan dan produksi.
+- 🐘 **PostgreSQL** — Basis data relasional untuk menyimpan data pengguna.
+- 📃 **Swago** — Generator dokumentasi API.
+- 🧭 **Zookeeper** — Manajemen konfigurasi terdistribusi.
+- 🔀 **Nginx** — Proksi terbalik untuk lalu lintas HTTP.
+- 🔍 **Jaeger** — Pelacakan terdistribusi untuk observability.
+- 📊 **Grafana** — Alat pemantauan dan visualisasi.
+- 🧪 **Postman** — Klien API untuk menguji dan men-debug endpoint.
+- ☸️ **Kubernetes** — Platform orkestrasi kontainer untuk deployment, penskalaan, dan manajemen.
+- 🧰 **Redis** — Penyimpanan nilai-kunci dalam memori yang digunakan untuk caching dan akses data cepat.
+- 📥 **Loki** — Sistem agregasi log untuk mengumpulkan dan menanyakan log.
+- 📤 **Promtail** — Agen pengiriman log yang mengirim log ke Loki.
+- 🔧 **OTel Collector** — Kolektor agnostik vendor untuk menerima, memproses, dan mengekspor data telemetri (metrik, jejak, log).
+- 🖥️ **Node Exporter** — Mengekspos metrik tingkat sistem (host) seperti CPU, memori, disk, dan statistik jaringan untuk Prometheus.
 
-<img src="https://github.com/MamangRust/monolith-pointofsale-grpc/raw/main/images/archictecture_docker_pointofsale.png" alt="docker-architecture" />
+## Memulai
+
+Ikuti petunjuk ini untuk menjalankan proyek di mesin lokal Anda untuk tujuan pengembangan dan pengujian.
+
+### Prasyarat
+
+Pastikan Anda telah menginstal alat-alat berikut:
+-   [Git](https://git-scm.com/)
+-   [Go](https://go.dev/) (versi 1.20+)
+-   [Docker](https://www.docker.com/)
+-   [Docker Compose](https://docs.docker.com/compose/)
+-   [Make](https://www.gnu.org/software/make/)
+
+### 1. Klon Repositori
+
+```sh
+git clone https://github.com/your-username/monolith-pointofsale-grpc.git
+cd monolith-pointofsale-grpc
+```
+
+### 2. Konfigurasi Lingkungan
+
+Proyek ini menggunakan file lingkungan untuk konfigurasi. Anda perlu membuat file `.env` yang diperlukan.
+*   Buat file `.env` di direktori root untuk pengaturan umum.
+*   Buat file `docker.env` di `deployments/local/` untuk pengaturan khusus Docker.
+
+Anda dapat menyalin file contoh jika ada, atau membuatnya dari awal.
+
+### 3. Jalankan Aplikasi
+
+Perintah berikut akan membangun image Docker, memulai semua layanan, dan menyiapkan basis data.
+
+**1. Bangun image dan luncurkan layanan:**
+Perintah ini membangun semua image layanan dan memulai seluruh infrastruktur (termasuk basis data, Kafka, dll.) menggunakan Docker Compose.
+
+```sh
+make build-up
+```
+
+**2. Jalankan Migrasi Basis Data:**
+Setelah kontainer berjalan, terapkan migrasi skema basis data.
+
+```sh
+make migrate
+```
+
+**3. Isi Basis Data (Opsional):**
+Untuk mengisi basis data dengan data awal untuk pengujian, jalankan seeder.
+
+```sh
+make seeder
+```
+
+Platform sekarang seharusnya sudah beroperasi penuh. Anda dapat memeriksa status kontainer yang berjalan dengan `make ps`.
+
+### Menghentikan Aplikasi
+
+Untuk menghentikan dan menghapus semua kontainer yang berjalan, gunakan perintah berikut:
+
+```sh
+make down
+```
 
 
-### Kubernetes
+## Tinjauan Arsitektur
 
-<img src="https://github.com/MamangRust/monolith-pointofsale-grpc/raw/main/images/archictecture_kubernetes_pointofsale.png" alt="kubernetes-architecture" />
+Platform ini dirancang menggunakan arsitektur **Monolit Modular Terdistribusi**. Gaya canggih ini memberikan keseimbangan unik, menawarkan pengembangan yang efisien dan pengujian yang disederhanakan dari sebuah monolit sambil memungkinkan penskalaan dan deployment independen dari sistem berbasis layanan mikro.
+
+Aplikasi ini dibangun sebagai biner Go tunggal yang berisi semua modul logika bisnis. Saat runtime, beberapa instance dari biner ini di-deploy, dengan setiap instance dikonfigurasi untuk menjalankan modul tertentu (misalnya, `auth`, `product`, `order`), yang secara efektif berperilaku seperti layanan terpisah.
+
+Sistem ini dirancang untuk di-deploy menggunakan kontainerisasi, dengan kontainer terpisah untuk setiap layanan. Hal ini memungkinkan penskalaan dan manajemen komponen secara independen di lingkungan seperti produksi.
+
+### Konsep Arsitektur Utama:
+
+*   **API Gateway**: Satu titik masuk untuk semua permintaan klien. Ini merutekan lalu lintas ke layanan backend yang sesuai, menangani otentikasi, dan menyediakan API terpadu.
+*   **gRPC untuk Komunikasi Antar-Layanan**: gRPC berkinerja tinggi digunakan untuk komunikasi antara layanan internal, memastikan latensi rendah dan kontrak bertipe kuat.
+*   **Pesan Asinkron dengan Kafka**: Kafka digunakan untuk komunikasi berbasis peristiwa, memisahkan layanan dan meningkatkan ketahanan. Misalnya, ketika kartu baru dibuat, sebuah pesan dipublikasikan ke topik Kafka, yang kemudian dikonsumsi oleh layanan `email` untuk memperbarui saldo.
+*   **Observability Terpusat**: Platform ini mengintegrasikan tumpukan observability yang komprehensif:
+    *   **Prometheus** untuk mengumpulkan metrik.
+    *   **Jaeger** (melalui OpenTelemetry) untuk pelacakan terdistribusi.
+    *   **Loki** dan **Promtail** untuk agregasi log.
+    *   **Grafana** untuk visualisasi metrik, jejak, dan log.
+
+
+
+### Arsitektur Deployment
+
+#### Lingkungan Docker
+Pengaturan Docker menggunakan `docker-compose` untuk mengatur semua layanan, basis data, dan alat yang diperlukan untuk lingkungan pengembangan lokal yang lengkap.
+[![](https://mermaid.ink/img/pako:eNqNV9tu4zYQ_RVBwfbJTizZsi2lCJDaiyDd3WyabIGidVFQImULkUWDonJpkn8vSd14k1O_mMNzZjicGQ7FVzfBELmRm-b4KdkBQp0f603hsN_N1fXNH39t3Mvba-cKUPQEXn6OydmFmN-4f2-KmldW8ZaAw85ZYYL-uUfkMUtQyRS57LSyUHCa32VFdw3AF2BSy1Nov5eI9DQuWWnfEGGeF7SntjNW-ncCZbNCtBJ_EFCUIKEZLnq6NKko9Wp3OEc9n0tW67cEwyqRnG4mrOQVKHeZ7HUzMUCmaIvJi8yuZ4bjcU3RXo8JnzM0UAHbzX765FwXKQFaGawBBTEouZ12qKYrYzw1qN2UPVK4pFuC7n_7yqPUCUeNOuPxhaRo-H6HYMZrVPzbivkLSB_APQXJA2MJwRGSsqqYb3EF-RPjB4QOiDC0G9sZwtXagiXC32NW9o8gzvKMvmg-KhhPmyxb3GUVtqcgy-tiE0MFv2Gt4PPzARMq_Oai08rmviVmHR8r9St-yBiD_xm-ILpDVdl4UwtqZVKUr3Ceo4RivgyXnW5CoV4RkIKC56IZKeivAG2Fo_VAO7BtLEQihKPWiNQl1Xtqj8Ygq5-zrKOBysYH4iGI7WaPUJotW0prhYsCiU5WSh1fKEk9TIfUvqWjUmfXIbWHmajStHRYb1I6Ll0VVtUBzGzxUnw-P6KCNqGR9uWMT8cXb3xi3N0zgvqm30THVMVt1qgZzssu1zp1R74FGTy7Q2lVQARbbdseLNdibUe6GSnN0R71zh-NxTdESZaUzk9O1rd8ZWe8akQzLbSrW4cMv1RY3buKmS7qDKlwdUgtXB1Vq9NEleq0-ixVp4xL943e6eu2OVSHKsOokR4yqq7L2voX85DrSdMvST1zOm5Ln84xcqgTBhKp0ywp0ym2zJgcI7dWj_UM6iS9uGTcOCn8QigrMtQEzvY17824LJQEHKdaj_gw3Wwrw1xbho5r6Mk6zjby9hFdTeH_2KiSzeN8JbEfUOuDfJzUnM1hUlsvSQ7Kco1SB6IUVDl10izPoxMPechHo5IS9o0YnSzDeJaCUYJzTKKTBMJ5OmvA8VMG6S7yDs_nmsVt_WTrLPrhNO4shjPkw6C1mE5SyOynuKDjJ5RtdzSKcQ51iwl_z9Xmpt7Un806c0kM5umiMxegCUw-NCcuksaeH_qB39tLQTxd9vYgmi-Bro7jst0b8NEk6JTBHE2B1yrDMA1DY-19ViZdZKZgCQZiHacwTtG5dLwvyzLbFs6KW0KlZLb5qmjCLi-oPoxFGBW4fSWNRG2N-pdHHSKFq37isxgoqPEK4vs8d0fulmTQjVKQs1XcPSJ7wGX3lStvXFaUe_bkitgQAsLeDJvinSkdQMEeKXs3oqRiagRX211npDpAttN1BtiKPYV9YCKywlVB3cj3FsKGG726z240noanwcKf-d4ynMxDbzpyX9jsbHYaBLN5sJxPvOUymE7n7yP3X7Gsd-ovvclysQjmXjAPfW_2_h9e6XGh?type=png)](https://mermaid.live/edit#pako:eNqNV9tu4zYQ_RVBwfbJTizZsi2lCJDaiyDd3WyabIGidVFQImULkUWDonJpkn8vSd14k1O_mMNzZjicGQ7FVzfBELmRm-b4KdkBQp0f603hsN_N1fXNH39t3Mvba-cKUPQEXn6OydmFmN-4f2-KmldW8ZaAw85ZYYL-uUfkMUtQyRS57LSyUHCa32VFdw3AF2BSy1Nov5eI9DQuWWnfEGGeF7SntjNW-ncCZbNCtBJ_EFCUIKEZLnq6NKko9Wp3OEc9n0tW67cEwyqRnG4mrOQVKHeZ7HUzMUCmaIvJi8yuZ4bjcU3RXo8JnzM0UAHbzX765FwXKQFaGawBBTEouZ12qKYrYzw1qN2UPVK4pFuC7n_7yqPUCUeNOuPxhaRo-H6HYMZrVPzbivkLSB_APQXJA2MJwRGSsqqYb3EF-RPjB4QOiDC0G9sZwtXagiXC32NW9o8gzvKMvmg-KhhPmyxb3GUVtqcgy-tiE0MFv2Gt4PPzARMq_Oai08rmviVmHR8r9St-yBiD_xm-ILpDVdl4UwtqZVKUr3Ceo4RivgyXnW5CoV4RkIKC56IZKeivAG2Fo_VAO7BtLEQihKPWiNQl1Xtqj8Ygq5-zrKOBysYH4iGI7WaPUJotW0prhYsCiU5WSh1fKEk9TIfUvqWjUmfXIbWHmajStHRYb1I6Ll0VVtUBzGzxUnw-P6KCNqGR9uWMT8cXb3xi3N0zgvqm30THVMVt1qgZzssu1zp1R74FGTy7Q2lVQARbbdseLNdibUe6GSnN0R71zh-NxTdESZaUzk9O1rd8ZWe8akQzLbSrW4cMv1RY3buKmS7qDKlwdUgtXB1Vq9NEleq0-ixVp4xL943e6eu2OVSHKsOokR4yqq7L2voX85DrSdMvST1zOm5Ln84xcqgTBhKp0ywp0ym2zJgcI7dWj_UM6iS9uGTcOCn8QigrMtQEzvY17824LJQEHKdaj_gw3Wwrw1xbho5r6Mk6zjby9hFdTeH_2KiSzeN8JbEfUOuDfJzUnM1hUlsvSQ7Kco1SB6IUVDl10izPoxMPechHo5IS9o0YnSzDeJaCUYJzTKKTBMJ5OmvA8VMG6S7yDs_nmsVt_WTrLPrhNO4shjPkw6C1mE5SyOynuKDjJ5RtdzSKcQ51iwl_z9Xmpt7Un806c0kM5umiMxegCUw-NCcuksaeH_qB39tLQTxd9vYgmi-Bro7jst0b8NEk6JTBHE2B1yrDMA1DY-19ViZdZKZgCQZiHacwTtG5dLwvyzLbFs6KW0KlZLb5qmjCLi-oPoxFGBW4fSWNRG2N-pdHHSKFq37isxgoqPEK4vs8d0fulmTQjVKQs1XcPSJ7wGX3lStvXFaUe_bkitgQAsLeDJvinSkdQMEeKXs3oqRiagRX211npDpAttN1BtiKPYV9YCKywlVB3cj3FsKGG726z240noanwcKf-d4ynMxDbzpyX9jsbHYaBLN5sJxPvOUymE7n7yP3X7Gsd-ovvclysQjmXjAPfW_2_h9e6XGh)
+
+#### Lingkungan Kubernetes
+Pengaturan Kubernetes menyediakan deployment yang dapat diskalakan dan tangguh. Setiap layanan berjalan dalam set Pod-nya sendiri, dengan Horizontal Pod Autoscalers (HPA) untuk penskalaan otomatis berdasarkan beban.
+
+[![](https://mermaid.ink/img/pako:eNqNV9tu4zYQ_RVBiy1awE4iWb5p2wCpvUjT3U28SQoUbYqCEke2EFkyKCqXJvn3ktSNIinHfrHIc2Y4PDPSkC92mGGwfTtKssdwgwi1bpd3qcV-Hz9avxh_DfylCICkQCG3FkmRUyAHWeZFsCZot7G-zPK_72yDF_ufu7TkVu7OVhfWOaLwiJ7b-cvzi8s_mQMJ_Dkgx6diXvexurqxltkWxal1A-QhDiFv8QWzX2fkuUKY13qmJguHNf06S6Cl8pGRtiIZLkLaMqsJI_mKYCAXFLYtXUxZfM5osUD5JgYixywmjOSzgm5aJh91aB2pFhkBg0hN4jj-b43zdTt8eVX--waEVVYqyVDPGAPlvz9yeVt81EsVGqmS9ZFvCUpzFNI4S1sTadJoCClW9LlII4KsobVEFAUoB4NENcT8NyxNmJhxu7E0U71bWGU5XRO4-f6V11MzeNe5NRyeSsaHbG-Bwg1YP1jfCyikPV4DjnnWxb9SPO27jaJ7dENReM9fcT6wxEiLU2A1R0P_yrJ7gB0Qxmie-1lik6WnPfu7ClhBPaAgTmL6bIi9g_Oaksc922Bv9paiOClfcvGocS7Zp_bz0y4jVOyHD616bNZFYpca9tK_ZvcxY_E_Y2xAN1DkVXTlQH-VKCSLLEkgpBlfko-tZkKjnxMUoZTnrnrSGL8jWIvgywelVmTZROJE8L2KlQXcRt-v1l5mO9-zpkLoiLJHL0GuhXiHVsnRLVGlVt9vv7_d3q6OpebHUpWmIL5j-UE-RKMUASntT4WldqdC3RanompP09eVO5iKSi1LhZSeosJS_zCG1IPp7UHKxucHSGlu_YhZzIB_KuclZazh0fD0VZwFVkC2cZ7zz7iwetW3Ik2UhqIjN42xMjNu02wqmmRlpm1f8VOaSV2Y0gS20K5rEkJttqWTst-uUIyPryEqUgx4n5NGTdE89IpVCrGsPtFndLm7ULcQVVQtRBXvFqKKdhTvQpqyXVjKhDGkHkyXTma0B3DREzQRS22VVlhy-6q8yzCWXQt3yqsJZvnrYelUzyBqTlXckFiVYsyuSjKkWKWoeVZxU7JVjppxY6z7CD25l2mN5t-AkjjMxbEgLwj0qM5f1ONtyX3VOqP2DeunqrnYz9bTsp-vZmg_W_sM9lONn79-eieFB2zxQK4pse9kpnyR95Oq97KfdOh5YpGgPLeWEMVpfPghIuRWzMjCEKEioVYUJ4n_wQEHXBjklLCjuf9hNg-8CA3CLMmI_yHEeBJ5FTh8jDHd-M7u6ZPiMeTXytLdyBm5nte4CwM0iaa1u2gMJzgcRFlKh48QrzfUD7IEq-5ica0p_blzd-y2_iIUjGatPwyTGVLNsyCv94ZcOBk3xmgCI-TUxngezefa2uw4EDbKjNAM9SgTRDiIQLVeVwe82oE7HwWNg7kHLh43sZ9EmLkzaNFk84ydTNZpme76ei-Wqk5C1WpyEN0bv0hMB66vuKXGHUjU8KC9Dhoo3fsV07mDahdZruUne2CvSYxtP0JJDgN7y45ciI_tF258Z7Pi37Lbs88eMSLswnaXvjGjHUrZbXFr-5QUzIxkxXrTOCl2mO19GSO2Ykthh3Igi6xIqe07U-HC9l_sJzYazY88dzpxnLE3nU7c-cB-tv3h2Dsaj73JbOLNplPXc9zJ28D-T6zqHLkz54RNjyfOeDJ3He_tf82_J1k?type=png)](https://mermaid.live/edit#pako:eNqNV9tu4zYQ_RVBiy1awE4iWb5p2wCpvUjT3U28SQoUbYqCEke2EFkyKCqXJvn3ktSNIinHfrHIc2Y4PDPSkC92mGGwfTtKssdwgwi1bpd3qcV-Hz9avxh_DfylCICkQCG3FkmRUyAHWeZFsCZot7G-zPK_72yDF_ufu7TkVu7OVhfWOaLwiJ7b-cvzi8s_mQMJ_Dkgx6diXvexurqxltkWxal1A-QhDiFv8QWzX2fkuUKY13qmJguHNf06S6Cl8pGRtiIZLkLaMqsJI_mKYCAXFLYtXUxZfM5osUD5JgYixywmjOSzgm5aJh91aB2pFhkBg0hN4jj-b43zdTt8eVX--waEVVYqyVDPGAPlvz9yeVt81EsVGqmS9ZFvCUpzFNI4S1sTadJoCClW9LlII4KsobVEFAUoB4NENcT8NyxNmJhxu7E0U71bWGU5XRO4-f6V11MzeNe5NRyeSsaHbG-Bwg1YP1jfCyikPV4DjnnWxb9SPO27jaJ7dENReM9fcT6wxEiLU2A1R0P_yrJ7gB0Qxmie-1lik6WnPfu7ClhBPaAgTmL6bIi9g_Oaksc922Bv9paiOClfcvGocS7Zp_bz0y4jVOyHD616bNZFYpca9tK_ZvcxY_E_Y2xAN1DkVXTlQH-VKCSLLEkgpBlfko-tZkKjnxMUoZTnrnrSGL8jWIvgywelVmTZROJE8L2KlQXcRt-v1l5mO9-zpkLoiLJHL0GuhXiHVsnRLVGlVt9vv7_d3q6OpebHUpWmIL5j-UE-RKMUASntT4WldqdC3RanompP09eVO5iKSi1LhZSeosJS_zCG1IPp7UHKxucHSGlu_YhZzIB_KuclZazh0fD0VZwFVkC2cZ7zz7iwetW3Ik2UhqIjN42xMjNu02wqmmRlpm1f8VOaSV2Y0gS20K5rEkJttqWTst-uUIyPryEqUgx4n5NGTdE89IpVCrGsPtFndLm7ULcQVVQtRBXvFqKKdhTvQpqyXVjKhDGkHkyXTma0B3DREzQRS22VVlhy-6q8yzCWXQt3yqsJZvnrYelUzyBqTlXckFiVYsyuSjKkWKWoeVZxU7JVjppxY6z7CD25l2mN5t-AkjjMxbEgLwj0qM5f1ONtyX3VOqP2DeunqrnYz9bTsp-vZmg_W_sM9lONn79-eieFB2zxQK4pse9kpnyR95Oq97KfdOh5YpGgPLeWEMVpfPghIuRWzMjCEKEioVYUJ4n_wQEHXBjklLCjuf9hNg-8CA3CLMmI_yHEeBJ5FTh8jDHd-M7u6ZPiMeTXytLdyBm5nte4CwM0iaa1u2gMJzgcRFlKh48QrzfUD7IEq-5ica0p_blzd-y2_iIUjGatPwyTGVLNsyCv94ZcOBk3xmgCI-TUxngezefa2uw4EDbKjNAM9SgTRDiIQLVeVwe82oE7HwWNg7kHLh43sZ9EmLkzaNFk84ydTNZpme76ei-Wqk5C1WpyEN0bv0hMB66vuKXGHUjU8KC9Dhoo3fsV07mDahdZruUne2CvSYxtP0JJDgN7y45ciI_tF258Z7Pi37Lbs88eMSLswnaXvjGjHUrZbXFr-5QUzIxkxXrTOCl2mO19GSO2Ykthh3Igi6xIqe07U-HC9l_sJzYazY88dzpxnLE3nU7c-cB-tv3h2Dsaj73JbOLNplPXc9zJ28D-T6zqHLkz54RNjyfOeDJ3He_tf82_J1k)
+
+### Komponen Inti
+
+*   **API Gateway**: Titik masuk tunggal untuk semua lalu lintas HTTP yang masuk dari klien. Ini bertanggung jawab untuk validasi permintaan, otentikasi, dan merutekan permintaan ke modul layanan hilir yang sesuai melalui gRPC.
+
+*   **Modul Layanan**: Logika bisnis inti dienkapsulasi dalam modul-modul yang berbeda (misalnya, `User`, `Product`, `Cart`, `Order`). Meskipun dikemas dalam satu biner, mereka berjalan sebagai proses terpisah di lingkungan terdistribusi, memastikan isolasi kesalahan dan skalabilitas independen.
+
+*   **Komunikasi**:
+    *   **Sinkron (gRPC)**: Komunikasi berkinerja tinggi dan latensi rendah antara API Gateway dan layanan internal dicapai menggunakan gRPC.
+    *   **Asinkron (Kafka)**: Untuk memisahkan layanan dan menangani alur kerja berbasis peristiwa, platform ini menggunakan Kafka. Misalnya, ketika pesanan dibuat, peristiwa `order_created` dapat dipublikasikan, yang dapat dilanggani oleh layanan lain tanpa membuat ketergantungan langsung.
+
+### Data dan Caching
+
+*   **Database (PostgreSQL)**: Database PostgreSQL pusat menyimpan data inti untuk aplikasi. Setiap modul layanan bertanggung jawab atas skemanya sendiri dalam database ini.
+*   **Caching (Redis)**: Redis digunakan sebagai cache dalam memori untuk menyimpan data yang sering diakses, mengurangi beban database dan meningkatkan waktu respons.
+
+### Observability
+
+Platform ini memiliki tumpukan observability tingkat produksi yang komprehensif yang dibangun di atas tiga pilar observability:
+
+*   **Logging (Loki & Promtail)**: Semua layanan menghasilkan log terstruktur. Promtail mengumpulkan log-log ini dan meneruskannya ke Loki, sistem agregasi log pusat, yang memungkinkan kueri dan analisis yang kuat.
+*   **Metrik (Prometheus & Grafana)**: Setiap layanan mengekspos metrik terperinci (misalnya, tingkat permintaan, kesalahan, latensi). Prometheus mengikis dan menyimpan metrik-metrik ini, sementara Grafana menyediakan dasbor yang kaya dan interaktif untuk visualisasi dan pemantauan.
+*   **Tracing (Jaeger & OpenTelemetry)**: Untuk memahami alur permintaan di berbagai layanan, sistem ini diinstrumentasi dengan OpenTelemetry untuk pelacakan terdistribusi. Jejak dikirim ke Jaeger, memungkinkan pengembang untuk memvisualisasikan grafik panggilan, mengidentifikasi hambatan kinerja, dan men-debug masalah di lingkungan terdistribusi.
+
+
+## Makefile
+
+Proyek ini dilengkapi dengan `Makefile` yang berisi berbagai perintah untuk memfasilitasi pengembangan. Berikut adalah beberapa perintah yang tersedia:
+
+- `make migrate`: Menjalankan migrasi database
+- `make migrate-down`: Mengembalikan migrasi database
+- `make generate-proto`: Menghasilkan kode Go dari file `.proto`
+- `make generate-sql`: Menghasilkan kode Go dari file SQL
+- `make generate-swagger`: Menghasilkan dokumentasi Swagger
+- `make seeder`: Mengisi database dengan data awal
+- `make build-image`: Membangun image Docker untuk semua layanan
+- `make image-load`: Memuat image Docker ke Minikube
+- `make image-delete`: Menghapus image Docker dari Minikube
+- `make ps`: Menampilkan status kontainer Docker
+- `make up`: Menjalankan semua layanan dengan Docker Compose
+- `make down`: Menghentikan semua layanan yang berjalan dengan Docker Compose
+- `make build-up`: Membangun image dan menjalankan semua layanan dengan Docker Compose
+- `make kube-start`: Memulai Minikube
+- `make kube-up`: Menjalankan semua layanan di Kubernetes
+- `make kube-down`: Menghentikan semua layanan di Kubernetes
+- `make kube-status`: Menampilkan status pod, layanan, PVC, dan pekerjaan di Kubernetes
+- `make kube-tunnel`: Membuat terowongan ke Minikube
+- `make test-auth`: Menjalankan tes pada layanan `auth`
 
 
 

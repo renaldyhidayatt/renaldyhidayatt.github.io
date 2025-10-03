@@ -1,36 +1,167 @@
 ---
 title: "Example Sea Query Tonic Payment Gateway"
 excerpt: "A monorepo payment gateway built with Rust, gRPC, PostgreSQL, and with full observability stack."
-date: "2025-05-18"
+date: "2025-08-18"
 tags: [
   "rust", "grpc", "tonic", "axum", "postgresql", "docker", "docker-compose",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis",
   "loki", "otel-collector", "tracing", "sqlx", "seaquery","node-exporter", "postman"
 ]
-status: "selesai"
-image: "https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic/raw/main/images/loki.png"
+status: "finished"
+image: "/portofolio/modular-monolith-payment-gateway-rust.png"
 ---
 
-# Example Sea Query Tonic Payment Gateway
+## Example Sea Query Tonic Payment Gateway
 
-I developed a modern, high-performance Payment Gateway service in Rust, structured as a monorepo. The backend uses Axum for REST APIs and Tonic for gRPC services, enabling flexible and efficient communication. Database access is type-safe and robust, implemented with SeaQuery and SQLx on top of PostgreSQL, complemented by Redis caching for improved performance. Authentication is securely managed using JWT tokens and bcrypt for password hashing. Additionally, the monorepo contains dedicated Rust clients for both Axum REST and Tonic gRPC, facilitating seamless integration and consistent API consumption across the system.
+Proyek ini adalah contoh implementasi **sistem payment gateway sederhana** yang dibangun dengan bahasa pemrograman **Rust**. Tujuan utama proyek ini adalah memberikan gambaran bagaimana merancang layanan finansial dengan pendekatan **service-oriented**, komunikasi efisien via **gRPC**, serta mendukung **observability** sejak awal.
 
-## 🛠️ Technologies Used
-- 🔧 **Axum** — Web framework for building high-performant RESTful APIs in Rust.
-- 🚀 **Tonic** — A gRPC over HTTP/2 implementation for building fast, type-safe services in Rust.
-- 🧰 **SQLx + SeaQuery** — Async SQL toolkit + query builder for working with PostgreSQL efficiently.
-- 📈 **Prometheus** — Gathers real-time metrics for APIs and system components.
-- 🛰️ **OpenTelemetry** — Enables distributed tracing and telemetry collection.
-- 🧵 **Tracing** — Instrumentation framework for structured logging and observability.
-- 🐘 **PostgreSQL** — Primary relational database for storing application and user data.
-- 🐳 **Docker & Docker Compose** — Containerization tools for local development and deployment.
-- 📥 **Loki** — Centralized log aggregation system for observability.
-- 📤 **Promtail** — Collects logs and ships them to Loki.
-- 🔧 **OTel Collector** — Bridges metrics, traces, and logs to your observability stack.
-- 🖥️ **Node Exporter** — Collects system-level metrics (CPU, memory, I/O, etc.).
-- 📊 **Grafana** — Dashboard tool for visualizing metrics and logs.
-- 🔍 **Jaeger** — Distributed tracing backend.
-- 🧪 **Postman** — API client for testing HTTP and gRPC endpoints.
+---
+
+## ⚡ Fitur Utama
+
+### 🔐 1. Manajemen Pengguna
+
+* Registrasi & login pengguna.
+* Penyimpanan data pengguna di PostgreSQL.
+* Tokenisasi session bisa dikombinasikan dengan Redis untuk performa.
+
+### 💰 2. Manajemen Saldo
+
+* Setiap pengguna memiliki akun saldo di database.
+* Mendukung operasi:
+
+  * **Top-up** (menambah saldo).
+  * **Withdraw** (menarik saldo).
+  * **Transfer** (antar pengguna, debit & kredit dalam 1 transaksi).
+
+### 📑 3. Transaksi
+
+* Semua aktivitas finansial dicatat di **riwayat transaksi**.
+* Dukungan query transaksi per pengguna.
+* Konsistensi dijaga dengan transaksi database (SQLx).
+
+### ⚡ 4. Kinerja & Komunikasi
+
+* **Client → Server** pakai gRPC (hemat bandwidth & cepat).
+* Query SQL dibangun dinamis dengan **SeaQuery**.
+* **sqlx** sebagai runtime query, mendukung migrasi & pooling connection.
+
+### 📊 5. Observability (Monitoring & Logging)
+
+* Metrik request, error, latency dikirim ke **Prometheus**.
+* Log request/response dikirim ke **Loki**.
+* Semua data divisualisasikan lewat **Grafana Dashboard**.
+
+---
+
+## 🎯 Keunggulan Proyek
+
+* **Ringan & Cepat** → Rust + gRPC untuk high-performance backend.
+* **Terukur** → bisa berkembang dari sederhana ke kompleks (misalnya menambahkan layanan fraud detection atau notifikasi).
+* **Modular** → pemisahan jelas antara service publik (Client) dan core bisnis (Server).
+* **Observability-ready** → bisa langsung dipantau performa & log-nya.
+* **Cocok untuk Belajar** → mengajarkan konsep dasar **payment system**, **event-driven design**, dan **observability** dalam Rust.
+
+## Arsitektur Sistem
+
+Proyek ini dibagi menjadi dua layanan utama:
+
+1. **Client Service (Axum REST API)**
+
+   * Berfungsi sebagai **gerbang publik** untuk menerima request dari pengguna.
+   * Menyediakan endpoint REST (HTTPS) agar mudah diakses oleh aplikasi web/mobile.
+   * Melakukan validasi input sebelum meneruskan request ke layanan internal.
+
+2. **Server Service (Tonic gRPC)**
+
+   * Menangani seluruh **logika bisnis inti**: registrasi, top-up, transfer, withdraw, pengecekan saldo.
+   * Komunikasi antar service menggunakan **gRPC** untuk kecepatan dan efisiensi.
+   * Berinteraksi dengan **PostgreSQL** sebagai database persisten dan **Redis** sebagai cache.
+
+3. **Observability Stack**
+
+   * **Prometheus** untuk metrics (latency, error rate, request count).
+   * **Loki** untuk logging terpusat.
+   * **Grafana** sebagai dashboard untuk visualisasi metrik & log.
+
+--- 
+
+## Arsitektur Sistem
+
+Arsitektur proyek ini dirancang dengan pendekatan *microservices*, memisahkan antara bagian yang berhadapan dengan publik (Client) dan logika bisnis internal (Server).
+
+[![](https://mermaid.ink/img/pako:eNp9UsGO2jAQ_RXLp60ElAQSQlStREFqV6LaLLCXJj04yRAsEps6cbUs8O8dk2yJNm19iB3Pe2_G8-ZEE5kC9Wmm2GFHNotIEFyljuuLiD6IrWJlpfS-0iqiddysxefwLpBllSlYPy0__LhF5izZQXi3gpSXb_cg0kh0xJfsyAQTZHbI-Z6VvK0_zzmIKqw3sgb1iydAPpJAxzlPyCx4IJ9idU9mL7poJTdAUGG9tWhzqYAsZYbUK20jBR6zVTD_b4WPcYkSLOY5r47t8gIlC6h2oMvwdmzV8UWxLb4tbPZWZCn3PDSfbuJnTBYGILJMI4X0-_fnr5tNsCYr-KmhrM5NV2p00xqDMu_Avuf5uWlAjWi6YBDoEXnSoI5ndK4TvVpGHg_luXavBnTSfINK8QRBtyd3pP6JaemgDwgwPejQ34ea_l1jTf3vhf8CMXzaw6nmKfW3LC-hRwtQBTP_9GR4EUWJAiLq4zFlam_cvSDpwMR3KQvq49AjTUmd7f6I6EPKKlhwhgNyg6CFoOZSi4r6tu1cNah_oi_U74-mA2dij23Lmw7dqTXq0SPejscDxxm7jucOLc9zRiP30qOv17TWwPasoTeZOK7luFPbGl9-A1xgJ0c?type=png)](https://mermaid.live/edit#pako:eNp9UsGO2jAQ_RXLp60ElAQSQlStREFqV6LaLLCXJj04yRAsEps6cbUs8O8dk2yJNm19iB3Pe2_G8-ZEE5kC9Wmm2GFHNotIEFyljuuLiD6IrWJlpfS-0iqiddysxefwLpBllSlYPy0__LhF5izZQXi3gpSXb_cg0kh0xJfsyAQTZHbI-Z6VvK0_zzmIKqw3sgb1iydAPpJAxzlPyCx4IJ9idU9mL7poJTdAUGG9tWhzqYAsZYbUK20jBR6zVTD_b4WPcYkSLOY5r47t8gIlC6h2oMvwdmzV8UWxLb4tbPZWZCn3PDSfbuJnTBYGILJMI4X0-_fnr5tNsCYr-KmhrM5NV2p00xqDMu_Avuf5uWlAjWi6YBDoEXnSoI5ndK4TvVpGHg_luXavBnTSfINK8QRBtyd3pP6JaemgDwgwPejQ34ea_l1jTf3vhf8CMXzaw6nmKfW3LC-hRwtQBTP_9GR4EUWJAiLq4zFlam_cvSDpwMR3KQvq49AjTUmd7f6I6EPKKlhwhgNyg6CFoOZSi4r6tu1cNah_oi_U74-mA2dij23Lmw7dqTXq0SPejscDxxm7jucOLc9zRiP30qOv17TWwPasoTeZOK7luFPbGl9-A1xgJ0c)
+
+-   **Pengguna**: Mengirim permintaan (misalnya, registrasi, transfer, top-up) melalui REST API ke `Client Service`.
+-   **Client Service (Axum)**: Menerima permintaan HTTP, melakukan validasi awal, dan meneruskannya ke `Server Service` melalui panggilan gRPC.
+-   **Server Service (Tonic)**: Menerima panggilan gRPC, memproses seluruh logika bisnis, berinteraksi dengan database (PostgreSQL) dan cache (Redis), lalu mengembalikan hasilnya.
+-   **Database (PostgreSQL)**: Menyimpan data persisten seperti informasi pengguna, saldo, dan riwayat transaksi.
+-   **Observability**: Metrik dari kedua layanan dikumpulkan oleh Prometheus, dan log dikumpulkan oleh Loki. Keduanya dapat divisualisasikan menggunakan Grafana.
+
+## Entity-Relationship Diagram (ERD)
+
+Diagram berikut menggambarkan hubungan antar tabel dalam database.
+
+[![](https://mermaid.ink/img/pako:eNqlVGFvmzAQ_SvoPidRIEAI36Ku1aqpU9VlU1UhRdf4CGhgI9ss29L89xlCYAtE7VR_gnvvHe-ebfawEYwgBJIfUtxKzCNumVUqksraH1-qdft5VRfXKbPuP3X1b8uHq4_LBytOpdIcc-pDGV5CKMc0s74OtCtQqZ2QrI9wsVlriVzFJFvpIeLHB4UZE-e-6-K58b8Hujmra6ExWz9jhnxD_0K7VCdM4m6NuSi57sDV7d31l9Xy7r6j6PQ0dOtPi6IsesHW1bcaXF0_nhRcDPXpOesEOelEsCHTR3zIcZN133QDDPlusViKvB_vCdXiMnY5307ed3vKvue23ZT_OAbv3OvjHXp5GY_FvjmYoRVBgiqCAUZzNCpKQTIWMh_mdSO-Su32rqIq4uwtPEkbSn-QocIItjJlEMaYKRpBTtLcWPMOdboR6ITM2FCpGMrvVfODERXIn4TIIdSyNDIpym3SNikLhpqav01LMd5IXlUxQ-g4dt0Dwj38hHA8W0y8ueM6drCY-gt7NoJfpuq6E89zfS_wp3YQeLOZfxjB7_qz9sQJ7Gkwn3u-7fkLx3YPfwACOHtY?type=png)](https://mermaid.live/edit#pako:eNqlVGFvmzAQ_SvoPidRIEAI36Ku1aqpU9VlU1UhRdf4CGhgI9ss29L89xlCYAtE7VR_gnvvHe-ebfawEYwgBJIfUtxKzCNumVUqksraH1-qdft5VRfXKbPuP3X1b8uHq4_LBytOpdIcc-pDGV5CKMc0s74OtCtQqZ2QrI9wsVlriVzFJFvpIeLHB4UZE-e-6-K58b8Hujmra6ExWz9jhnxD_0K7VCdM4m6NuSi57sDV7d31l9Xy7r6j6PQ0dOtPi6IsesHW1bcaXF0_nhRcDPXpOesEOelEsCHTR3zIcZN133QDDPlusViKvB_vCdXiMnY5307ed3vKvue23ZT_OAbv3OvjHXp5GY_FvjmYoRVBgiqCAUZzNCpKQTIWMh_mdSO-Su32rqIq4uwtPEkbSn-QocIItjJlEMaYKRpBTtLcWPMOdboR6ITM2FCpGMrvVfODERXIn4TIIdSyNDIpym3SNikLhpqav01LMd5IXlUxQ-g4dt0Dwj38hHA8W0y8ueM6drCY-gt7NoJfpuq6E89zfS_wp3YQeLOZfxjB7_qz9sQJ7Gkwn3u-7fkLx3YPfwACOHtY)
+
+## Cara Penggunaan
+
+Proyek ini dapat dijalankan secara lokal maupun menggunakan Docker.
+
+### Menjalankan dengan Docker (Rekomendasi)
+
+Ini adalah cara termudah untuk menjalankan keseluruhan sistem, termasuk database dan layanan observability.
+
+1.  **Prasyarat**:
+    *   [Docker](https://www.docker.com/get-started)
+    *   [Docker Compose](https://docs.docker.com/compose/install/)
+
+2.  **Langkah-langkah**:
+    *   Clone repositori ini.
+    *   Salin file `.env.example` menjadi `.env` jika ada, atau pastikan konfigurasi di `docker-compose.yaml` sudah sesuai.
+    *   Buka terminal di root direktori proyek dan jalankan:
+        ```bash
+        docker-compose up --build -d
+        ```
+    *   Perintah ini akan membangun *image* untuk `client` dan `server`, lalu menjalankan semua layanan (termasuk PostgreSQL, Redis, Prometheus, dll.) di latar belakang.
+    *   Untuk menghentikan semua layanan, jalankan:
+        ```bash
+        docker-compose down
+        ```
+
+### Menjalankan di Lingkungan Lokal
+
+Untuk menjalankan layanan secara manual di mesin lokal Anda.
+
+1.  **Prasyarat**:
+    *   Instalasi [Rust](https://www.rust-lang.org/tools/install).
+    *   Instalasi [PostgreSQL](https://www.postgresql.org/download/) dan [Redis](https://redis.io/docs/getting-started/installation/).
+    *   Install `sqlx-cli` untuk migrasi database:
+        ```bash
+        cargo install sqlx-cli --no-default-features --features rustls,postgres
+        ```
+
+2.  **Langkah-langkah**:
+    *   Clone repositori ini.
+    *   Buat database baru di PostgreSQL untuk proyek ini.
+    *   Salin file `.env.example` menjadi `.env` dan isi variabel lingkungan, terutama `DATABASE_URL` dan `REDIS_URL`. Contoh:
+        ```
+        DATABASE_URL="postgresql://user:password@localhost:5432/payment_db"
+        REDIS_URL="redis://127.0.0.1/"
+        ```
+    *   Jalankan migrasi database untuk membuat tabel-tabel yang diperlukan:
+        ```bash
+        sqlx migrate run
+        ```
+    *   Buka terminal baru, jalankan **Server Service**:
+        ```bash
+        cargo run --bin server
+        ```
+    *   Buka terminal lainnya, jalankan **Client Service**:
+        ```bash
+        cargo run --bin client
+        ```
+    *   Sekarang, `Client Service` akan berjalan di `http://127.0.0.1:8000` (atau sesuai konfigurasi) dan siap menerima permintaan.
 
 
 ## Demo
