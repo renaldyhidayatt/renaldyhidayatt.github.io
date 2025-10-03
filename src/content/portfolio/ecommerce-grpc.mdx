@@ -1,26 +1,139 @@
 ---
 title: "Ecommerce GRPC"
 excerpt: "A ecommerce example using Go, Sqlc, and Docker Compose."
-date: "2025-01-31"
+date: "2025-05-31"
 tags: ["go", "docker", "sqlc", "postgres", "docker-compose"]
 status: "selesai"
-image: "https://github.com/MamangRust/ecommerce-grpc/raw/main/images/example.png?raw=true"
+image: "/portofolio/ecommerce_grpc.png"
+---
+
+# Project Ecommerce GRPC
+
+Proyek ini merupakan **implementasi backend untuk platform e-commerce** yang dirancang untuk mendukung seluruh proses bisnis utama dalam perdagangan digital, mulai dari **pengelolaan pengguna** hingga **transaksi pembayaran**. Sistem ini dibangun dengan pendekatan modular sehingga setiap layanan memiliki tanggung jawab yang spesifik, namun tetap terhubung secara efisien melalui komunikasi antar layanan.
+
+Arsitektur proyek memanfaatkan **gRPC sebagai protokol komunikasi antar layanan**. Dengan gRPC dan Protobuf, pertukaran data antar komponen menjadi lebih cepat, ringan, serta mudah diperluas. Hal ini memungkinkan sistem untuk **skalabel** ketika jumlah pengguna, produk, maupun transaksi meningkat secara signifikan.
+
+Semua data penting — mulai dari detail pengguna, katalog produk, hingga catatan transaksi — disimpan secara konsisten dalam basis data, sehingga platform ini dapat menjadi fondasi yang **andal, aman, dan siap produksi** untuk aplikasi e-commerce modern.
+
+### 🎯 Lingkup & Fitur Utama
+
+* **🔐 Autentikasi & Manajemen Pengguna**
+  Mendukung registrasi, login, serta otorisasi berbasis **JWT**. Sistem juga memungkinkan pengaturan role pengguna (misalnya customer, merchant, atau admin).
+
+* **📦 Manajemen Produk & Kategori**
+  Admin maupun merchant dapat menambahkan, mengubah, atau menghapus produk. Produk dikategorikan untuk mempermudah pencarian dan pengelolaan stok.
+
+* **🏬 Manajemen Merchant**
+  Merchant dapat membuat akun, mengelola toko mereka, serta menambahkan katalog produk yang dimiliki.
+
+* **🛒 Keranjang Belanja (Shopping Cart)**
+  Pengguna dapat menambahkan produk ke keranjang, memperbarui jumlah, dan menyimpan daftar item sebelum melakukan pemesanan.
+
+* **📑 Proses Pemesanan (Order)**
+  Mendukung alur penuh dari checkout hingga pencatatan pesanan. Setiap order dicatat dengan detail produk, jumlah, harga, status, dan informasi pengiriman.
+
+* **💳 Transaksi & Pembayaran**
+  Sistem mencatat pembayaran yang dilakukan oleh pengguna terhadap pesanan mereka. Proses ini dirancang agar **terintegrasi dengan merchant** dan tercatat secara transparan.
+
+* **⭐ Ulasan Produk**
+  Setelah pesanan selesai, pengguna dapat memberikan ulasan dan rating terhadap produk yang dibeli, sehingga platform lebih interaktif dan mendukung kepercayaan konsumen.
+
+---
+
+## 🧰 Tech Teknologi
+
+- 🐹 **Go (Golang)** — Bahasa implementasi.
+- 🌐 **Echo** — Kerangka kerja web minimalis untuk membangun REST API.
+- 🪵 **Zap Logger** — Pencatatan terstruktur untuk aplikasi berkinerja tinggi.
+- 📦 **SQLC** — Menghasilkan kode Go yang aman dari tipe dari kueri SQL.
+- 🚀 **gRPC** — RPC berkinerja tinggi untuk komunikasi layanan internal.
+- 🧳 **Goose** — Alat migrasi untuk mengelola perubahan skema database.
+- 🐳 **Docker** — Platform kontainerisasi untuk lingkungan pengembangan yang konsisten.
+- 📄 **Swago** — Menghasilkan dokumentasi Swagger 2.0 untuk rute Echo.
+- 🔗 **Docker Compose** — Mengelola aplikasi Docker multi-kontainer.
+
 ---
 
 
+## Arsitektur
+Aplikasi ini dirancang dengan arsitektur berorientasi layanan monolith (monolith). REST API yang menghadap klien bertindak sebagai gateway, menerjemahkan permintaan HTTP menjadi panggilan gRPC ke server backend. Server ini berisi logika bisnis inti dan berkomunikasi dengan database PostgreSQL.
 
-## 🧰 Tech Stack
+[![](https://mermaid.ink/img/pako:eNqdUl1vmzAU_SvWjTSlEkkDBGL8MKlqpq1bt7ImTwt5MOGGoICNjGmbRfnvMx9ZO1WbtNqS4R7fe865to-wkQkCg1TxckeW80gQM6o67oAIboRGxfdVRkIUaVoLHkGX1IwzRkYjk_tpuQwv7z8slmT4eXH37SICg78nX_IMxapdL6_CG_KRa3zkh3VHgyKJxCvZW37gggtyVebZnlfZS9GWqVNM78NrMgyV1DKut2fBBaoHVKvuQ5qc9XN1j7bli--3fcmcax7zClfDUFY6VWi2Lv7psGkdi5iL1Nh8R-5Kc0x_-vyapQ20MvYqrM7h-m_Sr8X0Ice-222W52yQuNQPYqvSSu6RDdyNS12_D0ePWaJ3zCmfrI3MpWIDhzbzJVffe0dGXe4F9O1kZ989XUzj2PHfTtcfT8-2RTqxg_9jA8s84ywBtuV5hRYUqArexHBshCLQOywwAmZ-E672zV2dTFHJxQ8pC2Ba1aZMyTrd_Sapy8Q813nGjbvnFHNLqK5lLTQwJ2gpgB3hCdjIDcbezJk6Ng0mfmC7FhwMOp2OPW_qe9Sf2JR6ruufLPjZqtpjh9oTOpt5vu35gWNPT78AlwgbmQ?type=png)](https://mermaid.live/edit#pako:eNqdUl1vmzAU_SvWjTSlEkkDBGL8MKlqpq1bt7ImTwt5MOGGoICNjGmbRfnvMx9ZO1WbtNqS4R7fe865to-wkQkCg1TxckeW80gQM6o67oAIboRGxfdVRkIUaVoLHkGX1IwzRkYjk_tpuQwv7z8slmT4eXH37SICg78nX_IMxapdL6_CG_KRa3zkh3VHgyKJxCvZW37gggtyVebZnlfZS9GWqVNM78NrMgyV1DKut2fBBaoHVKvuQ5qc9XN1j7bli--3fcmcax7zClfDUFY6VWi2Lv7psGkdi5iL1Nh8R-5Kc0x_-vyapQ20MvYqrM7h-m_Sr8X0Ice-222W52yQuNQPYqvSSu6RDdyNS12_D0ePWaJ3zCmfrI3MpWIDhzbzJVffe0dGXe4F9O1kZ989XUzj2PHfTtcfT8-2RTqxg_9jA8s84ywBtuV5hRYUqArexHBshCLQOywwAmZ-E672zV2dTFHJxQ8pC2Ba1aZMyTrd_Sapy8Q813nGjbvnFHNLqK5lLTQwJ2gpgB3hCdjIDcbezJk6Ng0mfmC7FhwMOp2OPW_qe9Sf2JR6ruufLPjZqtpjh9oTOpt5vu35gWNPT78AlwgbmQ)
 
-- 🐹 **Go (Golang)** — Implementation language.
-- 🌐 **Echo** — HTTP framework for Go.
-- 🪵 **Zap Logger** — Structured logging for debugging and operations.
-- 📦 **Sqlc** — SQL code generator for Go.
-- 🚀 **gRPC** — Provides high-performance, strongly-typed APIs.
-- 🧳 **Goose** — Database migration tool.
-- 🐳 **Docker** — Containerization tool.
-- 📃 **Swago** — API documentation generator.
-- 🧱 **Docker Compose** — Simplifies containerization for development and production environments.
-- 🧰 **Postman** - API testing and exploration tool
+---
+
+## Entity-Relationship Diagram (ERD)
+
+Berikut adalah ERD yang menggambarkan skema database dari proyek ini, dirender menggunakan Mermaid.js.
+
+[![](https://mermaid.ink/img/pako:eNqtWG1v2joU_iuRP7dVoUAp37gt06qt27Rxr6YJKXJtA1YTO7OdUdb1v88OIXH8Qkt1-VTO6-Nzjh8f-gQQxwRMABE3FK4EzBcs0Z9SEiGTp90X87n9NK-EKcXJlw-t_L_p1-v306_JkgqpGMyJr8pgTENySLPk30C4Akq54QLvNM8LtvtD8Ix4sIwwBqvSmeRNliZWdZpgwEbjRrWL8O5DGMU7N48gS0HkOlX8gTAfvK19bb796SqnTv3mt3ezb_Pp3ZeEPBZUQEU5c_DkRKA1ZMqDslcci6Lb2_ns-zzBRCJBiza7bS8VVKV0UCGoyIoL6nej1mxjLQ6PlszKVbp39ZtfCI5L5NeglodKYJfHbb6N8eUS7RJR5IgQL010lkrF0UPkSDVA_0QIChWonVDHDLF1fFf1s9Rnp2rrpNV3NMAUlfSYxIeKq7iCWWoVrJs8pYrkMQRaFYLR4HtzAQJ9bGDJNS0KylYpxFhfbunPtGvxaozV7YIZzKHyB0QPkL5AolXczK5v76Yf23SIS-WAVQIyCZG5qh5MS3dUFWPdbNl9mxOtzolac9z1hbm5BnGfIHsI8ouSTYBcjfh_uABV2RHPDQInhaZYtgrCSTFR-n2LodppQ-Ba2EHS3xYu3ZYii5B8el9KyqoJY0su8upBiBJ_x_gYDtxjawJ0QTbQ4aP2jEFFRCi6pKjCKFPIcAo3UOD4Q9XxeAtefZ-zAE4qZUlwer-NQS14RlHgreoabN8CqfaMFLDF64OKjJujfwsmTGWRwW3aPmN-dskR1TSdE0xhmlH2EAdSmx4C0mIN1iiDykzzi9dAZjT0PO3Exy0UNIcr9_D3kLFA-J34deFvpvOZ2Yj0O431EuEoiL4DXfE_nz9_nE0_6RFNDTH_IoGtViZ__pye8id7xZ0kC7CGcgHsRfpFs040Z5E9ZNrumMaKb1jYbLezHApUrxfGRDcdkRiyHf0bs43Qj35l5q67tXGz-hlrSbKsiemZWtkFQURXO27beUcrvIKj6vGPuhwmaacsce84b746RMNnxgOTpUHzsteecKw0EUpyPQNk4QWxfhGEOoc407GZ5dCovenSWxbBeo_cH8m1tPdIY08ZykrjQlnMxR65Dux6ZiKRbdS-dWBxrIZUi6UFv-vkDV4Hzh5nB7bfOXACVoJiMFnCTJIToDulf5vr76DitgVQa6JpC1TzAcWDSfCsnQrIfnCeg4kSpXYTvFytmyBlYbir_r9CY6I5jYhrs-SBSX9YhQCTJ_AIJqcXV2fDy_6g3xtfnY-uehcnYKulg8HZcDgYDcej8954PLy4GD2fgN9V1t5Zf9w7H19eDke94eiq3xs8_wUFDSmw?type=png)](https://mermaid.live/edit#pako:eNqtWG1v2joU_iuRP7dVoUAp37gt06qt27Rxr6YJKXJtA1YTO7OdUdb1v88OIXH8Qkt1-VTO6-Nzjh8f-gQQxwRMABE3FK4EzBcs0Z9SEiGTp90X87n9NK-EKcXJlw-t_L_p1-v306_JkgqpGMyJr8pgTENySLPk30C4Akq54QLvNM8LtvtD8Ix4sIwwBqvSmeRNliZWdZpgwEbjRrWL8O5DGMU7N48gS0HkOlX8gTAfvK19bb796SqnTv3mt3ezb_Pp3ZeEPBZUQEU5c_DkRKA1ZMqDslcci6Lb2_ns-zzBRCJBiza7bS8VVKV0UCGoyIoL6nej1mxjLQ6PlszKVbp39ZtfCI5L5NeglodKYJfHbb6N8eUS7RJR5IgQL010lkrF0UPkSDVA_0QIChWonVDHDLF1fFf1s9Rnp2rrpNV3NMAUlfSYxIeKq7iCWWoVrJs8pYrkMQRaFYLR4HtzAQJ9bGDJNS0KylYpxFhfbunPtGvxaozV7YIZzKHyB0QPkL5AolXczK5v76Yf23SIS-WAVQIyCZG5qh5MS3dUFWPdbNl9mxOtzolac9z1hbm5BnGfIHsI8ouSTYBcjfh_uABV2RHPDQInhaZYtgrCSTFR-n2LodppQ-Ba2EHS3xYu3ZYii5B8el9KyqoJY0su8upBiBJ_x_gYDtxjawJ0QTbQ4aP2jEFFRCi6pKjCKFPIcAo3UOD4Q9XxeAtefZ-zAE4qZUlwer-NQS14RlHgreoabN8CqfaMFLDF64OKjJujfwsmTGWRwW3aPmN-dskR1TSdE0xhmlH2EAdSmx4C0mIN1iiDykzzi9dAZjT0PO3Exy0UNIcr9_D3kLFA-J34deFvpvOZ2Yj0O431EuEoiL4DXfE_nz9_nE0_6RFNDTH_IoGtViZ__pye8id7xZ0kC7CGcgHsRfpFs040Z5E9ZNrumMaKb1jYbLezHApUrxfGRDcdkRiyHf0bs43Qj35l5q67tXGz-hlrSbKsiemZWtkFQURXO27beUcrvIKj6vGPuhwmaacsce84b746RMNnxgOTpUHzsteecKw0EUpyPQNk4QWxfhGEOoc407GZ5dCovenSWxbBeo_cH8m1tPdIY08ZykrjQlnMxR65Dux6ZiKRbdS-dWBxrIZUi6UFv-vkDV4Hzh5nB7bfOXACVoJiMFnCTJIToDulf5vr76DitgVQa6JpC1TzAcWDSfCsnQrIfnCeg4kSpXYTvFytmyBlYbir_r9CY6I5jYhrs-SBSX9YhQCTJ_AIJqcXV2fDy_6g3xtfnY-uehcnYKulg8HZcDgYDcej8954PLy4GD2fgN9V1t5Zf9w7H19eDke94eiq3xs8_wUFDSmw)
+
+
+## Memulai
+
+Untuk memulai proyek ini, ikuti langkah-langkah berikut:
+
+### 1. Clone Repositori
+
+```bash
+git clone https://github.com/MamangRust/ecommerce-grpc.git
+cd ecommerce-grpc
+```
+
+### 2. Prasyarat
+
+- Go (versi 1.20+)
+- Docker & Docker Compose
+- `make`
+- `protoc`
+
+### 3. Konfigurasi
+
+Salin file `.env.example` menjadi `.env` dan sesuaikan variabel lingkungan jika diperlukan. Untuk menjalankan dengan Docker, gunakan `docker.env`.
+
+## Cara Menjalankan Proyek
+
+Anda bisa menjalankan proyek ini menggunakan Docker (direkomendasikan) atau secara lokal dengan Go.
+
+### 1. Menjalankan dengan Docker
+
+Cara termudah untuk memulai adalah dengan Docker Compose. Perintah ini akan membangun image, menjalankan database, menerapkan migrasi, dan memulai server gRPC serta client HTTP.
+
+```bash
+# Menjalankan semua layanan di background
+make docker-up
+
+# Menghentikan semua layanan
+make docker-down
+```
+
+Layanan yang akan berjalan:
+- `postgres`: Database PostgreSQL di port `5432`.
+- `server`: Server gRPC di port `50051`.
+- `client`: Klien HTTP (Gateway) di port `5000`.
+
+### 2. Menjalankan Secara Lokal
+
+Jika Anda tidak menggunakan Docker, Anda bisa menjalankan setiap bagian secara manual.
+
+```bash
+# 1. Terapkan migrasi database
+make migrate
+
+# 2. Jalankan server gRPC
+make run-server
+
+# 3. (Di terminal lain) Jalankan klien/gateway HTTP
+make run-client
+```
+
+### Perintah `make` Lainnya
+
+- `make generate-proto`: Membuat ulang kode Go dari file `.proto`.
+- `make lint`: Menjalankan linter pada kode.
+- `make test`: Menjalankan unit test.
+- `make sqlc-generate`: Membuat ulang kode dari query SQL menggunakan `sqlc`.
+
 
 
 ## 🔗 Source Code & Repository

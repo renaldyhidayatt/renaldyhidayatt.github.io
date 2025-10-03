@@ -1,106 +1,173 @@
 ---
 title: "Payment Gateway with Echo and gRPC"
 excerpt: "A system that simulates a payment gateway handling transactions like card payments, top-ups, withdrawals, and transfers."
-date: "2025-01-31"
+date: "2025-05-31"
 tags: ["golang", "sqlc", "echo", "grpc", "postgres", "rust", "tauri.js", "axios", "zustand", "flutter"]
 status: "selesai"
-image: "https://github.com/MamangRust/payment-gateway-grpc/raw/main/images/preview_payment.png?raw=true"
+image: "/portofolio/paymentpaymentgateway_grpc.png"
 ---
 
 
-# **Welcome to the Payment Gateway Project!**
+## ✨ Payment Gateway with Echo and gRPC
 
-This system simulates a payment gateway handling operations such as:
+Proyek ini merupakan **implementasi sistem pembayaran sederhana** yang dirancang untuk meniru alur kerja layanan keuangan digital pada umumnya. Sistem ini dibangun dengan pendekatan modular, sehingga setiap layanan dapat berdiri sendiri namun tetap saling terhubung melalui basis data dan API yang konsisten.
 
-- Card Transactions 💳
-- Top-ups 💰
-- Withdrawals 🏧
-- Transfers 🔄
+### Layanan Utama
 
-The project involves multiple entities like users, cards, merchants, and financial transactions.
+Beberapa komponen penting yang menjadi inti dari proyek ini meliputi:
 
-## **Tech Stack** 🚀
+* **🔐 Otentikasi Pengguna**
+  Mendukung pendaftaran akun baru, login dengan kredensial, serta penerbitan dan validasi token JWT. Sistem ini juga dilengkapi manajemen refresh token untuk menjaga keamanan sesi pengguna.
 
-### Backend
+* **💳 Manajemen Kartu**
+  Setiap pengguna dapat menambahkan kartu ke akun mereka. Detail kartu seperti nomor, tipe kartu, tanggal kadaluarsa, dan CVV disimpan dengan aman, serta dapat diakses kembali sesuai kebutuhan transaksi.
 
-- **Golang** 🐹
-- **Sqlc** 🗄️
-- **Echo Framework** ⚡
-- **gRPC** 🔌
+* **🏬 Manajemen Merchant**
+  Merchant dapat dibuat dan diatur melalui sistem. Setiap merchant memiliki identitas unik berupa nomor merchant (UUID) dan API key yang digunakan untuk memproses transaksi.
 
-### Frontend
+* **💸 Transaksi**
+  Menangani proses pembayaran antara kartu pengguna dan merchant. Setiap transaksi dicatat dengan nomor unik, jumlah pembayaran, serta informasi terkait merchant penerima.
 
-- **ReactJs** ⚛️
-- **Shadcn UI** 🎨
-- **Tailwind.css** 🌊
-- **Rust** 🦀
-- **Tauri.js** 🚀
-- **Axios** 🔗
-- **Zustand** 🐻
+* **🔄 Transfer Dana**
+  Memungkinkan pengguna untuk melakukan transfer saldo antar kartu. Sistem mencatat asal (from) dan tujuan (to) transfer, serta memastikan saldo mencukupi sebelum transaksi diproses.
 
+* **📈 Top-Up Saldo**
+  Pengguna dapat menambahkan dana ke kartu mereka melalui proses top-up. Setiap top-up memiliki identitas unik dan secara otomatis memperbarui saldo kartu terkait.
+
+* **🏧 Penarikan (Withdraw)**
+  Pengguna dapat menarik dana dari kartu mereka. Sama seperti top-up, proses ini tercatat dan saldo diperbarui sesuai jumlah penarikan.
+
+* **💰 Manajemen Saldo**
+  Semua kartu terhubung dengan entitas saldo. Sistem bertanggung jawab untuk melacak, menambah, dan mengurangi saldo secara konsisten setelah setiap operasi keuangan (transaksi, transfer, top-up, atau penarikan).
+
+---
+
+
+## 🚀 Penambahan Fitur Proyek
+- **REST API Client**: Klien RESTful yang berinteraksi dengan server gRPC.
+- **gRPC Server**: Server utama yang menangani semua logika bisnis.
+- **Migrasi Database**: Menggunakan `goose` untuk mengelola skema database.
+- **Dokumentasi API**: Dokumentasi Swagger yang dibuat secara otomatis.
+- **Docker Support**: Konfigurasi Docker dan Docker Compose untuk lingkungan pengembangan yang mudah.
+- **Unit & Integration Tests**: Pengujian untuk memastikan keandalan kode.
+- **CI/CD**: Alur kerja GitHub Actions untuk build, format, dan pengujian otomatis.
+
+## 🧰 Tech Teknologi
+
+- 🐹 **Go (Golang)** — Bahasa implementasi.
+- 🌐 **Echo** — Kerangka kerja web minimalis untuk membangun REST API.
+- 🪵 **Zap Logger** — Pencatatan terstruktur untuk aplikasi berkinerja tinggi.
+- 📦 **SQLC** — Menghasilkan kode Go yang aman dari tipe dari kueri SQL.
+- 🚀 **gRPC** — RPC berkinerja tinggi untuk komunikasi layanan internal.
+- 🧳 **Goose** — Alat migrasi untuk mengelola perubahan skema database.
+- 🐳 **Docker** — Platform kontainerisasi untuk lingkungan pengembangan yang konsisten.
+- 📄 **Swago** — Menghasilkan dokumentasi Swagger 2.0 untuk rute Echo.
+- 🔗 **Docker Compose** — Mengelola aplikasi Docker multi-kontainer.
+
+---
+
+## Arsitektur
+Aplikasi ini dirancang dengan arsitektur berorientasi layanan monolith (monolith). REST API yang menghadap klien bertindak sebagai gateway, menerjemahkan permintaan HTTP menjadi panggilan gRPC ke server backend. Server ini berisi logika bisnis inti dan berkomunikasi dengan database PostgreSQL.
+
+[![](https://mermaid.ink/img/pako:eNqdUl1vmzAU_SuWI02pRNIAgRg_TKqaaevWrazJ00IeLuGGoICNjGmbRfnvMx9ZO1WbtNqS4R7fe865to90IxOknKYKyh1ZziNBzKjquAMieiM0KthXGQlRpGktIKJdUjPOGBmNTO6n5TK8vP-wWJLh58Xdt4uIGvw9-ZJnKFbtenkV3pCPoPERDuuOBkUSiVeyt3AAAYJclXm2hyp7KdoydYrpfXhNhqGSWsb19iy4QPWAatV9SJOzfq7u0bZ88f22L5mDhhgqXA1DWelUodm6-KfDpnUsYhCpsfmO3JXmmP70-TVLG2hl7FVYncP136Rfi-lDjn232yzP-SBxmR_EVqWV3CMfuBuXuX4fjh6zRO-4Uz5ZG5lLxQcOa-ZLrr73joy54AXs7WRn3z1dzOLY8d9O1x9Pz7ZFNrGD_2OjlnnGWUL5FvIKLVqgKqCJ6bERiqjeYYER5eY3AbVv7upkikoQP6QsKNeqNmVK1unuN0ldJua5zjMw7p5TzC2hupa10JQ7dktB-ZE-UT5yg7E3c6aOzYKJH9iuRQ8GnU7Hnjf1PeZPbMY81_VPFv3Zqtpjh9kTNpt5vu35gWNPT78AlHgbkQ?type=png)](https://mermaid.live/edit#pako:eNqdUl1vmzAU_SuWI02pRNIAgRg_TKqaaevWrazJ00IeLuGGoICNjGmbRfnvMx9ZO1WbtNqS4R7fe865to90IxOknKYKyh1ZziNBzKjquAMieiM0KthXGQlRpGktIKJdUjPOGBmNTO6n5TK8vP-wWJLh58Xdt4uIGvw9-ZJnKFbtenkV3pCPoPERDuuOBkUSiVeyt3AAAYJclXm2hyp7KdoydYrpfXhNhqGSWsb19iy4QPWAatV9SJOzfq7u0bZ88f22L5mDhhgqXA1DWelUodm6-KfDpnUsYhCpsfmO3JXmmP70-TVLG2hl7FVYncP136Rfi-lDjn232yzP-SBxmR_EVqWV3CMfuBuXuX4fjh6zRO-4Uz5ZG5lLxQcOa-ZLrr73joy54AXs7WRn3z1dzOLY8d9O1x9Pz7ZFNrGD_2OjlnnGWUL5FvIKLVqgKqCJ6bERiqjeYYER5eY3AbVv7upkikoQP6QsKNeqNmVK1unuN0ldJua5zjMw7p5TzC2hupa10JQ7dktB-ZE-UT5yg7E3c6aOzYKJH9iuRQ8GnU7Hnjf1PeZPbMY81_VPFv3Zqtpjh9kTNpt5vu35gWNPT78AlHgbkQ)
+---
+
+## Skema Database (ERD)
+Diagram berikut mengilustrasikan hubungan antar tabel dalam database.
+
+[![](https://mermaid.ink/img/pako:eNqVVm1v2jAQ_iuRpUqbRBEBEkK-odJpVaVpQu0-TEjITQyxSOzIcaAM-O-zHfLS2KEln8g9z909dz5fOIKAhgj4ALE5hhsGkyWxxJNniGXWsXiRz9OvF2Vc4dD6_Vzb_8wWDz9nC2uNWcYJTJAOxbALQQnEsW5OYZbtKQsL5LwkxQ9GY6RpksYuTQqrM1eBVB3GaBXSDtks_8ezWUJpr_IEkIVaCmn8avSyEOVD8uQNsQ6QH9JGf-ezl0cLvaeYoVUIuaHzwW7XEpsgFkSQcE1wCbRFv74-zWuQUD2J-dBhildbdLhefSUrg3FINU3K2nXsjW5pZ8Uph_HqDcaQBO2x4AySDAYcU6IlbGDGPjRxUyuuaYIJzQnvbrrWE5VsbbigJdAtUYImfRW4ZjQxzmDF4FTvaok1S6nl0jRPda3SahaqkFu7WHgZBewxj0IG95qGEjDKqMBblVSORjEMrRnKItHGLdLn7AN665pQTq10d3fWAsVQDXWExTF8eySbGGfR9-aiP53u7-nxsrB8awkimC2BgVFviWusVo1G6llQT8fmLm7RCuOntELzJfFlW0gK3RMz58M1v84sBvcqp56tz5OqKytp8pJ9gcZpSarb3lUEQwHCOySygx7YMBwCfw3jDPWA8BWfWfEO1KyJsBESexlIrxCyrcxxFk4pJH8pTYDPWS7cGM03URUkT-V35PIXoaIgEiL2IIcc-PZEhQD-EbwD_3407TuT4Xhoe9OBO7VHPXAQ1vG47zhj1_Hcge15zmjknnvgn8pq94eePfAmE8e1HXc6tMfn_2iJl2c?type=png)](https://mermaid.live/edit#pako:eNqVVm1v2jAQ_iuRpUqbRBEBEkK-odJpVaVpQu0-TEjITQyxSOzIcaAM-O-zHfLS2KEln8g9z909dz5fOIKAhgj4ALE5hhsGkyWxxJNniGXWsXiRz9OvF2Vc4dD6_Vzb_8wWDz9nC2uNWcYJTJAOxbALQQnEsW5OYZbtKQsL5LwkxQ9GY6RpksYuTQqrM1eBVB3GaBXSDtks_8ezWUJpr_IEkIVaCmn8avSyEOVD8uQNsQ6QH9JGf-ezl0cLvaeYoVUIuaHzwW7XEpsgFkSQcE1wCbRFv74-zWuQUD2J-dBhildbdLhefSUrg3FINU3K2nXsjW5pZ8Uph_HqDcaQBO2x4AySDAYcU6IlbGDGPjRxUyuuaYIJzQnvbrrWE5VsbbigJdAtUYImfRW4ZjQxzmDF4FTvaok1S6nl0jRPda3SahaqkFu7WHgZBewxj0IG95qGEjDKqMBblVSORjEMrRnKItHGLdLn7AN665pQTq10d3fWAsVQDXWExTF8eySbGGfR9-aiP53u7-nxsrB8awkimC2BgVFviWusVo1G6llQT8fmLm7RCuOntELzJfFlW0gK3RMz58M1v84sBvcqp56tz5OqKytp8pJ9gcZpSarb3lUEQwHCOySygx7YMBwCfw3jDPWA8BWfWfEO1KyJsBESexlIrxCyrcxxFk4pJH8pTYDPWS7cGM03URUkT-V35PIXoaIgEiL2IIcc-PZEhQD-EbwD_3407TuT4Xhoe9OBO7VHPXAQ1vG47zhj1_Hcge15zmjknnvgn8pq94eePfAmE8e1HXc6tMfn_2iJl2c)
+
+
+---
+
+## Memulai
+Anda dapat menjalankan proyek ini baik secara lokal dengan lingkungan Go atau menggunakan Docker.
+
+### Prasyarat
+- Go (versi 1.21 atau lebih baru)
+- Docker dan Docker Compose
+- Alat baris perintah `make`
+- Sebuah file `.env` dengan variabel lingkungan yang diperlukan. Anda dapat menyalin dari `docker.env` sebagai template.
+
+### 1. Clone Repositori
+```bash
+git clone https://github.com/hoover/payment-gateway-grpc.git
+cd payment-gateway-grpc
+```
+
+### 2. Menjalankan dengan Docker (Disarankan)
+Ini adalah cara termudah untuk menjalankan semua layanan.
+
+1.  **Buat File Lingkungan:**
+    Salin `docker.env` ke file `.env` baru.
+    ```bash
+    cp docker.env .env
+    ```
+
+2.  **Bangun dan Jalankan Layanan:**
+    Gunakan perintah `make` untuk membangun image dan memulai kontainer dalam mode detached.
+    ```bash
+    make docker-up
+    ```
+    Ini akan memulai layanan `postgres`, `migrate`, `server`, dan `client`. Klien akan tersedia di `http://localhost:5000`.
+
+3.  **Menghentikan Layanan:**
+    Untuk menghentikan semua kontainer yang berjalan, gunakan:
+    ```bash
+    make docker-down
+    ```
+
+### 3. Menjalankan Secara Lokal
+
+1.  **Mulai Database:**
+    Anda dapat menggunakan file Docker Compose yang disediakan untuk hanya menjalankan database PostgreSQL.
+    ```bash
+    docker-compose up -d postgres
+    ```
+
+2.  **Siapkan Lingkungan:**
+    Buat file `.env` di direktori root dan isi detail koneksi database serta variabel lain yang diperlukan.
+
+3.  **Jalankan Migrasi Database:**
+    Terapkan skema database terbaru.
+    ```bash
+    make migrate
+    ```
+
+4.  **Jalankan Layanan:**
+    Buka dua jendela terminal terpisah.
+
+    Di terminal pertama, jalankan server gRPC:
+    ```bash
+    make run-server
+    ```
+
+    Di terminal kedua, jalankan klien:
+    ```bash
+    make run-client
+    ```
+    API klien akan dapat diakses di `http://localhost:5000`.
+
+---
+
+## Perintah `make` yang Tersedia
+
+- `migrate`: Menerapkan migrasi database.
+- `migrate-down`: Membatalkan migrasi database terakhir.
+- `run-server`: Memulai server gRPC secara lokal.
+- `run-client`: Memulai gateway API klien secara lokal.
+- `docker-up`: Membangun dan memulai semua layanan dengan Docker Compose.
+- `docker-down`: Menghentikan dan menghapus semua layanan yang dimulai dengan Docker Compose.
+- `test`: Menjalankan unit test.
+- `test-all`: Menjalankan semua tes (unit dan integrasi).
+- `fmt`: Memformat kode sumber Go.
+- `lint`: Melakukan `linting` pada basis kode.
+- `generate-proto`: Menghasilkan kode Go dari file Protobuf.
 
 
 ## **Preview** 📸
 
-### **Frontend Web** 🖥️
-<img src="https://github.com/MamangRust/payment-gateway-web/raw/main/images/image.png?raw=true" alt="Frontend Web Preview" width={600} height={400} />
-
-### **Frontend Desktop** 🏢
-<img src="https://github.com/MamangRust/payment-gateway-grpc/raw/main/images/preview_payment_desktop.png?raw=true" alt="Frontend Desktop Preview" width={600} height={400} />
-
-### **Relation Table** 📊
-<img src="https://github.com/MamangRust/payment-gateway-grpc/raw/main/images/relation-table.png?raw=true" alt="Database Relation Table" width={600} height={400} />
-
-### **API Documentation (Swagger)** 📜
-<img src="https://github.com/MamangRust/payment-gateway-grpc/raw/main/images/swagger_3.png?raw=true" alt="Swagger API Documentation" width={600} height={400} />
-
-## **Get Started** 🏁
-
-To clone and run the project:
-
-### Backend
-
-```sh
-git clone https://github.com/MamangRust/payment-gateway-grpc.git
-cd payment-gateway
-
-go run cmd/migrate/main.go // migrate table
-go run cmd/client/main.go // run client (rest api)
-go run cmd/server/main.go // run server (grpc)
-
-```
-
-### Frontend-web
-```sh
-git clone https://github.com/MamangRust/payment-gateway-web.git
-
-cd payment-gateway-web
-
-npm install
-
-npm run dev
-
-```
-
-
-### Frontend-dashboard
-```sh
-git clone https://github.com/MamangRust/payment-gateway-dashboard.git
-
-cd payment-gateway-web
-
-npm install
-
-// build tauri app
-npm run tauri build
-
-# Hasil build ada di:
-ls src-tauri/target/release
-```
-
 
 
 ## 🔗 Source Code & Repository
-[📌 View on GitHub (Backend)](https://github.com/MamangRust/payment-gateway-grpc)<br />
-[📌 View on GitHub (Frontend)](https://github.com/MamangRust/payment-gateway-web)
-[📌 View on GitHub (Frontend)](https://github.com/MamangRust/payment-gateway-dashboard)
+[📌 View on GitHub (Backend)](https://github.com/MamangRust/payment-gateway-grpc)
