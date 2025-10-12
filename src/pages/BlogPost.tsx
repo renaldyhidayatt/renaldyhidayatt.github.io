@@ -1,7 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 import MDXContent from "@/components/MDXContent";
 import { getBlogPost } from "@/utils/mdx";
 
@@ -16,20 +15,17 @@ const BlogPost = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors">
-        <Navbar />
+      <Layout>
         <main className="max-w-2xl mx-auto px-6 py-12">
           <div className="text-center text-gray-500 dark:text-gray-400">Loading post...</div>
         </main>
-        <Footer />
-      </div>
+      </Layout>
     );
   }
 
   if (error || !post) {
     return (
-      <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors">
-        <Navbar />
+      <Layout>
         <main className="max-w-2xl mx-auto px-6 py-12">
           <div className="text-center">
             <h1 className="text-2xl font-serif text-amber-600 dark:text-blue-200 mb-4">
@@ -43,16 +39,14 @@ const BlogPost = () => {
             </Link>
           </div>
         </main>
-        <Footer />
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors">
-      <Navbar />
+    <Layout>
 
-      <main className="max-w-2xl mx-auto px-6 py-12">
+      <main className="max-w-2xl mx-auto px-6 py-12 pb-20 md:pb-0">
         <Link
           to="/blog"
           className="text-amber-600 hover:text-amber-800 dark:text-blue-300 dark:hover:text-blue-100 text-sm mb-8 inline-block transition-colors"
@@ -97,11 +91,8 @@ const BlogPost = () => {
 
           <MDXContent code={post.content} />
         </article>
-
       </main>
-
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 

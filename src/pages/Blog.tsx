@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 import { getBlogPosts } from "@/utils/mdx";
 
 const POSTS_PER_PAGE = 5;
@@ -45,21 +44,18 @@ const Blog = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100">
-        <Navbar />
+      <Layout>
         <main className="max-w-2xl mx-auto px-6 py-12">
           <div className="text-center text-gray-400">Loading posts...</div>
         </main>
-        <Footer />
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <Navbar />
+    <Layout>
 
-      <main className="max-w-2xl mx-auto px-6 py-12">
+      <main className="max-w-2xl mx-auto px-6 py-12 pb-20 md:pb-0">
         <header className="mb-10">
           <h1 className="text-3xl font-serif font-light text-amber-500 dark:text-blue-200 mb-2">Blog</h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 font-light">
@@ -155,12 +151,8 @@ const Blog = () => {
             </button>
           </div>
         )}
-
-
       </main>
-
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 

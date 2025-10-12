@@ -1,8 +1,7 @@
 
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 import MDXContent from "@/components/MDXContent";
 import { getPortfolioProject } from "@/utils/mdx";
 
@@ -17,20 +16,17 @@ const PortfolioProject = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-        <Navbar />
+      <Layout>
         <main className="max-w-2xl mx-auto px-6 py-12">
           <div className="text-center text-gray-400">Loading project...</div>
         </main>
-        <Footer />
-      </div>
+      </Layout>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100">
-        <Navbar />
+      <Layout>
         <main className="max-w-2xl mx-auto px-6 py-12">
           <div className="text-center">
             <h1 className="text-2xl font-serif text-amber-200 mb-4">Project Not Found</h1>
@@ -39,22 +35,18 @@ const PortfolioProject = () => {
             </Link>
           </div>
         </main>
-        <Footer />
-      </div>
+      </Layout>
     );
   }
 
   const ContentComponent = project.content;
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <Navbar />
-
-      <main className="max-w-2xl mx-auto px-6 py-12">
+    <Layout>
+      <main className="max-w-2xl mx-auto px-6 py-12 pb-20 md:pb-0">
         <Link to="/portfolio" className="text-amber-600 hover:text-amber-800 dark:text-blue-300 dark:hover:text-blue-100 text-sm mb-8 inline-block transition-colors">
           ← Back to Portfolio
         </Link>
-
         <article>
           <header className="mb-12">
             <div className="flex items-start justify-between mb-4">
@@ -91,9 +83,7 @@ const PortfolioProject = () => {
           <MDXContent code={project.content} />
         </article>
       </main>
-
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 

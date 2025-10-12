@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 import TypeWriter from "@/components/TypeWritter";
 import { useQuery } from "@tanstack/react-query";
 import { getBlogPosts } from "@/utils/mdx";
@@ -19,9 +18,7 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <Navbar />
-      <main className="max-w-4xl mx-auto px-6">
+    <Layout>
         <section className="min-h-[80vh] flex flex-col justify-center items-center text-center py-20">
           <div className="mb-8">
             <h1 className="text-6xl md:text-7xl font-serif font-light text-gray-700 dark:text-gray-200 mb-6">
@@ -114,10 +111,7 @@ const Index = () => {
             </div>
           </div>
         </section>
-      </main>
-
-      <Footer />
-    </div>
+      </Layout>
   );
 };
 

@@ -2,7 +2,7 @@ import { Mail, Github, Linkedin, Send } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="border-t border-gray-800 mt-20">
+    <footer className="hidden md:block border-t border-gray-800 mt-20">
       <div className="max-w-2xl mx-auto px-6 py-8">
         <div className="mb-3 flex justify-center space-x-4">
           <a target="_blank" rel="noreferrer" href="mailto:renaldyhidayatt@gmail.com">

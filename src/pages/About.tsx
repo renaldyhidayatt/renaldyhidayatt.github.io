@@ -1,5 +1,4 @@
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -8,10 +7,8 @@ const About = () => {
   const { theme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <Navbar />
-
-      <main className="max-w-3xl mx-auto px-6 py-12">
+    <Layout>
+      <main className="max-w-3xl mx-auto px-6 py-12 pb-20 md:pb-0">
         <header className="mb-16">
           <div className="md:grid md:grid-cols-[auto_1fr] md:gap-8 items-center">
             {theme == "dark"
@@ -117,9 +114,7 @@ const About = () => {
           </div>
         </section>
       </main>
-
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 

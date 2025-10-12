@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 import { getPortfolioProjects } from "@/utils/mdx";
 import { useMemo, useState } from "react";
 
@@ -43,20 +42,17 @@ const Portfolio = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white text-amber-900 dark:bg-gray-900 dark:text-blue-100">
-        <Navbar />
+      <Layout>
         <main className="max-w-2xl mx-auto px-6 py-12">
           <div className="text-center text-amber-400 dark:text-blue-400">Loading projects...</div>
         </main>
-        <Footer />
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-amber-500 dark:bg-gray-900 dark:text-blue-100 transition-colors duration-300">
-      <Navbar />
-      <main className="max-w-2xl mx-auto px-6 py-12">
+    <Layout>
+      <main className="max-w-2xl mx-auto px-6 py-12 pb-20 md:pb-0">
         <header className="mb-16">
           <h1 className="text-3xl font-serif font-light text-amber-500 dark:text-blue-200 mb-4">Portfolio</h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 font-light">
@@ -76,7 +72,7 @@ const Portfolio = () => {
 
         <section className="space-y-12">
           {paginatedProjects.map((project) => {
-            
+
 
             return (
               <article
@@ -168,8 +164,7 @@ const Portfolio = () => {
           </div>
         )}
       </main>
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 

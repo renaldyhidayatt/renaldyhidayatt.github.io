@@ -18,7 +18,7 @@ const Navbar = () => {
     }`;
 
   return (
-    <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-800 dark:bg-gray-900/80 transition-colors">
+    <nav className="hidden md:block border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-800 dark:bg-gray-900/80 transition-colors">
       <div className="max-w-4xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link

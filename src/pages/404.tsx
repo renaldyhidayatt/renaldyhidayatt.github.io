@@ -1,13 +1,10 @@
 import { Link } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
 
 const NotFound = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <Navbar />
-
-      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center py-20">
+    <Layout>
+      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center py-20 pb-20 md:pb-0">
         <h1 className="text-7xl font-bold text-amber-500 dark:text-blue-200 mb-6">
           404
         </h1>
@@ -24,9 +21,7 @@ const NotFound = () => {
           Go back to Homepage
         </Link>
       </main>
-
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 
