@@ -2,120 +2,125 @@ import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
 
-
 const About = () => {
-  const { theme } = useTheme();
+    const { theme } = useTheme();
 
-  return (
-    <Layout>
-      <main className="max-w-3xl mx-auto px-6 py-12 pb-20 md:pb-0">
-        <header className="mb-16">
-          <div className="md:grid md:grid-cols-[auto_1fr] md:gap-8 items-center">
-            {theme == "dark"
-              ? (
-                <img
-                  src="/dark.png"
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full object-cover border-4 border-amber-500 dark:border-blue-300"
-                />
-              )
-              : (
-                <img
-                  src="/light.png"
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full object-cover border-4 border-amber-500 dark:border-blue-300"
-                />
-              )}
-            <div className="mt-6 md:mt-0">
-              <h1 className="text-3xl font-serif font-light text-amber-500 dark:text-blue-200 mb-2">
-                About Me
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 font-light mb-4">
-                Software engineer, backend enthusiast, lifelong learner.
-              </p>
-              <Link
-                to="https://drive.google.com/file/d/1EVEu6ileCpoY0L-FF_zcg33y-PsggsRa/preview"
-                target="_blank"
-                className="inline-block px-4 py-2 text-sm rounded bg-amber-600 text-white dark:bg-blue-500 hover:bg-amber-700 dark:hover:bg-blue-600 transition"
-              >
-                View CV
-              </Link>
-            </div>
-          </div>
-        </header>
+    return (
+        <Layout>
+            <main className="max-w-3xl mx-auto px-6 py-12 pb-20 md:pb-0">
+                <header className="mb-16">
+                    <div className="md:grid md:grid-cols-[auto_1fr] md:gap-8 items-center">
+                        <img
+                            src={theme === "dark" ? "/dark.png" : "/light.png"}
+                            alt="Profile"
+                            className="w-32 h-32 rounded-full object-cover border-4 border-primary"
+                        />
+                        <div className="mt-6 md:mt-0">
+                            <h1 className="text-3xl font-serif font-light text-primary mb-2">
+                                About Me
+                            </h1>
+                            <p className="text-lg text-muted-foreground font-light mb-4">
+                                Backend engineer with a focus on system reliability, scalability,
+                                and maintainable architecture.
+                            </p>
+                            <Link
+                                to="https://drive.google.com/file/d/1EVEu6ileCpoY0L-FF_zcg33y-PsggsRa/preview"
+                                target="_blank"
+                                className="inline-block px-4 py-2 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/80 transition"
+                            >
+                                View CV
+                            </Link>
+                        </div>
+                    </div>
+                </header>
 
-        <section className="space-y-12">
-          <div>
-            <h2 className="text-xl font-serif text-amber-500 dark:text-blue-200 mb-4">Background</h2>
-            <div className="space-y-4 text-gray-600 dark:text-gray-300 leading-relaxed">
-              <p>
-                Hi! My name is Renaldy Hidayat. I'm a software engineer with a strong passion for backend development and building reliable, scalable systems.
-              </p>
-              <p>
-                I enjoy turning ideas into real-world solutions through clean architecture, modular design, and efficient communication between systems.
-              </p>
-            </div>
-          </div>
+                <section className="space-y-12">
+                    <div>
+                        <h2 className="text-xl font-serif text-primary mb-4">Background</h2>
+                        <div className="space-y-4 text-muted-foreground leading-relaxed">
+                            <p>
+                                My name is Renaldy Hidayat. I am a software engineer specializing
+                                in backend development, with experience designing and building
+                                services that operate reliably in production environments.
+                            </p>
+                            <p>
+                                My work focuses on clear system boundaries, well-defined APIs,
+                                and architectures that remain understandable and maintainable
+                                as complexity grows.
+                            </p>
+                        </div>
+                    </div>
 
-          <div>
-            <h2 className="text-xl font-serif text-amber-500 dark:text-blue-200 mb-4">Interests</h2>
-            <div className="space-y-4 text-gray-600 dark:text-gray-300 leading-relaxed">
-              <p>
-                My main interests revolve around backend systems, distributed architecture, and cloud-native development. I'm passionate about:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-500 dark:text-gray-400">
-                <li>Backend development and system design</li>
-                <li>Microservices and API design</li>
-                <li>Event-driven systems using Kafka or RabbitMQ</li>
-                <li>Cloud infrastructure and observability</li>
-                <li>Building real tools from ideas and experiments</li>
-              </ul>
-            </div>
-          </div>
+                    <div>
+                        <h2 className="text-xl font-serif text-primary mb-4">Professional Interests</h2>
+                        <div className="space-y-4 text-muted-foreground leading-relaxed">
+                            <p>
+                                I am particularly interested in backend and distributed systems
+                                where performance, reliability, and operational visibility are
+                                critical.
+                            </p>
+                            <ul className="list-disc list-inside space-y-2">
+                                <li>Backend system design and service-oriented architecture</li>
+                                <li>Distributed and event-driven systems</li>
+                                <li>Message brokers and streaming platforms</li>
+                                <li>Observability, monitoring, and tracing in production</li>
+                                <li>Building internal tools to support engineering teams</li>
+                            </ul>
+                        </div>
+                    </div>
 
-          <div>
-            <h2 className="text-xl font-serif text-amber-500 dark:text-blue-200 mb-4">Tech Stack</h2>
-            <div className="space-y-4 text-gray-600 dark:text-gray-300 leading-relaxed">
-              <p>
-                I'm comfortable working with several programming languages and tools. My main stack includes:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-500 dark:text-gray-400">
-                <li>Golang, Python, Rust, Java, PHP, JavaScript/TypeScript</li>
-                <li>gRPC, REST, GraphQL APIs</li>
-                <li>Kafka, RabbitMQ, Redis</li>
-                <li>SQL (PostgreSQL, MySQL), NoSQL (MongoDB)</li>
-                <li>Docker, Kubernetes, Prometheus, OpenTelemetry</li>
-              </ul>
-            </div>
-          </div>
+                    <div>
+                        <h2 className="text-xl font-serif text-primary mb-4">Technical Skills</h2>
+                        <div className="space-y-4 text-muted-foreground leading-relaxed">
+                            <p>
+                                I work across multiple programming languages and platforms,
+                                selecting technologies based on suitability rather than trends.
+                            </p>
+                            <ul className="list-disc list-inside space-y-2">
+                                <li>Golang, Rust, Java, Python, PHP, TypeScript</li>
+                                <li>REST, gRPC, and GraphQL APIs</li>
+                                <li>Kafka, RabbitMQ, Redis</li>
+                                <li>PostgreSQL, MySQL, MongoDB</li>
+                                <li>Docker, Kubernetes, Prometheus, OpenTelemetry</li>
+                            </ul>
+                        </div>
+                    </div>
 
-          <div>
-            <h2 className="text-xl font-serif text-amber-500 dark:text-blue-200 mb-4">Current Focus</h2>
-            <div className="space-y-4 text-gray-600 dark:text-gray-300 leading-relaxed">
-              <p>
-                I'm currently focused on refining my backend architecture skills, integrating observability tooling, and exploring performance tuning for high-load services.
-              </p>
-              <p>
-                On the side, I enjoy experimenting with new tech stacks and turning ideas into useful developer tools, internal dashboards, or CLI utilities.
-              </p>
-            </div>
-          </div>
+                    <div>
+                        <h2 className="text-xl font-serif text-primary mb-4">Current Focus</h2>
+                        <div className="space-y-4 text-muted-foreground leading-relaxed">
+                            <p>
+                                Currently, I am focused on improving backend reliability through
+                                better observability, performance tuning, and architectural
+                                refinement for services operating under load.
+                            </p>
+                            <p>
+                                I also continue to explore new tools and approaches by building
+                                small-scale internal systems, dashboards, and command-line utilities.
+                            </p>
+                        </div>
+                    </div>
 
-          <div>
-            <h2 className="text-xl font-serif text-amber-500 dark:text-blue-200 mb-4">Philosophy</h2>
-            <div className="space-y-4 text-gray-600 dark:text-gray-300 leading-relaxed">
-              <p>
-                I believe in continuously learning and building. I often treat personal curiosity as a serious project and push myself to grow by doing—whether it's reading papers, trying a new language, or solving real problems.
-              </p>
-              <p>
-                For me, sharing knowledge is part of the process. I aim to contribute by building, writing, or simply sharing what I learn along the way.
-              </p>
-            </div>
-          </div>
-        </section>
-      </main>
-    </Layout>
-  );
+                    <div>
+                        <h2 className="text-xl font-serif text-primary mb-4">Engineering Approach</h2>
+                        <div className="space-y-4 text-muted-foreground leading-relaxed">
+                            <p>
+                                I approach software engineering with an emphasis on practicality
+                                and long-term impact. Design decisions are guided by real-world
+                                constraints, not idealized assumptions.
+                            </p>
+                            <p>
+                                I value continuous improvement through building, measuring,
+                                and refining systems, and I aim to share knowledge when it can
+                                help teams make better technical decisions.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </Layout>
+    );
 };
 
 export default About;
+
