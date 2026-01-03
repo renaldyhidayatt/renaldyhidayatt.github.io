@@ -1,26 +1,59 @@
 import { Mail, Github, Linkedin, Send } from "lucide-react";
 
 const Footer = () => {
+    const year = new Date().getFullYear();
+
     return (
-        <footer className="hidden md:block border-t border-border mt-20">
-            <div className="max-w-2xl mx-auto px-6 py-8">
-                <div className="mb-3 flex justify-center space-x-4">
-                    <a target="_blank" rel="noreferrer" href="mailto:renaldyhidayatt@gmail.com">
-                        <span className="sr-only">Mail</span>
-                        <Mail className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors" />
-                    </a>
-                    <a target="_blank" rel="noreferrer" href="https://github.com/renaldyhidayatt">
-                        <span className="sr-only">GitHub</span>
-                        <Github className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors" />
-                    </a>
-                    <a target="_blank" rel="noreferrer" href="https://linkedin.com/in/renaldyhidayatt">
-                        <span className="sr-only">LinkedIn</span>
-                        <Linkedin className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors" />
-                    </a>
-                    <a target="_blank" rel="noreferrer" href="https://t.me/QuickHandle">
-                        <span className="sr-only">Telegram</span>
-                        <Send className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors" />
-                    </a>
+        <footer className="hidden md:block border-t border-border mt-24">
+            <div className="max-w-3xl mx-auto px-6 py-10">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="flex items-center gap-5">
+                        <a
+                            href="mailto:renaldyhidayatt@gmail.com"
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="Email"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                            <Mail className="h-5 w-5" />
+                        </a>
+
+                        <a
+                            href="https://github.com/renaldyhidayatt"
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="GitHub"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                            <Github className="h-5 w-5" />
+                        </a>
+
+                        <a
+                            href="https://linkedin.com/in/renaldyhidayatt"
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="LinkedIn"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                            <Linkedin className="h-5 w-5" />
+                        </a>
+
+                        <a
+                            href="https://t.me/QuickHandle"
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="Telegram"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                            <Send className="h-5 w-5" />
+                        </a>
+                    </div>
+
+                    <div className="h-px w-24 bg-border" />
+
+                    <p className="text-sm text-muted-foreground">
+                        © {year} Renaldy Hidayat. All rights reserved.
+                    </p>
                 </div>
             </div>
         </footer>
