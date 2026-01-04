@@ -99,14 +99,18 @@ const Stats = () => {
                     </p>
                 </header>
 
-                <section className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+                <section className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
                     <StatCard label="Level" value={stats.level} />
                     <StatCard label="XP" value={stats.xp.toLocaleString()} />
                     <StatCard label="Sessions" value={stats.sessions} />
                     <StatCard label="Hours Coding" value={stats.time_coding} />
+                </section>
+
+                <section className="grid grid-cols-2 md:grid-cols-2 gap-6 mb-16">
                     <StatCard label="Current Streak" value={`${stats.current_streak} days`} />
                     <StatCard label="Longest Streak" value={`${stats.longest_streak} days`} />
                 </section>
+
 
                 <section className="mb-20">
                     <h2 className="text-xl font-serif text-primary mb-6">
@@ -125,27 +129,44 @@ const Stats = () => {
                     <h2 className="text-xl font-serif text-primary mb-6">
                         Language Distribution
                     </h2>
+
                     <div className="space-y-4 max-w-xl">
-                        {Object.entries(stats.chars_by_language).map(([lang, value]: any) => (
-                            <div key={lang}>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-muted-foreground">{lang}</span>
-                                    <span className="text-muted-foreground">
-                                        {value.toLocaleString()} chars
-                                    </span>
-                                </div>
-                                <div className="h-2 bg-muted rounded">
-                                    <div
-                                        className="h-2 bg-primary rounded"
-                                        style={{
-                                            width: `${(value / stats.chars_by_language.rust) * 100}%`,
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
+                        {(() => {
+                            const entries = Object.entries(stats.chars_by_language)
+                                .sort(([, a]: any, [, b]: any) => b - a);
+
+                            const maxValue: any = entries[0]?.[1] ?? 1;
+
+                            return entries.map(([lang, value]: any) => {
+                                const percentage = Math.min(
+                                    100,
+                                    (value / maxValue) * 100
+                                );
+
+                                return (
+                                    <div key={lang}>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="text-muted-foreground capitalize">
+                                                {lang}
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                                {value.toLocaleString()} chars
+                                            </span>
+                                        </div>
+
+                                        <div className="h-2 bg-muted rounded">
+                                            <div
+                                                className="h-2 bg-primary rounded transition-all"
+                                                style={{ width: `${percentage}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })()}
                     </div>
                 </section>
+
 
                 <footer className="mt-20 text-sm text-muted-foreground max-w-2xl">
                     <p>
