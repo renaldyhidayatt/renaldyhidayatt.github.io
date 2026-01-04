@@ -11,6 +11,7 @@ import PortfolioProject from "./pages/PortfolioProject";
 import About from "./pages/About";
 import NotFound from "./pages/404";
 import { ThemeProvider } from "./hooks/use-theme";
+import Stats from "./pages/Stats";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/portfolio/:slug" element={<PortfolioProject />} />
             <Route path="/about" element={<About />} />
+            <Route path="/stats" element={<Stats />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </HashRouter>
