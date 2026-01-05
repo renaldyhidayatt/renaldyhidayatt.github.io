@@ -21,7 +21,9 @@ const About = () => {
                             </h1>
                             <p className="text-lg text-muted-foreground font-light mb-4">
                                 Backend engineer with a focus on system reliability, scalability,
-                                and maintainable architecture.
+                                and maintainable architecture. Ranked in the{" "}
+                                <strong>Top 1% of 500,000+ developers worldwide</strong>{" "}
+                                on WakaTime in 2025.
                             </p>
                             <Link
                                 to="https://drive.google.com/file/d/1EVEu6ileCpoY0L-FF_zcg33y-PsggsRa/preview"
@@ -48,11 +50,18 @@ const About = () => {
                                 and architectures that remain understandable and maintainable
                                 as complexity grows.
                             </p>
+                            <p>
+                                In 2025, my development activity ranked in the top 1% globally
+                                among over 500,000 developers tracked by WakaTime, reflecting
+                                consistent long-term focus on backend and infrastructure work.
+                            </p>
                         </div>
                     </div>
 
                     <div>
-                        <h2 className="text-xl font-serif text-primary mb-4">Professional Interests</h2>
+                        <h2 className="text-xl font-serif text-primary mb-4">
+                            Professional Interests
+                        </h2>
                         <div className="space-y-4 text-muted-foreground leading-relaxed">
                             <p>
                                 I am particularly interested in backend and distributed systems
@@ -102,7 +111,9 @@ const About = () => {
                     </div>
 
                     <div>
-                        <h2 className="text-xl font-serif text-primary mb-4">Engineering Approach</h2>
+                        <h2 className="text-xl font-serif text-primary mb-4">
+                            Engineering Approach
+                        </h2>
                         <div className="space-y-4 text-muted-foreground leading-relaxed">
                             <p>
                                 I approach software engineering with an emphasis on practicality
@@ -123,4 +134,3 @@ const About = () => {
 };
 
 export default About;
-
