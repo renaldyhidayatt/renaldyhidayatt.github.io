@@ -26,7 +26,7 @@ const About = () => {
                                 on WakaTime in 2025.
                             </p>
                             <Link
-                                to="https://drive.google.com/file/d/1EVEu6ileCpoY0L-FF_zcg33y-PsggsRa/preview"
+                                to="https://drive.google.com/file/d/1GOsA4vVKi7JXENMA3wY4hGT-epE6Lv0Y/preview"
                                 target="_blank"
                                 className="inline-block px-4 py-2 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/80 transition"
                             >
