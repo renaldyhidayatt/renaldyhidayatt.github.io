@@ -1,174 +1,529 @@
 ---
-title: "Distributed Modular Monolith Payment Gateway Rust"
-excerpt: "A Distributed Modular Monolith Payment Gateway Platform built with Rust, gRPC, PostgreSQL"
-date: "2025-08-25"
-tags: [
-  "rust", "grpc", "tonic", "axum", "postgres", "sqlx", 
-  "docker", "docker-compose"
-]
-status: "development"
-image: "/portofolio/distributed-modular-monolith-paymentgateway-rust_1.png"
+title: 'Distributed Modular Monolith Payment Gateway Rust'
+excerpt: 'A Distributed Modular Monolith Payment Gateway Platform built with Rust, gRPC, PostgreSQL'
+date: '2025-08-25'
+tags:
+  [
+    'rust',
+    'grpc',
+    'tonic',
+    'axum',
+    'postgres',
+    'sqlx',
+    'docker',
+    'docker-compose',
+  ]
+status: 'development'
+image: '/portofolio/distributed-modular-monolith-paymentgateway-rust_1.png'
 ---
 
-# Example Payment Gateway System (Modular Monolith)
+# Distributed Modular Monolith Payment Gateway in Rust
 
-Proyek ini adalah contoh implementasi sistem payment gateway yang dibangun dengan arsitektur **modular monolith**. Backend dikembangkan menggunakan **Rust** dengan runtime `tokio`, `tonic` untuk gRPC, dan `sqlx` untuk interaksi database. Dashboard frontend dibangun dengan **React**, **TypeScript**, **Vite**, dan **Tauri** untuk versi desktop.
+A production-ready payment gateway platform implementing a modular monolith architecture, built with Rust, gRPC, PostgreSQL, and React.
 
+![Payment Gateway Dashboard](/portofolio/distributed-modular-monolith-paymentgateway-rust_1.png)
 
-## Tentang Project Ini
+## Project Overview
 
-Proyek ini merupakan sebuah contoh sistem *payment gateway* yang dirancang untuk mensimulasikan proses transaksi keuangan digital. Dibangun dengan arsitektur monolit modular, sistem ini memisahkan setiap domain bisnis (seperti pengguna, saldo, transaksi) ke dalam modul-modul (crate) yang independen namun tetap berada dalam satu basis kode. Komunikasi antar modul dilakukan secara efisien menggunakan gRPC.
+This project demonstrates a comprehensive payment gateway system designed to simulate digital financial transactions. Built with a modular monolith architecture, the system separates business domains (users, balances, transactions) into independent modules within a single codebase. Inter-module communication is efficiently handled through gRPC.
 
-Tujuan utama dari proyek ini adalah untuk menyediakan contoh nyata penerapan arsitektur modern di ekosistem Rust, lengkap dengan backend, frontend, dan versi aplikasi desktop.
+The primary goal is to provide a real-world example of modern architecture implementation in the Rust ecosystem, complete with a backend, frontend dashboard, and desktop application version.
 
-## Fitur Utama
+## Key Features
 
-- **Manajemen Pengguna & Autentikasi berbasis JWT**: Proses registrasi, login, dan manajemen sesi pengguna yang aman.
-- **Kontrol Akses Berbasis Peran (RBAC)**: Pembatasan akses fitur berdasarkan peran pengguna (misalnya, admin vs. pengguna biasa).
-- **Manajemen Dompet Digital (Saldo)**: Setiap pengguna memiliki saldo digital yang dapat diisi ulang dan digunakan untuk transaksi.
-- **Transaksi Keuangan**:
-  - **Top-up**: Menambah saldo dari sumber eksternal.
-  - **Transfer**: Mengirim saldo antar pengguna di dalam sistem.
-  - **Withdraw**: Menarik saldo ke rekening eksternal.
-- **Manajemen Kartu Pembayaran**: Pengguna dapat menautkan dan mengelola kartu pembayaran mereka.
-- **Dashboard Administratif**: Antarmuka untuk memantau dan mengelola aktivitas sistem.
-- **Komunikasi Antar-Layanan**: Komunikasi yang efisien dan *type-safe* dengan gRPC.
+- **User Management & JWT Authentication**: Secure registration, login, and session management
+- **Role-Based Access Control (RBAC)**: Feature access restriction based on user roles
+- **Digital Wallet Management**: Balance top-up and utilization for transactions
+- **Financial Transactions**:
+  - Top-up from external sources
+  - Peer-to-peer transfers
+  - Withdrawal to external accounts
+- **Payment Card Management**: Users can link and manage payment cards
+- **Administrative Dashboard**: Interface for monitoring and managing system activities
+- **Inter-Service Communication**: Efficient, type-safe communication via gRPC
 
-## Arsitektur
+## Architecture
 
-Sistem ini dirancang sebagai monolit modular. Meskipun berada dalam satu repositori, sistem ini terdiri dari beberapa layanan (crate) yang berkomunikasi satu sama lain melalui gRPC. Desain ini memberikan pemisahan tanggung jawab yang jelas sambil menyederhanakan proses deployment dan pengembangan dibandingkan dengan arsitektur microservices penuh.
+The system is designed as a modular monolith. Although contained within a single repository, it consists of several services (crates) that communicate with each other through gRPC. This design provides clear separation of concerns while simplifying deployment and development compared to a full microservices architecture.
 
-`APIGateway` adalah satu-satunya titik masuk untuk semua permintaan HTTP eksternal. Gateway ini melakukan autentikasi permintaan dan meneruskannya ke layanan internal yang sesuai melalui gRPC. Semua layanan berbagi satu database PostgreSQL.
+The `APIGateway` serves as the single entry point for all external HTTP requests. It handles request authentication and forwards them to the appropriate internal services via gRPC. All services share a single PostgreSQL database.
 
 [![](https://mermaid.ink/img/pako:eNp1k1-PmkAUxb_KZJ400VVUEEmziYL_NbFKs0lhH64yK2RhhgxDt9b43TsstWW7w33yd86Zizc394pPLCDYwmcOaYhcx6dIVpYfS8HH6zgiFDWeyLHjkOxVsLTp4zJV1NhzIAuPDHiAOmi8WyK7eCCeywihgU8_9TxEmSAJ2sElkVE0B0He4FJtO2kUrf4Y6MuRP6KF6-46--nBbd47_td1AxegQNF5v7NRY8uCPEZLKginEH_4z0XZ3jgXIToQ_iM6keePpuN9ywivMaeeXQyrNmfeAeKA1bhzb0v4KQQ5szqw8PYsJjXm0nNZmqc17spzOdAMTiJitCazLjMvtbNtvKdIhAGHN0Wgssuitl7DAQFHyEi5oB3LxJmTw9dN8_P2x6jdfkSTO04klosqZFslOipxqhJnKnGuEhcqcakSVypxrRI395lK3JbgVGFahVkV5lVYVGFZhVUV1lXYlIBb8oKjAFsvEGekhRPCEygYX4ucj0VIEuJjS_4MgL8W53CTj1Kg3xlLsCV4Lp9xlp_Dv03yNJAH6EQgL-xfRC6VcJvlVGBL67-3wNYV_8RWuz960Ie9QU8zR11jVJgXqQ4GD7o-MHTT6Gqmqff7xq2Ff71_VXvomVrXHA51Q9ONUU8b3H4DuvI6tg?type=png)](https://mermaid.live/edit#pako:eNp1k1-PmkAUxb_KZJ400VVUEEmziYL_NbFKs0lhH64yK2RhhgxDt9b43TsstWW7w33yd86Zizc394pPLCDYwmcOaYhcx6dIVpYfS8HH6zgiFDWeyLHjkOxVsLTp4zJV1NhzIAuPDHiAOmi8WyK7eCCeywihgU8_9TxEmSAJ2sElkVE0B0He4FJtO2kUrf4Y6MuRP6KF6-46--nBbd47_td1AxegQNF5v7NRY8uCPEZLKginEH_4z0XZ3jgXIToQ_iM6keePpuN9ywivMaeeXQyrNmfeAeKA1bhzb0v4KQQ5szqw8PYsJjXm0nNZmqc17spzOdAMTiJitCazLjMvtbNtvKdIhAGHN0Wgssuitl7DAQFHyEi5oB3LxJmTw9dN8_P2x6jdfkSTO04klosqZFslOipxqhJnKnGuEhcqcakSVypxrRI395lK3JbgVGFahVkV5lVYVGFZhVUV1lXYlIBb8oKjAFsvEGekhRPCEygYX4ucj0VIEuJjS_4MgL8W53CTj1Kg3xlLsCV4Lp9xlp_Dv03yNJAH6EQgL-xfRC6VcJvlVGBL67-3wNYV_8RWuz960Ie9QU8zR11jVJgXqQ4GD7o-MHTT6Gqmqff7xq2Ff71_VXvomVrXHA51Q9ONUU8b3H4DuvI6tg)
-## Entity Relationship Diagram (ERD)
 
-Diagram berikut menggambarkan hubungan antar tabel dalam database.
+## Database Schema
+
+The following diagram illustrates the relationships between tables in the database:
 
 [![](https://mermaid.ink/img/pako:eNqVll2PojAUhv8K6bUaUUHkzoyzWTOZzWTW2YuNCTkDVYjQklLWcR3_-1K-ocCO3BjOez6etqcHr8imDkYmwmzjwZFBsCdK8sQRZpFyzV7Es_2xS42W5ygvT5X91_r14fv6VTl4LOIEAixLPvQpOADPl80hRNGZMidTbtkPoz6WiISxjyjVqrq3amFWZ65SaSesL_3bUzdAYS9g8YHhyLU4PWEiU9fVr1YrlpUGVebd9vnx5279_KLgj9BjwD1KGig2MEciEMZ7C6cxJA7eMesR-SWsHfJmvXvMoLDlAG8eQwS-QyWs1Np3nrX60jFwysG33sEHYjcLBZjZLhAu1SqEdrm3t-2mEgmVQbp7GULPOuHL8H7mUJyGcSgRpdZOnEzpYhneFBEFAY0J7-ojoQaYu7R50TgDEoEtGklGrLRu0Jp-L24btH1I7T0UpQ4dU6oQ-gGF2EVXigdGg-7LV3hwKm93odUXksOePe46DM4SbCF0wpbivVtZBrZQ6rP983M8ptf6PDSVPXIh2qP6wP2vWyNba-4NuWZzacijurrCi55J6ZbF5m75KGllarjk923Qpd71LccKpM-ZYRt7f_BA6rRThWuEifMVv8GUVT-VqGiEjsxzkHkAP8IjlEAnX9fkHaUtt0fcxcncQiLAAXYSeW9JUAjkN6UBMjmLkzBG46NbJolDMbnzfwalS7ICzB5EZyFzlWZA5hV9IHM8X0205WwxU43VVF-p8xG6JNbFYqJpC10z9KlqGNp8rt9G6G9aVJ3MDHVqLJearmr6aqYubv8A6iOSyQ?type=png)](https://mermaid.live/edit#pako:eNqVll2PojAUhv8K6bUaUUHkzoyzWTOZzWTW2YuNCTkDVYjQklLWcR3_-1K-ocCO3BjOez6etqcHr8imDkYmwmzjwZFBsCdK8sQRZpFyzV7Es_2xS42W5ygvT5X91_r14fv6VTl4LOIEAixLPvQpOADPl80hRNGZMidTbtkPoz6WiISxjyjVqrq3amFWZ65SaSesL_3bUzdAYS9g8YHhyLU4PWEiU9fVr1YrlpUGVebd9vnx5279_KLgj9BjwD1KGig2MEciEMZ7C6cxJA7eMesR-SWsHfJmvXvMoLDlAG8eQwS-QyWs1Np3nrX60jFwysG33sEHYjcLBZjZLhAu1SqEdrm3t-2mEgmVQbp7GULPOuHL8H7mUJyGcSgRpdZOnEzpYhneFBEFAY0J7-ojoQaYu7R50TgDEoEtGklGrLRu0Jp-L24btH1I7T0UpQ4dU6oQ-gGF2EVXigdGg-7LV3hwKm93odUXksOePe46DM4SbCF0wpbivVtZBrZQ6rP983M8ptf6PDSVPXIh2qP6wP2vWyNba-4NuWZzacijurrCi55J6ZbF5m75KGllarjk923Qpd71LccKpM-ZYRt7f_BA6rRThWuEifMVv8GUVT-VqGiEjsxzkHkAP8IjlEAnX9fkHaUtt0fcxcncQiLAAXYSeW9JUAjkN6UBMjmLkzBG46NbJolDMbnzfwalS7ICzB5EZyFzlWZA5hV9IHM8X0205WwxU43VVF-p8xG6JNbFYqJpC10z9KlqGNp8rt9G6G9aVJ3MDHVqLJearmr6aqYubv8A6iOSyQ)
 
-
-## Teknologi yang Digunakan
+## Technology Stack
 
 **Backend:**
-- **Bahasa**: Rust (Stable)
+
+- **Language**: Rust (Stable)
 - **Async Runtime**: `tokio`
-- **Komunikasi**: `tonic` (gRPC) & `prost`
-- **Database ORM**: `sqlx` (dengan PostgreSQL)
+- **Communication**: `tonic` (gRPC) & `prost`
+- **Database ORM**: `sqlx` (with PostgreSQL)
 - **Web Framework (API Gateway)**: `axum`
 - **Logging**: `tracing`
-- **Validasi**: `validator`
+- **Validation**: `validator`
 
 **Frontend (Dashboard):**
+
 - **Framework**: React.js
-- **Bahasa**: TypeScript
+- **Language**: TypeScript
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS
-- **Aplikasi Desktop**: Tauri
+- **Desktop Application**: Tauri
 
-**Lainnya:**
+**Infrastructure:**
+
 - **Database**: PostgreSQL
-- **Definisi API**: Protocol Buffers (gRPC)
+- **API Definition**: Protocol Buffers (gRPC)
 
-## Prasyarat
+## Installation & Setup
 
-Sebelum memulai, pastikan perangkat lunak berikut sudah terinstal:
+### Prerequisites
+
+Ensure the following software is installed:
+
 - [Rust & Cargo](https://www.rust-lang.org/tools/install)
-- [Node.js & npm](https://nodejs.org/) (atau `bun`)
+- [Node.js & npm](https://nodejs.org/) (or `bun`)
 - [`sqlx-cli`](https://github.com/launchbadge/sqlx/tree/main/sqlx-cli) (`cargo install sqlx-cli`)
 - [`protoc`](https://grpc.io/docs/protoc-installation/) (Protocol Buffers Compiler)
 
-## Instalasi & Setup (Lokal)
+### Local Setup
 
-1.  **Clone Repositori**
-    ```bash
-    git clone https://github.com/MamangRust/example-payment-gateway-sqlx.git
-    cd example-payment-gateway-sqlx
-    ```
+1. **Clone the Repository**
 
-2.  **Konfigurasi Variabel Lingkungan**
-    Salin file `.env.example` (jika ada) atau buat file `.env` baru di root proyek dan isi detail konfigurasi lokal Anda.
+   ```bash
+   git clone https://github.com/MamangRust/example-payment-gateway-sqlx.git
+   cd example-payment-gateway-sqlx
+   ```
 
-    ```env
-    # Contoh isi file .env
-    DATABASE_URL="postgres://user:password@localhost:5432/payment_gateway"
-    APP_PORT=8000
-    # URL untuk setiap layanan...
-    AUTH_SERVICE_URL="http://127.0.0.1:50051"
-    USER_SERVICE_URL="http://127.0.0.1:50052"
-    # ...dan seterusnya
-    ```
+2. **Configure Environment Variables**
+   Copy the `.env.example` file (if available) or create a new `.env` file in the project root and fill in your local configuration details.
 
-3.  **Jalankan Migrasi Database**
-    Pastikan `DATABASE_URL` di file `.env` Anda sudah benar, lalu jalankan migrasi.
-    ```bash
-    sqlx migrate run
-    ```
+   ```env
+   # Example .env file content
+   DATABASE_URL="postgres://user:password@localhost:5432/payment_gateway"
+   APP_PORT=8000
+   # URLs for each service...
+   AUTH_SERVICE_URL="http://127.0.0.1:50051"
+   USER_SERVICE_URL="http://127.0.0.1:50052"
+   # ...and so on
+   ```
 
-4.  **Build Definisi Protobuf**
-    Kompilasi file `.proto` untuk digunakan oleh semua layanan.
-    ```bash
-    cargo build -p genproto
-    ```
+3. **Run Database Migrations**
+   Ensure your `DATABASE_URL` in the `.env` file is correct, then run the migrations.
 
-5.  **Build Semua Layanan Backend**
-    ```bash
-    cargo build --workspace
-    ```
+   ```bash
+   sqlx migrate run
+   ```
 
-## Menjalankan Aplikasi
+4. **Build Protocol Buffer Definitions**
+   Compile the `.proto` files for use by all services.
 
-1.  **Jalankan Layanan Backend**
-    Buka beberapa tab terminal dan jalankan setiap layanan secara terpisah.
+   ```bash
+   cargo build -p genproto
+   ```
 
-    ```bash
-    # Terminal 1: API Gateway
-    cargo run -p apigateway
+5. **Build All Backend Services**
+   ```bash
+   cargo build --workspace
+   ```
 
-    # Terminal 2: Auth Service
-    cargo run -p auth
+## Running the Application
 
-    # Terminal 3: User Service
-    cargo run -p user
+1. **Start Backend Services**
+   Open multiple terminal tabs and run each service separately.
 
-    # ...jalankan layanan lain sesuai kebutuhan
-    ```
+   ```bash
+   # Terminal 1: API Gateway
+   cargo run -p apigateway
 
-2.  **Jalankan Dashboard Frontend**
-    Buka terminal baru di direktori `crates/dashboard`.
+   # Terminal 2: Auth Service
+   cargo run -p auth
 
-    ```bash
-    cd crates/dashboard
-    npm install
-    npm run dev
-    ```
-    Aplikasi frontend akan tersedia di `http://localhost:1420`.
+   # Terminal 3: User Service
+   cargo run -p user
 
-3.  **Jalankan Dashboard sebagai Aplikasi Desktop (Tauri)**
-    ```bash
-    cd crates/dashboard
-    npm install
-    npm run tauri dev
-    ```
+   # ...run other services as needed
+   ```
 
-## Dokumentasi API
+2. **Start the Frontend Dashboard**
+   Open a new terminal in the `crates/dashboard` directory.
 
-Setelah `apigateway` berjalan, dokumentasi API (dihasilkan dengan Swagger UI) dapat diakses di:
+   ```bash
+   cd crates/dashboard
+   npm install
+   npm run dev
+   ```
+
+   The frontend application will be available at `http://localhost:1420`.
+
+3. **Run the Dashboard as a Desktop Application (Tauri)**
+   ```bash
+   cd crates/dashboard
+   npm install
+   npm run tauri dev
+   ```
+
+## API Documentation
+
+Once the `apigateway` is running, the API documentation (generated with Swagger UI) can be accessed at:
 [http://127.0.0.1:5000/swagger-ui/](http://127.0.0.1:5000/swagger-ui/)
 
+## Application Screenshots
 
+**Main Dashboard:**
+![Example Dashboard](https://github.com/MamangRust/example-payment-gateway-sqlx/raw/main/backend/images/example-dashboard.png)
 
-## Tampilan Aplikasi
-
-Berikut adalah beberapa tangkapan layar dari aplikasi:
-
-**Dashboard Utama:**
-![Example Dashboard](https://github.com/MamangRust/example-payment-gateway-sqlx/raw/main/images/example-dashboard.png)
-
-**Dokumentasi API (Swagger UI):**
-![Swagger UI](https://github.com/MamangRust/example-payment-gateway-sqlx/raw/main/images/swagger-ui.png)
-
-
+**API Documentation (Swagger UI):**
+![Swagger UI](https://github.com/MamangRust/example-payment-gateway-sqlx/raw/main/backend/images/swagger-ui.png)
 
 ## 🔗 Source Code & Repository
+
 [📌 View on GitHub](https://github.com/MamangRust/example-payment-gateway-sqlx)
+
+---
+
+# Performance & Scalability Analysis
+
+This document summarizes the performance, scalability, and failure behavior of selected read-only modules under various traffic patterns. The goal is to establish an early scalability baseline, validate system stability, and observe graceful degradation under load.
+
+**Test Environment:**
+
+- Deployment: Docker Compose (single-node)
+- Load testing tool: k6
+- Scope: Read-only endpoints
+
+## User Module Performance Analysis
+
+This section describes the performance characteristics of the **User module** under various traffic patterns. The purpose of these tests is to establish an **early scalability baseline** and validate system behavior under load.
+
+**Test Scope:** User-related read endpoints only  
+**Environment:** Docker Compose (single-node)  
+**Tooling:** k6
+
+### Test Coverage
+
+The following endpoints were tested:
+
+- `GET /api/users`
+- `GET /api/users/{id}`
+- `GET /api/users/active`
+- `GET /api/users/trashed`
+
+### 1. Smoke Test
+
+**Objective:** Validate functional correctness and baseline latency.
+
+- **VUs:** 1
+- **Error rate:** 0%
+- **p95 latency:** ~26 ms
+
+**Outcome:** All User endpoints responded correctly with low and predictable latency, establishing a clean functional baseline.
+
+### 2. Capability Test (Sustained Load)
+
+**Objective:** Identify a stable throughput level under sustained concurrency.
+
+- **Max VUs:** 900
+- **Throughput:** ~900 RPS
+- **Error rate:** 0%
+- **p95 latency:** ~460 ms
+
+**Outcome:** The User module sustained high request volume with no request failures. Dropped iterations indicate **controlled concurrency limiting**, not system instability. This range represents the **safe operating envelope** for sustained production traffic.
+
+### 3. Load Test (Near Capacity)
+
+**Objective:** Observe system behavior near maximum recommended capacity.
+
+- **VUs:** 1000
+- **Throughput:** ~1.9k RPS
+- **Error rate:** 0%
+- **p95 latency:** ~690 ms
+
+**Outcome:** All requests completed successfully, but tail latency increased noticeably. This level is acceptable for **short-lived bursts**, not continuous load.
+
+### 4. Stress Test (Beyond Capacity)
+
+**Objective:** Validate failure behavior beyond designed capacity.
+
+- **Max VUs:** 1500
+- **Error rate:** ~43%
+
+**Outcome:** The system entered **intentional degradation**:
+
+- Requests were rejected under pressure
+- Latency remained bounded for successful requests
+- No cascading or systemic failures occurred
+
+This confirms proper **protective limits and backpressure mechanisms**.
+
+### 5. Spike Test
+
+**Objective:** Evaluate resilience against sudden traffic spikes.
+
+- **Spike to:** 1000 VUs
+- **Error rate:** 0%
+
+**Outcome:** The User module absorbed sudden traffic spikes without errors or instability. Latency increased temporarily but recovered without intervention.
+
+**Conclusion:** The User module demonstrates **strong scalability characteristics** and predictable degradation behavior under load, making it suitable for production deployment with horizontal scaling and rate limiting.
+
+## Role Module Performance Analysis
+
+This section describes the performance characteristics of the **Role module** under various traffic patterns. The purpose of these tests is to establish an **early scalability baseline** and validate system behavior under load.
+
+**Test Scope:** Role-related read endpoints only  
+**Environment:** Docker Compose (single-node)  
+**Tooling:** k6
+
+### Test Coverage
+
+The following endpoints were tested:
+
+- `GET /api/roles`
+- `GET /api/roles/active`
+- `GET /api/roles/trashed`
+- `GET /api/roles/{id}`
+- `GET /api/roles/user/{userId}`
+
+### 1. Smoke Test
+
+**Objective:** Validate functional correctness and baseline latency.
+
+- **VUs:** 1
+- **Error rate:** 0%
+- **p95 latency:** ~18 ms
+
+**Outcome:** All Role endpoints responded correctly with minimal latency.
+
+### 2. Capability Test (Sustained Load)
+
+**Objective:** Identify a stable throughput level with bounded concurrency.
+
+- **Max VUs:** 900
+- **Throughput:** ~1.1k RPS
+- **Error rate:** 0%
+- **p95 latency:** ~470 ms
+
+**Outcome:** The module sustained high request volume with no internal failures. Dropped iterations indicate **intentional backpressure** rather than overload. This range is considered a **safe operating envelope** for the Role module.
+
+### 3. Load Test (Near Capacity)
+
+**Objective:** Observe behavior near the upper performance boundary.
+
+- **VUs:** 1000
+- **Throughput:** ~1.3k RPS
+- **Error rate:** 0%
+- **p95 latency:** ~1.22 s
+
+**Outcome:** Requests were still handled successfully, but tail latency increased. This level is **not recommended for continuous operation**.
+
+### 4. Stress Test (Beyond Capacity)
+
+**Objective:** Validate failure modes under excessive load.
+
+- **Max VUs:** 1500
+- **Error rate:** ~45%
+
+**Outcome:** The system entered **controlled degradation**:
+
+- Requests were intentionally rejected
+- No cascading failures were observed
+- Downstream resources remained protected
+
+### 5. Spike Test
+
+**Objective:** Test resilience against sudden traffic spikes.
+
+- **Spike to:** 1000 VUs
+- **Error rate:** 0%
+
+**Outcome:** The Role module handled sudden traffic surges without instability.
+
+## Card Module Performance Analysis
+
+This section describes the performance characteristics of the **Card module** under multiple traffic patterns. The objective is to establish an **early scalability baseline**, identify safe operating limits, and validate **graceful degradation** under pressure.
+
+**Test Scope:** Card-related read endpoints (including stats)  
+**Environment:** Docker Compose (single-node)  
+**Tooling:** k6
+
+### Test Coverage
+
+The following endpoints were included:
+
+- `GET /api/cards`
+- `GET /api/cards/active`
+- `GET /api/cards/by-user/{userId}`
+- Balance stats (monthly/yearly, by card)
+- Topup stats (monthly/yearly, by card)
+- Transaction stats (monthly/yearly, by card)
+- Transfer stats (monthly/yearly, sender/receiver, by card)
+- Withdraw stats (monthly/yearly, by card)
+
+### 1. Smoke Test
+
+**Objective:** Validate functional correctness and baseline latency.
+
+- **VUs:** 1
+- **Error rate:** 0%
+- **p95 latency:** ~19 ms
+
+**Outcome:** All Card endpoints responded correctly with very low latency. This confirms correct routing, serialization, and query execution in an unloaded environment.
+
+### 2. Capability Test (Sustained Load)
+
+**Objective:** Measure sustained throughput under bounded concurrency.
+
+- **Max VUs:** 900
+- **Throughput:** ~4.7k req/s (raw attempt)
+- **Effective successful requests:** intentionally limited
+- **p95 latency (successful responses):** ~550 ms
+
+**Outcome:** The system applied **intentional backpressure**, resulting in dropped iterations rather than internal overload. This behavior protects downstream components (DB, thread pool, memory) and indicates that concurrency control is functioning as designed.
+
+This range reflects the **upper bound of safe throughput** when stats-heavy queries dominate traffic.
+
+### 3. Load Test (Near Capacity)
+
+**Objective:** Observe behavior at the upper operational boundary.
+
+- **VUs:** 1000
+- **Throughput:** ~2.0k req/s
+- **Error rate:** 0%
+- **p95 latency:** ~619 ms
+
+**Outcome:** All requests were handled successfully with no failures. However, tail latency increased significantly due to aggregation-heavy endpoints (stats by card, transfer summaries, etc.).
+
+This level is **acceptable for short bursts**, but **not recommended for continuous operation** without caching or precomputation.
+
+### 4. Stress Test (Beyond Capacity)
+
+**Objective:** Validate system behavior beyond its designed limits.
+
+- **Max VUs:** 1500
+- **Throughput:** ~1.8k req/s
+- **Error rate:** 0%
+- **p95 latency:** ~844 ms
+
+**Outcome:** The Card module entered **controlled degradation**:
+
+- Latency increased, but
+- No cascading failures occurred
+- Memory and downstream services remained stable
+
+This confirms that the system prioritizes **stability over throughput** when overloaded.
+
+### 5. Spike Test
+
+**Objective:** Test resilience against sudden traffic spikes.
+
+- **Spike to:** 1000 VUs
+- **Error rate:** 0%
+- **p95 latency:** ~925 ms
+
+**Outcome:** The Card module absorbed sudden traffic spikes without instability. Although tail latency increased, the system remained responsive and recovered cleanly.
+
+### Summary
+
+- The Card module is **functionally stable** and **resilient under load**.
+- Stats-heavy endpoints are the primary latency drivers.
+- Concurrency limits and backpressure mechanisms prevent systemic failure.
+- Further improvements should focus on:
+  - Caching aggregated stats
+  - Async or precomputed summaries
+  - Query-level optimization and read replicas
+
+Overall, the Card module demonstrates **predictable, controlled scalability**, aligning with reliability-first system design principles.
+
+## Performance Test Visualizations
+
+This section provides visual evidence of the performance tests described above. Each image corresponds to a specific test scenario executed using k6.
+
+### Card Module
+
+#### Capability Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/capability.png"
+  alt="Card module capability test results"
+/>
+
+#### Load Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/load_test.png"
+  alt="Card module load test results near capacity"
+/>
+
+#### Stress & Spike Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/stres_test_and_spike.png"
+  alt="Card module stress and spike test behavior"
+/>
+
+### Role Module
+
+#### Capability Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/capability.png"
+  alt="Role module capability test results"
+/>
+
+#### Load Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/load_test.png"
+  alt="Role module load test results near capacity"
+/>
+
+#### Stress & Spike Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/spike_and_rampling.png"
+  alt="Role module stress and spike test behavior"
+/>
+
+### User Module
+
+#### Capability Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/capability.png"
+  alt="User module capability test results"
+/>
+
+#### Load Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/load_test.png"
+  alt="User module load test results near capacity"
+/>
+
+#### Stress Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/strest_test.png"
+  alt="User module stress test behavior beyond capacity"
+/>
+
+#### Spike Test
+
+<img
+  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/spike_test.png"
+  alt="User module spike test results"
+/>
+
+### Notes on Visualizations
+
+- All charts are generated from **k6 summary outputs**
+- Throughput drops in some graphs indicate **intentional concurrency limiting**
+- Latency growth without error spikes confirms **graceful degradation**
+- No evidence of cascading failures (DB, memory, thread pool)
