@@ -1,7 +1,7 @@
 ---
 title: 'Distributed Modular Monolith Payment Gateway Rust'
 excerpt: 'A Distributed Modular Monolith Payment Gateway Platform built with Rust, gRPC, PostgreSQL'
-date: '2025-08-25'
+date: '2025-08-27'
 tags:
   [
     'rust',
@@ -13,7 +13,7 @@ tags:
     'docker',
     'docker-compose',
   ]
-status: 'development'
+status: 'finished'
 image: '/portofolio/distributed-modular-monolith-paymentgateway-rust_1.png'
 ---
 
@@ -200,330 +200,68 @@ This document summarizes the performance, scalability, and failure behavior of s
 
 ## User Module Performance Analysis
 
-This section describes the performance characteristics of the **User module** under various traffic patterns. The purpose of these tests is to establish an **early scalability baseline** and validate system behavior under load.
-
-**Test Scope:** User-related read endpoints only  
-**Environment:** Docker Compose (single-node)  
-**Tooling:** k6
-
-### Test Coverage
-
-The following endpoints were tested:
-
-- `GET /api/users`
-- `GET /api/users/{id}`
-- `GET /api/users/active`
-- `GET /api/users/trashed`
-
-### 1. Smoke Test
-
-**Objective:** Validate functional correctness and baseline latency.
-
-- **VUs:** 1
-- **Error rate:** 0%
-- **p95 latency:** ~26 ms
-
-**Outcome:** All User endpoints responded correctly with low and predictable latency, establishing a clean functional baseline.
-
-### 2. Capability Test (Sustained Load)
-
-**Objective:** Identify a stable throughput level under sustained concurrency.
-
-- **Max VUs:** 900
-- **Throughput:** ~900 RPS
-- **Error rate:** 0%
-- **p95 latency:** ~460 ms
-
-**Outcome:** The User module sustained high request volume with no request failures. Dropped iterations indicate **controlled concurrency limiting**, not system instability. This range represents the **safe operating envelope** for sustained production traffic.
-
-### 3. Load Test (Near Capacity)
-
-**Objective:** Observe system behavior near maximum recommended capacity.
-
-- **VUs:** 1000
-- **Throughput:** ~1.9k RPS
-- **Error rate:** 0%
-- **p95 latency:** ~690 ms
-
-**Outcome:** All requests completed successfully, but tail latency increased noticeably. This level is acceptable for **short-lived bursts**, not continuous load.
-
-### 4. Stress Test (Beyond Capacity)
-
-**Objective:** Validate failure behavior beyond designed capacity.
-
-- **Max VUs:** 1500
-- **Error rate:** ~43%
-
-**Outcome:** The system entered **intentional degradation**:
-
-- Requests were rejected under pressure
-- Latency remained bounded for successful requests
-- No cascading or systemic failures occurred
-
-This confirms proper **protective limits and backpressure mechanisms**.
-
-### 5. Spike Test
-
-**Objective:** Evaluate resilience against sudden traffic spikes.
-
-- **Spike to:** 1000 VUs
-- **Error rate:** 0%
-
-**Outcome:** The User module absorbed sudden traffic spikes without errors or instability. Latency increased temporarily but recovered without intervention.
+| Test Type       | VUs  | Throughput | Error Rate | p95 Latency | Key Findings                                                  |
+| --------------- | ---- | ---------- | ---------- | ----------- | ------------------------------------------------------------- |
+| Smoke Test      | 1    | -          | 0%         | ~26 ms      | All endpoints responded correctly with low latency            |
+| Capability Test | 900  | ~900 RPS   | 0%         | ~460 ms     | Sustained high volume with controlled concurrency limiting    |
+| Load Test       | 1000 | ~1.9k RPS  | 0%         | ~690 ms     | Increased tail latency, acceptable for short bursts           |
+| Stress Test     | 1500 | -          | ~43%       | -           | System entered intentional degradation with protective limits |
+| Spike Test      | 1000 | -          | 0%         | -           | Absorbed traffic spikes without errors or instability         |
 
 **Conclusion:** The User module demonstrates **strong scalability characteristics** and predictable degradation behavior under load, making it suitable for production deployment with horizontal scaling and rate limiting.
 
 ## Role Module Performance Analysis
 
-This section describes the performance characteristics of the **Role module** under various traffic patterns. The purpose of these tests is to establish an **early scalability baseline** and validate system behavior under load.
-
-**Test Scope:** Role-related read endpoints only  
-**Environment:** Docker Compose (single-node)  
-**Tooling:** k6
-
-### Test Coverage
-
-The following endpoints were tested:
-
-- `GET /api/roles`
-- `GET /api/roles/active`
-- `GET /api/roles/trashed`
-- `GET /api/roles/{id}`
-- `GET /api/roles/user/{userId}`
-
-### 1. Smoke Test
-
-**Objective:** Validate functional correctness and baseline latency.
-
-- **VUs:** 1
-- **Error rate:** 0%
-- **p95 latency:** ~18 ms
-
-**Outcome:** All Role endpoints responded correctly with minimal latency.
-
-### 2. Capability Test (Sustained Load)
-
-**Objective:** Identify a stable throughput level with bounded concurrency.
-
-- **Max VUs:** 900
-- **Throughput:** ~1.1k RPS
-- **Error rate:** 0%
-- **p95 latency:** ~470 ms
-
-**Outcome:** The module sustained high request volume with no internal failures. Dropped iterations indicate **intentional backpressure** rather than overload. This range is considered a **safe operating envelope** for the Role module.
-
-### 3. Load Test (Near Capacity)
-
-**Objective:** Observe behavior near the upper performance boundary.
-
-- **VUs:** 1000
-- **Throughput:** ~1.3k RPS
-- **Error rate:** 0%
-- **p95 latency:** ~1.22 s
-
-**Outcome:** Requests were still handled successfully, but tail latency increased. This level is **not recommended for continuous operation**.
-
-### 4. Stress Test (Beyond Capacity)
-
-**Objective:** Validate failure modes under excessive load.
-
-- **Max VUs:** 1500
-- **Error rate:** ~45%
-
-**Outcome:** The system entered **controlled degradation**:
-
-- Requests were intentionally rejected
-- No cascading failures were observed
-- Downstream resources remained protected
-
-### 5. Spike Test
-
-**Objective:** Test resilience against sudden traffic spikes.
-
-- **Spike to:** 1000 VUs
-- **Error rate:** 0%
-
-**Outcome:** The Role module handled sudden traffic surges without instability.
+| Test Type       | VUs  | Throughput | Error Rate | p95 Latency | Key Findings                                                     |
+| --------------- | ---- | ---------- | ---------- | ----------- | ---------------------------------------------------------------- |
+| Smoke Test      | 1    | -          | 0%         | ~18 ms      | All endpoints responded correctly with minimal latency           |
+| Capability Test | 900  | ~1.1k RPS  | 0%         | ~470 ms     | Sustained high volume with intentional backpressure              |
+| Load Test       | 1000 | ~1.3k RPS  | 0%         | ~1.22 s     | Increased tail latency, not recommended for continuous operation |
+| Stress Test     | 1500 | -          | ~45%       | -           | Controlled degradation with protected downstream resources       |
+| Spike Test      | 1000 | -          | 0%         | -           | Handled sudden traffic surges without instability                |
 
 ## Card Module Performance Analysis
 
-This section describes the performance characteristics of the **Card module** under multiple traffic patterns. The objective is to establish an **early scalability baseline**, identify safe operating limits, and validate **graceful degradation** under pressure.
+| Test Type       | VUs  | Throughput  | Error Rate | p95 Latency | Key Findings                                            |
+| --------------- | ---- | ----------- | ---------- | ----------- | ------------------------------------------------------- |
+| Smoke Test      | 1    | -           | 0%         | ~19 ms      | All endpoints responded correctly with very low latency |
+| Capability Test | 900  | ~4.7k req/s | 0%         | ~550 ms     | Intentional backpressure with controlled throughput     |
+| Load Test       | 1000 | ~2.0k req/s | 0%         | ~619 ms     | Increased latency due to aggregation-heavy endpoints    |
+| Stress Test     | 1500 | ~1.8k req/s | 0%         | ~844 ms     | Controlled degradation with stable downstream services  |
+| Spike Test      | 1000 | -           | 0%         | ~925 ms     | Absorbed traffic spikes with temporary latency increase |
 
-**Test Scope:** Card-related read endpoints (including stats)  
-**Environment:** Docker Compose (single-node)  
-**Tooling:** k6
-
-### Test Coverage
-
-The following endpoints were included:
-
-- `GET /api/cards`
-- `GET /api/cards/active`
-- `GET /api/cards/by-user/{userId}`
-- Balance stats (monthly/yearly, by card)
-- Topup stats (monthly/yearly, by card)
-- Transaction stats (monthly/yearly, by card)
-- Transfer stats (monthly/yearly, sender/receiver, by card)
-- Withdraw stats (monthly/yearly, by card)
-
-### 1. Smoke Test
-
-**Objective:** Validate functional correctness and baseline latency.
-
-- **VUs:** 1
-- **Error rate:** 0%
-- **p95 latency:** ~19 ms
-
-**Outcome:** All Card endpoints responded correctly with very low latency. This confirms correct routing, serialization, and query execution in an unloaded environment.
-
-### 2. Capability Test (Sustained Load)
-
-**Objective:** Measure sustained throughput under bounded concurrency.
-
-- **Max VUs:** 900
-- **Throughput:** ~4.7k req/s (raw attempt)
-- **Effective successful requests:** intentionally limited
-- **p95 latency (successful responses):** ~550 ms
-
-**Outcome:** The system applied **intentional backpressure**, resulting in dropped iterations rather than internal overload. This behavior protects downstream components (DB, thread pool, memory) and indicates that concurrency control is functioning as designed.
-
-This range reflects the **upper bound of safe throughput** when stats-heavy queries dominate traffic.
-
-### 3. Load Test (Near Capacity)
-
-**Objective:** Observe behavior at the upper operational boundary.
-
-- **VUs:** 1000
-- **Throughput:** ~2.0k req/s
-- **Error rate:** 0%
-- **p95 latency:** ~619 ms
-
-**Outcome:** All requests were handled successfully with no failures. However, tail latency increased significantly due to aggregation-heavy endpoints (stats by card, transfer summaries, etc.).
-
-This level is **acceptable for short bursts**, but **not recommended for continuous operation** without caching or precomputation.
-
-### 4. Stress Test (Beyond Capacity)
-
-**Objective:** Validate system behavior beyond its designed limits.
-
-- **Max VUs:** 1500
-- **Throughput:** ~1.8k req/s
-- **Error rate:** 0%
-- **p95 latency:** ~844 ms
-
-**Outcome:** The Card module entered **controlled degradation**:
-
-- Latency increased, but
-- No cascading failures occurred
-- Memory and downstream services remained stable
-
-This confirms that the system prioritizes **stability over throughput** when overloaded.
-
-### 5. Spike Test
-
-**Objective:** Test resilience against sudden traffic spikes.
-
-- **Spike to:** 1000 VUs
-- **Error rate:** 0%
-- **p95 latency:** ~925 ms
-
-**Outcome:** The Card module absorbed sudden traffic spikes without instability. Although tail latency increased, the system remained responsive and recovered cleanly.
-
-### Summary
-
-- The Card module is **functionally stable** and **resilient under load**.
-- Stats-heavy endpoints are the primary latency drivers.
-- Concurrency limits and backpressure mechanisms prevent systemic failure.
-- Further improvements should focus on:
-  - Caching aggregated stats
-  - Async or precomputed summaries
-  - Query-level optimization and read replicas
-
-Overall, the Card module demonstrates **predictable, controlled scalability**, aligning with reliability-first system design principles.
+**Summary:** The Card module is **functionally stable** and **resilient under load**, with stats-heavy endpoints being the primary latency drivers. Further improvements should focus on caching aggregated stats and query optimization.
 
 ## Performance Test Visualizations
 
-This section provides visual evidence of the performance tests described above. Each image corresponds to a specific test scenario executed using k6.
-
 ### Card Module
 
-#### Capability Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/capability.png"
-  alt="Card module capability test results"
-/>
-
-#### Load Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/load_test.png"
-  alt="Card module load test results near capacity"
-/>
-
-#### Stress & Spike Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/stres_test_and_spike.png"
-  alt="Card module stress and spike test behavior"
-/>
+| Test Type           | Visualization                                                                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Capability Test     | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/capability.png" alt="Card module capability test results" width="500" />                  |
+| Load Test           | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/load_test.png" alt="Card module load test results near capacity" width="500" />           |
+| Stress & Spike Test | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/card/stres_test_and_spike.png" alt="Card module stress and spike test behavior" width="500" /> |
 
 ### Role Module
 
-#### Capability Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/capability.png"
-  alt="Role module capability test results"
-/>
-
-#### Load Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/load_test.png"
-  alt="Role module load test results near capacity"
-/>
-
-#### Stress & Spike Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/spike_and_rampling.png"
-  alt="Role module stress and spike test behavior"
-/>
+| Test Type           | Visualization                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Capability Test     | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/capability.png" alt="Role module capability test results" width="500" />                |
+| Load Test           | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/load_test.png" alt="Role module load test results near capacity" width="500" />         |
+| Stress & Spike Test | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/role/spike_and_rampling.png" alt="Role module stress and spike test behavior" width="500" /> |
 
 ### User Module
 
-#### Capability Test
+| Test Type       | Visualization                                                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Capability Test | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/capability.png" alt="User module capability test results" width="500" />               |
+| Load Test       | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/load_test.png" alt="User module load test results near capacity" width="500" />        |
+| Stress Test     | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/strest_test.png" alt="User module stress test behavior beyond capacity" width="500" /> |
+| Spike Test      | <img src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/spike_test.png" alt="User module spike test results" width="500" />                    |
 
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/capability.png"
-  alt="User module capability test results"
-/>
-
-#### Load Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/load_test.png"
-  alt="User module load test results near capacity"
-/>
-
-#### Stress Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/strest_test.png"
-  alt="User module stress test behavior beyond capacity"
-/>
-
-#### Spike Test
-
-<img
-  src="/portofolio/distributed-modular-monolith-paymentgateway-rust/user/spike_test.png"
-  alt="User module spike test results"
-/>
-
-### Notes on Visualizations
+**Notes on Visualizations:**
 
 - All charts are generated from **k6 summary outputs**
-- Throughput drops in some graphs indicate **intentional concurrency limiting**
+- Throughput drops indicate **intentional concurrency limiting**
 - Latency growth without error spikes confirms **graceful degradation**
 - No evidence of cascading failures (DB, memory, thread pool)

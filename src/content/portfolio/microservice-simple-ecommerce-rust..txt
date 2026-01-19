@@ -1,0 +1,223 @@
+---
+title: "Distributed Modular Monolith – Simple E-commerce"
+excerpt: "A Distributed Modular Monolith – Simple E-commerce with Rust, gRPC, PostgreSQL, and with full observability stack."
+date: "2025-08-18"
+tags: [
+  "rust", "grpc", "tonic", "axum", "postgresql", "docker", "docker-compose",
+  "prometheus", "grafana", "opentelemetry", "jaeger", "redis",
+  "loki", "otel-collector", "tracing", "sqlx", "seaquery","node-exporter", "postman", "kafka"
+]
+status: "finished"
+image: "/portofolio/modular-monolith-payment-gateway-rust.png"
+---
+
+## Distributed Modular Monolith – Simple E-commerce
+
+Distributed Modular Monolith Simple E-commerce adalah sebuah backend e-commerce modern yang dibangun dengan Rust.
+Proyek ini mencoba menggabungkan kesederhanaan monolith dengan fleksibilitas microservices menggunakan pendekatan modular monolith.
+
+Artinya, semua layanan dikelola dalam satu **monorepo**, tapi dipisahkan dalam bentuk modul/layanan independen (`auth`, `user`, `role`, `product`, `order`, `email`) yang berkomunikasi lewat gRPC. Dari luar, sistem ini tetap terlihat sebagai satu kesatuan karena ada API Gateway (Axum) yang menyajikan REST API untuk klien.
+
+---
+
+## ⚡ Arsitektur Inti
+
+- Monorepo Modular → semua service dalam satu repo, tapi tetap punya batasan domain yang jelas.
+* API Gateway → menyediakan REST API untuk frontend/mobile, sekaligus load balancer untuk service internal.
+- Service-to-Service → komunikasi antar service menggunakan gRPC (Tonic) untuk kecepatan & efisiensi.
+- Event Streaming → event penting (misalnya order berhasil) dikirim ke **Kafka** lalu diproses oleh service lain (contoh: `email worker`).
+- Observability Lengkap` → tracing, metrics, dan logging sudah siap out-of-the-box dengan OpenTelemetry.
+
+---
+
+## 🔑 Fitur Utama
+
+### 1. **Manajemen Pengguna & Otentikasi**
+
+- Registrasi & login dengan JWT Authentication (access + refresh token).
+- Verifikasi email & reset password menggunakan token.
+- Role-based access control (RBAC) dengan mapping `user ↔ role`.
+- Redis digunakan untuk caching session/token agar lebih cepat.
+
+### 2. **Produk & Order**
+
+- CRUD produk (nama, harga, stok, dsb).
+- Order processing sederhana: pengguna dapat membuat pesanan, sistem otomatis menghitung total harga.
+- Stok produk otomatis berkurang ketika ada transaksi order.
+- Order event dipublish ke **Kafka**, lalu dikonsumsi oleh `email worker` untuk mengirimkan notifikasi.
+
+### 3. **Observability & Monitoring**
+
+- Tracing → setiap request antar service bisa dilacak dengan Jaeger.
+- Metrics → performa aplikasi (latensi, throughput, error rate) diekspor ke **Prometheus.
+- Logging → log terstruktur dikirim ke **Loki** dan divisualisasikan lewat Grafana.
+- OpenTelemetry Collector digunakan sebagai penghubung utama observability stack.
+
+### 4. Infra & Deployment
+
+- Database: PostgreSQL (SQLx) untuk data utama.
+- Caching: Redis untuk session/token.
+- Message Broker: Kafka untuk event-driven flow.
+- Containerization: Docker & Docker Compose siap pakai.
+- Makefile: untuk mempermudah perintah build, run, up/down service.
+- sqlx-cli: untuk migrasi database otomatis.
+
+---
+
+## 🎯 Kelebihan Proyek Ini
+
+- Scalable → bisa dijalankan sebagai monolith (mudah) atau dipisah jadi microservices (besar skala).
+- Production-ready → ada autentikasi, logging, monitoring, dan observability lengkap.
+- Developer-friendly → bisa jalan pakai Docker Compose tanpa setup ribet.
+- Belajar lengkap → cocok buat developer yang mau belajar Rust backend dengan ekosistem modern (REST, gRPC, Kafka, OpenTelemetry).
+
+---
+
+
+## 🚀 Panduan Memulai
+
+### Prasyarat
+
+*   [Rust](https://www.rust-lang.org/tools/install) (untuk pengembangan lokal)
+*   [Docker](https://docs.docker.com/get-docker/) dan [Docker Compose](https://docs.docker.com/compose/install/)
+*   [sqlx-cli](https://github.com/launchbadge/sqlx/tree/main/sqlx-cli) (untuk migrasi database lokal): `cargo install sqlx-cli`
+
+### 1. Clone Repositori
+
+```bash
+git clone https://github.com/mamangrust/monolith-simple-ecommerce.git
+cd monolith-simple-ecommerce
+```
+
+### 2. Konfigurasi Lingkungan
+
+Buat file `.env` di direktori utama proyek. File ini wajib ada untuk `docker-compose.yaml` dan untuk menjalankan proyek secara lokal.
+
+Contoh isi file `.env`:
+```env
+# PostgreSQL
+DATABASE_URL="postgres://postgres:postgres@db:5432/monolith_example_ecommerce"
+
+# Redis
+REDIS_URL="redis://:dragon_knight@redis:6379"
+
+# JWT Secrets
+JWT_SECRET="your_jwt_secret"
+JWT_EXPIRES_IN="1d"
+JWT_REFRESH_SECRET="your_jwt_refresh_secret"
+JWT_REFRESH_EXPIRES_IN="7d"
+
+# Konfigurasi lainnya
+RUST_LOG="info"
+```
+**Catatan:** Untuk pengembangan lokal, ganti hostname (contoh: `db`, `redis`) menjadi `localhost`.
+
+### 3. Menjalankan Proyek
+
+#### Opsi A: Dengan Docker (Direkomendasikan)
+
+Ini adalah cara termudah untuk menjalankan semua layanan, database, dan perangkat observabilitas.
+
+```bash
+make up
+
+docker compose up -d
+```
+
+Untuk menghentikan semua layanan:
+
+```bash
+make down
+
+docker compose down
+```
+
+#### Opsi B: Menjalankan Secara Lokal
+
+Metode ini mengharuskan Anda untuk menjalankan database dan dependensi lainnya di mesin lokal Anda.
+
+1.  **Jalankan Dependensi:** Pastikan Anda memiliki PostgreSQL dan Redis yang berjalan di lokal.
+
+2.  **Jalankan Migrasi Database:** Pastikan `DATABASE_URL` di file `.env` Anda mengarah ke instance PostgreSQL lokal Anda.
+
+    ```bash
+    sqlx migrate run
+    ```
+
+3.  **Jalankan Layanan:** Anda dapat menjalankan setiap layanan di jendela terminal terpisah. Contoh, untuk menjalankan `apigateway`:
+
+    ```bash
+    cargo run -p apigateway
+    ```
+    
+    Untuk menjalankan layanan `auth`:
+    ```bash
+    cargo run -p auth
+    ```
+    ...dan seterusnya untuk layanan lain (`user`, `product`, dll.).
+
+
+## 🌐 Gambaran Arsitektur
+
+[![](https://mermaid.ink/img/pako:eNp1k1-PmkAUxb_KZJJt2kSNICDw0MRV11RMsOw2TVr6MCujEGDGDMN2qfG798L4Z9ZEHgiHc-5vuJeZA97whGIf7wTZp-hlFjME1-R3jCfrb2hBJP1LGvR58l6XX2L8B_X7X9Fj69YyRc9UvGUbCu9PZZ09BftHRcUdewZ2xAt6x56DvRY8qTfyTuIJEqFIbhZQCXV_7HLLlsQruRP0-fvqApkqU4mZLua6eDoLHRm1306TrLqhRTot0mmRTos-0gKgBWSbkwtN1QR6TXCueXhA85JkBfrJRQ7Np4Q1BOWcVXVZZUiBumTQFS6ArhdoUwJU-Ap_6I28ZkUmG1TAX5Yo3FP2QgtaUika_UPDduK6iaa8KOhGcnEziFAfRKg3FepNncTiLJQMO7lWGwDWSWl9HbQyl21XS0J3VNw4KzBWPM8-trkQZEuYNqYrGX1CXb6LrtXItgA5lVzwq5OFe3BIsgT7W1JUtIdLKmC6oPGhDcYYqCXsRR8eEyLyGMfsCEV7wn5xXmJfihrKBK936QVS7xM4YrOMwPm7RiiD3T3lNZPYN02vY2D_gN-x3x95A3tsWqbhekPHM0Y93MBbyxrYtuXYrjM0XNcejZxjD__rljUGpmsM3fHYdgzb8UzDOv4H68IcqA?type=png)](https://mermaid.live/edit#pako:eNp1k1-PmkAUxb_KZJJt2kSNICDw0MRV11RMsOw2TVr6MCujEGDGDMN2qfG798L4Z9ZEHgiHc-5vuJeZA97whGIf7wTZp-hlFjME1-R3jCfrb2hBJP1LGvR58l6XX2L8B_X7X9Fj69YyRc9UvGUbCu9PZZ09BftHRcUdewZ2xAt6x56DvRY8qTfyTuIJEqFIbhZQCXV_7HLLlsQruRP0-fvqApkqU4mZLua6eDoLHRm1306TrLqhRTot0mmRTos-0gKgBWSbkwtN1QR6TXCueXhA85JkBfrJRQ7Np4Q1BOWcVXVZZUiBumTQFS6ArhdoUwJU-Ap_6I28ZkUmG1TAX5Yo3FP2QgtaUika_UPDduK6iaa8KOhGcnEziFAfRKg3FepNncTiLJQMO7lWGwDWSWl9HbQyl21XS0J3VNw4KzBWPM8-trkQZEuYNqYrGX1CXb6LrtXItgA5lVzwq5OFe3BIsgT7W1JUtIdLKmC6oPGhDcYYqCXsRR8eEyLyGMfsCEV7wn5xXmJfihrKBK936QVS7xM4YrOMwPm7RiiD3T3lNZPYN02vY2D_gN-x3x95A3tsWqbhekPHM0Y93MBbyxrYtuXYrjM0XNcejZxjD__rljUGpmsM3fHYdgzb8UzDOv4H68IcqA)
+
+
+## 🗃️ Diagram Hubungan Entitas (ERD)
+
+[![](https://mermaid.ink/img/pako:eNqdVNuOmzAQ_RXLz0kUriG8ZbfZNtruRVtaVVWkyIJJYgVs1jbt7pL8ew1hIQHSVuUJz5k5czxzIMchjwD7GMQHSjaCJEuG9JNJEBLlx0PxLO6DMriiEXq8beLfZk_Xn2ZPaE2FVIwk0IVicgmBhNAYfe2hS4mUv7iIGuTq4eHzfHaPqFz9BEHXFCrwsGTHF8Fj6Ggugpc0l1ihrJZQc5VX7SWskTbr6YRubvtV3LT7CJCgVorvgHWlN9ife6El1hfADRzMvweoLDwbbrC4m38JZnePCF5SKiBaRURBR9FaN95e1HSC_usE3uf9n4pSwaMsVB0tVbytorz8ud-uFh-PBTSEcw6peLhr9dO26zF_Ge278YmM9tqfM8IUVa8dJYorEvdYTqL9fjjc56f-8_V6t0S-7_cY_Gtaw8bzc5cViQKeM5CqJ3uftx3QIq63UWVX0yqyQs4UoUyn4gHeCBphf01iCQOcgNCfuj7jcqpLrLagF4SLqoiIXUF-0EUpYT84T7CvRKbLBM8225okSwtzVL-pOgWY7n_NM6awb1pWyYH9HL9gf2hNR87EtE3Dm47dqaHBVx217ZHj2K7juWPD8xzLcg8D_Fa2NUamZ4y9ycRxDcedmoZ9-A3hwoYg?type=png)](https://mermaid.live/edit#pako:eNqdVNuOmzAQ_RXLz0kUriG8ZbfZNtruRVtaVVWkyIJJYgVs1jbt7pL8ew1hIQHSVuUJz5k5czxzIMchjwD7GMQHSjaCJEuG9JNJEBLlx0PxLO6DMriiEXq8beLfZk_Xn2ZPaE2FVIwk0IVicgmBhNAYfe2hS4mUv7iIGuTq4eHzfHaPqFz9BEHXFCrwsGTHF8Fj6Ggugpc0l1ihrJZQc5VX7SWskTbr6YRubvtV3LT7CJCgVorvgHWlN9ife6El1hfADRzMvweoLDwbbrC4m38JZnePCF5SKiBaRURBR9FaN95e1HSC_usE3uf9n4pSwaMsVB0tVbytorz8ud-uFh-PBTSEcw6peLhr9dO26zF_Ge278YmM9tqfM8IUVa8dJYorEvdYTqL9fjjc56f-8_V6t0S-7_cY_Gtaw8bzc5cViQKeM5CqJ3uftx3QIq63UWVX0yqyQs4UoUyn4gHeCBphf01iCQOcgNCfuj7jcqpLrLagF4SLqoiIXUF-0EUpYT84T7CvRKbLBM8225okSwtzVL-pOgWY7n_NM6awb1pWyYH9HL9gf2hNR87EtE3Dm47dqaHBVx217ZHj2K7juWPD8xzLcg8D_Fa2NUamZ4y9ycRxDcedmoZ9-A3hwoYg)
+
+
+## 🧩 Layanan
+
+| Layanan     | Port gRPC | Port Metrik | Deskripsi                         |
+|-------------|-----------|-------------|-------------------------------------|
+| apigateway  | 5000      | /metrics    | REST gateway & load balancer        |
+| auth        | 50051     | 8080        | Otentikasi JWT, login, register     |
+| user        | 50052     | 8081        | Manajemen & CRUD Pengguna           |
+| role        | 50053     | 8082        | Kontrol akses berbasis peran (RBAC) |
+| product     | 50054     | 8083        | Inventaris produk                   |
+| order       | 50055     | 8084        | Pemrosesan pesanan                  |
+| email       | —         | —           | Notifikasi email via Kafka          |
+
+
+
+
+## 📦 Tech Stack Teknologi
+- Bahasa: Rust 
+- Web Framework: Axum  (REST), Tonic  (gRPC)
+- Database: PostgreSQL (SQLx), Redis (caching)
+- Messaging: Kafka (event-driven architecture)
+- Observability:
+    - Tracing: Jaeger
+    - Metrics: Prometheus
+    - Logs: Loki + Grafana
+    - OpenTelemetry Collector
+         
+- Auth: JWT, bcrypt, email verification
+- CI/CD: GitHub Actions (via image tags)
+- Containerization: Docker + Docker Compose
+
+---
+
+## Screenshoot
+
+
+### Jaeger
+
+<img src="https://github.com/MamangRust/monolith-simple-ecommerce/raw/main/images/jaeger.png" />
+
+### Node Exporter
+
+<img src="https://github.com/MamangRust/monolith-simple-ecommerce/raw/main/images/node-exporter.png" />
+
+### Prometheus
+
+<img src="https://github.com/MamangRust/monolith-simple-ecommerce/raw/main/images/prometheus.png" />
+
+### Loki
+
+<img src="https://github.com/MamangRust/monolith-simple-ecommerce/raw/main/images/loki.png" />
+
+### Prometheus Grafana 
+
+<img src="https://github.com/MamangRust/monolith-simple-ecommerce/raw/main/images/metrics.png" />

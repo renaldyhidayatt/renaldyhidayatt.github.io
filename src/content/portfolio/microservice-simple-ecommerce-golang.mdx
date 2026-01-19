@@ -1,0 +1,291 @@
+---
+title: 'Distributed Microservice Simple E-commerce'
+excerpt: 'A Distributed Microservice Simple E-commerce Platform built with Go, gRPC, PostgreSQL, and Kafka with full observability stack.'
+date: '2025-11-15'
+tags:
+  [
+    'golang',
+    'grpc',
+    'echo',
+    'postgresql',
+    'kafka',
+    'docker',
+    'docker-compose',
+    'prometheus',
+    'grafana',
+    'opentelemetry',
+    'jaeger',
+    'redis',
+    'kubernetes',
+    'loki',
+    'otel-collector',
+    'zap',
+    'sqlc',
+    'pgx',
+    'goose',
+    'swago',
+    'nginx',
+    'node-exporter',
+    'postman',
+    'hurl',
+  ]
+status: 'finished'
+image: '/portofolio/distributed-simple-ecommerce-golang/distributed-microservice-ecommerce-golang.png'
+---
+
+# Simple Microservice E-commerce with Go, SQLc, and PGX
+
+A sample e-commerce application built with a microservice architecture in Go, using SQLc for type-safe SQL queries and PGX as the PostgreSQL driver. This project demonstrates best practices for building a distributed system, including inter-service communication via gRPC, containerization with Docker, and a comprehensive observability stack.
+
+![Simple Microservice E-commerce](/portofolio/distributed-simple-ecommerce-golang/distributed-microservice-ecommerce-golang.png)
+
+## Features
+
+- **User Authentication & Authorization:** Secure user registration and login
+- **User, Product, and Order Management:** Core e-commerce functionalities
+- **Role-Based Access Control (RBAC):** Manage user permissions and roles
+- **Asynchronous Communication:** Using Kafka for scalable event-driven architecture
+- **Observability Stack:**
+  - **Centralized Logging:** With Loki
+  - **Distributed Tracing:** With Jaeger
+  - **Metrics Monitoring:** With Prometheus and Grafana
+
+## Architecture
+
+The application is composed of several microservices that communicate with each other via gRPC. An API Gateway provides a single entry point for clients.
+
+[![](https://mermaid.ink/img/pako:eNp9U01vgkAQ_StkTjVRo7B8yKGJwcb0VNOPS8HDKlshVTC7S1tr_O_dD5UFSTksO--9meHtLEdYlymBEDYU7zPrdZYUlnhYtdJAAtE2JwVPQBPyiWKNLTVEijQpbtKmi0drjjn5xgczdxobxL8FXgj9yteENbIrnsVysc7ssubeGKEsVmsHu6BlWq05iy-bDs0TTWUJ_ergH3Y438Zq7WCfyy2J5dLiut3NMMcrzJr2FnNl8G5RMr6hhCm_PdPFXPozBDJsCs7-DM0ZacqUSUOk4qZEGaoVMuzdeoqsweDemupgqgPx1WasZmIClxmYmD51E5ENL13UzFu19KhrZT3CVpNWCX3K7Rr6aDV6vSOaOIe3HfQpalxNXqNyC33xR-UphB94y0gfdoSKeyNiOEp9AjwjO5JAKLYppp_yGpxE0h4X72W5g5DTSqTRstpk1yLVPhU_zizH4hbVEjEMQqOyKjiEtq9KQHiEHwiRGwydwENjx_WRPQ58tw8HIULjoeeNbMd2kTNBrnPqw69qOhoiNBmNHR-5nuf5gWOf_gD0aj56?type=png)](https://mermaid.live/edit#pako:eNp9U01vgkAQ_StkTjVRo7B8yKGJwcb0VNOPS8HDKlshVTC7S1tr_O_dD5UFSTksO--9meHtLEdYlymBEDYU7zPrdZYUlnhYtdJAAtE2JwVPQBPyiWKNLTVEijQpbtKmi0drjjn5xgczdxobxL8FXgj9yteENbIrnsVysc7ssubeGKEsVmsHu6BlWq05iy-bDs0TTWUJ_ergH3Y438Zq7WCfyy2J5dLiut3NMMcrzJr2FnNl8G5RMr6hhCm_PdPFXPozBDJsCs7-DM0ZacqUSUOk4qZEGaoVMuzdeoqsweDemupgqgPx1WasZmIClxmYmD51E5ENL13UzFu19KhrZT3CVpNWCX3K7Rr6aDV6vSOaOIe3HfQpalxNXqNyC33xR-UphB94y0gfdoSKeyNiOEp9AjwjO5JAKLYppp_yGpxE0h4X72W5g5DTSqTRstpk1yLVPhU_zizH4hbVEjEMQqOyKjiEtq9KQHiEHwiRGwydwENjx_WRPQ58tw8HIULjoeeNbMd2kTNBrnPqw69qOhoiNBmNHR-5nuf5gWOf_gD0aj56)
+
+## Technology Stack
+
+- **Backend:** Go
+- **Database Access:** SQLc with PGX driver for PostgreSQL
+- **Communication:** gRPC
+- **Database:** PostgreSQL, Redis
+- **Message Broker:** Kafka
+- **Containerization:** Docker, Docker Compose
+- **Observability:** OpenTelemetry, Jaeger, Prometheus, Grafana, Loki
+
+## Getting Started
+
+### Prerequisites
+
+- [Git](https://git-scm.com/)
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+
+### Installation
+
+1. **Clone the repository:**
+
+```bash
+git clone https://github.com/MamangRust/simple-microservice-ecommerce-go-sqlc.git
+cd simple-microservice-ecommerce-go-sqlc
+```
+
+2. **Run the application:**
+
+```bash
+docker-compose up -d
+```
+
+This command will build the Docker images and start all the services in detached mode.
+
+## Usage
+
+Once the application is running, you can access the following services:
+
+- **API Gateway:** `http://localhost:5000`
+- **API Documentation (Swagger):** `http://localhost:5000/swagger/index.html`
+- **Grafana (Monitoring):** `http://localhost:3000` (user: `admin`, pass: `admin`)
+- **Jaeger (Distributed Tracing):** `http://localhost:16686`
+- **Prometheus:** `http://localhost:9090`
+
+## Preview
+
+### Memory and GC Monitoring
+
+![Monitoring-Gc-and-Memory](/portofolio/distributed-simple-ecommerce-golang/memory.png)
+
+### Distributed Tracing with Jaeger
+
+![JaegerUI](/portofolio/distributed-simple-ecommerce-golang/jaegerui.png)
+
+### Centralized Logging with Loki
+
+![Loki-log](/portofolio/distributed-simple-ecommerce-golang/loki-log.png)
+
+# Performance & Scalability Test Results
+
+This document summarizes the performance, scalability, and failure behavior of selected read-only modules under multiple traffic patterns. The goal is to establish an early scalability baseline, validate system stability, and observe graceful degradation under load.
+
+**Environment:**
+
+- Deployment: Docker Compose (single-node)
+- Load testing tool: k6
+- Scope: Read-only endpoints
+
+## User Module – Performance & Scalability Tests
+
+### Test Coverage
+
+- `GET /api/users`
+- `GET /api/users/{id}`
+- `GET /api/users/active`
+- `GET /api/users/trashed`
+
+### Test Results Summary
+
+| Test Type       | VUs  | Throughput  | Error Rate | p95 Latency | Key Findings                                                        |
+| --------------- | ---- | ----------- | ---------- | ----------- | ------------------------------------------------------------------- |
+| Smoke Test      | 1    | -           | 0%         | ~211 ms     | All endpoints responded correctly with low latency                  |
+| Capability Test | 322  | ~957 req/s  | 0%         | ~73 ms      | System applied intentional backpressure with 373 dropped iterations |
+| Load Test       | 1000 | ~2419 req/s | 0.22%      | ~780 ms     | `/api/user/trashed` endpoint showed highest failure rate            |
+| Stress Test     | 1500 | ~2365 req/s | 0.006%     | ~750 ms     | System entered controlled degradation with minimal failures         |
+| Spike Test      | 1000 | -           | 0%         | ~625 ms     | System absorbed traffic spikes without instability                  |
+
+### Summary
+
+The User module is functionally stable and resilient under load, with the `/api/user/trashed` endpoint showing slightly higher latency under stress. The system demonstrates controlled scalability with proper backpressure mechanisms.
+
+## Role Module – Performance & Scalability Tests
+
+### Test Coverage
+
+- `GET /api/roles`
+- `GET /api/roles/active`
+- `GET /api/roles/trashed`
+- `GET /api/roles/{id}`
+- `GET /api/roles/user/{userId}`
+
+### Test Results Summary
+
+| Test Type       | VUs  | Throughput  | Error Rate | p95 Latency | Key Findings                                                         |
+| --------------- | ---- | ----------- | ---------- | ----------- | -------------------------------------------------------------------- |
+| Smoke Test      | 1    | -           | 0%         | ~20 ms      | All endpoints responded correctly with low latency                   |
+| Capability Test | 887  | ~1168 req/s | 0%         | ~155 ms     | System applied intentional backpressure with 1197 dropped iterations |
+| Load Test       | 1000 | ~2667 req/s | 0.007%     | ~689 ms     | `/api/role/trashed` and `/api/role` endpoints showed higher latency  |
+| Stress Test     | 1500 | ~2520 req/s | 0%         | ~760 ms     | System entered controlled degradation with no request failures       |
+| Spike Test      | 1000 | -           | 0%         | ~644 ms     | System absorbed traffic spikes without instability                   |
+
+### Summary
+
+The Role module is functionally stable and resilient under load, with the `/api/role/trashed` and `/api/role` endpoints showing slightly higher latency under stress. The system demonstrates controlled scalability with proper backpressure mechanisms.
+
+## Product Module – Performance & Scalability Tests
+
+### Test Coverage
+
+- `GET /api/products`
+- `GET /api/products/active`
+- `GET /api/products/trashed`
+- `GET /api/products/{id}`
+
+### Test Results Summary
+
+| Test Type       | VUs  | Throughput  | Error Rate | p95 Latency | Key Findings                                                                |
+| --------------- | ---- | ----------- | ---------- | ----------- | --------------------------------------------------------------------------- |
+| Smoke Test      | 1    | -           | 0%         | ~68 ms      | All endpoints responded correctly with low latency                          |
+| Capability Test | 266  | ~960 req/s  | 0%         | ~41 ms      | System applied intentional backpressure with 261 dropped iterations         |
+| Load Test       | 1000 | ~2530 req/s | 0.05%      | ~707 ms     | `/api/product/trashed` and `/api/product/1` endpoints showed higher latency |
+| Stress Test     | 1500 | ~2511 req/s | 0%         | ~764 ms     | System entered controlled degradation with no request failures              |
+| Spike Test      | 1000 | -           | 0.05%      | ~525 ms     | System absorbed traffic spikes with minimal instability                     |
+
+### Summary
+
+The Product module is functionally stable and resilient under load, with the `/api/product/trashed` endpoint showing higher latency and failure rates under stress. The system demonstrates controlled scalability with proper backpressure mechanisms.
+
+## Order Module – Performance & Scalability Tests
+
+### Test Coverage
+
+- `GET /api/order`
+- `GET /api/order/active`
+- `GET /api/order/trashed`
+- `GET /api/order/{id}`
+
+### Test Results Summary
+
+| Test Type       | VUs  | Throughput  | Error Rate | p95 Latency | Key Findings                                                        |
+| --------------- | ---- | ----------- | ---------- | ----------- | ------------------------------------------------------------------- |
+| Smoke Test      | 1    | -           | 0%         | ~28 ms      | All endpoints responded correctly with low latency                  |
+| Capability Test | 218  | ~962 req/s  | 0%         | ~37 ms      | System applied intentional backpressure with 181 dropped iterations |
+| Load Test       | 1000 | ~2648 req/s | 0.004%     | ~667 ms     | `/api/order/trashed` endpoint showed higher latency                 |
+| Stress Test     | 1500 | ~2646 req/s | 0.01%      | ~701 ms     | System entered controlled degradation with minimal failures         |
+| Spike Test      | 1000 | -           | -          | -           | System handled traffic surges without instability                   |
+
+### Summary
+
+The Order module is functionally stable and resilient under load, with the `/api/order/trashed` endpoint showing slightly higher latency and failure rates under stress. The system demonstrates controlled scalability with proper backpressure mechanisms.
+
+## Order Item Module – Performance & Scalability Tests
+
+### Test Coverage
+
+- `GET /api/order-item`
+- `GET /api/order-item/active`
+- `GET /api/order-item/trashed`
+- `GET /api/order-item/{id}`
+
+### Test Results Summary
+
+| Test Type       | VUs  | Throughput  | Error Rate | p95 Latency | Key Findings                                                            |
+| --------------- | ---- | ----------- | ---------- | ----------- | ----------------------------------------------------------------------- |
+| Smoke Test      | 1    | -           | 0%         | ~61 ms      | All endpoints responded correctly with low latency                      |
+| Capability Test | 333  | ~958 req/s  | 0%         | ~54 ms      | System applied intentional backpressure with 369 dropped iterations     |
+| Load Test       | 1000 | ~2503 req/s | 0.12%      | ~705 ms     | `/api/order-item/trashed` endpoint showed highest failure rate          |
+| Stress Test     | 1500 | ~1416 req/s | 0.02%      | ~1690 ms    | System entered controlled degradation with significant latency increase |
+| Spike Test      | 1000 | -           | 0%         | ~670 ms     | System absorbed traffic spikes without instability                      |
+
+### Summary
+
+The Order Item module is functionally stable and resilient under load, with the `/api/order-item/trashed` endpoint showing higher latency and failure rates under stress. This module shows more significant latency degradation under extreme stress compared to other modules.
+
+## Test Result Visuals
+
+This section provides visual evidence of the performance tests conducted across different modules using k6.
+
+### User Module
+
+| Test Type       | Visualization                                                                                                                                              | Key Observations                                   |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Capability Test | <img src="/portofolio/distributed-simple-ecommerce-golang/user/user_capability.png" alt="User module capability test results" width="500" />               | Sustained throughput with controlled backpressure  |
+| Load Test       | <img src="/portofolio/distributed-simple-ecommerce-golang/user/user_load_test.png" alt="User module load test results near capacity" width="500" />        | Increased tail latency near operational boundaries |
+| Stress Test     | <img src="/portofolio/distributed-simple-ecommerce-golang/user/user_stress_test.png" alt="User module stress test behavior beyond capacity" width="500" /> | System enters controlled degradation               |
+| Spike Test      | <img src="/portofolio/distributed-simple-ecommerce-golang/user/user_spike_test.png" alt="User module spike test results" width="500" />                    | Resilience against sudden traffic spikes           |
+
+### Role Module
+
+| Test Type       | Visualization                                                                                                                                              | Key Observations                                  |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Capability Test | <img src="/portofolio/distributed-simple-ecommerce-golang/role/role_capability.png" alt="Role module capability test results" width="500" />               | Stable performance with intentional backpressure  |
+| Load Test       | <img src="/portofolio/distributed-simple-ecommerce-golang/role/role_load_test.png" alt="Role module load test results near capacity" width="500" />        | Latency increase at upper performance boundary    |
+| Stress Test     | <img src="/portofolio/distributed-simple-ecommerce-golang/role/role_stress_test.png" alt="Role module stress test behavior beyond capacity" width="500" /> | System stability maintained during extreme load   |
+| Spike Test      | <img src="/portofolio/distributed-simple-ecommerce-golang/role/role_spike_test.png" alt="Role module spike test results" width="500" />                    | Handled sudden traffic surges without instability |
+
+### Product Module
+
+| Test Type       | Visualization                                                                                                                                                       | Key Observations                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Capability Test | <img src="/portofolio/distributed-simple-ecommerce-golang/product/product_capability.png" alt="Product module capability test results" width="500" />               | Stable performance under sustained load          |
+| Load Test       | <img src="/portofolio/distributed-simple-ecommerce-golang/product/product_load_test.png" alt="Product module load test results near capacity" width="500" />        | Noticeable latency increase at capacity          |
+| Stress Test     | <img src="/portofolio/distributed-simple-ecommerce-golang/product/product_stress_test.png" alt="Product module stress test behavior beyond capacity" width="500" /> | Graceful degradation without systemic failures   |
+| Spike Test      | <img src="/portofolio/distributed-simple-ecommerce-golang/product/product_spike_test.png" alt="Product module spike test results" width="500" />                    | Absorbed traffic spikes with minimal instability |
+
+### Order Module
+
+| Test Type       | Visualization                                                                                                                                                 | Key Observations                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Capability Test | <img src="/portofolio/distributed-simple-ecommerce-golang/order/order_capability.png" alt="Order module capability test results" width="500" />               | High volume sustained with controlled concurrency    |
+| Load Test       | <img src="/portofolio/distributed-simple-ecommerce-golang/order/order_load_test.png" alt="Order module load test results near capacity" width="500" />        | Tail latency increased under near-capacity load      |
+| Stress Test     | <img src="/portofolio/distributed-simple-ecommerce-golang/order/order_stress_test.png" alt="Order module stress test behavior beyond capacity" width="500" /> | Entered controlled degradation with minimal failures |
+| Spike Test      | <img src="/portofolio/distributed-simple-ecommerce-golang/order/order_spike_test.png" alt="Order module spike test results" width="500" />                    | System remained responsive during traffic spikes     |
+
+### Order Item Module
+
+| Test Type       | Visualization                                                                                                                                                                | Key Observations                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Capability Test | <img src="/portofolio/distributed-simple-ecommerce-golang/order_item/order_item_capability.png" alt="Order Item module capability test results" width="500" />               | Concurrency limiting prevents system overload         |
+| Load Test       | <img src="/portofolio/distributed-simple-ecommerce-golang/order_item/order_item_load_test.png" alt="Order Item module load test results near capacity" width="500" />        | Significant latency increase on trashed endpoint      |
+| Stress Test     | <img src="/portofolio/distributed-simple-ecommerce-golang/order_item/order_item_stress_test.png" alt="Order Item module stress test behavior beyond capacity" width="500" /> | High latency under extreme stress but remained stable |
+| Spike Test      | <img src="/portofolio/distributed-simple-ecommerce-golang/order_item/order_item_spike_test.png" alt="Order Item module spike test results" width="500" />                    | Absorbed sudden traffic spikes without errors         |
