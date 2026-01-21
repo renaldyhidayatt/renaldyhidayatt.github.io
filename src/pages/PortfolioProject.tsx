@@ -29,7 +29,7 @@ const PortfolioProject = () => {
     if (isLoading) {
         return (
             <Layout>
-                <main className="max-w-4xl mx-auto px-6 py-16">
+                <main className="max-w-4xl mx-auto px-6 py-16 font-sans">
                     <div className="flex items-center justify-center min-h-[60vh]">
                         <div className="text-center space-y-4">
                             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
@@ -44,14 +44,14 @@ const PortfolioProject = () => {
     if (error || !project) {
         return (
             <Layout>
-                <main className="max-w-4xl mx-auto px-6 py-16">
+                <main className="max-w-4xl mx-auto px-6 py-16 font-sans">
                     <div className="flex items-center justify-center min-h-[60vh]">
                         <div className="text-center space-y-6">
                             <div className="w-20 h-20 rounded-full bg-accent flex items-center justify-center mx-auto">
                                 <span className="text-4xl">💼</span>
                             </div>
                             <div className="space-y-2">
-                                <h1 className="text-3xl font-serif font-semibold text-primary">
+                                <h1 className="font-serif text-3xl font-semibold text-primary">
                                     Project Not Found
                                 </h1>
                                 <p className="text-muted-foreground">
@@ -79,7 +79,7 @@ const PortfolioProject = () => {
                     <div className="max-w-4xl mx-auto px-6 pt-12 pb-16">
                         <Link
                             to="/portfolio"
-                            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-8 group"
+                            className="font-sans inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-8 group"
                         >
                             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                             Back to Portfolio
@@ -87,19 +87,21 @@ const PortfolioProject = () => {
 
                         <article>
                             <header className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20">
+                                <div className="font-sans flex items-center gap-3">
+                                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20">
                                         {project.status}
                                     </span>
                                 </div>
 
-                                <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary leading-tight">
+                                <h1 className="font-serif text-4xl md:text-5xl font-semibold text-primary leading-tight">
                                     {project.title}
                                 </h1>
-                                <p className="text-lg text-muted-foreground leading-relaxed">
+
+                                <p className="font-serif text-lg text-muted-foreground leading-relaxed">
                                     {project.excerpt}
                                 </p>
-                                <div className="space-y-3">
+
+                                <div className="space-y-3 font-sans">
                                     <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
                                         Tech Stack
                                     </h3>
@@ -107,7 +109,7 @@ const PortfolioProject = () => {
                                         {project.tags.map((tech) => (
                                             <span
                                                 key={tech}
-                                                className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-accent text-foreground border border-border hover:border-primary/30 transition-colors"
+                                                className="px-3 py-1.5 text-sm font-medium rounded-md bg-accent text-foreground border border-border hover:border-primary/30 transition-colors"
                                             >
                                                 {tech}
                                             </span>
@@ -118,25 +120,23 @@ const PortfolioProject = () => {
                         </article>
                     </div>
                 </div>
-
-
                 <div className="max-w-5xl mx-auto px-6 py-12">
-                    <div className="prose prose-lg max-w-none">
+                    <article className="font-serif">
                         <MDXContent code={project.content} />
-                    </div>
-
-                    <div className="mt-16 pt-8 border-t border-border space-y-8">
+                    </article>
+                    <div className="mt-16 pt-8 border-t border-border space-y-8 font-sans">
                         {latestProjects.length > 0 && (
-                            <div className="space-y-6">
-                                <h2 className="text-2xl font-serif font-semibold text-primary">
+                            <section className="space-y-6">
+                                <h2 className="font-serif text-2xl font-semibold text-primary">
                                     Latest Projects
                                 </h2>
+
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     {latestProjects.map((latestProject) => (
                                         <Link
                                             key={latestProject.slug}
                                             to={`/portfolio/${latestProject.slug}`}
-                                            className="group block p-5 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary/20 transition-all duration-200"
+                                            className="group block p-5 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary/20 transition-all"
                                         >
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between">
@@ -145,14 +145,17 @@ const PortfolioProject = () => {
                                                     </span>
                                                     <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                                 </div>
-                                                <h3 className="font-serif font-semibold text-lg text-primary group-hover:text-primary/80 transition-colors line-clamp-2">
+
+                                                <h3 className="font-serif text-lg font-semibold text-primary line-clamp-2">
                                                     {latestProject.title}
                                                 </h3>
+
                                                 {latestProject.excerpt && (
                                                     <p className="text-sm text-muted-foreground line-clamp-2">
                                                         {latestProject.excerpt}
                                                     </p>
                                                 )}
+
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {latestProject.tags.slice(0, 3).map((tag) => (
                                                         <span
@@ -167,12 +170,11 @@ const PortfolioProject = () => {
                                         </Link>
                                     ))}
                                 </div>
-                            </div>
+                            </section>
                         )}
-
                         <Link
                             to="/portfolio"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent/80 text-foreground rounded-lg transition-all duration-200 font-medium group"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent/80 text-foreground rounded-lg transition-all font-medium group"
                         >
                             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                             View All Projects
@@ -182,6 +184,7 @@ const PortfolioProject = () => {
             </main>
         </Layout>
     );
+
 };
 
 export default PortfolioProject;

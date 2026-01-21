@@ -10,31 +10,32 @@ const BlogPost = () => {
     const { slug } = useParams();
 
     const { data: post, isLoading, error } = useQuery({
-        queryKey: ['blog-post', slug],
+        queryKey: ["blog-post", slug],
         queryFn: () => getBlogPost(slug!),
         enabled: !!slug,
     });
 
     const { data: allPosts = [] } = useQuery({
-        queryKey: ['blog-posts'],
+        queryKey: ["blog-posts"],
         queryFn: getBlogPosts,
     });
 
     const randomPosts = useMemo(() => {
         if (!post || allPosts.length === 0) return [];
-        const otherPosts = allPosts.filter(p => p.slug !== slug);
-        const shuffled = [...otherPosts].sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, 3);
+        const otherPosts = allPosts.filter((p) => p.slug !== slug);
+        return [...otherPosts].sort(() => Math.random() - 0.5).slice(0, 3);
     }, [allPosts, slug, post]);
 
     if (isLoading) {
         return (
             <Layout>
-                <main className="max-w-4xl mx-auto px-6 py-16">
+                <main className="max-w-4xl mx-auto px-6 py-16 font-sans">
                     <div className="flex items-center justify-center min-h-[60vh]">
                         <div className="text-center space-y-4">
                             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                            <p className="text-muted-foreground font-medium">Loading article...</p>
+                            <p className="text-muted-foreground font-medium">
+                                Loading article...
+                            </p>
                         </div>
                     </div>
                 </main>
@@ -45,20 +46,22 @@ const BlogPost = () => {
     if (error || !post) {
         return (
             <Layout>
-                <main className="max-w-4xl mx-auto px-6 py-16">
+                <main className="max-w-4xl mx-auto px-6 py-16 font-sans">
                     <div className="flex items-center justify-center min-h-[60vh]">
                         <div className="text-center space-y-6">
                             <div className="w-20 h-20 rounded-full bg-accent flex items-center justify-center mx-auto">
                                 <span className="text-4xl">📄</span>
                             </div>
+
                             <div className="space-y-2">
-                                <h1 className="text-3xl font-serif font-semibold text-primary">
+                                <h1 className="font-serif text-3xl font-semibold text-primary">
                                     Article Not Found
                                 </h1>
                                 <p className="text-muted-foreground">
                                     The article you're looking for doesn't exist or has been moved.
                                 </p>
                             </div>
+
                             <Link
                                 to="/blog"
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200 font-medium"
@@ -80,40 +83,40 @@ const BlogPost = () => {
                     <div className="max-w-4xl mx-auto px-6 pt-12 pb-16">
                         <Link
                             to="/blog"
-                            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-8 group"
+                            className="font-sans inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-8 group"
                         >
                             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                             Back to Blog
                         </Link>
-
                         <article>
                             <header className="space-y-6">
-                                {post.tags && post.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
+                                {post.tags?.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 font-sans">
                                         {post.tags.map((tag) => (
                                             <span
                                                 key={tag}
-                                                className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                                                className="px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20"
                                             >
                                                 {tag}
                                             </span>
                                         ))}
                                     </div>
                                 )}
-                                <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary leading-tight">
+                                <h1 className="font-serif text-4xl md:text-5xl font-semibold text-primary leading-tight">
                                     {post.title}
                                 </h1>
-                                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground">
+                                <div className="font-sans flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground">
                                     <div className="flex items-center gap-2">
                                         <Calendar className="w-4 h-4" />
                                         <time dateTime={post.date}>
-                                            {new Date(post.date).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric',
+                                            {new Date(post.date).toLocaleDateString("en-US", {
+                                                year: "numeric",
+                                                month: "long",
+                                                day: "numeric",
                                             })}
                                         </time>
                                     </div>
+
                                     {post.readTime && (
                                         <div className="flex items-center gap-2">
                                             <Clock className="w-4 h-4" />
@@ -126,24 +129,25 @@ const BlogPost = () => {
                     </div>
                 </div>
                 <div className="max-w-3xl mx-auto px-6 py-12">
-                    <div className="prose prose-lg max-w-none">
+                    <article className="font-serif">
                         <MDXContent code={post.content} />
-                    </div>
-                    <div className="mt-16 pt-8 border-t border-border space-y-8">
+                    </article>
+                    <div className="mt-16 pt-8 border-t border-border space-y-8 font-sans">
                         {randomPosts.length > 0 && (
-                            <div className="space-y-6">
-                                <h2 className="text-2xl font-serif font-semibold text-primary">
+                            <section className="space-y-6">
+                                <h2 className="font-serif text-2xl font-semibold text-primary">
                                     More Articles You Might Like
                                 </h2>
+
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     {randomPosts.map((randomPost) => (
                                         <Link
                                             key={randomPost.slug}
                                             to={`/blog/${randomPost.slug}`}
-                                            className="group block p-5 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary/20 transition-all duration-200"
+                                            className="group block p-5 rounded-lg border border-border bg-card hover:bg-accent transition-all"
                                         >
                                             <div className="space-y-3">
-                                                {randomPost.tags && randomPost.tags.length > 0 && (
+                                                {randomPost.tags?.length > 0 && (
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {randomPost.tags.slice(0, 2).map((tag) => (
                                                             <span
@@ -155,34 +159,39 @@ const BlogPost = () => {
                                                         ))}
                                                     </div>
                                                 )}
-                                                <h3 className="font-serif font-semibold text-lg text-primary group-hover:text-primary/80 transition-colors line-clamp-2">
+
+                                                <h3 className="font-serif text-lg font-semibold text-primary line-clamp-2">
                                                     {randomPost.title}
                                                 </h3>
+
                                                 {randomPost.excerpt && (
                                                     <p className="text-sm text-muted-foreground line-clamp-2">
                                                         {randomPost.excerpt}
                                                     </p>
                                                 )}
+
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                     <Calendar className="w-3 h-3" />
                                                     <time dateTime={randomPost.date}>
-                                                        {new Date(randomPost.date).toLocaleDateString('en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            year: 'numeric',
-                                                        })}
+                                                        {new Date(randomPost.date).toLocaleDateString(
+                                                            "en-US",
+                                                            {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                                year: "numeric",
+                                                            }
+                                                        )}
                                                     </time>
                                                 </div>
                                             </div>
                                         </Link>
                                     ))}
                                 </div>
-                            </div>
+                            </section>
                         )}
-
                         <Link
                             to="/blog"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent/80 text-foreground rounded-lg transition-all duration-200 font-medium group"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent/80 text-foreground rounded-lg transition-all font-medium group"
                         >
                             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                             Read More Articles

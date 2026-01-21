@@ -3,7 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { getPortfolioProjects } from "@/utils/mdx";
-import { Search, Calendar, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+    Search,
+    Calendar,
+    ArrowRight,
+    ChevronLeft,
+    ChevronRight,
+} from "lucide-react";
 
 const ITEMS_PER_PAGE = 3;
 const PAGE_GROUP_SIZE = 5;
@@ -33,7 +39,8 @@ const Portfolio = () => {
         return filteredProjects.slice(start, start + ITEMS_PER_PAGE);
     }, [filteredProjects, page]);
 
-    const startPage = Math.floor((page - 1) / PAGE_GROUP_SIZE) * PAGE_GROUP_SIZE + 1;
+    const startPage =
+        Math.floor((page - 1) / PAGE_GROUP_SIZE) * PAGE_GROUP_SIZE + 1;
     const endPage = Math.min(startPage + PAGE_GROUP_SIZE - 1, totalPages);
 
     const handlePrev = () => page > 1 && setPage(page - 1);
@@ -42,11 +49,13 @@ const Portfolio = () => {
     if (isLoading) {
         return (
             <Layout>
-                <main className="max-w-5xl mx-auto px-6 py-16">
+                <main className="max-w-5xl mx-auto px-6 py-16 font-sans">
                     <div className="flex items-center justify-center min-h-[60vh]">
                         <div className="text-center space-y-4">
                             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                            <p className="text-muted-foreground font-medium">Loading projects...</p>
+                            <p className="text-muted-foreground font-medium">
+                                Loading projects...
+                            </p>
                         </div>
                     </div>
                 </main>
@@ -56,10 +65,10 @@ const Portfolio = () => {
 
     return (
         <Layout>
-            <main className="max-w-5xl mx-auto px-6 py-16 pb-20 md:pb-0">
-                <header className="mb-12">
-                    <div className="space-y-4 mb-8">
-                        <h1 className="text-4xl md:text-5xl font-bold text-primary tracking-tight">
+            <main className="max-w-5xl mx-auto px-6 py-16 pb-20 md:pb-0 font-sans">
+                <header className="mb-12 space-y-6">
+                    <div className="space-y-4">
+                        <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary tracking-tight">
                             Portfolio
                         </h1>
                         <p className="text-lg text-muted-foreground max-w-2xl">
@@ -81,15 +90,18 @@ const Portfolio = () => {
                         />
                     </div>
                 </header>
-
                 <section className="space-y-6">
                     {paginatedProjects.length === 0 ? (
                         <div className="text-center py-20">
                             <div className="w-20 h-20 rounded-full bg-accent flex items-center justify-center mx-auto mb-4">
                                 <Search className="w-10 h-10 text-muted-foreground" />
                             </div>
-                            <h3 className="text-xl font-semibold mb-2">No projects found</h3>
-                            <p className="text-muted-foreground">Try adjusting your search terms</p>
+                            <h3 className="text-xl font-serif font-semibold mb-2">
+                                No projects found
+                            </h3>
+                            <p className="text-muted-foreground">
+                                Try adjusting your search terms
+                            </p>
                         </div>
                     ) : (
                         paginatedProjects.map((project, index) => (
@@ -113,21 +125,23 @@ const Portfolio = () => {
                                                 />
                                             </div>
                                         )}
-                                        {Array.isArray(project.tags) && project.tags.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
-                                                {project.tags.slice(0, 3).map((tag) => (
-                                                    <span
-                                                        key={tag}
-                                                        className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium"
-                                                    >
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
+
+                                        {Array.isArray(project.tags) &&
+                                            project.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {project.tags.slice(0, 3).map((tag) => (
+                                                        <span
+                                                            key={tag}
+                                                            className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium"
+                                                        >
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
 
                                         <div className="space-y-3">
-                                            <h2 className="text-2xl md:text-3xl font-bold text-primary group-hover:text-primary/80 transition-colors">
+                                            <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary group-hover:text-primary/80 transition-colors">
                                                 {project.title}
                                             </h2>
                                             <p className="text-muted-foreground leading-relaxed line-clamp-2">
@@ -176,7 +190,10 @@ const Portfolio = () => {
                         </button>
 
                         <div className="hidden sm:flex items-center gap-1">
-                            {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((num) => (
+                            {Array.from(
+                                { length: endPage - startPage + 1 },
+                                (_, i) => startPage + i
+                            ).map((num) => (
                                 <button
                                     key={num}
                                     onClick={() => setPage(num)}

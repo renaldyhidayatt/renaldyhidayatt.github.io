@@ -62,7 +62,6 @@ const Index = () => {
                     </div>
                 </div>
 
-                {/* Scroll indicator */}
                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
                     <div className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex items-start justify-center p-2">
                         <div className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full"></div>
@@ -70,7 +69,6 @@ const Index = () => {
                 </div>
             </section>
 
-            {/* Latest Posts Section */}
             <section className="py-24 px-6 bg-gradient-to-b from-transparent via-accent/5 to-transparent">
                 <div className="max-w-4xl mx-auto">
                     <div className="flex items-center justify-between mb-12">
@@ -107,7 +105,6 @@ const Index = () => {
                                     style={{ animationDelay: `${index * 100}ms` }}
                                 >
                                     <article className="relative p-8 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 overflow-hidden">
-                                        {/* Subtle hover gradient */}
                                         <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                                         <div className="relative space-y-4">
@@ -149,7 +146,6 @@ const Index = () => {
                             ))}
                         </div>
                     )}
-
                     <div className="text-center mt-12 sm:hidden">
                         <Link
                             to="/blog"

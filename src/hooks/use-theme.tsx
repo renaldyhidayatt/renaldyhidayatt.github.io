@@ -5,11 +5,26 @@ import React, {
   useState,
 } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme =
+  | 'light'
+  | 'dark'
+  | 'gruvbox-light'
+  | 'gruvbox-dark'
+  | 'everforest-light'
+  | 'everforest-dark'
+  | 'tokyo-night'
+  | 'tokyo-storm'
+  | 'tokyo-moon'
+  | 'molokai-light'
+  | 'molokai-dark'
+  | 'catppuccin-latte'
+  | 'catppuccin-frappe'
+  | 'catppuccin-macchiato'
+  | 'catppuccin-mocha';
 
 interface ThemeContextType {
   theme: Theme;
-  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -27,7 +42,7 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('theme') as Theme;
     if (saved) return saved;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -35,7 +50,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   });
 
   useEffect(() => {
-    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.remove(
+      'light', 'dark',
+      'gruvbox-light', 'gruvbox-dark',
+      'everforest-light', 'everforest-dark',
+      'tokyo-night', 'tokyo-storm', 'tokyo-moon',
+      'molokai-light', 'molokai-dark',
+      'catppuccin-latte', 'catppuccin-frappe',
+      'catppuccin-macchiato', 'catppuccin-mocha'
+    );
+
     document.documentElement.classList.add(theme);
     localStorage.setItem('theme', theme);
 
@@ -45,31 +69,19 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const favicon = document.createElement('link');
     favicon.rel = 'icon';
     favicon.type = 'image/x-icon';
-    favicon.href = theme === 'dark' ? '/favicon_dark.ico' : '/favicon_light.ico';
+
+    const isDarkTheme = theme.includes('dark');
+    favicon.href = isDarkTheme ? '/favicon_dark.ico' : '/favicon_light.ico';
 
     document.head.appendChild(favicon);
   }, [theme]);
 
-  useEffect(() => {
-    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleColorSchemeChange = (e: MediaQueryListEvent) => {
-      const newTheme = e.matches ? 'dark' : 'light';
-      const savedTheme = localStorage.getItem('theme');
-      if (!savedTheme) {
-        setTheme(newTheme);
-      }
-    };
-
-    darkModeMediaQuery.addEventListener('change', handleColorSchemeChange);
-    return () => darkModeMediaQuery.removeEventListener('change', handleColorSchemeChange);
-  }, []);
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );
