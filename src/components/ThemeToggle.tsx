@@ -38,64 +38,21 @@ const ThemeToggle = () => {
     return (
         <div className="relative" ref={ref}>
             <button
-                onClick={() => setOpen(true)}
+                onClick={() => setOpen(!open)}
                 aria-label="Change theme"
-                className="p-3 rounded-lg bg-card border border-border active:scale-95 transition"
+                className="p-3 rounded-lg bg-card border border-border hover:bg-accent active:scale-95 transition"
             >
                 <Palette className="w-5 h-5 text-foreground" />
             </button>
             <div
-                className={`hidden md:block absolute right-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-xl z-50 transition-all
-          ${open ? 'opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-95'}
-        `}
+                className={`absolute right-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-xl z-50 transition-all ${open ? 'opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-95'
+                    }`}
             >
                 <ThemeList theme={theme} onSelect={setTheme} onClose={() => setOpen(false)} />
             </div>
-
-            {open && (
-                <div className="md:hidden fixed inset-0 z-50">
-                    <div
-                        className="absolute inset-0 bg-black/40"
-                        onClick={() => setOpen(false)}
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl border-t border-border max-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                            <span className="font-semibold text-base">Select Theme</span>
-                            <button onClick={() => setOpen(false)}>
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="overflow-y-auto px-4 py-3 space-y-1">
-                            {themes.map((t) => (
-                                <button
-                                    key={t.value}
-                                    onClick={() => {
-                                        setTheme(t.value as any);
-                                        setOpen(false);
-                                    }}
-                                    className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl text-left transition
-                    ${theme === t.value ? 'bg-primary/10 text-primary' : 'active:bg-accent'}
-                  `}
-                                >
-                                    <div
-                                        className="w-7 h-7 rounded-md border-2"
-                                        style={{ backgroundColor: t.color, borderColor: t.border }}
-                                    />
-                                    <span className="flex-1 font-medium">{t.label}</span>
-                                    {theme === t.value && <Check className="w-4 h-4" />}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
-
-export default ThemeToggle;
-
 
 const ThemeList = ({
     theme,
@@ -117,9 +74,8 @@ const ThemeList = ({
                     onSelect(t.value as any);
                     onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition
-          ${theme === t.value ? 'bg-primary/10 text-primary' : 'hover:bg-accent'}
-        `}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition ${theme === t.value ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
+                    }`}
             >
                 <div
                     className="w-6 h-6 rounded-md border-2"
@@ -131,3 +87,5 @@ const ThemeList = ({
         ))}
     </div>
 );
+
+export default ThemeToggle;

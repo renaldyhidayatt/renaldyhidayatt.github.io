@@ -58,8 +58,8 @@
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 262.1 83.3% 57.8%;
     --primary-foreground: 210 20% 98%;
+    --primary: 262.1 83.3% 57.8%;
     --secondary: 220 14.3% 95.9%;
     --secondary-foreground: 220.9 39.3% 11%;
     --muted: 220 14.3% 95.9%;
@@ -165,7 +165,6 @@
     --radius: 0.5rem;
   }
 
-
   .everforest-dark {
     --background: 198 18% 18%;
     --foreground: 43 26% 81%;
@@ -188,7 +187,6 @@
     --ring: 35 55% 48%;
     --radius: 0.5rem;
   }
-
 
   .tokyo-night {
     --background: 222 16% 12%;
@@ -236,7 +234,6 @@
     --radius: 0.5rem;
   }
 
-
   .tokyo-moon {
     --background: 225 18% 15%;
     --foreground: 225 28% 79%;
@@ -259,7 +256,6 @@
     --ring: 208 100% 75%;
     --radius: 0.5rem;
   }
-
 
   .molokai-light {
     --background: 30 60% 98%;
@@ -284,7 +280,6 @@
     --radius: 0.5rem;
   }
 
-
   .molokai-dark {
     --background: 80 8% 11%;
     --foreground: 60 23% 96%;
@@ -307,7 +302,6 @@
     --ring: 339 85% 48%;
     --radius: 0.5rem;
   }
-
 
   .catppuccin-latte {
     --background: 220 23% 95%;
@@ -354,7 +348,6 @@
     --ring: 222 74% 74%;
     --radius: 0.5rem;
   }
-
 
   .catppuccin-macchiato {
     --background: 232 23% 13%;
