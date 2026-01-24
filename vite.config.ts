@@ -10,8 +10,8 @@ const pwaOptions: Partial<VitePWAOptions> = {
   base: '/',
   includeAssets: ['favicon.svg', 'favicon_light.ico', 'favicon_dark.ico'],
   manifest: {
-    name: 'PWA Router',
-    short_name: 'PWA Router',
+    name: 'Renaldy Portofolio',
+    short_name: 'Renaldy Portofolio',
     theme_color: '#ffffff',
     icons: [
       {
