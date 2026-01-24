@@ -6,9 +6,9 @@ import type { ManifestOptions, VitePWAOptions } from 'vite-plugin-pwa'
 import { VitePWA } from "vite-plugin-pwa";
 
 const pwaOptions: Partial<VitePWAOptions> = {
-  mode: 'development',
+  registerType: "autoUpdate",
   base: '/',
-  includeAssets: ['favicon.svg'],
+  includeAssets: ['favicon.svg', 'favicon_light.ico', 'favicon_dark.ico'],
   manifest: {
     name: 'PWA Router',
     short_name: 'PWA Router',
@@ -32,10 +32,8 @@ const pwaOptions: Partial<VitePWAOptions> = {
       },
     ],
   },
-  devOptions: {
-    enabled: process.env.SW_DEV === 'true',
-    type: 'module',
-    navigateFallback: 'index.html',
+  workbox: {
+    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
   },
 }
 
