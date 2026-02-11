@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import velite from '@velite/plugin-vite';
-import type { ManifestOptions, VitePWAOptions } from 'vite-plugin-pwa'
+import type { VitePWAOptions } from 'vite-plugin-pwa'
 import { VitePWA } from "vite-plugin-pwa";
 
 const pwaOptions: Partial<VitePWAOptions> = {
