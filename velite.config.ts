@@ -24,6 +24,8 @@ const posts = defineCollection({
       readTime: s.string().optional(),
       published: s.boolean().default(true),
       tags: s.array(s.string()).optional(),
+      image: s.string().optional(),
+      toc: s.toc(),
       body: s.mdx(),
     })
     .transform(computedFields),
@@ -41,6 +43,7 @@ const portofolio = defineCollection({
       date: s.isodate(),
       status: s.string(),
       tags: s.array(s.string()).optional(),
+      toc: s.toc(),
       body: s.mdx(),
     })
     .transform(computedFields),

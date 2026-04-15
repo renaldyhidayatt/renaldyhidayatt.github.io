@@ -9,6 +9,8 @@ export interface BlogPost {
   readTime: string;
   published?: boolean;
   tags?: string[];
+  image?: string;
+  toc: any;
   content?: any;
 }
 
@@ -20,12 +22,13 @@ export interface PortfolioProject {
   date: string;
   status: string;
   tags?: string[];
+  toc: any;
   content?: any;
 }
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
   try {
-    const blogPosts = posts
+    const blogPosts = (posts as any[])
       .filter((post) => post.published)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .map((post) => ({
@@ -37,6 +40,8 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
         readTime: post.readTime,
         published: post.published,
         tags: post.tags || [],
+        image: post.image,
+        toc: post.toc,
         content: post.body,
       }));
 
@@ -49,7 +54,7 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
 
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
   try {
-    const post = posts.find((p) => p.slugAsParams === slug);
+    const post = (posts as any[]).find((p) => p.slugAsParams === slug);
     if (!post) return null;
 
     return {
@@ -61,6 +66,8 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
       readTime: post.readTime,
       published: post.published,
       tags: post.tags || [],
+      image: post.image,
+      toc: post.toc,
       content: post.body,
     };
   } catch (error) {
@@ -71,7 +78,7 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
 
 export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
   try {
-    const portfolioProjects = portofolio
+    const portfolioProjects = (portofolio as any[])
       .slice() 
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) 
       .map((project) => ({
@@ -82,6 +89,7 @@ export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
         image: project.image,
         status: project.status,
         tags: project.tags || [],
+        toc: project.toc,
         content: project.body,
       }));
 
@@ -95,7 +103,7 @@ export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
 
 export async function getPortfolioProject(slug: string): Promise<PortfolioProject | null> {
   try {
-    const project = portofolio.find((p) => p.slugAsParams === slug);
+    const project = (portofolio as any[]).find((p) => p.slugAsParams === slug);
     if (!project) return null;
 
     return {
@@ -106,6 +114,7 @@ export async function getPortfolioProject(slug: string): Promise<PortfolioProjec
       date: project.date,
       status: project.status,
       tags: project.tags || [],
+      toc: project.toc,
       content: project.body,
     };
   } catch (error) {

@@ -1,4 +1,8 @@
-const MinecraftIcon = () => (
+interface MinecraftIconProps extends React.SVGProps<SVGSVGElement> {
+  size?: number;
+}
+
+const MinecraftIcon = ({ className, size = 35, ...props }: MinecraftIconProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 200 200"
@@ -7,9 +11,10 @@ const MinecraftIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    width="35"
-    height="35"
-    className="text-black dark:text-white"
+    width={size}
+    height={size}
+    className={className}
+    {...props}
   >
     <rect x="70" y="30" width="60" height="50" rx="10" fill="black" />
     <rect x="80" y="55" width="40" height="15" fill="white" />

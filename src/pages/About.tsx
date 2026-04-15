@@ -1,198 +1,189 @@
 import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
-import { ExternalLink, Award, Code2, Wrench } from "lucide-react";
+import { ExternalLink, Award, Code2, Wrench, Terminal, Cpu, Database, Cloud, FileText, ArrowRight } from "lucide-react";
+import { useReveal } from "@/hooks/use-reveal";
+
+const SkillBadge = ({ title, icon: Icon }: { title: string; icon: any }) => (
+  <div className="group relative flex items-center gap-2 px-4 py-2 glass rounded-xl border border-border/50 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1">
+    <Icon className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+    <span className="text-sm font-bold tracking-tight">{title}</span>
+  </div>
+);
+
+const AboutSec = ({ title, children, delay }: { title: string; children: React.ReactNode; delay: string }) => {
+    const { ref, isVisible } = useReveal();
+    return (
+        <section 
+          ref={ref}
+          className={`space-y-6 transition-all duration-700 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+          }`}
+          style={{ transitionDelay: delay }}
+        >
+            <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground flex items-center gap-3">
+                <span className="w-8 h-1 bg-primary rounded-full" />
+                {title}
+            </h2>
+            <div className="pl-11">{children}</div>
+        </section>
+    );
+};
 
 const About = () => {
     const { theme } = useTheme();
 
     return (
         <Layout>
-            <main className="max-w-5xl mx-auto px-6 py-16 pb-20 md:pb-0">
-                <header className="mb-20">
-                    <div className="grid md:grid-cols-[180px_1fr] gap-8 items-start">
-                        <div className="relative">
-                            <img
-                                src={theme === "dark" ? "/dark.png" : "/light.png"}
-                                alt="Renaldy Hidayat"
-                                className="w-44 h-44 rounded-2xl object-cover border-2 border-border shadow-xl"
-                            />
-                            <div className="absolute -bottom-3 -right-3 w-16 h-16 bg-primary/10 rounded-full blur-2xl"></div>
+            <main className="max-w-6xl mx-auto px-6 py-20 pb-20 md:pb-0 font-sans">
+                {/* ── Cinematic Header ── */}
+                <header className="mb-32 relative">
+                    <div className="absolute inset-0 -z-10 flex items-center justify-center">
+                        <div className="w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+                    </div>
+
+                    <div className="grid md:grid-cols-[240px_1fr] gap-12 items-center">
+                        <div className="relative group animate-scale-in">
+                            <div className="absolute inset-0 bg-primary/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                            <div className="relative aspect-square rounded-3xl overflow-hidden glass p-3 border-border/50 shadow-2xl">
+                                <img
+                                    src={theme === "dark" ? "/dark.png" : "/light.png"}
+                                    alt="Renaldy Hidayat"
+                                    className="w-full h-full rounded-2xl object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
+                                />
+                            </div>
+                            <div className="absolute -bottom-4 -right-4 w-24 h-24 glass rounded-full flex items-center justify-center border-primary/20 shadow-xl animate-float">
+                                <Terminal className="w-8 h-8 text-primary" />
+                            </div>
                         </div>
-                        <div className="space-y-6 pt-2">
-                            <div className="space-y-3">
-                                <h1 className="text-4xl md:text-5xl font-bold text-primary tracking-tight">
-                                    Renaldy Hidayat
+
+                        <div className="space-y-8 pt-4">
+                            <div className="space-y-4 animate-slide-up">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-widest">
+                                    <Award className="w-3.5 h-3.5" />
+                                    Global Recognition
+                                </div>
+                                <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-foreground leading-tight">
+                                    Renaldy <br />
+                                    <span className="text-primary italic">Hidayat</span>
                                 </h1>
-                                <p className="text-xl text-muted-foreground font-medium">
+                                <p className="text-2xl text-muted-foreground font-medium flex items-center gap-3">
+                                    <span className="w-12 h-[2px] bg-muted-foreground/30" />
                                     Backend Engineer
                                 </p>
                             </div>
-                            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
-                                <Award className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                                <p className="text-base text-foreground leading-relaxed">
-                                    Ranked in the <span className="font-semibold text-primary">Top 1% of 500,000+ developers worldwide</span> on WakaTime in 2025
-                                </p>
+
+                            <div className="flex flex-wrap gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                                <div className="flex-1 min-w-[300px] p-6 glass-strong rounded-3xl border-primary/20 shadow-2xl">
+                                    <p className="text-lg text-foreground italic leading-relaxed">
+                                        "Ranked in the <span className="text-primary font-black not-italic">Top 1% of 500,000+ developers</span> worldwide on WakaTime in 2025."
+                                    </p>
+                                </div>
+                                <Link
+                                    to="https://drive.google.com/file/d/1GOsA4vVKi7JXENMA3wY4hGT-epE6Lv0Y/preview"
+                                    target="_blank"
+                                    className="group relative inline-flex items-center gap-3 px-8 py-6 text-sm font-black rounded-3xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-all duration-500 shadow-2xl hover:-translate-y-2 uppercase tracking-widest overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                                    Resume
+                                    <FileText className="w-5 h-5" />
+                                </Link>
                             </div>
-                            <Link
-                                to="https://drive.google.com/file/d/1GOsA4vVKi7JXENMA3wY4hGT-epE6Lv0Y/preview"
-                                target="_blank"
-                                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-lg shadow-primary/20"
-                            >
-                                View Resume
-                                <ExternalLink className="w-4 h-4" />
-                            </Link>
                         </div>
                     </div>
                 </header>
 
-                <div className="space-y-16">
-                    <section className="space-y-5">
-                        <h2 className="text-2xl font-bold text-primary border-l-4 border-primary pl-4">
-                            Background
-                        </h2>
-                        <div className="space-y-4 text-base text-foreground leading-relaxed pl-4">
-                            <p>
-                                I am a software engineer specializing in backend development, with experience designing and building services that operate reliably in production environments.
-                            </p>
-                            <p>
-                                My work focuses on clear system boundaries, well-defined APIs, and architectures that remain understandable and maintainable as complexity grows.
-                            </p>
-                            <p>
-                                In 2025, my development activity ranked in the top 1% globally among over 500,000 developers tracked by WakaTime, reflecting consistent long-term focus on backend and infrastructure work.
-                            </p>
+                {/* ── Content Sections ── */}
+                <div className="space-y-32">
+                    <AboutSec title="Origin" delay="0s">
+                        <div className="grid md:grid-cols-2 gap-12 items-start">
+                            <div className="space-y-6 text-lg text-muted-foreground leading-relaxed">
+                                <p>
+                                    I am a software engineer specializing in backend development, with experience designing and building services that operate reliably in production environments.
+                                </p>
+                                <p>
+                                    My work focuses on clear system boundaries, well-defined APIs, and architectures that remain understandable and maintainable as complexity grows.
+                                </p>
+                            </div>
+                            <div className="p-8 glass rounded-3xl border border-primary/10 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <Cpu className="w-24 h-24 text-primary" />
+                                </div>
+                                <h3 className="text-xl font-bold mb-4 text-foreground">Mission</h3>
+                                <p className="text-muted-foreground leading-relaxed">
+                                    Building software that isn't just functional, but resilient, scalable, and operationally transparent.
+                                </p>
+                            </div>
                         </div>
-                    </section>
+                    </AboutSec>
 
-                    <section className="space-y-5">
-                        <h2 className="text-2xl font-bold text-primary border-l-4 border-primary pl-4">
-                            Professional Interests
-                        </h2>
-                        <div className="space-y-4 pl-4">
-                            <p className="text-base text-foreground leading-relaxed">
-                                I am particularly interested in backend and distributed systems where performance, reliability, and operational visibility are critical.
+                    <AboutSec title="Execution" delay="0.1s">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2 space-y-8">
+                            <p className="text-lg text-muted-foreground leading-relaxed">
+                                I work across multiple programming languages and platforms, selecting technologies based on suitability rather than trends.
                             </p>
-                            <div className="grid sm:grid-cols-2 gap-3">
+                            <div className="flex flex-wrap gap-4">
                                 {[
-                                    "Backend system design and service-oriented architecture",
-                                    "Distributed and event-driven systems",
-                                    "Message brokers and streaming platforms",
-                                    "Observability, monitoring, and tracing in production",
-                                    "Building internal tools to support engineering teams"
-                                ].map((item, index) => (
-                                    <div key={index} className="flex items-start gap-3 p-4 bg-card border border-border rounded-lg hover:border-primary/30 transition-colors">
-                                        <Code2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                                        <span className="text-sm text-foreground">{item}</span>
-                                    </div>
+                                    { title: "Golang", icon: Terminal },
+                                    { title: "Rust", icon: Cpu },
+                                    { title: "Java", icon: Code2 },
+                                    { title: "Python", icon: Terminal },
+                                    { title: "NodeJS", icon: Wrench },
+                                    { title: "TypeScript", icon: Wrench },
+                                ].map((skill) => <SkillBadge key={skill.title} {...skill} />)}
+                            </div>
+                        </div>
+                        <div className="glass p-8 rounded-3xl border-primary/20 space-y-6">
+                            <div className="flex items-center gap-3 text-primary">
+                                <Database className="w-6 h-6" />
+                                <h4 className="font-bold uppercase tracking-widest text-xs">Data Layer</h4>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {["PostgreSQL", "Redis", "Kafka", "RabbitMQ", "MongoDB"].map(t => (
+                                    <span key={t} className="text-xs font-bold px-3 py-1 bg-background/50 rounded-lg border border-border/50">{t}</span>
                                 ))}
                             </div>
                         </div>
-                    </section>
-                    <section className="space-y-5">
-                        <h2 className="text-2xl font-bold text-primary border-l-4 border-primary pl-4">
-                            Technical Skills
-                        </h2>
-                        <div className="space-y-6 pl-4">
-                            <p className="text-base text-foreground leading-relaxed">
-                                I work across multiple programming languages and platforms, selecting technologies based on suitability rather than trends.
-                            </p>
-                            <div className="grid sm:grid-cols-2 gap-4">
-                                <div className="space-y-3">
-                                    <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                                        <Wrench className="w-4 h-4" />
-                                        Languages & Frameworks
-                                    </h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {["Golang", "Rust", "Java", "Python", "PHP", "TypeScript"].map((tech) => (
-                                            <span key={tech} className="px-3 py-1.5 text-sm font-medium bg-accent text-foreground border border-border rounded-md">
-                                                {tech}
-                                            </span>
-                                        ))}
-                                    </div>
+                      </div>
+                    </AboutSec>
+
+                    <AboutSec title="Philosophy" delay="0.2s">
+                        <div className="grid md:grid-cols-2 gap-8">
+                            <div className="group p-10 glass-strong rounded-[40px] border-border/50 hover:border-primary/50 transition-all duration-500">
+                                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <Terminal className="w-8 h-8 text-primary" />
                                 </div>
-                                <div className="space-y-3">
-                                    <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                                        <Wrench className="w-4 h-4" />
-                                        APIs & Protocols
-                                    </h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {["REST", "gRPC", "GraphQL"].map((tech) => (
-                                            <span key={tech} className="px-3 py-1.5 text-sm font-medium bg-accent text-foreground border border-border rounded-md">
-                                                {tech}
-                                            </span>
-                                        ))}
-                                    </div>
+                                <h4 className="text-2xl font-black mb-4">Pragmatic Design</h4>
+                                <p className="text-muted-foreground leading-relaxed">
+                                    I approach software engineering with an emphasis on practicality and long-term impact. Design decisions are guided by real-world constraints, not idealized assumptions.
+                                </p>
+                            </div>
+                            <div className="group p-10 glass-strong rounded-[40px] border-border/50 hover:border-primary/50 transition-all duration-500">
+                                <div className="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <Cloud className="w-8 h-8 text-secondary" />
                                 </div>
-                                <div className="space-y-3">
-                                    <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                                        <Wrench className="w-4 h-4" />
-                                        Message Queues & Cache
-                                    </h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {["Kafka", "RabbitMQ", "Redis"].map((tech) => (
-                                            <span key={tech} className="px-3 py-1.5 text-sm font-medium bg-accent text-foreground border border-border rounded-md">
-                                                {tech}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                                        <Wrench className="w-4 h-4" />
-                                        Databases
-                                    </h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {["PostgreSQL", "MySQL", "MongoDB"].map((tech) => (
-                                            <span key={tech} className="px-3 py-1.5 text-sm font-medium bg-accent text-foreground border border-border rounded-md">
-                                                {tech}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="space-y-3 sm:col-span-2">
-                                    <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-                                        <Wrench className="w-4 h-4" />
-                                        Infrastructure & Observability
-                                    </h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {["Docker", "Kubernetes", "Prometheus", "OpenTelemetry"].map((tech) => (
-                                            <span key={tech} className="px-3 py-1.5 text-sm font-medium bg-accent text-foreground border border-border rounded-md">
-                                                {tech}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
+                                <h4 className="text-2xl font-black mb-4">Operational Vision</h4>
+                                <p className="text-muted-foreground leading-relaxed">
+                                    I value continuous improvement through building, measuring, and refining systems. Scalability is built into the foundation, not bolted on.
+                                </p>
                             </div>
                         </div>
-                    </section>
-                    <section className="space-y-5">
-                        <h2 className="text-2xl font-bold text-primary border-l-4 border-primary pl-4">
-                            Current Focus
-                        </h2>
-                        <div className="space-y-4 text-base text-foreground leading-relaxed pl-4">
-                            <p>
-                                Currently, I am focused on improving backend reliability through better observability, performance tuning, and architectural refinement for services operating under load.
-                            </p>
-                            <p>
-                                I also continue to explore new tools and approaches by building small-scale internal systems, dashboards, and command-line utilities.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section className="space-y-5">
-                        <h2 className="text-2xl font-bold text-primary border-l-4 border-primary pl-4">
-                            Engineering Approach
-                        </h2>
-                        <div className="space-y-4 text-base text-foreground leading-relaxed pl-4">
-                            <p>
-                                I approach software engineering with an emphasis on practicality and long-term impact. Design decisions are guided by real-world constraints, not idealized assumptions.
-                            </p>
-                            <p>
-                                I value continuous improvement through building, measuring, and refining systems, and I aim to share knowledge when it can help teams make better technical decisions.
-                            </p>
-                        </div>
-                    </section>
+                    </AboutSec>
                 </div>
+
+                <footer className="mt-40 mb-20 text-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
+                    <div className="glass p-12 rounded-[50px] border-primary/10 max-w-4xl mx-auto">
+                        <h2 className="text-4xl md:text-5xl font-black mb-8 tracking-tighter">Let's build the <span className="text-primary">future</span> together.</h2>
+                        <Link
+                            to="/portfolio"
+                            className="inline-flex items-center gap-2 text-xl font-bold text-primary hover:gap-4 transition-all duration-300"
+                        >
+                            View Projects
+                            <ArrowRight className="w-6 h-6" />
+                        </Link>
+                    </div>
+                </footer>
             </main>
         </Layout>
     );

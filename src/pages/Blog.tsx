@@ -3,9 +3,77 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { getBlogPosts } from "@/utils/mdx";
-import { Search, Calendar, Clock, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Calendar, Clock, ArrowRight, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { useReveal } from "@/hooks/use-reveal";
 
 const POSTS_PER_PAGE = 6;
+
+const BlogPostCard = ({ post, index }: { post: any; index: number }) => {
+    const { ref, isVisible } = useReveal({ threshold: 0.1 });
+    
+    return (
+        <div 
+          ref={ref}
+          className={`group transition-all duration-700 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+          }`}
+          style={{ transitionDelay: `${(index % 3) * 100}ms` }}
+        >
+            <Link
+                to={`/blog/${post.slug}`}
+                className="block h-full"
+            >
+                <article className="relative h-full p-8 glass rounded-[32px] border border-border/50 hover:border-primary/50 transition-all duration-500 overflow-hidden flex flex-col shadow-2xl shadow-primary/5">
+                    {/* Hover Glow Background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    
+                    <div className="relative space-y-6 flex-1 flex flex-col">
+                        <div className="flex flex-wrap gap-2 items-center">
+                            {Array.isArray(post.tags) && post.tags.slice(0, 3).map((tag: string) => (
+                                <span
+                                    key={tag}
+                                    className="text-[10px] px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-black uppercase tracking-widest"
+                                >
+                                    {tag}
+                                </span>
+                            ))}
+                            <div className="ml-auto flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                <Clock className="w-3.5 h-3.5" />
+                                {post.readTime || '5 min'} read
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground group-hover:text-primary transition-colors duration-300">
+                                {post.title}
+                            </h2>
+                            <p className="text-muted-foreground leading-relaxed line-clamp-3">
+                                {post.excerpt}
+                            </p>
+                        </div>
+
+                        <div className="pt-6 mt-auto flex items-center justify-between border-t border-border/40">
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                <Calendar className="w-4 h-4" />
+                                <time dateTime={post.date}>
+                                    {new Date(post.date).toLocaleDateString("en-US", {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "numeric",
+                                    })}
+                                </time>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-tighter group-hover:gap-3 transition-all">
+                                <span>Read Full Article</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </Link>
+        </div>
+    );
+};
 
 const Blog = () => {
     const { data: posts = [], isLoading } = useQuery({
@@ -20,7 +88,10 @@ const Blog = () => {
         return posts.filter((post) => {
             const title = post?.title?.toLowerCase() || '';
             const excerpt = post?.excerpt?.toLowerCase() || '';
-            return title.includes(searchTerm.toLowerCase()) || excerpt.includes(searchTerm.toLowerCase());
+            const tags = Array.isArray(post?.tags) ? post.tags.join(' ').toLowerCase() : '';
+            return title.includes(searchTerm.toLowerCase()) || 
+                   excerpt.includes(searchTerm.toLowerCase()) ||
+                   tags.includes(searchTerm.toLowerCase());
         });
     }, [posts, searchTerm]);
 
@@ -34,22 +105,17 @@ const Blog = () => {
     const startPage = Math.floor((page - 1) / PAGE_GROUP_SIZE) * PAGE_GROUP_SIZE + 1;
     const endPage = Math.min(startPage + PAGE_GROUP_SIZE - 1, totalPages);
 
-    const handlePrev = () => {
-        if (page > 1) setPage(page - 1);
-    };
-
-    const handleNext = () => {
-        if (page < totalPages) setPage(page + 1);
-    };
+    const handlePrev = () => page > 1 && setPage(page - 1);
+    const handleNext = () => page < totalPages && setPage(page + 1);
 
     if (isLoading) {
         return (
             <Layout>
-                <main className="max-w-5xl mx-auto px-6 py-16">
-                    <div className="flex items-center justify-center min-h-[60vh]">
-                        <div className="text-center space-y-4">
-                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                            <p className="text-muted-foreground font-medium">Loading articles...</p>
+                <main className="max-w-6xl mx-auto px-6 py-20">
+                    <div className="flex items-center justify-center min-h-[50vh]">
+                        <div className="relative">
+                            <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
+                            <div className="absolute inset-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                         </div>
                     </div>
                 </main>
@@ -59,144 +125,90 @@ const Blog = () => {
 
     return (
         <Layout>
-            <main className="max-w-5xl mx-auto px-6 py-16 pb-20 md:pb-0 font-sans">
-                <header className="mb-12">
-                    <div className="space-y-4 mb-8">
-                        <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary tracking-tight">
-                            Blog
+            <main className="max-w-6xl mx-auto px-6 py-20 pb-20 md:pb-0 font-sans">
+                <header className="mb-20 space-y-10 text-center">
+                    <div className="space-y-4 animate-slide-up">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest mx-auto">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            Technical Insights
+                        </div>
+                        <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-foreground">
+                            The <span className="text-primary italic">Journal</span>
                         </h1>
-                        <p className="text-lg text-muted-foreground max-w-2xl">
-                            Personal thoughts, technical deep-dives, and lessons learned from building systems in production.
+                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                            A collection of technical deep-dives, architectural explorations, and production engineering lessons.
                         </p>
                     </div>
 
-                    <div className="relative max-w-xl">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <div className="relative max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="Search articles..."
+                            placeholder="Filter by keywords, tags, or system names..."
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
                                 setPage(1);
                             }}
-                            className="w-full pl-12 pr-4 py-3 border-2 rounded-xl border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                            className="w-full pl-16 pr-8 py-5 glass rounded-[32px] border-2 border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-300 shadow-2xl shadow-primary/5 text-lg"
                         />
                     </div>
-                    {searchTerm && (
-                        <p className="mt-4 text-sm text-muted-foreground">
-                            Found {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''}
-                        </p>
-                    )}
                 </header>
-                <section className="space-y-6">
+
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch animate-fade-in" style={{ animationDelay: '0.4s' }}>
                     {paginatedPosts.length === 0 ? (
-                        <div className="text-center py-20">
+                        <div className="col-span-full text-center py-20 glass rounded-[40px] border-dashed border-2 border-border">
                             <div className="w-20 h-20 rounded-full bg-accent flex items-center justify-center mx-auto mb-4">
                                 <Search className="w-10 h-10 text-muted-foreground" />
                             </div>
-                            <h3 className="text-xl font-serif font-semibold text-foreground mb-2">No articles found</h3>
-                            <p className="text-muted-foreground">Try adjusting your search terms</p>
+                            <h3 className="text-2xl font-black mb-2 tracking-tight">No results found</h3>
+                            <p className="text-muted-foreground">Try different keywords or browse all tags.</p>
                         </div>
                     ) : (
                         paginatedPosts.map((post, index) => (
-                            <Link
+                            <BlogPostCard
                                 key={post.slug}
-                                to={`/blog/${post.slug}`}
-                                className="group block"
-                                style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                                <article className="relative p-8 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                                    <div className="relative space-y-4">
-                                        {Array.isArray(post.tags) && post.tags.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
-                                                {post.tags.slice(0, 3).map((tag) => (
-                                                    <span
-                                                        key={tag}
-                                                        className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium"
-                                                    >
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className="space-y-3">
-                                            <h2 className="text-2xl md:text-3xl font-bold text-primary group-hover:text-primary/80 transition-colors">
-                                                {post.title}
-                                            </h2>
-                                            <p className="text-muted-foreground leading-relaxed line-clamp-2">
-                                                {post.excerpt}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-1.5">
-                                                <Calendar className="w-4 h-4" />
-                                                <time dateTime={post.date}>
-                                                    {new Date(post.date).toLocaleDateString("en-US", {
-                                                        year: "numeric",
-                                                        month: "short",
-                                                        day: "numeric",
-                                                    })}
-                                                </time>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <Clock className="w-4 h-4" />
-                                                <span>{post.readTime || '5 min read'}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-primary pt-2">
-                                            <span>Read article</span>
-                                            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-2" />
-                                        </div>
-                                    </div>
-                                </article>
-                            </Link>
+                                post={post}
+                                index={index}
+                            />
                         ))
                     )}
                 </section>
 
                 {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-2 mt-12">
+                    <footer className="flex justify-center items-center gap-3 mt-20 animate-fade-in" style={{ animationDelay: '0.6s' }}>
                         <button
                             onClick={handlePrev}
                             disabled={page === 1}
-                            className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border-2 text-foreground text-sm font-semibold bg-card border-border hover:bg-accent hover:border-primary/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-card disabled:hover:border-border"
+                            className="p-4 rounded-2xl glass border border-border/50 text-foreground hover:bg-primary hover:text-primary-foreground disabled:opacity-30 transition-all duration-300"
                         >
-                            <ChevronLeft className="w-4 h-4" />
-                            Previous
+                            <ChevronLeft className="w-6 h-6" />
                         </button>
 
-                        <div className="hidden sm:flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                             {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((num) => (
                                 <button
                                     key={num}
                                     onClick={() => setPage(num)}
-                                    className={`min-w-[40px] px-3 py-2 rounded-lg border-2 text-sm font-semibold transition-all ${page === num
-                                        ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30'
-                                        : 'text-foreground bg-card border-border hover:bg-accent hover:border-primary/30'
-                                        }`}
+                                    className={`w-14 h-14 rounded-2xl font-black text-sm transition-all duration-300 ${
+                                        page === num
+                                        ? 'bg-primary text-primary-foreground shadow-2xl shadow-primary/40 scale-110'
+                                        : 'glass border border-border/50 text-foreground hover:border-primary/50'
+                                    }`}
                                 >
                                     {num}
                                 </button>
                             ))}
                         </div>
 
-                        <div className="sm:hidden px-4 py-2 rounded-lg bg-accent text-sm font-semibold text-foreground">
-                            {page} / {totalPages}
-                        </div>
-
                         <button
                             onClick={handleNext}
                             disabled={page === totalPages}
-                            className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border-2 text-foreground text-sm font-semibold bg-card border-border hover:bg-accent hover:border-primary/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-card disabled:hover:border-border"
+                            className="p-4 rounded-2xl glass border border-border/50 text-foreground hover:bg-primary hover:text-primary-foreground disabled:opacity-30 transition-all duration-300"
                         >
-                            Next
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-6 h-6" />
                         </button>
-                    </div>
+                    </footer>
                 )}
             </main>
         </Layout>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { getPortfolioProjects } from "@/utils/mdx";
+import { useReveal } from "@/hooks/use-reveal";
 import {
     Search,
     Calendar,
@@ -11,8 +12,88 @@ import {
     ChevronRight,
 } from "lucide-react";
 
-const ITEMS_PER_PAGE = 3;
+const ITEMS_PER_PAGE = 6; // Increased for bento grid
 const PAGE_GROUP_SIZE = 5;
+
+const ProjectCard = ({ project, index }: { project: any; index: number }) => {
+    const { ref, isVisible } = useReveal({ threshold: 0.1 });
+    
+    return (
+        <div 
+          ref={ref}
+          className={`group relative h-full transition-all duration-700 ${
+            isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-12 scale-95"
+          }`}
+          style={{ transitionDelay: `${(index % 3) * 100}ms` }}
+        >
+            <Link
+                to={`/portfolio/${project.slug}`}
+                className="block h-full"
+            >
+                <article className="relative h-full p-6 glass rounded-3xl border border-border/50 hover:border-primary/50 transition-all duration-500 overflow-hidden flex flex-col">
+                    {/* Hover Glow Background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    
+                    {/* Image Section */}
+                    {project.image && (
+                        <div className="relative aspect-video rounded-2xl overflow-hidden border border-border/40 mb-6">
+                            <img
+                                src={project.image}
+                                alt={project.title}
+                                loading="lazy"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-4">
+                                <span className="text-white text-[10px] font-bold uppercase tracking-widest translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                    Full Case Study
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Content Section */}
+                    <div className="relative flex-1 flex flex-col space-y-4">
+                        <div className="flex flex-wrap gap-2">
+                            {Array.isArray(project.tags) && project.tags.slice(0, 3).map((tag: string) => (
+                                <span
+                                    key={tag}
+                                    className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold uppercase tracking-wider"
+                                >
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+
+                        <div className="space-y-2">
+                            <h2 className="text-xl md:text-2xl font-black tracking-tight text-foreground group-hover:text-primary transition-colors duration-300">
+                                {project.title}
+                            </h2>
+                            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                                {project.excerpt}
+                            </p>
+                        </div>
+
+                        <div className="pt-4 mt-auto flex items-center justify-between border-t border-border/40">
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                <Calendar className="w-3.5 h-3.5" />
+                                <time dateTime={project.date}>
+                                    {new Date(project.date).toLocaleDateString("en-US", {
+                                        year: "numeric",
+                                        month: "short",
+                                    })}
+                                </time>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-tighter">
+                                <span>Learn More</span>
+                                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </Link>
+        </div>
+    );
+};
 
 const Portfolio = () => {
     const { data: projects = [], isLoading } = useQuery({
@@ -49,13 +130,11 @@ const Portfolio = () => {
     if (isLoading) {
         return (
             <Layout>
-                <main className="max-w-5xl mx-auto px-6 py-16 font-sans">
-                    <div className="flex items-center justify-center min-h-[60vh]">
-                        <div className="text-center space-y-4">
-                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                            <p className="text-muted-foreground font-medium">
-                                Loading projects...
-                            </p>
+                <main className="max-w-6xl mx-auto px-6 py-20">
+                    <div className="flex items-center justify-center min-h-[50vh]">
+                        <div className="relative">
+                            <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
+                            <div className="absolute inset-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                         </div>
                     </div>
                 </main>
@@ -65,116 +144,56 @@ const Portfolio = () => {
 
     return (
         <Layout>
-            <main className="max-w-5xl mx-auto px-6 py-16 pb-20 md:pb-0 font-sans">
-                <header className="mb-12 space-y-6">
-                    <div className="space-y-4">
-                        <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary tracking-tight">
-                            Portfolio
+            <main className="max-w-6xl mx-auto px-6 py-20 pb-20 md:pb-0 font-sans">
+                <header className="mb-20 space-y-10 text-center">
+                    <div className="space-y-4 animate-slide-up">
+                        <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-foreground">
+                            Selected <span className="text-primary">Works</span>
                         </h1>
-                        <p className="text-lg text-muted-foreground max-w-2xl">
-                            Selected works, experiments, and production systems I have built.
+                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                            A showcase of engineering problems I've solved, 
+                            systems I've built, and production-ready architectures I've designed.
                         </p>
                     </div>
 
-                    <div className="relative max-w-xl">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <div className="relative max-w-xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="Search projects..."
+                            placeholder="Search systems by keyword..."
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
                                 setPage(1);
                             }}
-                            className="w-full pl-12 pr-4 py-3 border-2 rounded-xl border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                            className="w-full pl-14 pr-6 py-4 glass rounded-2xl border-2 border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-300 shadow-xl shadow-primary/5"
                         />
                     </div>
                 </header>
-                <section className="space-y-6">
+                
+                <section className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
                     {paginatedProjects.length === 0 ? (
-                        <div className="text-center py-20">
+                        <div className="text-center py-20 glass rounded-3xl border-dashed border-2 border-border">
                             <div className="w-20 h-20 rounded-full bg-accent flex items-center justify-center mx-auto mb-4">
                                 <Search className="w-10 h-10 text-muted-foreground" />
                             </div>
-                            <h3 className="text-xl font-serif font-semibold mb-2">
-                                No projects found
+                            <h3 className="text-xl font-bold mb-2">
+                                No projects match your criteria
                             </h3>
                             <p className="text-muted-foreground">
-                                Try adjusting your search terms
+                                Try searching for different technologies or keywords.
                             </p>
                         </div>
                     ) : (
-                        paginatedProjects.map((project, index) => (
-                            <Link
-                                key={project.slug}
-                                to={`/portfolio/${project.slug}`}
-                                className="group block"
-                                style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                                <article className="relative p-8 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                    <div className="relative space-y-4">
-                                        {project.image && (
-                                            <div className="relative w-full h-56 rounded-xl overflow-hidden border border-border">
-                                                <img
-                                                    src={project.image}
-                                                    alt={project.title}
-                                                    loading="lazy"
-                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                />
-                                            </div>
-                                        )}
-
-                                        {Array.isArray(project.tags) &&
-                                            project.tags.length > 0 && (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {project.tags.slice(0, 3).map((tag) => (
-                                                        <span
-                                                            key={tag}
-                                                            className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium"
-                                                        >
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                        <div className="space-y-3">
-                                            <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary group-hover:text-primary/80 transition-colors">
-                                                {project.title}
-                                            </h2>
-                                            <p className="text-muted-foreground leading-relaxed line-clamp-2">
-                                                {project.excerpt}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-1.5">
-                                                <Calendar className="w-4 h-4" />
-                                                <time dateTime={project.date}>
-                                                    {new Date(project.date).toLocaleDateString("en-US", {
-                                                        year: "numeric",
-                                                        month: "short",
-                                                        day: "numeric",
-                                                    })}
-                                                </time>
-                                            </div>
-                                            {project.status && (
-                                                <span className="text-xs px-3 py-1 rounded-full bg-accent border border-border">
-                                                    {project.status}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-primary pt-2">
-                                            <span>View project</span>
-                                            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-2" />
-                                        </div>
-                                    </div>
-                                </article>
-                            </Link>
-                        ))
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+                            {paginatedProjects.map((project, index) => (
+                                <ProjectCard
+                                    key={project.slug}
+                                    project={project}
+                                    index={index}
+                                />
+                            ))}
+                        </div>
                     )}
                 </section>
 
