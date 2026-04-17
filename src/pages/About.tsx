@@ -1,28 +1,27 @@
 import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
-import { ExternalLink, Award, Code2, Wrench, Terminal, Cpu, Database, Cloud, FileText, ArrowRight } from "lucide-react";
+import { Code2, Wrench, Terminal, Cpu, Database, Cloud, FileText, ArrowRight, Users } from "lucide-react";
 import { useReveal } from "@/hooks/use-reveal";
 
 const SkillBadge = ({ title, icon: Icon }: { title: string; icon: any }) => (
-  <div className="group relative flex items-center gap-2 px-4 py-2 glass rounded-xl border border-border/50 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1">
-    <Icon className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-    <span className="text-sm font-bold tracking-tight">{title}</span>
-  </div>
+    <div className="group relative flex items-center gap-2 px-4 py-2 glass rounded-xl border border-border/50 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1">
+        <Icon className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+        <span className="text-sm font-semibold tracking-tight">{title}</span>
+    </div>
 );
 
 const AboutSec = ({ title, children, delay }: { title: string; children: React.ReactNode; delay: string }) => {
     const { ref, isVisible } = useReveal();
     return (
-        <section 
-          ref={ref}
-          className={`space-y-6 transition-all duration-700 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
-          }`}
-          style={{ transitionDelay: delay }}
+        <section
+            ref={ref}
+            className={`space-y-6 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+                }`}
+            style={{ transitionDelay: delay }}
         >
-            <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground flex items-center gap-3">
-                <span className="w-8 h-1 bg-primary rounded-full" />
+            <h2 className="text-xl md:text-2xl font-bold tracking-tighter text-foreground flex items-center gap-3">
+                <span className="w-6 h-1 bg-primary/50 rounded-full" />
                 {title}
             </h2>
             <div className="pl-11">{children}</div>
@@ -34,12 +33,12 @@ const About = () => {
     const { theme } = useTheme();
 
     return (
-        <Layout>
+        <Layout maxWidth="w-full">
             <main className="max-w-6xl mx-auto px-6 py-20 pb-20 md:pb-0 font-sans">
                 {/* ── Cinematic Header ── */}
                 <header className="mb-32 relative">
                     <div className="absolute inset-0 -z-10 flex items-center justify-center">
-                        <div className="w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+                        <div className="w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
                     </div>
 
                     <div className="grid md:grid-cols-[240px_1fr] gap-12 items-center">
@@ -52,18 +51,15 @@ const About = () => {
                                     className="w-full h-full rounded-2xl object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
                                 />
                             </div>
-                            <div className="absolute -bottom-4 -right-4 w-24 h-24 glass rounded-full flex items-center justify-center border-primary/20 shadow-xl animate-float">
-                                <Terminal className="w-8 h-8 text-primary" />
-                            </div>
                         </div>
 
                         <div className="space-y-8 pt-4">
                             <div className="space-y-4 animate-slide-up">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-widest">
-                                    <Award className="w-3.5 h-3.5" />
-                                    Global Recognition
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest">
+                                    <Terminal className="w-3.5 h-3.5" />
+                                    Software Engineering
                                 </div>
-                                <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-foreground leading-tight">
+                                <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-foreground leading-tight">
                                     Renaldy <br />
                                     <span className="text-primary italic">Hidayat</span>
                                 </h1>
@@ -74,15 +70,15 @@ const About = () => {
                             </div>
 
                             <div className="flex flex-wrap gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                                <div className="flex-1 min-w-[300px] p-6 glass-strong rounded-3xl border-primary/20 shadow-2xl">
-                                    <p className="text-lg text-foreground italic leading-relaxed">
-                                        "Ranked in the <span className="text-primary font-black not-italic">Top 1% of 500,000+ developers</span> worldwide on WakaTime in 2025."
+                                <div className="flex-1 min-w-[300px] p-6 glass rounded-3xl border border-border/50 shadow-lg">
+                                    <p className="text-lg text-muted-foreground italic leading-relaxed">
+                                        "Believes that code is a craft that requires constant learning and patience."
                                     </p>
                                 </div>
                                 <Link
                                     to="https://drive.google.com/file/d/1GOsA4vVKi7JXENMA3wY4hGT-epE6Lv0Y/preview"
                                     target="_blank"
-                                    className="group relative inline-flex items-center gap-3 px-8 py-6 text-sm font-black rounded-3xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-all duration-500 shadow-2xl hover:-translate-y-2 uppercase tracking-widest overflow-hidden"
+                                    className="group relative inline-flex items-center gap-3 px-8 py-6 text-sm font-bold rounded-3xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-all duration-500 shadow-2xl hover:-translate-y-2 uppercase tracking-widest overflow-hidden"
                                 >
                                     <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                                     Resume
@@ -95,77 +91,74 @@ const About = () => {
 
                 {/* ── Content Sections ── */}
                 <div className="space-y-32">
-                    <AboutSec title="Origin" delay="0s">
+                    <AboutSec title="My Journey" delay="0s">
                         <div className="grid md:grid-cols-2 gap-12 items-start">
                             <div className="space-y-6 text-lg text-muted-foreground leading-relaxed">
                                 <p>
-                                    I am a software engineer specializing in backend development, with experience designing and building services that operate reliably in production environments.
+                                    I am a software engineer focused on backend development. I enjoy the process of designing systems and seeing how they evolve over time.
                                 </p>
                                 <p>
-                                    My work focuses on clear system boundaries, well-defined APIs, and architectures that remain understandable and maintainable as complexity grows.
+                                    My goal is to build software that is simple to understand, easy to maintain, and reliable for its users. I believe in writing code not just for machines, but for people.
                                 </p>
                             </div>
-                            <div className="p-8 glass rounded-3xl border border-primary/10 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-10">
-                                    <Cpu className="w-24 h-24 text-primary" />
-                                </div>
-                                <h3 className="text-xl font-bold mb-4 text-foreground">Mission</h3>
+                            <div className="p-8 glass rounded-3xl border border-border/50 relative overflow-hidden">
+                                <h3 className="text-xl font-bold mb-4 text-foreground">Aspirations</h3>
                                 <p className="text-muted-foreground leading-relaxed">
-                                    Building software that isn't just functional, but resilient, scalable, and operationally transparent.
+                                    To contribute to projects that solve real problems while continuously improving my own skills and technical understanding.
                                 </p>
                             </div>
                         </div>
                     </AboutSec>
 
-                    <AboutSec title="Execution" delay="0.1s">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="md:col-span-2 space-y-8">
-                            <p className="text-lg text-muted-foreground leading-relaxed">
-                                I work across multiple programming languages and platforms, selecting technologies based on suitability rather than trends.
-                            </p>
-                            <div className="flex flex-wrap gap-4">
-                                {[
-                                    { title: "Golang", icon: Terminal },
-                                    { title: "Rust", icon: Cpu },
-                                    { title: "Java", icon: Code2 },
-                                    { title: "Python", icon: Terminal },
-                                    { title: "NodeJS", icon: Wrench },
-                                    { title: "TypeScript", icon: Wrench },
-                                ].map((skill) => <SkillBadge key={skill.title} {...skill} />)}
+                    <AboutSec title="My Craft" delay="0.1s">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-2 space-y-8">
+                                <p className="text-lg text-muted-foreground leading-relaxed">
+                                    I use various technologies as tools to build solutions. I'm always looking for ways to improve the quality and performance of the systems I work on.
+                                </p>
+                                <div className="flex flex-wrap gap-4">
+                                    {[
+                                        { title: "Golang", icon: Terminal },
+                                        { title: "Rust", icon: Cpu },
+                                        { title: "Java", icon: Code2 },
+                                        { title: "Python", icon: Terminal },
+                                        { title: "NodeJS", icon: Wrench },
+                                        { title: "TypeScript", icon: Wrench },
+                                    ].map((skill) => <SkillBadge key={skill.title} {...skill} />)}
+                                </div>
+                            </div>
+                            <div className="glass p-8 rounded-3xl border border-border/50 space-y-6">
+                                <div className="flex items-center gap-3 text-primary">
+                                    <Database className="w-5 h-5" />
+                                    <h4 className="font-bold uppercase tracking-widest text-[10px]">Data & Infrastructure</h4>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {["PostgreSQL", "Redis", "Kafka", "RabbitMQ", "MongoDB"].map(t => (
+                                        <span key={t} className="text-[10px] font-bold px-2 py-1 bg-background/50 rounded-lg border border-border/50">{t}</span>
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                        <div className="glass p-8 rounded-3xl border-primary/20 space-y-6">
-                            <div className="flex items-center gap-3 text-primary">
-                                <Database className="w-6 h-6" />
-                                <h4 className="font-bold uppercase tracking-widest text-xs">Data Layer</h4>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {["PostgreSQL", "Redis", "Kafka", "RabbitMQ", "MongoDB"].map(t => (
-                                    <span key={t} className="text-xs font-bold px-3 py-1 bg-background/50 rounded-lg border border-border/50">{t}</span>
-                                ))}
-                            </div>
-                        </div>
-                      </div>
                     </AboutSec>
 
-                    <AboutSec title="Philosophy" delay="0.2s">
+                    <AboutSec title="Core Values" delay="0.2s">
                         <div className="grid md:grid-cols-2 gap-8">
-                            <div className="group p-10 glass-strong rounded-[40px] border-border/50 hover:border-primary/50 transition-all duration-500">
-                                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                    <Terminal className="w-8 h-8 text-primary" />
+                            <div className="group p-8 glass rounded-[32px] border-border/50 hover:border-primary/30 transition-all duration-500">
+                                <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center mb-6">
+                                    <Terminal className="w-6 h-6 text-primary" />
                                 </div>
-                                <h4 className="text-2xl font-black mb-4">Pragmatic Design</h4>
-                                <p className="text-muted-foreground leading-relaxed">
-                                    I approach software engineering with an emphasis on practicality and long-term impact. Design decisions are guided by real-world constraints, not idealized assumptions.
+                                <h4 className="text-xl font-bold mb-4">Pragmatism</h4>
+                                <p className="text-muted-foreground leading-relaxed text-base">
+                                    Solving problems based on what is needed today, while keeping an eye on what might be needed tomorrow.
                                 </p>
                             </div>
-                            <div className="group p-10 glass-strong rounded-[40px] border-border/50 hover:border-primary/50 transition-all duration-500">
-                                <div className="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                    <Cloud className="w-8 h-8 text-secondary" />
+                            <div className="group p-8 glass rounded-[32px] border-border/50 hover:border-primary/30 transition-all duration-500">
+                                <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center mb-6">
+                                    <Users className="w-6 h-6 text-primary" />
                                 </div>
-                                <h4 className="text-2xl font-black mb-4">Operational Vision</h4>
-                                <p className="text-muted-foreground leading-relaxed">
-                                    I value continuous improvement through building, measuring, and refining systems. Scalability is built into the foundation, not bolted on.
+                                <h4 className="text-xl font-bold mb-4">Collaboration</h4>
+                                <p className="text-muted-foreground leading-relaxed text-base">
+                                    Sharing knowledge and working together to build better systems and better communities.
                                 </p>
                             </div>
                         </div>
@@ -173,14 +166,14 @@ const About = () => {
                 </div>
 
                 <footer className="mt-40 mb-20 text-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
-                    <div className="glass p-12 rounded-[50px] border-primary/10 max-w-4xl mx-auto">
-                        <h2 className="text-4xl md:text-5xl font-black mb-8 tracking-tighter">Let's build the <span className="text-primary">future</span> together.</h2>
+                    <div className="glass p-12 rounded-[40px] border-border/50 max-w-4xl mx-auto">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-8 tracking-tighter">I'm always open to <span className="text-primary italic">new conversations</span> and learning opportunities.</h2>
                         <Link
                             to="/portfolio"
-                            className="inline-flex items-center gap-2 text-xl font-bold text-primary hover:gap-4 transition-all duration-300"
+                            className="inline-flex items-center gap-2 text-lg font-bold text-primary hover:gap-4 transition-all duration-300"
                         >
-                            View Projects
-                            <ArrowRight className="w-6 h-6" />
+                            Explore My Work
+                            <ArrowRight className="w-5 h-5" />
                         </Link>
                     </div>
                 </footer>

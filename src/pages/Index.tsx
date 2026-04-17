@@ -30,7 +30,7 @@ function PostCard({
             <article className="overflow-hidden glass rounded-[32px] border border-border/50 hover:border-primary/50 transition-all duration-500 hover:-translate-y-2 shadow-2xl shadow-primary/5">
                 {/* Glow Effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
+
                 <div className="p-8 space-y-6">
                     <div className="flex flex-wrap gap-2">
                         {Array.isArray(post.tags) && post.tags.slice(0, 2).map((tag: string) => (
@@ -78,23 +78,17 @@ function PostCard({
     );
 }
 
-// ── MeshBackground (Animated cinematic background) ───────────────────────────
+// ── MeshBackground (Sleek, ethereal background) ───────────────────────────
 const MeshBackground = () => (
-    <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/30 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '10s' }} />
-        <div className="absolute top-[20%] right-[15%] w-[30%] h-[30%] bg-primary/10 rounded-full blur-[80px] animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none"></div>
+    <div className="absolute inset-0 -z-10 overflow-hidden bg-background">
+        <div className="absolute top-[-25%] left-[-10%] w-[80%] h-[80%] bg-primary/[0.08] rounded-full blur-[150px] animate-pulse" style={{ animationDuration: '20s' }} />
+        <div className="absolute bottom-[-25%] right-[-10%] w-[80%] h-[80%] bg-blue-500/[0.05] rounded-full blur-[150px] animate-pulse" style={{ animationDuration: '25s' }} />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.08] mix-blend-soft-light pointer-events-none"></div>
+        {/* Subtle Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
     </div>
 );
 
-// ── FloatingShape ────────────────────────────────────────────────────────────
-const FloatingShape = ({ className, delay }: { className: string, delay: string }) => (
-    <div
-        className={`absolute rounded-full border border-primary/20 backdrop-blur-3xl ${className} animate-float`}
-        style={{ animationDelay: delay }}
-    />
-);
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 const Index = () => {
@@ -112,86 +106,80 @@ const Index = () => {
     });
 
     return (
-        <Layout>
+        <Layout maxWidth="w-full">
             {/* ── Hero ── */}
-            <section className="min-h-[90vh] flex flex-col justify-center items-center text-center px-6 py-20 relative overflow-hidden">
+            <section className="min-h-screen flex flex-col justify-center items-center px-6 relative overflow-hidden text-center">
                 <MeshBackground />
 
-                {/* Floating Shapes */}
-                <FloatingShape className="w-24 h-24 top-20 left-[10%] opacity-20" delay="0s" />
-                <FloatingShape className="w-48 h-48 bottom-40 right-[5%] opacity-10" delay="1s" />
-                <FloatingShape className="w-16 h-16 top-1/2 left-[5%] opacity-15" delay="2s" />
-
-                <div className="relative z-10 max-w-4xl mx-auto space-y-12">
-                    <div className="space-y-6">
+                <div className="relative z-10 max-w-4xl mx-auto space-y-12 py-32">
+                    <div className="space-y-8">
                         <div
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold animate-slide-down"
-                            style={{ animationDelay: '0.1s' }}
+                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/[0.03] border border-primary/10 text-primary text-[10px] font-bold uppercase tracking-[0.3em] animate-fade-in"
                         >
-                            <span className="relative flex h-2 w-2">
+                            <span className="relative flex h-1.5 w-1.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
                             </span>
-                            Available for new opportunities
+                            Available for new projects
                         </div>
 
-                        <h1
-                            className="text-6xl md:text-8xl font-serif font-black tracking-tighter text-foreground bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60 animate-slide-up"
-                            style={{ animationDelay: '0.2s' }}
-                        >
-                            Renaldy Hidayat
-                        </h1>
+                        <div className="space-y-2">
+                            <h1
+                                className="text-6xl md:text-8xl lg:text-[8rem] font-bold tracking-tighter leading-[0.85] animate-slide-up"
+                                style={{ animationDelay: '0.1s' }}
+                            >
+                                Renaldy<br />
+                                <span className="text-primary italic opacity-90">Hidayat</span>
+                            </h1>
+                        </div>
 
                         <div
-                            className="text-2xl md:text-3xl text-muted-foreground h-10 flex items-center justify-center font-medium animate-slide-up"
+                            className="text-lg md:text-xl text-muted-foreground/80 font-medium animate-slide-up flex flex-col md:flex-row md:items-center justify-center gap-3"
                             style={{ animationDelay: '0.3s' }}
                         >
                             <TypeWriter
                                 texts={typewriterTexts}
-                                speed={150}
-                                delay={2000}
-                                className="text-primary"
+                                speed={70}
+                                delay={3000}
+                                className="text-foreground font-semibold tracking-tight"
                             />
                         </div>
                     </div>
 
                     <p
-                        className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-in"
-                        style={{ animationDelay: '0.5s' }}
+                        className="text-base md:text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed animate-fade-in opacity-70"
+                        style={{ animationDelay: '0.6s' }}
                     >
-                        Notes and reflections on building <span className="text-foreground font-semibold">backend systems</span>,
-                        reliability engineering, and the subtle art of architectural trade-offs.
+                        Building resilient <span className="text-foreground font-semibold">backend architectures</span> and exploring the depths of reliable software engineering.
                     </p>
 
                     <div
-                        className="flex flex-col sm:flex-row gap-6 justify-center pt-4 animate-slide-up"
-                        style={{ animationDelay: '0.7s' }}
+                        className="flex flex-wrap items-center justify-center gap-6 animate-slide-up"
+                        style={{ animationDelay: '0.8s' }}
                     >
                         <Link
                             to="/blog"
-                            className="group relative inline-flex items-center justify-center gap-2 px-10 py-4 bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 transition-all duration-300 font-bold shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 overflow-hidden"
+                            className="group relative inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-foreground text-background rounded-full hover:scale-105 active:scale-[0.98] transition-all duration-500 font-bold text-xs uppercase tracking-widest"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                             Read My Blog
-                            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                         </Link>
                         <Link
                             to="/portfolio"
-                            className="group inline-flex items-center justify-center gap-2 px-10 py-4 glass text-foreground rounded-2xl hover:bg-accent hover:-translate-y-1 transition-all duration-300 font-bold"
+                            className="group inline-flex items-center justify-center gap-3 px-8 py-3.5 border border-border rounded-full hover:bg-foreground/5 hover:scale-105 active:scale-[0.98] transition-all duration-500 font-bold text-xs uppercase tracking-widest"
                         >
                             View Projects
-                            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                         </Link>
                     </div>
                 </div>
 
                 {/* scroll indicator */}
                 <div
-                    className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 animate-fade-in"
-                    style={{ animationDelay: '1.2s' }}
+                    className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-fade-in hidden md:block"
+                    style={{ animationDelay: '1.5s' }}
                 >
-                    <div className="w-6 h-10 border-2 border-primary/30 rounded-full flex items-start justify-center p-2 backdrop-blur-sm">
-                        <div className="w-1 h-2 bg-primary rounded-full animate-bounce" />
+                    <div className="w-5 h-8 border border-primary/20 rounded-full flex items-start justify-center p-1.5 backdrop-blur-sm">
+                        <div className="w-1 h-1.5 bg-primary/40 rounded-full animate-bounce" />
                     </div>
                 </div>
             </section>

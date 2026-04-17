@@ -97,48 +97,48 @@
   }
 
   .gruvbox-light {
-    --background: 48 87% 94%;
-    --foreground: 28 11% 26%;
-    --card: 48 87% 94%;
-    --card-foreground: 28 11% 26%;
-    --popover: 48 87% 94%;
-    --popover-foreground: 28 11% 26%;
-    --primary: 43 83% 49%;
-    --primary-foreground: 48 87% 94%;
-    --secondary: 44 38% 84%;
-    --secondary-foreground: 28 11% 26%;
-    --muted: 44 38% 84%;
-    --muted-foreground: 0 0% 57%;
-    --accent: 44 38% 84%;
-    --accent-foreground: 28 11% 26%;
-    --destructive: 0 73% 60%;
-    --destructive-foreground: 48 87% 94%;
-    --border: 44 38% 84%;
-    --input: 44 38% 84%;
-    --ring: 43 83% 49%;
+    --background: 48 85% 88%;
+    --foreground: 20 5% 22%;
+    --card: 48 85% 88%;
+    --card-foreground: 20 5% 22%;
+    --popover: 48 85% 88%;
+    --popover-foreground: 20 5% 22%;
+    --primary: 37 80% 39%;
+    --primary-foreground: 48 85% 88%;
+    --secondary: 43 56% 81%;
+    --secondary-foreground: 20 5% 22%;
+    --muted: 43 56% 81%;
+    --muted-foreground: 29 11% 51%;
+    --accent: 43 56% 81%;
+    --accent-foreground: 20 5% 22%;
+    --destructive: 2 100% 31%;
+    --destructive-foreground: 48 85% 88%;
+    --border: 43 56% 81%;
+    --input: 43 56% 81%;
+    --ring: 37 80% 39%;
     --radius: 0.5rem;
   }
 
   .gruvbox-dark {
-    --background: 27 20% 13%;
-    --foreground: 44 44% 87%;
-    --card: 27 20% 13%;
-    --card-foreground: 44 44% 87%;
-    --popover: 27 20% 13%;
-    --popover-foreground: 44 44% 87%;
-    --primary: 43 83% 49%;
-    --primary-foreground: 27 20% 13%;
-    --secondary: 28 11% 26%;
-    --secondary-foreground: 44 44% 87%;
-    --muted: 28 11% 26%;
-    --muted-foreground: 0 0% 57%;
-    --accent: 28 11% 26%;
-    --accent-foreground: 44 44% 87%;
-    --destructive: 0 73% 60%;
-    --destructive-foreground: 44 44% 87%;
-    --border: 27 17% 29%;
-    --input: 27 17% 29%;
-    --ring: 43 83% 49%;
+    --background: 0 0% 16%;
+    --foreground: 43 56% 81%;
+    --card: 20 5% 22%;
+    --card-foreground: 43 56% 81%;
+    --popover: 0 0% 16%;
+    --popover-foreground: 43 56% 81%;
+    --primary: 40 74% 49%;
+    --primary-foreground: 0 0% 16%;
+    --secondary: 20 5% 22%;
+    --secondary-foreground: 43 56% 81%;
+    --muted: 20 5% 22%;
+    --muted-foreground: 29 11% 51%;
+    --accent: 20 5% 22%;
+    --accent-foreground: 43 56% 81%;
+    --destructive: 4 74% 46%;
+    --destructive-foreground: 43 56% 81%;
+    --border: 20 5% 22%;
+    --input: 20 5% 22%;
+    --ring: 40 74% 49%;
     --radius: 0.5rem;
   }
 
@@ -423,15 +423,37 @@
 
 /* Glassmorphism Utilities */
 .glass {
-  @apply bg-background/70 backdrop-blur-md border border-border/50;
+  background-color: hsl(var(--card) / 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
 }
 
 .glass-strong {
-  @apply bg-background/80 backdrop-blur-xl border border-border/40;
+  background-color: hsl(var(--card) / 0.8);
+  backdrop-filter: blur(24px);
+  border: 1px solid hsl(var(--border) / 0.4);
 }
 
 .glass-morphism {
-  @apply bg-white/40 dark:bg-zinc-950/40 backdrop-blur-3xl border border-black/5 dark:border-white/5 shadow-2xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)];
+  background-color: hsl(var(--card) / 0.5);
+  backdrop-filter: blur(40px);
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.dark .glass-morphism, 
+.gruvbox-dark .glass-morphism, 
+.everforest-dark .glass-morphism, 
+.tokyo-night .glass-morphism,
+.tokyo-storm .glass-morphism,
+.tokyo-moon .glass-morphism,
+.molokai-dark .glass-morphism,
+.catppuccin-frappe .glass-morphism,
+.catppuccin-macchiato .glass-morphism,
+.catppuccin-mocha .glass-morphism {
+  background-color: hsl(var(--card) / 0.4);
+  border: 1px solid hsl(var(--foreground) / 0.05);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 /* Animations */
