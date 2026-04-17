@@ -42,27 +42,35 @@ export const sharedComponents = {
     code: ({
         className,
         children,
-    }: {
-        className?: string;
-        children: React.ReactNode;
-    }) => <CodeBlock className={className}>{children}</CodeBlock>,
-
-    pre: ({ children }: { children: React.ReactNode }) => {
-        const child = React.Children.only(children) as React.ReactElement;
-
-        if (child.props?.className?.startsWith("language-")) {
+        ...props
+    }: any) => {
+        const isInline = !className && !("data-language" in props);
+        if (isInline) {
             return (
-                <CodeBlock className={child.props.className}>
-                    {child.props.children}
-                </CodeBlock>
+                <code
+                    className="px-1.5 py-0.5 mx-0.5 rounded-md bg-accent text-primary font-mono text-[0.875em] font-medium border border-border/60"
+                    {...props}
+                >
+                    {children}
+                </code>
             );
         }
-
         return (
-            <pre className="font-mono bg-card p-6 rounded-2xl overflow-x-auto border border-border shadow-sm my-8 text-sm leading-relaxed custom-scrollbar">
+            <code className={className} {...props}>
                 {children}
-            </pre>
+            </code>
         );
+    },
+
+    pre: ({ children, ...props }: any) => {
+        return <CodeBlock {...props}>{children}</CodeBlock>;
+    },
+
+    figure: ({ children, ...props }: any) => {
+        if ("data-rehype-pretty-code-figure" in props) {
+            return <div className="rehype-code-block" {...props}>{children}</div>;
+        }
+        return <figure {...props}>{children}</figure>;
     },
 
     // ── Headings ─────────────────────────────────────────────────────────────
