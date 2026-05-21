@@ -1,0 +1,85 @@
+---
+title: "PIERO Ops Control Plane"
+excerpt: "A centralized control tower infrastructure coordinating global incident management, SPIFFE-based operator risk analytics, and human approval workflows for high-trust security operations."
+date: "2026-02-05"
+tags:
+  - rust
+  - axum
+  - sqlite
+  - security
+  - spiffe
+  - cryptography
+  - opentelemetry
+status: "ongoing"
+image: "/portofolio/PieroLokaRust/Piero-Ops.png"
+---
+
+# PIERO Central Operations Control Plane
+
+PIERO Ops Control Plane (`piero-ops`) functions as a centralized control tower designed to coordinate the entire fleet of PIERO LOKA security agents with high reliability and strict operational governance.
+
+As the primary **Control Plane layer**, the system is built using the asynchronous **Axum web framework** on top of the Tokio runtime, backed by an embedded **SQLite** persistence layer. It serves as a robust administrative gateway for managing incident response lifecycles while preserving strict abstraction of internal infrastructure topology.
+
+---
+
+## Core Features & Capabilities
+
+### 1. Human-in-the-Loop Cryptographic Approval Audit
+
+The system enforces mandatory human validation for all high-impact or destructive security operations.
+
+- **Atomic Approval Queue**: High-risk enforcement actions are safely queued into durable storage before execution, ensuring deterministic processing.
+- **Non-Repudiation Ledger**: All operator actions are cryptographically signed using Ed25519 keys, creating tamper-resistant audit trails suitable for compliance and forensic analysis.
+- **Manual Gate Enforcement**: Prevents autonomous execution of sensitive system-wide operations without explicit operator authorization.
+
+---
+
+### 2. Global Incident Control & Atomic Response Coordination
+
+PIERO Ops enables centralized orchestration of large-scale security posture changes across distributed runtime agents.
+
+- **One-Click Posture Transition**: Allows rapid system-wide state changes such as switching to containment mode during critical incidents.
+- **Atomic Incident Propagation**: Ensures consistent incident state distribution across all nodes with minimal propagation delay.
+- **Coordinated Defense Execution**: Synchronizes enforcement policies across the entire infrastructure fleet in real time.
+
+---
+
+### 3. SPIFFE-Based Operator Risk Analytics
+
+To mitigate insider threats and credential compromise scenarios, operator identity is continuously validated and analyzed.
+
+- **Dynamic Risk Profiling**: Integrates natively with SPIFFE SVID identity standards to verify and authenticate all control-plane interactions in real time.
+- **Behavioral Anomaly Detection**: Detects deviations from historical operator behavior patterns, flagging suspicious or abnormal command sequences.
+- **Identity-Centric Security Model**: Ensures every action is strongly tied to verifiable cryptographic identity assertions.
+
+---
+
+### 4. Kernel Signature Manifest Management
+
+Ensures integrity and consistency of distributed detection and enforcement rules across the infrastructure.
+
+- **SHA-256 Integrity Verification**: Validates the authenticity of security rule manifests before deployment to runtime agents.
+- **Secure Rule Distribution Pipeline**: Safely propagates updated detection signatures to edge nodes with strict integrity guarantees.
+- **Consistent Policy Enforcement**: Maintains uniform security posture across globally distributed systems.
+
+---
+
+## Technology Stack
+
+- **Programming Language**: Rust (Edition 2024)
+- **Web Framework**: Axum (Tokio-based async runtime)
+- **Database**: SQLite with asynchronous access layer
+- **Identity System**: SPIFFE SVID (SPIFFE Verifiable Identity Document)
+- **Observability**: OpenTelemetry distributed tracing and telemetry pipeline
+- **Cryptography**: Ed25519 digital signatures for audit integrity
+
+---
+
+## Operational Dashboard
+
+### PIERO Ops Control Interface
+
+<img
+  src="/portofolio/PieroLokaRust/PieroOps.png"
+  alt="PIERO Ops Dashboard Screenshot"
+/>

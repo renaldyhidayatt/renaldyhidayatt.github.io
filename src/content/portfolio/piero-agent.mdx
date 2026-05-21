@@ -1,0 +1,85 @@
+---
+title: "PIERO Master Orchestration Agent"
+excerpt: "The core runtime daemon responsible for host-level security orchestration, dynamic eBPF driver injection, PID self-immunity enforcement, and real-time cognitive system intelligence analysis."
+date: "2026-02-10"
+tags:
+  - rust
+  - ebpf
+  - security
+  - opa
+  - rego
+  - kernel
+  - grpc
+  - telemetry
+status: "ongoing"
+image: "/portofolio/PieroLokaRust/Piero-Agent.png"
+---
+
+# PIERO Master Orchestration Agent
+
+PIERO Master Orchestration Agent (`piero-agent`) serves as the fundamental runtime core daemon and security anchor for the entire PIERO LOKA architecture stack.
+
+As a frontline execution engine, the agent operates as a high-performance binary responsible for managing host kernel privileges, dynamically injecting more than 32 eBPF/XDP sensor drivers, and synthesizing multi-vector decision logic in real time. This design enables a low-level active defense system with strong isolation guarantees and self-protection capabilities.
+
+---
+
+## Core Mechanisms & Feature Breakdown
+
+### 1. Self-Immunity Protection Cache
+
+Prevents self-inflicted failures where the security agent could inadvertently block or interfere with its own execution (feedback loop protection).
+
+- **Bootstrapped PID Locking**: The agent initializes by securing its own process identifier (PID) before loading any kernel-level sensors.
+- **Dynamic Allowlist Registry**: Automatically registers the daemon PID, active threads, and parent process IDs into an eBPF kernel-level immunity map, ensuring internal traffic bypasses enforcement rules safely.
+- **Self-Protection Isolation Layer**: Guarantees that internal telemetry and control flows remain unaffected by security filters.
+
+---
+
+### 2. Kernel Memory Hygiene & eBPF Recovery Layer
+
+Maintains host stability by cleaning residual state from previous or corrupted runtime sessions.
+
+- **Kernel State Reconciliation**: Executes full map-clear routines during bootstrap to ensure clean enforcement tables inside the kernel space.
+- **XDP Attachment Cleanup**: Detects and safely detaches stale XDP programs from network interfaces before deploying new high-performance packet processing pipelines.
+- **Runtime Consistency Enforcement**: Prevents accumulation of orphaned kernel hooks that could degrade system performance or stability.
+
+---
+
+### 3. Multi-Vector Cognitive Decision Backbone
+
+The orchestration layer fuses multiple analytical models to derive precise security decisions in real time.
+
+- **OPA/Rego Policy Engine**: Evaluates dynamic compliance rules using declarative policy definitions for runtime enforcement decisions.
+- **Behavioral Deviation Profiler**: Detects anomalous binary execution patterns using ultra-fast LRU-based behavioral caching mechanisms.
+- **Trust Decay System**: Applies atomic trust score degradation every 10 seconds, ensuring risk scores naturally decay when anomalous behavior subsides.
+
+---
+
+### 4. Software Supply Chain Audit (SBOM & OSV)
+
+Provides continuous visibility into software integrity and dependency vulnerability exposure.
+
+- **SBOM Generation Pipeline**: Periodically constructs a complete Software Bill of Materials in SPDX JSON format covering all host dependencies.
+- **Continuous OSV Scanning**: Matches package fingerprints against Open Source Vulnerabilities (OSV) databases to detect outdated or vulnerable libraries in real time.
+- **Dependency Risk Tracking**: Maintains a live security posture map of all runtime components.
+
+---
+
+## Technology Stack
+
+- **Programming Language**: Rust (Edition 2024) with memory-safe systems design
+- **Kernel Instrumentation**: eBPF & XDP high-performance packet processing drivers
+- **Policy Engine**: Open Policy Agent (OPA) with Rego policy language
+- **Communication Protocol**: Low-latency gRPC telemetry synchronization
+- **System Integration**: systemd watchdog for high-availability daemon supervision
+
+---
+
+## Operational Dashboard
+
+### PIERO Agent Control Interface
+
+<img
+  src="/portofolio/PieroLokaRust/PieroAgent.png"
+  alt="PIERO Master Agent Dashboard"
+/>

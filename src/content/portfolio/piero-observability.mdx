@@ -1,0 +1,74 @@
+---
+title: "PIERO GPUI Observability Platform"
+excerpt: "A high-performance GPU-accelerated desktop monitoring console built with the Zed GPUI framework, designed for distributed tracing visualization and real-time system observability at scale."
+date: "2026-02-25"
+tags:
+  - rust
+  - gpui
+  - zed-framework
+  - opentelemetry
+  - observability
+  - tracing
+  - graphics-api
+status: "ongoing"
+image: "/portofolio/PieroLokaRust/Piero-ObservabilityText.png"
+---
+
+# PIERO Observability Platform
+
+PIERO Observability Platform (`piero-observability`) is a high-performance distributed system monitoring console designed for large-scale enterprise-grade infrastructure environments.
+
+To eliminate the memory overhead and performance bottlenecks of traditional browser-based dashboards, this desktop-native system is built entirely in Rust on top of the **Zed GPUI vector rendering framework**. By leveraging direct GPU hardware acceleration, the platform can render dense distributed tracing waterfall visualizations in real time, process millions of OpenTelemetry (OTLP) spans, and continuously monitor Edge-AI infrastructure token consumption profiles with minimal latency.
+
+---
+
+## Core Features & Observability Capabilities
+
+### 1. GPU-Accelerated Distributed Trace Visualization (Sub-Millisecond Rendering)
+
+The platform addresses the limitations of conventional web-based APM tools that struggle with high-volume microservice trace datasets.
+
+- **Native GPU Vector Primitives**: Each trace span is rendered directly using GPU-accelerated vector drawing primitives, enabling smooth zooming, panning, and animation even under extreme telemetry load.
+- **High-Density Waterfall Rendering**: Supports visualization of millions of distributed spans in a single timeline without UI degradation.
+- **Instant Critical Path Highlighting**: Uses GPU-based bounding-box computation to immediately identify slow or degraded execution paths across complex RPC chains.
+
+---
+
+### 2. Contextual Floating Inspection Panel
+
+Designed to preserve analyst focus while maintaining deep visibility into system internals.
+
+- **Non-Intrusive Overlay Drawer**: Displays detailed metadata panels without disrupting the primary trace visualization canvas.
+- **Hierarchical Data Exploration**: Interactive inspection of nested JSON structures, including HTTP headers, Kubernetes metadata, service identifiers, and distributed trace attributes.
+- **Real-Time Context Switching**: Seamlessly transitions between trace segments without reloading or recomputing visualization state.
+
+---
+
+### 3. Edge-AI & RAG Telemetry Intelligence Layer
+
+Extends traditional observability beyond infrastructure metrics into AI-native system analytics.
+
+- **RAG Pipeline Trace Mapping**: Visualizes full retrieval-augmented generation workflows, including vector database queries, prompt compression layers, and final LLM inference outputs.
+- **Token Consumption Monitoring**: Tracks AI inference cost distribution across services, enabling precise optimization of LLM usage at scale.
+- **Confidence Metric Analysis**: Monitors model confidence drift and performance degradation signals in production AI workloads.
+
+---
+
+## Technology Stack
+
+- **Programming Language**: Rust (Edition 2024) optimized for native performance and memory safety
+- **UI Framework**: Zed GPUI (GPU-accelerated vector rendering engine)
+- **Telemetry Protocol**: OpenTelemetry OTLP for standardized distributed tracing
+- **Data Integration**: Direct gRPC pipelines for Edge-AI telemetry ingestion
+- **Rendering Backend**: GPU-native vector graphics pipeline
+
+---
+
+## Operational Dashboard
+
+### Observability Desktop Interface
+
+<img
+  src="/portofolio/PieroLokaRust/PieroObservability.png"
+  alt="PIERO GPUI Observability Desktop Dashboard Screenshot"
+/>

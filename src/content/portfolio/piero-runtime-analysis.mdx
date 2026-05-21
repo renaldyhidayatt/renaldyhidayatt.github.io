@@ -1,0 +1,111 @@
+---
+title: "PIERO Runtime Analysis & AI Decompiler"
+excerpt: "A GPU-accelerated reverse engineering platform built with the Zed GPUI framework, combining static binary disassembly, real-time eBPF runtime tracing, and local Edge-AI semantic analysis."
+date: "2026-03-10"
+tags:
+  - rust
+  - gpui
+  - reverse-engineering
+  - ebpf
+  - decompiler
+  - artificial-intelligence
+  - binary-analysis
+status: "ongoing"
+image: "/portofolio/PieroLokaRust/PieroRuntimeAnalysis.png"
+---
+
+# PIERO Runtime Analysis & AI Decompiler
+
+PIERO Runtime Analysis & AI Decompiler, officially branded as **Piero RE**, is an enterprise-grade GPU-accelerated desktop environment engineered for threat analysts, malware researchers, and reverse engineering professionals.
+
+Built on top of the **Zed GPUI vector rendering framework**, the platform unifies two traditionally disconnected disciplines: static binary analysis and dynamic operating system telemetry inspection. By combining high-speed binary disassembly with real-time eBPF runtime instrumentation, Piero RE enables instant threat correlation and AI-assisted semantic analysis entirely on local infrastructure without exposing internal logic or topology to external services.
+
+---
+
+## Hybrid Analysis Architecture & Core Capabilities
+
+### 1. Hybrid Static-Dynamic Telemetry Correlation
+
+Piero RE bridges the gap between low-level assembly instructions and their real runtime behavior inside the operating system.
+
+- **Low-Level eBPF Runtime Interceptors**: Dynamically captures binary interactions with the Linux kernel, including:
+  - File descriptor operations
+  - Network socket creation
+  - Process activity
+  - System call execution
+  - Runtime privilege escalation attempts
+
+- **Real-Time Instruction Mapping**: Automatically highlights relevant assembly instruction addresses whenever runtime syscall events are triggered, synchronizing static disassembly views with live execution flow.
+
+- **Execution Flow Correlation Engine**: Enables analysts to trace how individual machine instructions translate into observable host behavior in real time.
+
+---
+
+### 2. Local Edge-AI Semantic Decompiler
+
+The integrated AI-assisted analysis engine significantly reduces manual reverse engineering effort by translating low-level CPU register operations into contextual natural-language explanations.
+
+- **Advanced Context Synthesis**: Aggregates symbol tables, binary strings, imported libraries, and eBPF runtime traces into a unified semantic reasoning pipeline.
+
+- **Malicious Intent Detection**: Uses locally hosted Edge-AI models to:
+  - Summarize binary functionality
+  - Detect suspicious execution patterns
+  - Identify exploitation behavior
+  - Classify attack indicators
+  - Map observed techniques to the MITRE ATT&CK framework
+
+- **Privacy-Preserving Local Inference**: All AI reasoning operates locally without transmitting binary artifacts or telemetry to external cloud services.
+
+---
+
+### 3. Native Multi-Threaded Asynchronous Binary Parser
+
+The binary parsing engine is optimized to maintain responsive GPU-rendered user interfaces at 60–120 FPS even while processing large executable files.
+
+- **Non-Blocking Parsing Pipeline**: ELF header decoding, segment table parsing, symbol resolution, and binary metadata extraction are executed asynchronously in isolated runtime workers.
+
+- **Complete Binary Anatomy Visualization**: Instantly exposes:
+  - Imported shared libraries
+  - Symbol stripping status
+  - Entry points
+  - Section mappings
+  - Relocation tables
+  - Binary entropy regions
+
+- **Scalable Parallel Processing**: Designed to analyze multiple binaries concurrently without blocking the graphical interface.
+
+---
+
+## Technology Stack
+
+- **Programming Language**: Rust (Edition 2024)
+- **UI Framework**: Zed GPUI GPU-accelerated vector rendering engine
+- **Runtime Instrumentation**: eBPF syscall tracing and kernel telemetry
+- **AI Integration**: Local Edge-AI semantic reasoning SDK
+- **Binary Formats**: ELF analysis pipeline with asynchronous parsing
+- **Concurrency Runtime**: Tokio asynchronous runtime
+
+---
+
+## Design Objectives
+
+The platform is engineered around several key architectural principles:
+
+- High-performance GPU-native reverse engineering workflows
+- Hybrid static and dynamic runtime analysis
+- Fully local privacy-preserving AI inference
+- Real-time operating system telemetry correlation
+- Memory-safe binary inspection infrastructure
+- Non-blocking asynchronous analysis pipelines
+
+---
+
+## Intended Use Cases
+
+- Malware analysis and threat research
+- Advanced reverse engineering workflows
+- Runtime behavioral inspection
+- Linux syscall tracing and telemetry analysis
+- AI-assisted binary intelligence
+- Security operations and incident response
+- Offensive and defensive research environments

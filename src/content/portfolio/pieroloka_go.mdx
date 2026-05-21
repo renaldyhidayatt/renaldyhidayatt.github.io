@@ -1,0 +1,117 @@
+---
+title: "PIERO LOKA - Kernel-Level Security & FinOps"
+excerpt: "Platform pemantauan keamanan dan FinOps performa tinggi berbasis eBPF dengan arsitektur Core Dispatcher untuk visibilitas kernel mendalam."
+date: "2026-01-15"
+tags: ["go", "ebpf", "security", "finops", "kernel", "kubernetes", "react", "typescript"]
+status: "selesai"
+image: "/portofolio/pierolokaGo_0.0.2/pieroloka_dashboard.png"
+---
+# PIERO LOKA
+
+**Kernel-Level Security, FinOps, and Deep Observability via eBPF — Refactored**
+
+PIERO LOKA is a high-performance security and FinOps observability platform built with Go and eBPF. The system operates directly at the kernel level, providing high-fidelity system visibility with extremely low overhead (under 1.5%).
+
+---
+
+## Consolidated Architecture Update
+
+The latest architecture introduces a **Core Dispatcher** pattern that consolidates more than 28 kernel hooks into 6 high-performance kernel entry points. Using a zero-copy ring buffer design and internal event correlation, kernel overhead and context switching have been reduced by 60%–75%.
+
+### Core Dispatcher Capabilities
+
+* **Unified Entry Points**: Reduces processing overhead by routing data through only 6 core kernel hooks.
+* **Smart Event Correlation**: Eliminates duplicate and overlapping events across modules to reduce alert fatigue.
+* **Intelligent Module Masking**: Dynamically routes telemetry only to relevant security modules based on runtime context.
+* **Business Context Enrichment**: Augments raw kernel signals with Kubernetes-aware metadata for immediate operational actionability.
+
+---
+
+## Functional Domains and Core Capabilities
+
+### 1. Real-Time FinOps and Distributed Cost Attribution
+
+Performs cost attribution directly at kernel level for high-precision resource accounting:
+
+* **Accurate Cost Metrics**
+
+  * **CPU**: Tracks nanosecond-level CPU consumption per process via `sched_switch` events.
+  * **Memory**: Monitors active virtual memory footprint through syscall-level allocations (`mmap`, `munmap`).
+  * **Network**: Maps RX/TX traffic directly to cloud egress cost estimation models.
+* **Workload Attribution**: Correlates Process IDs (PIDs) with Kubernetes context (namespace, pod, and service identity).
+* **Spending Spike Detection**: Uses a 60-second sliding window to detect anomalous compute cost surges.
+
+---
+
+### 2. Advanced Security and Threat Detection
+
+Proactive protection powered by 28 specialized eBPF modules covering more than 130 detection patterns mapped to the MITRE ATT&CK framework.
+
+#### Security Module Coverage
+
+* **Core Kernel Security Modules**: Runtime protection covering memory allocation, suspicious network activity, privilege escalation attempts (cgroup escapes), syscall monitoring, and process execution control.
+* **Advanced Security Modules**: Detection of authentication exploits (PAM & sudo abuse), cryptographic integrity violations, hardware tampering (EFI/DMA attacks), TTY session attacks, GPU workload isolation, AI/ML data poisoning prevention, and Kubernetes/service mesh bypass attempts (Istio/Envoy).
+* **Self-Integrity Protection**: Defends the platform against kernel rootkits, unauthorized eBPF program replacement, and syscall table manipulation.
+* **Observability & Compliance**: Produces forensic-grade audit trails for compliance requirements, including sensitive data loss prevention (DLP) for secrets such as AWS keys and PII, as well as GDPR-aligned auditing.
+
+---
+
+## Technology Stack
+
+* **Backend Language**: Go (Golang) 1.24+
+* **Kernel Instrumentation**: eBPF (CO-RE via `cilium/ebpf`) for portable kernel-level instrumentation.
+* **Frontend Console**: React (TypeScript) + Vite for lightweight real-time dashboards.
+* **Detection Engine**: 130+ detection patterns mapped to MITRE ATT&CK.
+* **System Efficiency**: Sustains under 1.5% system overhead using kernel-side LRU caching optimizations.
+
+---
+
+## Getting Started
+
+### System Requirements
+
+* Linux kernel version 5.8 or higher
+* Tooling: `clang`, `llvm`, `libbpf-dev`, Go compiler (1.21+)
+
+---
+
+## Module Configuration
+
+The platform supports flexible module loading depending on operational needs:
+
+```bash
+# Run baseline security protection modules
+sudo go run ./cmd/agent/main.go --modules=privilege,process,network,io,supply,auth,container,dlp
+
+# Run FinOps and performance monitoring only
+sudo go run ./cmd/agent/main.go --modules=profiler,sla,finops,scheduler
+
+# Load all modules
+sudo go run ./cmd/agent/main.go --modules=all
+```
+
+---
+
+## Observability Dashboard Insights
+
+The PIERO LOKA interactive dashboard aggregates real-time system intelligence:
+
+* **Correlated Threat Feed**: Displays linked attack chains mapped to MITRE ATT&CK techniques.
+* **FinOps Analytics**: Granular visualization of cost per Kubernetes namespace and pod.
+* **Container Visibility**: Tracks full container lifecycle from initialization to termination.
+
+---
+
+### Dashboard Visualizations
+
+#### PIERO LOKA Dashboard
+
+<img src="/portofolio/pierolokaGo_0.0.2/pieroloka_dashboard.png" alt="PIERO LOKA Dashboard" />
+
+#### Docker Runtime Dashboard
+
+<img src="/portofolio/pierolokaGo_0.0.2/pieroloka_docker_running.png" alt="PIERO LOKA Docker Dashboard" />
+
+#### Container Logs
+
+<img src="/portofolio/pierolokaGo_0.0.2/pieroloka_logs_docker.png" alt="PIERO LOKA Docker Logs" />

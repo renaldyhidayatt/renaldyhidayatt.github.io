@@ -1,0 +1,153 @@
+---
+title: "Vert.x Reactive E-Commerce API"
+excerpt: "REST API E-Commerce komprehensif berskala mikro dengan arsitektur reaktif Java 17, Vert.x, PostgreSQL, Redis, serta integrasi observabilitas penuh via OpenTelemetry."
+date: "2026-05-21"
+tags: ["java", "vertx", "postgresql", "redis", "docker", "prometheus", "grafana", "loki", "jaeger", "opentelemetry", "flyway"]
+status: "selesai"
+image: "/portofolio/Vert.xEcommerce/VertxEcommerce.png"
+---
+
+# Vert.x Reactive E-Commerce API
+
+This project is a comprehensive REST API built using **Vert.x** and **Java 17**, designed to demonstrate a clean architecture approach for building scalable, reactive microservices. The platform implements a full-featured e-commerce backend, covering centralized authentication, product catalog management, ordering workflows, merchant data management, and a full observability stack.
+
+The entire system is containerized using Docker and Docker Compose, simplifying local infrastructure setup including PostgreSQL, Redis, and the complete observability toolchain.
+
+---
+
+## Key Features
+
+### Authentication and Authorization
+
+* JWT-based authentication (login, registration, refresh token).
+* Role-Based Access Control (RBAC) with dynamic user roles such as Admin, User, and Merchant.
+
+### Core E-Commerce Capabilities
+
+* **User Management**: Full user profile management with role distribution.
+* **Product Catalog**: Product, category, image slider, and promotional banner management.
+* **Shopping Workflow**: Cart management, order creation, and order item tracking.
+* **Checkout System**: Shipping address handling and transaction recording.
+* **Merchant Ecosystem**: Merchant profiles, business metadata, certifications, and policy documents.
+* **Social Layer**: Product reviews and merchant social links.
+
+### Technical Capabilities
+
+* **Database Layer**: PostgreSQL with Flyway-based schema versioning and migrations.
+* **Caching Layer**: Redis for low-latency caching and session management.
+* **Observability Stack**: End-to-end OpenTelemetry integration with Prometheus (metrics), Loki (logs), Grafana (dashboards), and Jaeger (distributed tracing).
+* **API Testing**: Integrated Hurl scripts for end-to-end endpoint testing.
+* **Architecture**: Clean Architecture with strict separation of concerns (Routes, Handlers, Services, Repositories).
+
+---
+
+## Technology Stack
+
+* **Language**: Java 17
+* **Framework**: Vert.x 4.5.1 (Web, PgClient, Redis, JWT Auth modules)
+* **Build Tool**: Apache Maven
+* **Database**: PostgreSQL 17
+* **Cache**: Redis 7.4
+* **Migration Tool**: Flyway
+* **Containerization**: Docker & Docker Compose
+* **Observability**: OpenTelemetry, Prometheus, Grafana, Loki, Jaeger
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+* Docker and Docker Compose (recommended)
+* Java JDK 17+
+* Apache Maven 3.8+
+
+---
+
+### Running with Docker Compose
+
+This is the recommended setup as it provisions the database, cache layer, and full observability stack automatically.
+
+#### 1. Build the Application
+
+```bash
+./mvnw clean package
+```
+
+#### 2. Start All Services
+
+```bash
+docker-compose up --build -d
+```
+
+#### 3. Health Check
+
+The application will be available at:
+
+```
+http://localhost:8888
+```
+
+Health endpoint:
+
+```
+http://localhost:8888/health
+```
+
+---
+
+## API Endpoints Overview
+
+| Category       | Method | Endpoint                | Description         | Auth        |
+| -------------- | ------ | ----------------------- | ------------------- | ----------- |
+| Authentication | POST   | `/api/v1/auth/register` | Register new user   | No          |
+| Authentication | POST   | `/api/v1/auth/login`    | Obtain JWT token    | No          |
+| Products       | GET    | `/api/v1/products`      | List all products   | No          |
+| Products       | POST   | `/api/v1/products`      | Create product      | Yes (Admin) |
+| Products       | GET    | `/api/v1/products/:id`  | Get product details | No          |
+| Cart           | POST   | `/api/v1/carts`         | Add item to cart    | Yes         |
+| Cart           | GET    | `/api/v1/carts`         | Get active cart     | Yes         |
+| Orders         | POST   | `/api/v1/orders`        | Checkout order      | Yes         |
+| Users          | GET    | `/api/v1/users/profile` | Get user profile    | Yes         |
+
+---
+
+## API Testing
+
+Run automated API scenarios using Hurl:
+
+```bash
+hurl --variable host=http://localhost:8888 hurl/auth/login.hurl
+```
+
+---
+
+## Observability Stack
+
+The platform integrates a full monitoring pipeline:
+
+* **Grafana**: Unified dashboards for metrics, logs, and traces
+  `http://localhost:3000` (default: admin/admin)
+* **Prometheus**: Metrics collection endpoint
+  `http://localhost:9090`
+* **Jaeger**: Distributed tracing visualization
+  `http://localhost:16686`
+* **Loki**: Centralized log aggregation
+  `http://localhost:3100`
+
+---
+
+## Application Preview
+
+### Metrics Dashboard
+
+![Vert.x E-Commerce](/portofolio/Vert.xEcommerce/VertxEcommerce.png)
+
+---
+
+## Source Code
+
+Full technical documentation and source code are available at:
+
+[GitHub Repository: example-vert.x-ecommerce](https://github.com/MamangRust/example-vert.x-ecommerce)
+

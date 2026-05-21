@@ -1,0 +1,161 @@
+---
+title: "Vert.x Reactive Point of Sale API"
+excerpt: "A reactive Point of Sale (POS) REST API built with Java 17, Vert.x, PostgreSQL, Redis, and a full observability stack."
+date: "2026-05-21"
+tags: ["java", "vertx", "postgresql", "redis", "docker", "prometheus", "grafana", "loki", "flyway", "maven", "hurl"]
+status: "completed"
+image: "/portofolio/Vert.xPointOfSale/VertxPointOfSale.png"
+---
+
+# Vert.x Reactive Point of Sale API
+
+This project is a comprehensive Point of Sale (POS) REST API implementation built with **Vert.x** and **Java 17**. It is designed following Clean Architecture principles to provide a highly scalable, responsive, and resource-efficient backend system based on non-blocking I/O.
+
+The system covers the full scope of a modern POS backend, including centralized authentication, role-based access control (RBAC), inventory management, real-time transaction processing, and merchant and cashier entity management.
+
+---
+
+## Key Features
+
+### Authentication Management
+Provides user registration and centralized login with JWT-based authentication.
+
+### Dynamic Authorization (RBAC)
+Implements Role-Based Access Control for different operational roles such as Admin, Merchant Owner, and Cashier.
+
+### Product and Inventory Management
+Full CRUD operations for product entities, category classification, and stock tracking.
+
+### Transaction Processing
+Reactive order processing workflow including order creation, item tracking, and payment finalization.
+
+### Merchant and Staff Operations
+Supports merchant profile configuration and cashier role assignment within organizational structures.
+
+### Automated Database Migration
+Uses Flyway for versioned and automated SQL schema migrations.
+
+### Low-Latency Caching Layer
+Redis is used for distributed caching to optimize repeated queries and session management.
+
+### Full Observability Stack
+Integrated observability stack for real-time system monitoring:
+
+- **Prometheus**: Metrics collection for JVM and system performance.
+- **Grafana**: Visualization dashboards for operational monitoring.
+- **Loki**: Centralized log aggregation for anomaly detection.
+- **OpenTelemetry Collector**: Telemetry pipeline for distributed tracing.
+
+### Automated API Testing
+Includes `hurl` test suites for end-to-end API validation and regression testing.
+
+---
+
+## Technology Stack
+
+- **Language**: Java 17  
+- **Framework**: Vert.x 4.5.1  
+- **Database**: PostgreSQL  
+- **Cache**: Redis  
+- **Migration Tool**: Flyway  
+- **Build Tool**: Apache Maven  
+- **Containerization**: Docker & Docker Compose  
+- **Observability**: Prometheus, Grafana, Loki, OpenTelemetry Collector  
+- **Testing**: Hurl  
+
+---
+
+## Project Structure
+
+The project follows a modular Clean Architecture layout to ensure maintainability and scalability:
+
+```text
+/
+├── docker-compose.yml
+├── hurl/
+├── observability/
+├── src/
+│   ├── main/
+│   │   ├── java/com/sanedge/pointofsale/
+│   │   │   ├── config/
+│   │   │   ├── domain/
+│   │   │   ├── handler/
+│   │   │   ├── middleware/
+│   │   │   ├── model/
+│   │   │   ├── repository/
+│   │   │   ├── routes/
+│   │   │   ├── service/
+│   │   │   └── starter/
+│   │   └── resources/
+│   │       ├── db/migration/
+│   │       └── logback.xml
+└── pom.xml
+````
+
+---
+
+## Installation and Development
+
+### Prerequisites
+
+* Java JDK 17+
+* Apache Maven 3.8+
+* Docker and Docker Compose
+
+---
+
+### Run with Docker Compose
+
+```bash
+./mvnw clean package
+docker-compose up -d
+```
+
+The application will be available at:
+
+`http://localhost:8888`
+
+---
+
+### Run Locally
+
+Start dependencies only:
+
+```bash
+docker-compose up -d postgres redis
+```
+
+Run the application:
+
+```bash
+./mvnw clean compile exec:java
+```
+
+---
+
+## Observability and Monitoring
+
+The observability stack enables full visibility into system performance and runtime behavior.
+
+* Grafana dashboards: `http://localhost:3000` (admin/admin)
+* Prometheus metrics: `http://localhost:9090`
+* Loki logs: `http://localhost:3100`
+
+Includes dashboards for:
+
+* API throughput and latency
+* JVM memory and GC behavior
+* Centralized application logs
+
+---
+
+## Application Preview
+
+![Vertx Point Of Sale](/portofolio/Vert.xPointOfSale/VertxPointOfSale.png)
+
+---
+
+## Source Code
+
+Full source code is available at:
+[https://github.com/MamangRust/example-vertx-pointofsale](https://github.com/MamangRust/example-vertx-pointofsale)

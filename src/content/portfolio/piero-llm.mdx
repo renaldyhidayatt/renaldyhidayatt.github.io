@@ -1,0 +1,100 @@
+---
+title: "PIERO Edge LLM Reasoning Engine"
+excerpt: "A high-performance edge AI reasoning server that isolates small language models (SLMs) through cryptographic verification, strict CPU budget enforcement, and deterministic output sanitization."
+date: "2026-02-15"
+tags:
+  - rust
+  - llm
+  - slm
+  - onnx
+  - grpc
+  - artificial-intelligence
+  - edge-computing
+status: "ongoing"
+image: "/portofolio/PieroLokaRust/PieroLLM.png"
+---
+
+# PIERO Edge LLM Reasoning Engine
+
+PIERO Edge LLM Reasoning Engine (`piero-llm`) operates as a high-performance secondary reasoning server dedicated to enabling intelligent cognitive computation across the PIERO LOKA ecosystem.
+
+Designed to run **Small Language Models (SLMs)** efficiently on edge hardware, the module enforces a strict trust boundary around AI inference execution. It ensures model integrity through cryptographic verification, applies precise CPU budget scheduling, and enforces deterministic output sanitization so that AI-generated decisions remain tamper-resistant, resource-aware, and safe for downstream policy systems.
+
+---
+
+## Core Capabilities & AI Safety Architecture
+
+### 1. Cryptographic Model Trust Verification (ModelGuard)
+
+Ensures that AI model weights and binaries have not been tampered with or corrupted before inference begins.
+
+- **Strict Hash Verification**: Validates model integrity using SHA-256 fingerprint matching prior to loading weights into runtime memory.
+- **Signature Enforcement Layer**: Rejects any model that fails integrity verification, preventing execution of modified or compromised artifacts.
+- **Secure Model Loading Pipeline**: Guarantees that only trusted, verified models can participate in inference workflows.
+
+---
+
+### 2. Dynamic CPU Budget Enforcement (Zero-Impact Scheduling)
+
+Maintains system stability by preventing inference workloads from degrading critical runtime services.
+
+- **CPU Budget Controller**: Continuously monitors host CPU utilization and throttles inference execution when system load exceeds safety thresholds.
+- **Adaptive Scheduling Layer**: Dynamically delays or queues inference requests to maintain predictable system performance under load.
+- **LlmGate Fast Path Optimization**: Skips full model execution when heuristic confidence is already sufficiently high (e.g., >90%), significantly reducing compute overhead.
+
+---
+
+### 3. Structured Prompt Compression & Context Optimization
+
+Improves inference latency and reduces token consumption in constrained edge environments.
+
+- **Graph-Based Context Compression**: Transforms verbose system telemetry and JSON payloads into compact causal graph representations.
+- **Semantic Preservation Engine**: Maintains logical relationships between events while minimizing input token size.
+- **Optimized TTFT (Time-to-First-Token)**: Reduces latency by minimizing context overhead before inference begins.
+
+---
+
+### 4. Deterministic Output Validation Layer (LlmOutputFilter)
+
+Ensures all AI outputs conform to strict, machine-readable schemas suitable for downstream automation systems.
+
+- **Deterministic JSON Sanitization**: Forces model outputs into structured format:
+  `{ label, confidence, explanation, related_entities }`
+- **Command Injection Protection**: Detects and removes embedded shell instructions or malicious payloads from generated text.
+- **Schema Compliance Enforcement**: Guarantees consistency and safety of outputs across all inference results.
+
+---
+
+## Technology Stack
+
+- **Programming Language**: Rust (Edition 2024) with strong concurrency safety guarantees
+- **Inference Runtime**: ONNX Runtime for cross-platform model execution (CPU & edge accelerators)
+- **Supported Models**:
+  - LiquidAI LFM (350M parameters)
+  - Qwen2.5-0.5B (Alibaba Cloud)
+- **Inter-Service Communication**: Tonic gRPC over HTTP/2 for low-latency internal coordination
+- **Deployment Target**: Edge computing environments with constrained compute resources
+
+---
+
+## Design Objectives
+
+The system is engineered around strict AI infrastructure principles:
+
+- Secure and verifiable model execution
+- Resource-aware inference scheduling
+- Deterministic and structured AI outputs
+- Edge-first low-latency architecture
+- Isolation of cognitive workloads from core systems
+- Predictable and auditable reasoning behavior
+
+---
+
+## Intended Use Cases
+
+- Edge AI reasoning workloads
+- Lightweight on-device LLM inference
+- Security-aware decision support systems
+- Structured telemetry interpretation
+- Distributed AI-assisted orchestration
+- Policy-driven automation pipelines

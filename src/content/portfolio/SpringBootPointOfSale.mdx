@@ -1,0 +1,233 @@
+---
+title: "Spring Boot Point of Sale API"
+excerpt: "API Point of Sale komprehensif yang dibangun dengan Java 21, Spring Boot, Spring Security & JWT, PostgreSQL, dan didokumentasikan menggunakan Swagger OpenAPI."
+date: "2026-05-21"
+tags: ["java", "springboot", "springsecurity", "jwt", "postgresql", "maven", "swagger", "openapi"]
+status: "selesai"
+image: "/portofolio/SpringBootPointOfSale/SpringBootPointOfSale.png"
+---
+
+
+# Spring Boot Point of Sale API
+
+**A Robust Backend API for a Full-Featured Point of Sale (POS) System**
+
+The **Spring Boot Point of Sale API** is a high-performance backend service designed to power a complete retail Point of Sale system. Built using **Java 21** and **Spring Boot**, it delivers a comprehensive set of features including JWT-based authentication, user and role management, product and category handling, order processing, transaction management, and integrated merchant and cashier administration.
+
+---
+
+## Key Features
+
+### Authentication & Security
+
+* **JWT Authentication**: Secure registration and login system using JSON Web Tokens for authentication.
+* **Role-Based Access Control (RBAC)**: Fine-grained access control enforcing permissions based on user roles such as admin, merchant, and cashier.
+
+### Product & Category Management
+
+* **Product CRUD Operations**: Full lifecycle management of products including price, stock, brand, weight, barcode, and image support.
+* **Category Management**: Structured product categorization using unique slug-based identifiers for efficient lookup and organization.
+
+### Merchant & Cashier Management
+
+* **Merchant Onboarding**: Self-service merchant registration with profile, address, contact details, and business metadata.
+* **Cashier Management**: Assignment and administration of cashiers under specific merchant entities.
+
+### Order & Transaction Processing
+
+* **Order Management System**: End-to-end order creation with cashier tracking, merchant association, and automatic total calculation.
+* **Transaction Processing**: Payment validation, amount handling, change calculation, and transaction status tracking.
+
+---
+
+## Technology Stack
+
+* **Language**: Java 21
+* **Framework**: Spring Boot 3.x
+* **Security**: Spring Security with JWT
+* **ORM / Data Layer**: Spring Data JPA (Hibernate)
+* **Database**: PostgreSQL
+* **Build Tool**: Maven
+* **API Documentation**: Springdoc OpenAPI (Swagger UI)
+
+---
+
+## Data Architecture & ERD
+
+The database schema is designed to support a scalable retail ecosystem with clear separation between merchants, cashiers, products, and transactions.
+
+```mermaid
+erDiagram
+    USERS {
+        Long userId PK
+        String username
+        String firstname
+        String lastname
+        String email
+        String password
+    }
+
+    ROLES {
+        Long roleId PK
+        String roleName
+    }
+
+    USER_ROLES {
+        Long user_role_id PK
+        Long user_id FK
+        Long role_id FK
+    }
+
+    REFRESH_TOKENS {
+        Long refreshTokenId PK
+        Long user_id FK
+        String token
+    }
+
+    MERCHANTS {
+        Long merchantId PK
+        Long userId FK
+        String name
+        String description
+        String address
+        String contactEmail
+        String contactPhone
+        Status status
+    }
+
+    CASHIERS {
+        Long cashierId PK
+        Long merchantId FK
+        Long userId FK
+        String name
+    }
+
+    PRODUCTS {
+        Long productId PK
+        Long merchantId FK
+        Long categoryId FK
+        String name
+        String description
+        Integer price
+        Integer countInStock
+        String brand
+        Integer weight
+        String slugProduct
+        String imageProduct
+        String barcode
+    }
+
+    CATEGORIES {
+        Long categoryId PK
+        String name
+        String description
+        String slugCategory
+    }
+
+    ORDERS {
+        Long orderId PK
+        Long merchantId FK
+        Long cashierId FK
+        Long totalPrice
+    }
+
+    ORDER_ITEMS {
+        Long orderItemId PK
+        Long orderId FK
+        Long productId FK
+        Integer quantity
+        Integer price
+    }
+
+    TRANSACTIONS {
+        Long transactionId PK
+        Long orderId FK
+        Long merchantId FK
+        String paymentMethod
+        Integer amount
+        Integer changeAmount
+        PaymentStatus status
+    }
+
+    USERS ||--|{ REFRESH_TOKENS : has
+    USERS ||--o{ USER_ROLES : has
+    ROLES ||--o{ USER_ROLES : has
+    USERS ||--|{ MERCHANTS : owns
+    USERS ||--|{ CASHIERS : is
+    MERCHANTS ||--|{ PRODUCTS : sells
+    MERCHANTS ||--|{ ORDERS : receives
+    MERCHANTS ||--|{ CASHIERS : employs
+    CATEGORIES ||--|{ PRODUCTS : contains
+    ORDERS ||--|{ ORDER_ITEMS : contains
+    ORDERS ||--|{ TRANSACTIONS : has
+    CASHIERS ||--|{ ORDERS : creates
+    PRODUCTS ||--o{ ORDER_ITEMS : in
+```
+
+---
+
+## API Documentation
+
+The API is fully documented using **Swagger UI**, providing interactive endpoint exploration, request validation, and response schema visualization.
+
+Preview:
+
+![Spring Boot POS Swagger](/portofolio/SpringBootPointOfSale/SpringBootPointOfSale.png)
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+* Java JDK 21+
+* Apache Maven
+* PostgreSQL database instance
+
+---
+
+### Installation & Execution
+
+#### 1. Clone Repository
+
+```bash
+git clone https://github.com/MamangRust/example-pointofsale-springboot
+cd example-pointofsale-springboot
+```
+
+#### 2. Configure Database
+
+Update `application.properties`:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/pos_db
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.jpa.hibernate.ddl-auto=update
+```
+
+#### 3. Run Application
+
+Linux/macOS:
+
+```bash
+./mvnw spring-boot:run
+```
+
+Windows:
+
+```cmd
+mvnw.cmd spring-boot:run
+```
+
+#### 4. Access Application
+
+* API Base URL: `http://localhost:8080`
+* Swagger UI: `http://localhost:8080/swagger-ui.html`
+
+---
+
+## Source Code
+
+Repository available at:
+[https://github.com/MamangRust/example-pointofsale-springboot](https://github.com/MamangRust/example-pointofsale-springboot)

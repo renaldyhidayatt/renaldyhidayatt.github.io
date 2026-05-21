@@ -1,0 +1,137 @@
+---
+title: "Distributed Microservice Simple E-commerce"
+excerpt: "A distributed microservice e-commerce platform built with Rust, gRPC, PostgreSQL, Kafka, and a full observability stack."
+date: "2025-11-15"
+tags: ["rust", "microservice", "grpc", "kafka", "observability"]
+status: "finished"
+image: "/portofolio/distributed-simple-ecommerce-rust/SimpleMicroServiceEcommerce.png"
+---
+
+# Simple E-Commerce Microservices
+
+This project is a comprehensive e-commerce application built with a microservices architecture using Rust. It demonstrates high-performance, scalable backend engineering leveraging gRPC for inter-service communication, event-driven patterns with Apache Kafka, and a modern observability stack.
+
+## Architecture Overview
+
+The system is designed around a distributed architecture where each business domain is isolated into its own microservice.
+
+- **API Gateway**: Serves as the single entry point for all external client requests. It handles RESTful HTTP requests, performs rate limiting, manages sessions, and routes traffic to the appropriate internal gRPC services.
+
+- **Microservices**: Independent domain-specific services that communicate internally via gRPC.
+
+- **Database & Connection Pooling**: Each microservice manages its own separate PostgreSQL database to ensure data sovereignty. PgBouncer is utilized for efficient database connection pooling.
+
+- **Caching**: Dedicated Redis instances for services that require high-speed data access and session management.
+
+- **Message Broker**: Apache Kafka is used for asynchronous, event-driven communication.
+
+- **Observability**: OpenTelemetry pipeline integrated with Prometheus, Loki, Jaeger, and Grafana.
+## Microservices
+
+* **API Gateway**: Handles incoming REST requests, caching, and forwards them to internal gRPC services.
+* **Auth Service**: Manages user authentication, token generation (JWT), password resets, and login sessions.
+* **User Service**: Manages user profile data and account information.
+* **Role Service**: Handles Role-Based Access Control (RBAC), managing user roles and permissions.
+* **Product Service**: Manages the product catalog, inventory, and product details.
+* **Order Service**: Manages customer orders, order items, and checkout processes.
+* **Email Service**: Consumes Kafka events to send out transactional emails asynchronously.
+
+## Technologies Used
+
+### Core Application
+
+* **Language**: Rust
+* **RPC Framework**: Tonic (gRPC)
+* **Database ORM/Driver**: SQLx
+* **Databases**: PostgreSQL (with PgBouncer)
+* **Caching**: Redis
+* **Message Broker**: Apache Kafka
+
+### Infrastructure & Observability
+
+* **Containerization**: Docker & Docker Compose
+* **Tracing**: OpenTelemetry & Jaeger
+* **Metrics**: Prometheus & Node Exporter
+* **Logging**: Loki & Promtail
+* **Dashboards**: Grafana
+* **Alerting**: Alertmanager
+
+## Project Structure
+
+The codebase is organized into a Cargo workspace with the following main crates:
+
+```text
+crates/
+├── apigateway/   # HTTP server, routing, rate limiting, and caching
+├── auth/         # Authentication gRPC server and identity management
+├── email/        # Kafka consumer for sending emails
+├── genproto/     # Protocol Buffers definitions and generated Rust code
+├── order/        # Order management gRPC server
+├── product/      # Product management gRPC server
+├── role/         # RBAC and permissions gRPC server
+├── shared/       # Common utilities, errors, observability, and traits
+└── user/         # User management gRPC server
+
+```
+
+## How to Run
+
+### Prerequisites
+
+Ensure you have the following installed on your local machine:
+
+* Docker and Docker Compose
+* Rust Toolchain
+* Make (optional, for utilizing the Makefile commands)
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/MamangRust/simple-microservice-ecommerce-rust-sqlx.git
+cd simple-microservice-ecommerce-rust-sqlx
+
+```
+
+### 2. Start the Application
+
+You can start the entire infrastructure, databases, message brokers, and microservices using Docker Compose:
+
+```bash
+make up
+
+```
+
+*Note: The first startup may take a few minutes as it downloads necessary Docker images, initializes the PostgreSQL databases, and configures Kafka topics.*
+
+### 3. Stop the Application
+
+To safely shut down and remove the containers:
+
+```bash
+make down
+
+```
+
+## Available Make Commands
+
+The project includes a `Makefile` to simplify common development tasks:
+
+* `make up`: Start all services in detached mode via Docker Compose.
+* `make down`: Stop and remove all Docker containers.
+* `make build-genproto`: Compile the Protocol Buffers and build the `genproto` crate.
+* `make build-<service-name>`: Build a specific service crate (e.g., `make build-apigateway`).
+* `make clippy`: Run the Rust clippy linter across all crates to catch common mistakes.
+* `make fmt`: Format the codebase using `rustfmt`.
+
+## Service Endpoints & Access
+
+Once the application is running via Docker Compose, you can access the following services locally:
+
+* **API Gateway (Application Entry Point)**: `http://localhost:5000`
+* **Grafana (Dashboards)**: `http://localhost:3000` (Default credentials: `admin` / `admin`)
+* **Jaeger (Distributed Tracing)**: `http://localhost:16686`
+* **Prometheus (Metrics)**: `http://localhost:9090`
+
+## Observability Preview
+
+The project comes with pre-configured dashboards to monitor the health and performance of the microservices.

@@ -1,0 +1,100 @@
+---
+title: "PIERO Pingora WAF & Proxy"
+excerpt: "A high-performance zero-trust security dataplane powered by Cloudflare Pingora, featuring integrated WAF protection, asynchronous telemetry streaming, and ultra-low-latency Layer-7 traffic inspection."
+date: "2026-02-20"
+tags:
+  - rust
+  - proxy
+  - pingora
+  - waf
+  - security
+  - zero-trust
+  - grpc
+  - concurrency
+status: "ongoing"
+image: "/portofolio/PieroLokaRust/PieroProxy.png"
+---
+
+# PIERO Cloud-Native Pingora WAF & Proxy
+
+PIERO Cloud-Native Pingora WAF & Proxy (`piero-proxy`) is a high-performance intelligent secure gateway designed to serve as the frontline Layer-7 defense system for the broader PIERO LOKA ecosystem.
+
+Built entirely in Rust on top of the modern multi-threaded **Cloudflare Pingora** proxy framework, the system replaces traditional C-based proxy architectures with a memory-safe, highly concurrent, and security-focused dataplane. The platform delivers ultra-fast real-time traffic filtering, strict TLS 1.3 termination, integrated Web Application Firewall (WAF) enforcement, and high-speed local IP reputation validation without sacrificing upstream throughput performance.
+
+---
+
+## Architecture & Core Technical Capabilities
+
+### 1. Native Rust Cloudflare Pingora Proxy Engine
+
+The platform leverages the modern asynchronous Rust ecosystem to maximize scalability and dataplane efficiency:
+
+- **Memory Safety by Design**: Eliminates entire classes of traditional memory vulnerabilities such as buffer overflows and use-after-free exploits during complex HTTP payload inspection.
+
+- **Tokio Work-Stealing Runtime**: Utilizes Tokio’s high-performance concurrent task scheduler to process millions of simultaneous requests with minimal CPU overhead and microsecond-level latency.
+
+- **Multi-Threaded Proxy Pipeline**: Powered by Cloudflare Pingora’s production-grade architecture, enabling efficient request multiplexing and connection reuse at scale.
+
+---
+
+### 2. Multi-Stage Hardened WAF Enforcement
+
+Every inbound HTTPS request is validated through multiple security layers before reaching internal upstream infrastructure:
+
+- **Local IP Reputation Validation**: Incoming source IPs are checked against high-speed in-memory reputation caches. Malicious or suspicious connections are terminated directly at the TCP socket layer before expensive HTTP parsing occurs.
+
+- **Strict TLS 1.3 Termination**: Enforces modern encrypted transport standards with hardened TLS configurations and secure cipher suites to mitigate interception and downgrade attacks.
+
+- **Recursive WAF Inspection Engine**: Continuously analyzes query parameters, request headers, cookies, and JSON payloads to detect attack signatures such as:
+  - SQL Injection (SQLi)
+  - Cross-Site Scripting (XSS)
+  - Local File Inclusion (LFI)
+  - Malformed payload abuse
+  - Suspicious request anomalies
+
+---
+
+### 3. Zero-Overhead Asynchronous Telemetry Pipeline (PieroBridge)
+
+The observability pipeline is architected to ensure that audit and telemetry collection never interfere with active user traffic latency:
+
+- **Lock-Free Message Channels**: The internal `PieroBridge` subsystem duplicates Layer-7 audit metadata asynchronously into parallel **Crossbeam MPMC** memory queues for high-throughput event streaming.
+
+- **Non-Blocking I/O Architecture**: User traffic is immediately forwarded upstream while dedicated background workers independently process tracing spans, security events, and telemetry exports.
+
+- **High-Speed Distributed Audit Streaming**: Security telemetry can be streamed toward centralized audit nodes using asynchronous gRPC pipelines without introducing request-path blocking.
+
+---
+
+## Technology Stack
+
+- **Programming Language**: Rust (Edition 2024) optimized for high concurrency and memory efficiency.
+- **Proxy Framework**: Cloudflare Pingora multi-threaded proxy engine.
+- **Async Runtime**: Tokio asynchronous runtime with work-stealing scheduling.
+- **Concurrent Messaging**: Crossbeam lock-free channels for parallel telemetry distribution.
+- **Inter-Service Communication**: Tonic gRPC over HTTP/2 for distributed policy synchronization.
+- **Transport Security**: Hardened TLS 1.3 termination with modern cipher suites.
+
+---
+
+## Design Goals
+
+The platform is designed around several core engineering principles:
+
+- Ultra-low-latency Layer-7 traffic inspection
+- Zero-trust edge security enforcement
+- Memory-safe network infrastructure
+- Fully asynchronous dataplane architecture
+- Horizontally scalable proxy deployment
+- Minimal runtime overhead under high concurrency loads
+
+---
+
+## Intended Use Cases
+
+- Secure API Gateway deployments
+- Edge WAF enforcement
+- Zero-trust internal service mesh ingress
+- High-throughput reverse proxy infrastructure
+- Distributed security telemetry aggregation
+- Real-time Layer-7 attack mitigation

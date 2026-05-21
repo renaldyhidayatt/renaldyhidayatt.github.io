@@ -1,0 +1,291 @@
+---
+title: "Spring Boot E-commerce API"
+excerpt: "API E-commerce lengkap dan terintegrasi yang dibangun dengan Java 21, Spring Boot, Spring Security & JWT, PostgreSQL, dan didokumentasikan menggunakan Swagger OpenAPI."
+date: "2026-05-21"
+tags: ["java", "springboot", "springsecurity", "jwt", "postgresql", "maven", "swagger", "openapi"]
+status: "selesai"
+image: "/portofolio/SpringBootEcommerce/SpringBootEcommerce.png"
+---
+
+# Spring Boot E-Commerce API
+
+**High-Performance Backend API for a Full-Featured E-Commerce Platform**
+
+The `Spring Boot E-Commerce API` is a high-performance backend system designed to support a complete digital commerce ecosystem. Built with **Java 21** and **Spring Boot**, it provides a comprehensive set of capabilities including JWT-based authentication, user and role management, product and category management, shopping cart operations, order processing, product reviews, merchant management, and shipping address handling.
+
+---
+
+## Core Features
+
+### 1. Authentication & Security
+
+* **JWT Authentication:** Secure user registration and login using JSON Web Tokens.
+* **Role-Based Access Control (RBAC):** Granular permission model separating access for administrators, merchants, and customers.
+
+### 2. Product & Category Management
+
+* **Product CRUD Operations:** Full lifecycle management for product entities, including creation, updates, retrieval, and deletion.
+* **Category Management:** Structured product categorization to improve searchability and navigation across the platform.
+
+### 3. Shopping Cart & Order Management
+
+* **Shopping Cart System:** Real-time cart operations including add, update quantity, remove items, and cart retrieval.
+* **Order Processing:** End-to-end order lifecycle management with total price calculation and transactional consistency.
+
+### 4. Merchant & Business Features
+
+* **Merchant Onboarding:** Enables merchants to register and operate within the platform.
+* **Merchant Profiles:** Supports detailed merchant identity including branding and business metadata.
+
+### 5. Reviews & Shipping
+
+* **Product Reviews:** Users can submit ratings, comments, and media attachments for purchased products.
+* **Shipping Address Management:** Structured address handling to support checkout and delivery workflows.
+
+---
+
+## Technology Stack
+
+* **Programming Language:** Java 21
+* **Framework:** Spring Boot 3.x
+* **Security:** Spring Security with JWT
+* **ORM / Data Layer:** Spring Data JPA (Hibernate)
+* **Database:** PostgreSQL
+* **Build Tool:** Maven
+* **API Documentation:** Springdoc OpenAPI (Swagger UI)
+
+---
+
+## Architecture & Data Model
+
+The system is designed with a relational schema that enforces consistency across users, merchants, products, and transactions.
+
+```mermaid
+erDiagram
+    USERS {
+        Long userId PK
+        String username
+        String firstname
+        String lastname
+        String email
+        String password
+    }
+
+    ROLES {
+        Long roleId PK
+        String roleName
+    }
+
+    USER_ROLES {
+        Long user_role_id PK
+        Long user_id FK
+        Long role_id FK
+    }
+
+    REFRESH_TOKENS {
+        Long refreshTokenId PK
+        Long user_id FK
+        String token
+    }
+
+    MERCHANTS {
+        Long merchantId PK
+        Integer userId FK
+        String name
+        String description
+        String address
+        Status status
+    }
+
+    PRODUCTS {
+        Long productId PK
+        Integer merchantId FK
+        Integer categoryId FK
+        String name
+        String description
+        Integer price
+        Integer countInStock
+    }
+
+    CATEGORIES {
+        Long categoryId PK
+        String name
+        String description
+    }
+
+    CARTS {
+        Long cartId PK
+        Integer userId FK
+        Integer productId FK
+        Integer quantity
+    }
+
+    ORDERS {
+        Long orderId PK
+        Integer userId FK
+        Integer merchantId FK
+        Integer totalPrice
+    }
+
+    ORDER_ITEMS {
+        Long orderItemId PK
+        Integer orderId FK
+        Integer productId FK
+        Integer quantity
+        Integer price
+    }
+
+    SHIPPING_ADDRESSES {
+        Long shippingAddressId PK
+        Integer orderId FK
+        String alamat
+        String kota
+        String negara
+    }
+
+    TRANSACTIONS {
+        Long transactionId PK
+        Integer orderId FK
+        Integer merchantId FK
+        String paymentMethod
+        PaymentStatus status
+    }
+
+    REVIEWS {
+        Long reviewId PK
+        Integer userId FK
+        Integer productId FK
+        String comment
+        Integer rating
+    }
+
+    REVIEW_DETAILS {
+        Long reviewDetailId PK
+        Integer reviewId FK
+        String type
+        String url
+    }
+
+    MERCHANT_DETAILS {
+        Long merchantDetailId PK
+        Integer merchantId FK
+        String displayName
+        String logoUrl
+    }
+
+    MERCHANT_SOCIAL_MEDIA_LINKS {
+        Long merchantSocialId PK
+        Integer merchantDetailId FK
+        String platform
+        String url
+    }
+
+    MERCHANT_POLICIES {
+        Long merchantPolicyId PK
+        Integer merchantId FK
+        String policyType
+        String title
+    }
+
+    MERCHANT_BUSINESS_INFORMATION {
+        Long merchantBusinessInfoId PK
+        Integer merchantId FK
+        String businessType
+        String taxId
+    }
+
+    MERCHANT_CERTIFICATIONS_AND_AWARDS {
+        Long merchantCertificationId PK
+        Integer merchantId FK
+        String title
+        String issuedBy
+    }
+
+    BANNERS {
+        Long bannerId PK
+        String name
+        Date startDate
+        Date endDate
+    }
+
+    SLIDERS {
+        Long sliderId PK
+        String name
+        String image
+    }
+
+    USERS ||--|{ REFRESH_TOKENS : has
+    USERS ||--o{ USER_ROLES : has
+    ROLES ||--o{ USER_ROLES : has
+    USERS ||--|{ MERCHANTS : owns
+    USERS ||--|{ ORDERS : places
+    USERS ||--|{ CARTS : has
+    USERS ||--|{ REVIEWS : writes
+    MERCHANTS ||--|{ PRODUCTS : sells
+    MERCHANTS ||--|{ ORDERS : receives
+    MERCHANTS ||--|{ MERCHANT_DETAILS : has
+    MERCHANTS ||--|{ MERCHANT_POLICIES : has
+    MERCHANTS ||--|{ MERCHANT_BUSINESS_INFORMATION : has
+    MERCHANTS ||--|{ MERCHANT_CERTIFICATIONS_AND_AWARDS : has
+    MERCHANT_DETAILS ||--|{ MERCHANT_SOCIAL_MEDIA_LINKS : has
+    CATEGORIES ||--|{ PRODUCTS : contains
+    PRODUCTS ||--o{ CARTS : in
+    PRODUCTS ||--o{ ORDER_ITEMS : in
+    PRODUCTS ||--o{ REVIEWS : has
+    ORDERS ||--|{ ORDER_ITEMS : contains
+    ORDERS ||--|| SHIPPING_ADDRESSES : ships to
+    ORDERS ||--|{ TRANSACTIONS : has
+    REVIEWS ||--|{ REVIEW_DETAILS : has
+```
+
+---
+
+## API Documentation
+
+The API is fully documented using **Swagger UI**, providing interactive exploration of endpoints, request/response contracts, and data models.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+* Java Development Kit (JDK) 21 or higher
+* Apache Maven
+* PostgreSQL (running locally or remotely)
+
+### Installation Steps
+
+**1. Clone the repository**
+
+```bash
+git clone https://github.com/MamangRust/example-ecommerce-springboot-new
+cd example-ecommerce-springboot-new
+```
+
+**2. Configure the database**
+Update `src/main/resources/application.properties`:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/ecommerce_db
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.jpa.hibernate.ddl-auto=update
+```
+
+**3. Run the application**
+
+```bash
+./mvnw spring-boot:run
+```
+
+**4. Access the API**
+
+* Base URL: `http://localhost:8080`
+* Swagger UI: `http://localhost:8080/swagger-ui.html`
+
+---
+
+## Source Code
+
+Repository: [https://github.com/MamangRust/example-ecommerce-springboot-new](https://github.com/MamangRust/example-ecommerce-springboot-new)

@@ -1,0 +1,107 @@
+---
+title: "PIERO Safety Controller"
+excerpt: "A distributed security authorization system powered by Byzantine Fault Tolerance (BFT), OpenRaft consensus, and cryptographic quorum validation for critical infrastructure protection."
+date: "2026-02-02"
+tags:
+  - rust
+  - distributed-systems
+  - raft
+  - bft
+  - security
+  - cryptography
+  - grpc
+status: "ongoing"
+image: "/portofolio/PieroLokaRust/Piero-Safety-Controller.png"
+---
+
+# PIERO Byzantine Raft Safety Controller
+
+PIERO Safety Controller (`piero-safety-controller`) functions as the ultimate distributed authorization authority for all high-risk security enforcement operations across the PIERO LOKA ecosystem.
+
+The system is designed to ensure that critical enforcement actions — such as mass process termination, workload isolation, or runtime quarantine operations — can only be executed through cryptographically verified cluster-wide consensus. This architecture protects the infrastructure against split-brain scenarios, compromised control-plane agents, and unauthorized unilateral enforcement attempts without exposing internal physical topology details publicly.
+
+---
+
+## Core Features & Technical Capabilities
+
+### 1. High-Performance gRPC Cluster Communication
+
+The platform utilizes **gRPC over HTTP/2** for ultra-low-latency peer-to-peer communication between distributed controller nodes.
+
+- **Bidirectional TLS Streaming**: All inter-node communication channels are fully encrypted using mutual TLS authentication.
+- **Low-Latency Authorization Exchange**: Safety authorization tokens and enforcement decisions propagate across the cluster within milliseconds, even under high concurrency workloads.
+- **Efficient Binary Serialization**: Protocol Buffers minimize network overhead and optimize distributed state synchronization.
+
+---
+
+### 2. Byzantine Fault Tolerance (BFT) & Ed25519 Cryptographic Verification
+
+The controller is hardened against partial node compromise, malicious actors, and inconsistent cluster behavior.
+
+- **Multi-Signature Authorization Validation**: Critical security actions require approval from a minimum quorum of **2f + 1** cryptographically trusted active nodes before execution.
+
+- **Ed25519 Signature Verification**: Every enforcement decision is digitally signed and verified using high-performance Ed25519 cryptographic primitives.
+
+- **Equivocation Detection Engine**: Prevents conflicting enforcement decisions from being issued simultaneously for the same event identifier, mitigating double-authorization scenarios and malicious leader behavior.
+
+---
+
+### 3. OpenRaft Consensus & Distributed Log Replication
+
+The system leverages **OpenRaft** to maintain strongly consistent distributed state replication across the cluster.
+
+- **Consensus-Based State Management**: All enforcement operations are committed through replicated distributed logs before action tokens are released to runtime agents.
+
+- **Partition Tolerance**: Maintains operational consistency during network partitions and degraded infrastructure conditions.
+
+- **Immutable Security Journaling**: Every security decision is durably persisted within the consensus log for auditability and forensic reconstruction.
+
+---
+
+### 4. Three-Stage Deterministic Security Filtering
+
+Before any action enters the distributed consensus pipeline, requests pass through multiple deterministic local validation layers.
+
+#### Invariant Enforcement Gateway
+Hard-blocks any action that violates fundamental system invariants, such as attempts to terminate critical kernel or privileged system processes.
+
+#### Linear Quorum Verification
+Ensures that the active leader node still maintains valid heartbeat connectivity with the majority quorum before issuing authorization proposals.
+
+#### Graceful Load Degradation
+Dynamically adjusts validation and enforcement prioritization based on host-level CPU and memory pressure to preserve cluster stability during resource exhaustion events.
+
+---
+
+## Technology Stack
+
+- **Programming Language**: Rust (Edition 2024)
+- **Consensus Engine**: OpenRaft
+- **Distributed Communication**: Tonic gRPC over HTTP/2
+- **Cryptography**: Ed25519 digital signature verification
+- **Concurrency Runtime**: Tokio asynchronous runtime
+- **Security Architecture**: Byzantine Fault Tolerant distributed authorization
+
+---
+
+## Design Objectives
+
+The platform is engineered around several core infrastructure principles:
+
+- Deterministic distributed security enforcement
+- Strong consistency under network partitions
+- Cryptographically verifiable authorization
+- Zero single-point-of-failure control plane
+- Resilient consensus-driven security operations
+- High-performance asynchronous cluster coordination
+
+---
+
+## Intended Use Cases
+
+- Distributed runtime security controllers
+- Zero-trust infrastructure orchestration
+- Autonomous workload quarantine systems
+- Critical enforcement authorization layers
+- Security-sensitive consensus infrastructure
+- Cluster-wide incident response coordination

@@ -1,0 +1,74 @@
+---
+title: "PIERO Cloud Provider Emulator"
+excerpt: "A high-fidelity offline cloud infrastructure simulation engine supporting JSON/CBOR/query protocol parsing for enforcing distributed transaction workflows and security operations testing."
+date: "2026-02-12"
+tags:
+  - rust
+  - cloud-simulation
+  - cbor
+  - json
+  - aws-api
+  - distributed-systems
+status: "ongoing"
+image: "/portofolio/PieroLokaRust/PieroCloudEmulator.png"
+---
+
+# PIERO Cloud Provider Emulator
+
+PIERO Cloud Provider Emulator is a high-fidelity cloud infrastructure simulation engine that operates entirely in an offline local environment.
+
+It is designed to validate cross-plane enforcement workflows and distributed transaction sagas, enabling comprehensive testing of security mitigation actions—such as emergency IAM token revocation, encryption key suspension, or storage volume snapshotting—without requiring interaction with any public cloud provider.
+
+---
+
+## Core Features & Technical Capabilities
+
+### 1. Polyglot Cloud Protocol Decoder
+
+To ensure full compatibility with modern cloud SDKs and legacy interfaces, the emulator includes a multi-protocol decoding system.
+
+- **Query Protocol Decoder**: Parses legacy XML-based queries and form-encoded POST requests commonly used in older authentication systems.
+- **REST JSON Decoder**: Efficiently processes modern RESTful API payloads with structured JSON schemas.
+- **Binary CBOR Decoder**: Supports Concise Binary Object Representation for high-performance binary serialization and compact cloud-native communication formats.
+
+---
+
+### 2. Local Security Mitigation Simulation Layer
+
+The system mirrors real-world cloud provider mitigation behaviors for controlled testing and validation.
+
+- **Identity Management Simulation**: Emulates immediate revocation of compromised session credentials at the authorization layer.
+- **Compute Isolation Emulation**: Simulates workload isolation actions such as VM containment, container shutdown, and orchestration-level service segmentation.
+- **Resource Suspension Modeling**: Tests behaviors such as cryptographic key suspension and distributed storage bucket lockdown scenarios.
+
+---
+
+### 3. High-Performance Memory Store & Persistent State Engine
+
+The emulator maintains a fast in-memory state system with deterministic persistence guarantees.
+
+- **Atomic State Synchronization**: Every simulated infrastructure change is immediately reflected in an in-memory atomic state graph.
+- **Automated Snapshot Persistence**: Periodic disk snapshots ensure durability of simulated cloud state across runtime restarts.
+- **Low-Latency State Queries**: Optimized for fast inspection of large-scale simulated infrastructure graphs.
+
+---
+
+### 4. Synthetic Telemetry Generation Engine
+
+Provides continuous traffic simulation for observability and performance testing.
+
+- **Automated Heartbeat Streams**: Generates synthetic API traffic across multiple simulated cloud services.
+- **Scheduled Telemetry Emission**: Produces continuous event streams compatible with SPIFFE-based identity tagging and telemetry collectors.
+- **Load Simulation Framework**: Enables realistic stress testing of distributed transaction and enforcement pipelines.
+
+---
+
+## Technology Stack
+
+- **Programming Language**: Rust (Edition 2024) with focus on safe concurrency and performance
+- **Serialization Formats**: CBOR, JSON, XML
+- **Runtime Architecture**: Tokio-based asynchronous execution engine
+- **Communication Model**: Internal telemetry streaming and event-driven API simulation
+- **Design Goal**: High-fidelity offline cloud behavior replication
+
+---

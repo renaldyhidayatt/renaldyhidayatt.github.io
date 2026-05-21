@@ -1,0 +1,143 @@
+---
+title: "Vert.x Reactive Payment Gateway"
+excerpt: "A high-performance reactive monolithic payment gateway built with Java 21, Vert.x, PostgreSQL, Redis, and a full observability stack."
+date: "2026-05-21"
+tags: ["java", "vertx", "postgresql", "redis", "docker", "prometheus", "grafana", "loki", "flyway", "maven", "hurl"]
+status: "completed"
+image: "/portofolio/Vert.xPaymentGateway/VertxPaymentGateway.png"
+---
+
+# Vert.x Reactive Payment Gateway
+
+This project is a standalone reactive payment gateway system built with **Java 21** and the high-performance **Vert.x** framework. It is designed around non-blocking I/O, clean domain separation, centralized authentication, persistent storage, and a fully integrated observability stack.
+
+---
+
+## Key Features
+
+### Reactive Core
+Built entirely on Vert.x, enabling a fully event-driven, non-blocking architecture for high concurrency workloads.
+
+### Authentication System
+Implements JWT-based authentication with refresh token support for secure session management.
+
+### Role-Based Access Control (RBAC)
+Provides dynamic authorization rules to secure HTTP endpoints based on user roles and permissions.
+
+### Database Persistence
+Uses PostgreSQL as the primary datastore, with Flyway managing versioned schema migrations.
+
+### In-Memory Caching
+Redis is integrated for caching hot data, optimizing lookup performance and session handling.
+
+### Containerized Deployment
+Fully containerized using Docker and Docker Compose for consistent environment reproduction.
+
+### Observability Stack
+Preconfigured full observability pipeline:
+
+- **Prometheus**: Metrics collection and system monitoring
+- **Loki**: Centralized log aggregation
+- **Grafana**: Visualization and dashboarding for system insights
+
+### Automated API Testing
+Includes Hurl-based end-to-end API test suites for functional validation of endpoints.
+
+---
+
+## Technology Stack
+
+- Backend: Java 21, Vert.x 4.x, Apache Maven  
+- Database: PostgreSQL  
+- Migration: Flyway  
+- Cache: Redis  
+- Infrastructure: Docker, Docker Compose  
+- Observability: Prometheus, Grafana, Loki  
+- Testing: JUnit 5, Hurl  
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Java 21+
+- Apache Maven
+- Docker & Docker Compose
+
+---
+
+### Setup Instructions
+
+#### Clone Repository
+
+```bash id="g8x0lm"
+git clone https://github.com/your-username/example_payment_gateway_vert.x.git
+cd example_payment_gateway_vert.x
+````
+
+#### Build and Run with Docker
+
+```bash id="k1d9qz"
+docker-compose up -d --build
+```
+
+This command builds the application, creates Docker images, and starts all required services including PostgreSQL, Redis, and the observability stack.
+
+---
+
+## Service Verification
+
+The API is available at:
+
+`http://localhost:8080`
+
+Health check endpoint:
+
+`http://localhost:8080/health`
+
+---
+
+## API Testing
+
+The project includes automated API tests using Hurl.
+
+Example:
+
+```bash id="h3v9rt"
+hurl --variable host=http://localhost:8080 hurl/auth/register.hurl
+```
+
+Run unit tests:
+
+```bash id="t7m4aa"
+./mvnw test
+```
+
+---
+
+## Observability & Monitoring
+
+### Grafana
+
+* URL: `http://localhost:3000`
+* Default credentials: `admin / grafana`
+* Includes dashboards for JVM metrics, latency, and application logs
+
+### Prometheus
+
+* URL: `http://localhost:9090`
+* Provides raw application and infrastructure metrics
+
+---
+
+## Application Preview
+
+![Vert.x Payment Gateway](/portofolio/Vert.xPaymentGateway/VertxPaymentGateway.png)
+
+---
+
+## Source Code
+
+Repository:
+[https://github.com/MamangRust/example-vert.x-payment-gateway](https://github.com/MamangRust/example-vert.x-payment-gateway)
