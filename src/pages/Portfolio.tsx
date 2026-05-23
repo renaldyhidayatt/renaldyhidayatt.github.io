@@ -17,21 +17,23 @@ const PAGE_GROUP_SIZE = 5;
 
 const ProjectCard = ({ project, index }: { project: any; index: number }) => {
     const { ref, isVisible } = useReveal({ threshold: 0.1 });
-    
+
     return (
-        <div 
-          ref={ref}
-          className={`group h-full transition-all duration-1000 ease-premium ${
-            isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-20 scale-95"
-          }`}
-          style={{ transitionDelay: `${(index % 4) * 100}ms` }}
+        <div
+            ref={ref}
+            className={`group h-full transition-[transform,opacity] duration-1000 ease-premium transform-gpu ${isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-20 scale-95"
+                }`}
+            style={{
+                transitionDelay: `${(index % 4) * 100}ms`,
+                willChange: "transform, opacity"
+            }}
         >
             <Link
                 to={`/portfolio/${project.slug}`}
                 className="block h-full relative"
             >
-                <article className="relative h-full p-5 glass-morphism rounded-[2.5rem] border border-black/5 dark:border-white/5 hover:border-primary/50 transition-all duration-500 flex flex-col overflow-hidden">
-                    
+                <article className="relative h-full p-5 glass-morphism rounded-[2.5rem] border border-black/5 dark:border-white/5 hover:border-primary/50 transition-[border-color,background-color,box-shadow] duration-500 flex flex-col overflow-hidden">
+
                     {/* Image Section */}
                     {project.image && (
                         <div className="relative aspect-[16/10] rounded-[1.5rem] overflow-hidden border border-black/5 dark:border-white/5 mb-6">
@@ -39,17 +41,18 @@ const ProjectCard = ({ project, index }: { project: any; index: number }) => {
                                 src={project.image}
                                 alt={project.title}
                                 loading="lazy"
-                                className="w-full h-full object-cover transition-transform duration-1000 ease-premium group-hover:scale-105"
+                                decoding="async"
+                                className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 transform-gpu"
                             />
                             {/* Image Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-80" />
-                            
+
                             {/* Tags on Image Corner */}
                             <div className="absolute bottom-4 left-4 flex flex-wrap gap-1.5">
                                 {Array.isArray(project.tags) && project.tags.slice(0, 3).map((tag: string) => (
                                     <span
                                         key={tag}
-                                        className="text-[8px] px-2 py-0.5 rounded-md bg-white/60 dark:bg-zinc-900/80 text-foreground dark:text-zinc-300 border border-black/10 dark:border-white/10 font-bold uppercase tracking-widest backdrop-blur-md"
+                                        className="text-[8px] px-2 py-0.5 rounded-md bg-white/90 dark:bg-zinc-900/90 text-foreground dark:text-zinc-300 border border-black/10 dark:border-white/10 font-bold uppercase tracking-widest"
                                     >
                                         {tag}
                                     </span>
@@ -79,7 +82,7 @@ const ProjectCard = ({ project, index }: { project: any; index: number }) => {
                                     })}
                                 </time>
                             </div>
-                            
+
                             <div className="flex items-center gap-1.5 text-[10px] font-black text-primary uppercase tracking-widest group/btn">
                                 <span>Learn More</span>
                                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -152,7 +155,7 @@ const Portfolio = () => {
                             Selected <span className="text-primary italic">Works</span>
                         </h1>
                         <p className="text-lg text-muted-foreground/80 leading-relaxed max-w-2xl font-medium">
-                            A curation of systems engineering, microservices, and 
+                            A curation of systems engineering, microservices, and
                             cloud-native solutions I've architected and implemented.
                         </p>
                     </div>
@@ -171,7 +174,7 @@ const Portfolio = () => {
                         />
                     </div>
                 </header>
-                
+
                 <section className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
                     {paginatedProjects.length === 0 ? (
                         <div className="text-left py-20 px-10 glass-morphism rounded-[2.5rem] border border-white/5">

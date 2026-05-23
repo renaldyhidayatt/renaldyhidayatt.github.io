@@ -1,17 +1,16 @@
 ---
-title: "Distributed Modular Monolith Point Of Sale"
-excerpt: "A Distributed Modular Monolith Point Of Sale built with Go, gRPC, PostgreSQL, and Kafka with full observability stack."
-date: "2025-08-18"
+title: "Distributed Modular Monolith Point of Sale - GraphQL"
+excerpt: "Implementasi backend aman, modular, dan scalable menggunakan GraphQL API Gateway, gRPC, Go, Kafka, dan PostgreSQL."
+date: "2026-05-21"
 tags: [
-  "golang", "grpc", "echo", "postgresql", "kafka", "docker", "docker-compose",
-  "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "kubernetes",
-  "loki", "otel-collector", "zap", "sqlc", "goose", "swago", "zookeeper", "nginx", "node-exporter", "postman"
+  "golang", "graphql", "grpc", "postgresql", "kafka", "docker", "kubernetes",
+  "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "sqlc"
 ]
-status: "finished"
-image: "/portofolio/distributed-modular-monolith-pointofsale.png"
+status: "selesai"
+image: "/portofolio/distributed-modular-monolith-pointofsale-graqhl-grpc/Modular-Monolith-PointOfSale-Graphql-Grpc.png"
 ---
 
-#  Distributed Modular Monolith Point Of Sale
+# Distributed Modular Monolith Point of Sale
 
 A production-grade, **modular-monolith point-of-sale backend** built with **Go (Golang)**, designed around domain-driven service boundaries while retaining the operational simplicity of a single deployment unit. Each business domain — Users, Merchants, Products, Orders, Transactions, Reviews — lives in its own self-contained module with a clean internal architecture, yet all modules ship as independently deployable containers that communicate via **gRPC** and asynchronous **Kafka** events.
 
@@ -37,7 +36,7 @@ The platform ships with a **full observability stack** (Prometheus, Grafana, Lok
 
 ## Architecture Overview
 
-The platform follows a **Distributed Modular Monolith** architecture — each module is a self-contained Go binary with its own clean-architecture internals, deployed as an independent container. An **API Gateway** (NGINX + Echo) provides a unified **REST API** entry point, translating HTTP requests into gRPC calls to downstream services.
+The platform follows a **Distributed Modular Monolith** architecture — each module is a self-contained Go binary with its own clean-architecture internals, deployed as an independent container. An **API Gateway** (NGINX + gqlgen) provides a unified **GraphQL** entry point, translating GraphQL queries and mutations into gRPC calls to downstream services.
 
 ### Core Architecture Principles
 
@@ -58,10 +57,10 @@ graph TB
 
     Client["Client Applications<br/>(Web / Mobile / API)"]:::client
 
-    subgraph APIGateway["API Gateway — NGINX + Echo"]
+    subgraph APIGateway["API Gateway — NGINX + gqlgen"]
         direction LR
-        GraphQL["REST Endpoints<br/>/api/..."]
-        Playground["Swagger UI<br/>/swagger/*"]
+        GraphQL["GraphQL Endpoint<br/>/query"]
+        Playground["GraphQL Playground<br/>/"]
         AuthMW["JWT Auth<br/>Middleware"]
     end
     class APIGateway gateway
@@ -154,7 +153,7 @@ graph LR
     classDef support fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px,rx:8
 
     subgraph Gateway
-        API["API Gateway<br/>Echo + REST + Swagger"]:::gw
+        API["API Gateway<br/>gqlgen + GraphQL + Playground"]:::gw
     end
 
     subgraph Identity["Identity & Access (3)"]
@@ -274,12 +273,12 @@ All client-facing requests flow through the API Gateway, which forwards them ove
 sequenceDiagram
     autonumber
     participant C as Client
-    participant GW as API Gateway<br/>(Echo + REST)
+    participant GW as API Gateway<br/>(gqlgen + GraphQL)
     participant SVC as Domain Service<br/>(gRPC Server)
     participant DB as PostgreSQL
     participant CACHE as Redis
 
-    C->>GW: REST HTTP Request (GET/POST/...)
+    C->>GW: GraphQL Request (Query/Mutation)
     GW->>GW: JWT Authentication
     GW->>SVC: gRPC Call (Protobuf)
     SVC->>CACHE: Check Cache
@@ -291,7 +290,7 @@ sequenceDiagram
         SVC->>CACHE: Populate Cache
     end
     SVC-->>GW: gRPC Response
-    GW-->>C: REST JSON Response
+    GW-->>C: GraphQL Response (JSON)
 ```
 
 ### Asynchronous Flow (Kafka Events)
@@ -401,7 +400,7 @@ flowchart TD
 
         subgraph Gateway["API Gateway"]
             NGINX["NGINX<br/>Reverse Proxy :80"]
-            APIGW["API Gateway Container<br/>Echo + REST :5000"]
+            APIGW["API Gateway Container<br/>gqlgen + GraphQL :5000"]
         end
         class Gateway gateway
 
@@ -570,7 +569,7 @@ flowchart TD
 | Category | Technology | Purpose |
 |----------|-----------|---------|
 | **Language** | Go (Golang) | High-performance, statically typed backend |
-| **API Framework** | Echo (v4) | REST API Gateway framework |
+| **API Framework** | gqlgen | GraphQL API Gateway framework |
 | **RPC** | gRPC + Protobuf | High-performance inter-service communication |
 | **Database** | PostgreSQL | Primary relational data store |
 | **SQL Codegen** | sqlc | Type-safe SQL → Go code generation |
@@ -591,7 +590,7 @@ flowchart TD
 | **Reverse Proxy** | NGINX | API routing, load balancing, TLS termination |
 | **Containerization** | Docker + Docker Compose | Container image building & local orchestration |
 | **Orchestration** | Kubernetes | Production-grade container orchestration with HPA |
-| **API Docs** | Swagger UI | Interactive API documentation (echo-swagger) |
+| **API Docs** | GraphQL Playground | Built-in interactive GraphQL IDE & schema documentation |
 | **Resilience** | Circuit Breaker, Rate Limiter, Load Monitor | Built-in fault tolerance patterns (`pkg/resilience`) |
 
 ---
@@ -611,8 +610,8 @@ Ensure the following tools are installed on your system:
 ### 1. Clone the Repository
 
 ```sh
-git clone https://github.com/MamangRust/monolith-pointofsale-grpc.git
-cd monolith-pointofsale-grpc
+git clone https://github.com/MamangRust/monolith-graphql-pointofsale-grpc.git
+cd monolith-graphql-pointofsale-grpc
 ```
 
 ### 2. Configure Environment
@@ -652,10 +651,10 @@ make ps
 
 | Service | URL |
 |---------|-----|
-| Swagger UI (via Nginx) | `http://localhost:80/swagger/index.html` |
-| API Endpoints (via Nginx) | `http://localhost:80/api/` |
-| Swagger UI (Direct) | `http://localhost:5000/swagger/index.html` |
-| API Endpoints (Direct) | `http://localhost:5000/api/` |
+| GraphQL Playground (via Nginx) | `http://localhost:80` |
+| GraphQL Endpoint (via Nginx) | `http://localhost:80/query` |
+| GraphQL Playground (Direct) | `http://localhost:5000` |
+| GraphQL Endpoint (Direct) | `http://localhost:5000/query` |
 | Grafana Dashboards | `http://localhost:3000` |
 | Prometheus | `http://localhost:9090` |
 | Jaeger UI | `http://localhost:16686` |
@@ -684,7 +683,7 @@ The project provides both a `Makefile` and a `justfile` with equivalent commands
 | `make seeder` | Seed the database with sample data |
 | `make generate-proto` | Regenerate Go code from `.proto` definitions |
 | `make generate-sql` | Regenerate Go code from SQL queries (sqlc) |
-| `just generate-swagger` | Regenerate Swagger API documentation (swag) |
+| `just generate-graphql` | Regenerate GraphQL resolvers and server code (gqlgen) |
 | `make build-image` | Build Docker images for all services |
 | `make image-load` | Load Docker images into Minikube |
 | `make image-delete` | Delete Docker images from Minikube |
@@ -699,8 +698,8 @@ The project provides both a `Makefile` and a `justfile` with equivalent commands
 
 ## Project Structure
 
-```
-monolith-pointofsale-grpc/
+```text
+monolith-pointofsale-grpc-graphql/
 ├── proto/                          # Protobuf definitions (22 domains)
 ├── shared/                         # Shared Go module
 │   ├── pb/                         #   Generated protobuf Go code
@@ -727,7 +726,7 @@ monolith-pointofsale-grpc/
 │   ├── trace_unic/                 #   Trace ID utilities
 │   └── utils/                      #   General utilities
 ├── service/                        # All microservices
-│   ├── apigateway/                 #   REST API Gateway (Echo + Swagger)
+│   ├── apigateway/                 #   GraphQL API Gateway (gqlgen + Playground)
 │   ├── auth/                       #   Authentication service
 │   ├── cashier/                    #   Cashier service
 │   ├── category/                   #   Category management
@@ -753,11 +752,10 @@ monolith-pointofsale-grpc/
 ---
 
 ## Source Code
-[View on GitHub](https://github.com/MamangRust/monolith-pointofsale-grpc)
+[View on GitHub](https://github.com/MamangRust/monolith-graphql-ecommerce)
+
 ---
 
 <p align="center">
   Built with Go, gRPC, and a passion for clean architecture.
 </p>
-
-

@@ -14,23 +14,26 @@ const BlogPostCard = ({ post, index }: { post: any; index: number }) => {
     return (
         <div 
           ref={ref}
-          className={`group h-full transition-all duration-1000 ease-premium ${
+          className={`group h-full transition-[transform,opacity] duration-1000 ease-premium transform-gpu ${
             isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-20 scale-95"
           }`}
-          style={{ transitionDelay: `${(index % 4) * 100}ms` }}
+          style={{ 
+            transitionDelay: `${(index % 4) * 100}ms`,
+            willChange: "transform, opacity"
+          }}
         >
             <Link
                 to={`/blog/${post.slug}`}
                 className="block h-full relative"
             >
-                <article className="relative h-full p-6 glass-morphism rounded-[2.5rem] border border-black/5 dark:border-white/5 hover:border-primary/50 transition-all duration-500 overflow-hidden flex flex-col">
+                <article className="relative h-full p-6 glass-morphism rounded-[2.5rem] border border-black/5 dark:border-white/5 hover:border-primary/50 transition-[border-color,background-color,box-shadow] duration-500 overflow-hidden flex flex-col">
                     
                     <div className="relative flex-1 flex flex-col px-1">
                         <div className="flex flex-wrap gap-2 items-center mb-6">
                             {Array.isArray(post.tags) && post.tags.slice(0, 3).map((tag: string) => (
                                 <span
                                     key={tag}
-                                    className="text-[8px] px-2 py-0.5 rounded-md bg-white/60 dark:bg-zinc-900/80 text-foreground dark:text-zinc-300 border border-black/10 dark:border-white/10 font-bold uppercase tracking-widest backdrop-blur-md"
+                                    className="text-[8px] px-2 py-0.5 rounded-md bg-white/90 dark:bg-zinc-900/90 text-foreground dark:text-zinc-300 border border-black/10 dark:border-white/10 font-bold uppercase tracking-widest"
                                 >
                                     {tag}
                                 </span>

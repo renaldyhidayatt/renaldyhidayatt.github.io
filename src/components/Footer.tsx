@@ -42,9 +42,10 @@ const Footer = () => {
                 {/* CTA Section */}
                 <div 
                     ref={ref}
-                    className={`glass-strong rounded-[40px] p-12 mb-20 border border-primary/10 transition-all duration-1000 text-center relative overflow-hidden group ${
+                    className={`glass-strong rounded-[40px] p-12 mb-20 border border-primary/10 transition-[transform,opacity] duration-1000 transform-gpu text-center relative overflow-hidden group ${
                         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
                     }`}
+                    style={{ willChange: "transform, opacity" }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                     

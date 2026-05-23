@@ -51,10 +51,13 @@ const StatCard = ({ icon: Icon, label, value, gradient, index }: any) => {
     return (
         <div 
             ref={ref}
-            className={`group relative rounded-3xl p-8 glass border border-border/50 hover:border-primary/50 transition-all duration-700 shadow-2xl shadow-primary/5 ${
+            className={`group relative rounded-3xl p-8 glass border border-border/50 hover:border-primary/50 transition-[transform,opacity] duration-700 transform-gpu shadow-2xl shadow-primary/5 ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
-            style={{ transitionDelay: `${index * 100}ms` }}
+            style={{ 
+                transitionDelay: `${index * 100}ms`,
+                willChange: "transform, opacity"
+            }}
         >
             <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
             <div className="relative flex flex-col h-full space-y-4">
@@ -80,8 +83,11 @@ const LanguageBar = ({ lang, value, percentage, index }: any) => {
     return (
         <div 
           ref={ref}
-          className={`space-y-3 transition-all duration-700 ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"}`}
-          style={{ transitionDelay: `${index * 50}ms` }}
+          className={`space-y-3 transition-[transform,opacity] duration-700 transform-gpu ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"}`}
+          style={{ 
+            transitionDelay: `${index * 50}ms`,
+            willChange: "transform, opacity"
+          }}
         >
             <div className="flex justify-between items-end">
                 <div className="flex items-center gap-2">
