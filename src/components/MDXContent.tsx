@@ -3,7 +3,9 @@ import React from "react";
 import CodeBlock from "./CodeBlock";
 import Latex from "react-latex";
 import "katex/dist/katex.min.css";
-import { ExternalLink, Info, Quote } from "lucide-react";
+import { ExternalLink, Quote } from "lucide-react";
+
+const PreContext = React.createContext(false);
 
 export const sharedComponents = {
     Latex: ({ children }: { children: string }) => (
@@ -44,7 +46,8 @@ export const sharedComponents = {
         children,
         ...props
     }: any) => {
-        const isInline = !className && !("data-language" in props);
+        const isInPre = React.useContext(PreContext);
+        const isInline = !isInPre && !className && !("data-language" in props);
         if (isInline) {
             return (
                 <code
@@ -63,7 +66,11 @@ export const sharedComponents = {
     },
 
     pre: ({ children, ...props }: any) => {
-        return <CodeBlock {...props}>{children}</CodeBlock>;
+        return (
+            <PreContext.Provider value={true}>
+                <CodeBlock {...props}>{children}</CodeBlock>
+            </PreContext.Provider>
+        );
     },
 
     figure: ({ children, ...props }: any) => {
@@ -152,7 +159,7 @@ export const sharedComponents = {
                         top: offsetPosition,
                         behavior: "smooth"
                     });
-                    
+
                     // Update URL hash without triggering navigation
                     window.history.pushState(null, "", window.location.hash.split("?")[0] + href);
                 }

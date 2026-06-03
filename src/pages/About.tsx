@@ -1,15 +1,59 @@
 import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
-import { Code2, Wrench, Terminal, Cpu, Database, Cloud, FileText, ArrowRight, Users } from "lucide-react";
+import { Terminal, Cpu, Database, Cloud, FileText, ArrowRight, Users, Zap, Activity, Binary, Brain } from "lucide-react";
 import { useReveal } from "@/hooks/use-reveal";
 
-const SkillBadge = ({ title, icon: Icon }: { title: string; icon: any }) => (
-    <div className="group relative flex items-center gap-2 px-4 py-2 glass rounded-xl border border-border/50 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1">
-        <Icon className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-        <span className="text-sm font-semibold tracking-tight">{title}</span>
-    </div>
-);
+const SKILL_CATEGORIES = [
+    {
+        title: "Systems & Core Languages",
+        icon: Terminal,
+        description: "Compiled languages for systems programming, high-performance concurrency, and type-safe backend logic.",
+        skills: ["Go (Golang)", "Rust (2024)", "Java (JVM)", "Python", "C (Kernel/eBPF)", "TypeScript", "NodeJS"]
+    },
+    {
+        title: "Microservices & API Architecture",
+        icon: Cpu,
+        description: "High-throughput inter-service communication protocols, structured serialization, and routing gateways.",
+        skills: ["gRPC / Protobuf", "GraphQL (gqlgen)", "RESTful APIs", "Quarkus", "SpringBoot", "Echo (Go)", "Axum / Actix (Rust)", "NestJS", "FastAPI"]
+    },
+    {
+        title: "Enterprise Event Streaming",
+        icon: Zap,
+        description: "Decoupled asynchronous orchestration, distributed commit logs, and high-volume message queues.",
+        skills: ["Apache Kafka", "RabbitMQ", "Event-Driven Arch", "Kafka Exporter", "Pub/Sub Systems"]
+    },
+    {
+        title: "Data Systems & Caching",
+        icon: Database,
+        description: "Relational persistence, ultra-low latency in-memory stores, and type-safe database schemas.",
+        skills: ["PostgreSQL", "Redis Caching", "SQLC (Type-Safe)", "Sea-ORM / GORM", "Goose Migrations", "MongoDB", "SQLite"]
+    },
+    {
+        title: "Observability & SRE Stack",
+        icon: Activity,
+        description: "Multi-pillar telemetry instrumentation, distributed trace mapping, and auto-alert systems.",
+        skills: ["OpenTelemetry", "Prometheus", "Grafana", "Jaeger Tracing", "Loki & Promtail", "Circuit Breakers", "Rate Limiters"]
+    },
+    {
+        title: "Kernel Space & Systems",
+        icon: Binary,
+        description: "Kernel-level tracing, raw socket monitoring, and hardware-level performance engineering.",
+        skills: ["eBPF (BPF Syscall)", "Linux Kernel space", "BPF Ring Buffers", "Network Monitoring", "System Telemetry"]
+    },
+    {
+        title: "Cloud Native & Orchestration",
+        icon: Cloud,
+        description: "Declarative infrastructure deployment, horizontal pod autoscaling, and isolated local development clusters.",
+        skills: ["Kubernetes (K8s)", "Docker", "Docker Compose", "Minikube", "HPA & PVC configs", "NGINX Ingress"]
+    },
+    {
+        title: "AI & MLOps Platforms",
+        icon: Brain,
+        description: "Decoupled training pipelines, experiment registries, real-time feature drift analysis, and runtime SLM isolation.",
+        skills: ["MLflow (Registry)", "XGBoost / Scikit-Learn", "ONNX Inference Engine", "PSI Drift Monitoring", "ModelGuard (SHA-256)", "LlmOutputFilter", "Gradio & Streamlit", "Ollama / DeepSeek"]
+    }
+];
 
 const AboutSec = ({ title, children, delay }: { title: string; children: React.ReactNode; delay: string }) => {
     const { ref, isVisible } = useReveal();
@@ -111,32 +155,41 @@ const About = () => {
                     </AboutSec>
 
                     <AboutSec title="My Craft" delay="0.1s">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="md:col-span-2 space-y-8">
-                                <p className="text-lg text-muted-foreground leading-relaxed">
-                                    I use various technologies as tools to build solutions. I'm always looking for ways to improve the quality and performance of the systems I work on.
-                                </p>
-                                <div className="flex flex-wrap gap-4">
-                                    {[
-                                        { title: "Golang", icon: Terminal },
-                                        { title: "Rust", icon: Cpu },
-                                        { title: "Java", icon: Code2 },
-                                        { title: "Python", icon: Terminal },
-                                        { title: "NodeJS", icon: Wrench },
-                                        { title: "TypeScript", icon: Wrench },
-                                    ].map((skill) => <SkillBadge key={skill.title} {...skill} />)}
-                                </div>
-                            </div>
-                            <div className="glass p-8 rounded-3xl border border-border/50 space-y-6">
-                                <div className="flex items-center gap-3 text-primary">
-                                    <Database className="w-5 h-5" />
-                                    <h4 className="font-bold uppercase tracking-widest text-[10px]">Data & Infrastructure</h4>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {["PostgreSQL", "Redis", "Kafka", "RabbitMQ", "MongoDB"].map(t => (
-                                        <span key={t} className="text-[10px] font-bold px-2 py-1 bg-background/50 rounded-lg border border-border/50">{t}</span>
-                                    ))}
-                                </div>
+                        <div className="space-y-6">
+                            <p className="text-lg text-muted-foreground leading-relaxed">
+                                I design and implement reliable architectures, low-level monitoring systems, and secure AI-augmented services. Here is a detailed breakdown of the specialized capabilities and technologies I leverage:
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
+                                {SKILL_CATEGORIES.map((cat) => {
+                                    const Icon = cat.icon;
+                                    return (
+                                        <div
+                                            key={cat.title}
+                                            className="group relative p-6 glass rounded-3xl border border-border/50 hover:border-primary/30 hover:bg-card/40 transition-all duration-500 hover:-translate-y-1 flex flex-col justify-between"
+                                        >
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                                                        <Icon className="w-5 h-5" />
+                                                    </div>
+                                                    <h3 className="font-bold text-base text-foreground tracking-tight">{cat.title}</h3>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground leading-relaxed font-medium">{cat.description}</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5 mt-6 pt-4 border-t border-border/20">
+                                                {cat.skills.map((skill) => (
+                                                    <span
+                                                        key={skill}
+                                                        className="text-[10px] font-bold px-2.5 py-1 bg-background/30 rounded-lg border border-border/50 text-muted-foreground hover:text-primary hover:border-primary/30 transition-all duration-300"
+                                                    >
+                                                        {skill}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </AboutSec>

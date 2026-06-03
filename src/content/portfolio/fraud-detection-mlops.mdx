@@ -1,0 +1,280 @@
+---
+title: "MLOps Fraud Detection Platform"
+excerpt: "Platform deteksi penipuan tingkat produksi dengan MLOps, FastAPI, XGBoost, MLflow, dan Gradio."
+date: "2026-05-28"
+tags: [
+  "python", "fastapi", "mlops", "scikit-learn", "mlflow", "xgboost", "gradio", "docker", "kubernetes", "kafka"
+]
+status: "selesai"
+image: "/portofolio/fraud-detection-mlops/FraudDetectionMLOps.png"
+---
+
+# Production-Ready Fraud Detection Platform - MLOps Architecture
+
+A production-grade, highly modular **MLOps Fraud & Risk Detection Platform** designed as a decoupled monolith. Built in **Python 3.11** using **FastAPI**, **scikit-learn**, and **XGBoost**, the platform implements config-driven machine learning pipelines, automatic MLflow tracking & model registry staging, production audits with SHA-256 input hashing, automated PSI (Population Stability Index) drift monitoring, and a premium interactive dual-tab Gradio UI.
+
+---
+
+
+## Key Features
+*   **Config-Driven Machine Learning**: Centralized config engine (`src/config.py`) orchestrating distinct ML algorithms:
+    *   **Fraud Model**: High-performance gradient boosting using **XGBoost Classifier**.
+    *   **Risk Model**: Non-linear ensemble categorization using **RandomForest Classifier**.
+*   **18-Step Training Orchestration**: Integrated training orchestrator (`src/training_pipeline.py`) handling splits, model fits, automated evaluation, MLflow logging, local serialization, and production stage promotion.
+*   **FastAPI Serving Layer**: Decoupled, Pydantic-validated prediction routing utilizing a Service-oriented architecture:
+    *   `POST /predict/fraud` with strict request schemas.
+    *   `POST /predict/risk` analyzing contextual details and user history.
+*   **Realtime Audit Trails**: High-performance auditor (`monitoring/logger.py`) hashing inputs using SHA-256 and serializing requests to a structured JSON audit log.
+*   **Automated Drift Monitor**: Population Stability Index (PSI) drift calculation engine (`monitoring/drift_monitor.py`) parsing live production audit logs and comparing them in real-time against training baseline distributions.
+*   **Interactive Gradio UI**: Premium frontend interface (`ui/gradio_app.py`) featuring dual interactive tabs for playground testing of the Fraud and Risk models.
+*   **DevOps & GitOps Ready**: Unified Docker setups, local-friendly Kubernetes deployments, and a completely self-contained CI testing workflow.
+
+---
+
+## Architecture & Data Flow
+
+The platform is designed around strict separation of concerns, decoupling the **Training Orchestration Layer**, the **API Serving Layer**, the **Monitoring & Drift System**, and the **Interactive UI**.
+
+```mermaid
+graph TB
+    classDef client fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:2px,font-weight:bold
+    classDef ui fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:2px,font-weight:bold
+    classDef api fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff,stroke-width:1.5px
+    classDef monitor fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px
+    classDef train fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:1.5px
+    classDef storage fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+
+    %% Clients & UI
+    Client["Client / Third-Party Apps"]:::client
+    GradioUI["Gradio Interactive Dashboard<br/>Port :7860"]:::ui
+
+    subgraph ServingLayer["High-Performance FastAPI Serving Layer (Port :8000)"]
+        APIGateway["FastAPI Main entry point<br/>api/main.py"]:::api
+        FraudRouter["Fraud Prediction Router<br/>api/routers/fraud.py"]:::api
+        RiskRouter["Risk Prediction Router<br/>api/routers/risk.py"]:::api
+        MonitorRouter["Drift Monitoring Router<br/>api/routers/monitoring.py"]:::api
+        PredictService["Decoupled Predictor Service<br/>api/services/predictor.py"]:::api
+        ModelLoader["Service Model Loader<br/>api/services/model_loader.py"]:::api
+    end
+
+    Client -->|POST Request| APIGateway
+    GradioUI -->|API predictions| APIGateway
+
+    APIGateway --> FraudRouter
+    APIGateway --> RiskRouter
+    APIGateway --> MonitorRouter
+
+    FraudRouter --> PredictService
+    RiskRouter --> PredictService
+    
+    PredictService --> ModelLoader
+
+    subgraph StorageLayer["Workspace Local Registry"]
+        ModelArtifacts[("models/<br/>*.joblib files")]:::storage
+        BaselineSpecs[("outputs/<br/>feature_baseline.json")]:::storage
+        Dataset[("outputs/<br/>model_table.csv")]:::storage
+        AuditLogs[("outputs/<br/>predictions_log.json")]:::storage
+    end
+
+    ModelLoader -->|Load local pipelines| ModelArtifacts
+
+    subgraph MonitoringLayer["Production Audit & Drift Observability"]
+        Auditor["Auditor & Hashing Engine<br/>monitoring/logger.py"]:::monitor
+        DriftMonitor["PSI Drift Monitor<br/>monitoring/drift_monitor.py"]:::monitor
+    end
+
+    PredictService -->|Log predictions| Auditor
+    Auditor -->|Write SHA-256 Hashed Audits| AuditLogs
+
+    MonitorRouter -->|Trigger monitor| DriftMonitor
+    DriftMonitor -->|Parse live logs| AuditLogs
+    DriftMonitor -->|Compare against baseline| BaselineSpecs
+
+    subgraph TrainingPipeline["Offline Training & Orchestration Layer"]
+        DataPrep["Feature Engineering Engine<br/>src/build_data.py"]:::train
+        Trainer["18-Step Training Orchestrator<br/>src/training_pipeline.py"]:::train
+        ModelPipeline["Preprocessing & fit Pipelines<br/>src/train.py"]:::train
+        MLflowDB[("MLflow Tracking<br/>sqlite:///mlflow.db")]:::train
+    end
+
+    DataPrep -->|Read raw tables| Dataset
+    Trainer -->|Load splits| Dataset
+    Trainer -->|Build models| ModelPipeline
+    ModelPipeline -->|Save local model| ModelArtifacts
+    Trainer -->|Track and Register| MLflowDB
+    DataPrep -->|Compute target distributions| BaselineSpecs
+```
+
+---
+
+## System Sequence Flows
+
+### 1. High-Performance Prediction & Realtime Auditing
+Every prediction request is validated by Pydantic contracts, mapped through isolated service layers, logged with a cryptographic SHA-256 checksum to prevent data tampering, and returned with sub-millisecond latency.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client App / UI
+    participant API as FastAPI Router
+    participant SVC as Predictor Service
+    participant ML as Model Loader
+    participant AUDIT as Hashing Auditor
+    participant LOG as predictions_log.json
+
+    C->>API: POST /predict/fraud (JSON Payload)
+    API->>API: Validate Pydantic Schema
+    API->>SVC: Delegate to Predictor
+    SVC->>ML: request cached model
+    ML-->>SVC: return Model Pipeline (sklearn/XGBoost)
+    SVC->>SVC: Run Prediction & Probabilities
+    SVC->>AUDIT: Audit log input details
+    AUDIT->>AUDIT: Generate SHA-256 input hash
+    AUDIT->>LOG: Write structured JSON audit entry
+    SVC-->>C: Return 200 OK (Prediction + confidence score)
+```
+
+### 2. Live Feature Drift Monitoring (PSI Engine)
+The Population Stability Index (PSI) compares live actual inference data against baseline datasets computed during model training. This allows immediate detection of real-world behavior changes (data drift) post-deployment.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Monitor Agent / Admin
+    participant API as API Drift Endpoint
+    participant PSI as Drift Monitor Engine
+    participant LOG as predictions_log.json
+    participant BASE as feature_baseline.json
+
+    C->>API: GET /monitor/psi?feature=amount
+    API->>PSI: Run PSI computation
+    PSI->>LOG: Parse live prediction audit logs
+    PSI->>BASE: Load training-time baseline distributions
+    PSI->>PSI: Calculate Bin Frequencies & PSI Index
+    alt PSI < 0.1
+        PSI-->>API: Return Status "No Drift"
+    else 0.1 <= PSI < 0.25
+        PSI-->>API: Return Status "Moderate Shift / Alert"
+    else PSI >= 0.25
+        PSI-->>API: Return Status "Significant Drift / Retrain Trigger"
+    end
+    API-->>C: Return JSON Report with exact metrics
+```
+
+---
+
+## Workspace Directory Structure
+
+The repository maintains an elegant, clean, and highly organized production-grade modular design:
+
+```
+fraud-detection-mlops/
+├── api/                       # fastapi serving application layer
+│   ├── main.py                #   fastapi gateway application router
+│   ├── routers/               #   isolated API routes (fraud, risk, monitoring)
+│   ├── schemas/               #   strict pydantic request schemas
+│   └── services/              #   decoupled model loader and predictor services
+├── data/                      # database directory
+│   └── processed/             #   source raw transaction database files
+├── monitoring/                # production logging and analytics layer
+│   ├── logger.py              #   cryptographic audit log auditor
+│   └── drift_monitor.py       #   population stability index (PSI) drift calculation
+├── outputs/                   # engineered datasets and statistical baselines
+│   ├── model_table.csv        #   computed master model table features
+│   └── feature_baseline.json  #   training-time feature baseline distribution
+├── src/                       # config-driven training application layer
+│   ├── build_data.py          #   feature engineering and baseline generation engine
+│   ├── config.py              #   model configurations dictionary (hyperparameters)
+│   ├── evaluate.py            #   Recall, F1, and production staging validations
+│   ├── train.py               #   preprocessing and classification pipelines builder
+│   ├── training_pipeline.py   #   18-step MLflow orchestrator and register
+│   └── utils.py               #   I/O helper utilities, prediction logs and splits
+├── ui/                        # interactive interface layer
+│   └── gradio_app.py          #   premium dual-tab Gradio blocks dashboard
+├── tests/                     # comprehensive testing suite (routes, schemas, models)
+├── k8s/                       # local-first kubernetes manifests
+├── Dockerfile.api             # API service Dockerfile
+├── Dockerfile.gradio          # UI service Dockerfile
+├── docker-compose.yml         # local multi-container orchestrator
+├── dvc.yaml                   # pipeline stages configuration
+├── pytest.ini                 # testing environment configuration
+└── requirements.txt           # global python packages listing
+```
+
+---
+
+## Getting Started & Execution Guide
+
+Ensure you have **Python 3.11** and **Docker** installed on your system.
+
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Run Feature Engineering & Seeding
+This builds your master feature table and computes the target distributions for the drift baseline:
+```bash
+python3 -m src.build_data
+```
+
+### 3. Run Local Model Training & Registration
+Train, evaluate, and stage the scikit-learn models. Using `MLFLOW_TRACKING_URI=sqlite:///mlflow.db` launches a fully self-contained local tracking registry:
+```bash
+# Train the Fraud Detection XGBoost model
+MLFLOW_TRACKING_URI=sqlite:///mlflow.db python3 -m src.training_pipeline --model fraud
+
+# Train the Credit Risk RandomForest model
+MLFLOW_TRACKING_URI=sqlite:///mlflow.db python3 -m src.training_pipeline --model risk
+```
+
+### 4. Start the FastAPI Serving Layer
+Launch the API server with Uvicorn:
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
+*   **Predict Fraud**: `POST http://localhost:8000/predict/fraud`
+*   **Predict Risk**: `POST http://localhost:8000/predict/risk`
+*   **Drift Report**: `GET http://localhost:8000/monitor/psi`
+
+### 5. Launch the Interactive Gradio UI
+Launch the interactive dashboard playground locally:
+```bash
+python3 ui/gradio_app.py
+```
+Open your browser at `http://localhost:7860` to access the playground.
+
+### 6. Run Multi-Container Deployments
+Spin up both the FastAPI serving app and the Gradio UI dashboard concurrently:
+```bash
+docker-compose up --build
+```
+
+---
+
+## Technical Stack & MLOps Tools
+
+| Domain | Selected Technology | Purpose |
+| :--- | :--- | :--- |
+| **Languages** | Python 3.11 | Modern, high-performance data engineering and serving. |
+| **Model Frameworks** | scikit-learn / XGBoost | Classification algorithms for fraud detection and risk modeling. |
+| **Serving Framework** | FastAPI + Uvicorn | High-throughput, asynchronous ASGI REST API gateway. |
+| **Experiment Tracking** | MLflow | Experiment parameter tracking, metrics logger, and model registry. |
+| **Data Orchestrator** | DVC | Locally reproducible stage caching and ML pipelines. |
+| **UI Dashboard** | Gradio (Blocks) | Interactive sandbox interface for real-time model evaluation. |
+| **Validation** | Pydantic v2 | Robust request schemas validation. |
+| **Testing** | pytest | Automated CI/CD regression, schema, and route validation. |
+| **Containerization** | Docker / Compose | Multi-container environment orchestration. |
+| **Orchestrator** | Kubernetes | Highly scalable local-friendly deployment manifests. |
+
+---
+
+## Source Code
+
+[View on Github](https://github.com/MamangRust/example-fraud-detection-mlops)
+
+---
+
+<p align="center">
+  Built with passion for highly robust, local-first, production-grade MLOps pipelines.
+</p>

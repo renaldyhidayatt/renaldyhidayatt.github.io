@@ -1,0 +1,266 @@
+---
+title: "Spring Boot Observable Microservices Platform"
+excerpt: "A production-grade, highly resilient, and fully observable Spring Boot Microservices platform built on Spring Cloud, Spring Boot, and Java 21."
+date: "2026-05-25"
+tags: [
+  "java", "spring-boot", "spring-cloud", "kubernetes", "kafka", "prometheus", "grafana", "opentelemetry"
+]
+status: "selesai"
+image: "/portofolio/example-microservice-springboot/ExampleMicroserviceSpringBoot.png"
+---
+
+
+# Spring Boot Observable Microservices Architecture
+
+A production-grade, highly resilient, and fully observable **Spring Boot Microservices platform** built on Spring Cloud, Spring Boot, and Java 21. Enforcing centralized configuration patterns and domain-driven design, this system is optimized for high-performance service registration, intelligent routing, distributed transactions, and advanced inter-service event-driven communication.
+
+The cluster is fully fortified with an **enterprise-grade observability suite** collecting logs, metrics, and traces (OpenTelemetry, Prometheus, Jaeger/Zipkin, Loki, Grafana) orchestrating in harmony under Docker Compose.
+
+---
+
+## System Architecture
+
+The platform consists of specialized microservices decoupled by domain boundaries, sharing a consolidated standard configuration framework:
+
+```mermaid
+graph TB
+    classDef client fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:2px,font-weight:bold
+    classDef gateway fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:2px,font-weight:bold
+    classDef domain fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff,stroke-width:1.5px
+    classDef infra fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+    classDef obs fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px
+
+    Client["Client App / Public API"]:::client
+
+    subgraph ServiceRegistry["Discovery & Gateway Routing"]
+        EUREKA["Eureka Server<br/>Port :8761"]:::gateway
+        GATEWAY["Spring Cloud API Gateway<br/>Port :8080"]:::gateway
+    end
+
+    subgraph CoreServices["Spring Boot Core Microservices"]
+        direction TB
+        AUTH["Auth Service<br/>Port :8081"]:::domain
+        USER["User Service<br/>Port :8085"]:::domain
+        PRODUCT["Product Service<br/>Port :8082"]:::domain
+        ORDER["Order Service<br/>Port :8083"]:::domain
+        PAYMENT["Payment Service<br/>Port :8084"]:::domain
+        NOTIFICATION["Notification Service<br/>Port :8086"]:::domain
+        FILE_STORAGE["File Storage Service<br/>Port :8087"]:::domain
+    end
+
+    Client -->|"/api/v1/*"| GATEWAY
+    GATEWAY -->|Route Registration| EUREKA
+    GATEWAY -.->|Dispatches Requests| CoreServices
+
+    subgraph Infrastructure["Shared Infrastructure & Event Broker"]
+        direction LR
+        RABBIT[("RabbitMQ Message Broker<br/>Port :5672")]:::infra
+        COMMON[["Common Shared Library<br/>Security, Swagger, RabbitConfig"]]:::infra
+        DB[("PostgreSQL DBs<br/>(Individual Databases)")]:::infra
+    end
+
+    CoreServices -->|"Event Publishing"| RABBIT
+    CoreServices -.->|"Imports Shared Config"| COMMON
+    CoreServices -->|"Reads / Writes"| DB
+
+    subgraph Observability["Telemetry & Observability Suite"]
+        direction LR
+        OTEL["OTel Collector<br/>gRPC Port :4317"]:::obs
+        PROM["Prometheus<br/>Scraper :9090"]:::obs
+        GRAFANA["Grafana Dashboards<br/>Portal :3000"]:::obs
+        LOKI["Loki Log Aggregator<br/>Port :3100"]:::obs
+    end
+
+    CoreServices -.->|"OTLP Spans / Logs"| OTEL
+    OTEL -.-> LOKI
+    PROM -.-> GRAFANA
+    LOKI -.-> GRAFANA
+```
+
+### Docker Deployment Architecture
+
+In local development and staging environments, the platform relies on **Docker Compose** to provision and orchestrate containers inside a single local host boundary:
+
+*   **Custom Bridge Networking**: All components communicate securely using a private bridge network called `microservices-network`. Core microservices are not exposed to the local host machine except through their designated mapped ports or via the central `api-gateway`.
+*   **Persistent Volumes**: Mapped host directories and named Docker volumes preserve PostgreSQL databases data, Redis keys, Loki logs, and Grafana dash configs through container restarts.
+
+```mermaid
+graph TD
+    classDef host fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:2px,font-weight:bold
+    classDef container fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:1.5px
+    classDef network fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff,stroke-width:2px
+
+    subgraph HostMachine["Local Host Machine"]
+        direction LR
+        Port8080["API Access<br/>Port :8080"]:::host
+        Port8761["Eureka UI<br/>Port :8761"]:::host
+        Port3000["Grafana UI<br/>Port :3000"]:::host
+    end
+
+    subgraph DockerBridge["Docker Network (microservices-network)"]
+        direction TB
+        GATEWAY["api-gateway"]:::container
+        EUREKA["eureka-server"]:::container
+        SERVICES["Microservices<br/>(auth, user, product, order, payment, notification, file-storage)"]:::container
+        DATABASES["Backing Databases<br/>(PostgreSQL, Redis, RabbitMQ)"]:::container
+    end
+
+    Port8080 --> GATEWAY
+    Port8761 --> EUREKA
+    Port3000 --> SERVICES
+
+    GATEWAY --> SERVICES
+    SERVICES --> DATABASES
+    SERVICES -.-> EUREKA
+```
+
+### Kubernetes Cluster Architecture
+
+For production and highly-scalable environments, the system is designed to run seamlessly in a **Kubernetes (K8s)** cluster, utilizing orchestrator-native abstractions:
+
+*   **Modular Service Split**: Every individual Spring Boot service has its own independent `Deployment` and `Service` manifest file located in `deployments/kubernetes/` to isolate resource allocations and simplify rolling updates.
+*   **Ingress / LoadBalancer Entry**: The `api-gateway` is exposed to external consumers via a **LoadBalancer Service** mapping external traffic directly to gateway pods. Other services are fully isolated behind standard **ClusterIP Services**.
+*   **Stateful Storage Bounds**: Relational databases, cache clusters, and message queues utilize **PersistentVolumeClaims (PVC)** mapped to persistent disk storage classes to ensure full state preservation under pod scheduling.
+
+```mermaid
+graph TD
+    classDef ext fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:2px,font-weight:bold
+    classDef k8sSvc fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:2px,font-weight:bold
+    classDef k8sPod fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff,stroke-width:1.5px
+    classDef k8sVol fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+
+    ExternalClient["Clients / Public Internet"]:::ext
+
+    subgraph K8sCluster["Kubernetes Cluster namespace: default"]
+        INGRESS["LoadBalancer Service<br/>(api-gateway:8080)"]:::k8sSvc
+        GATEWAY_PODS["Pods: api-gateway"]:::k8sPod
+
+        subgraph ClusterSvcs["ClusterIP Internal Services"]
+            EUREKA_SVC["Service: eureka-server"]:::k8sSvc
+            CORE_SVCS["Services: Core Services<br/>(user-service, product-service, etc.)"]:::k8sSvc
+            DB_SVCS["Services: Backing Databases<br/>(user-db, rabbitmq, etc.)"]:::k8sSvc
+        end
+
+        subgraph ClusterPods["Application & Database Pods"]
+            EUREKA_PODS["Pods: eureka-server"]:::k8sPod
+            CORE_PODS["Pods: Core Apps<br/>(user-service, product-service, etc.)"]:::k8sPod
+            DB_PODS["Pods: DBs, Redis, RabbitMQ"]:::k8sPod
+        end
+
+        subgraph PVBound["Persistent Storage Bound"]
+            PV_CLAIMS["PersistentVolumeClaims"]:::k8sVol
+        end
+    end
+
+    ExternalClient --> INGRESS
+    INGRESS --> GATEWAY_PODS
+    GATEWAY_PODS --> CORE_SVCS
+    CORE_SVCS --> CORE_PODS
+    CORE_PODS --> DB_SVCS
+    DB_SVCS --> DB_PODS
+    DB_PODS --> PV_CLAIMS
+    CORE_PODS -.-> EUREKA_SVC
+    EUREKA_SVC --> EUREKA_PODS
+```
+
+---
+
+## Key Architectural Features & Standardizations
+
+*   **Centralized Infrastructure Library (`common`)**: 
+    *   **Dynamic OpenAPI Swagger Configuration**: Uniform documentation dynamically resolved using each application's name. Supported standard JWT Bearer authorization filters.
+    *   **Consolidated Security Baseline (`SecurityCommonConfig`)**: Flexible baseline stateless HTTP filters managed using `@ConditionalOnMissingBean` for service overrides.
+    *   **Global Event Message Converter**: Unified Jackson JSON messaging framework to guarantee type-safety across queues.
+*   **Modular Multi-Stage Build Strategy**: Advanced Docker compilation compiling the shared `common` module inside build layers prior to individual service packagings, eliminating artifact drift.
+*   **Feign-driven Microservice Connectivity**:
+    *   **`product-service` 🔗 `file-storage-service`**: Product creation/update validates image file metadata existence synchronously via `FileStorageClient`. Dynamic image download URL resolutions `/files/download/{id}` are mapped during outputs.
+    *   **`notification-service` 🔗 `file-storage-service`**: Real-time asynchronous file uploaded/deleted event notifications are processed and enriched with real-time metadata (file size, file type, file name).
+
+---
+
+## Port Map Registry
+
+| Application/Service Portal | Address Protocol / Access URL |
+| :--- | :--- |
+| **API Gateway** | `http://localhost:8080` |
+| **Eureka Discovery Server** | [http://localhost:8761](http://localhost:8761) |
+| **Auth Service** | `http://localhost:8081` |
+| **Product Service** | `http://localhost:8082` |
+| **Order Service** | `http://localhost:8083` |
+| **Payment Service** | `http://localhost:8084` |
+| **User Service** | `http://localhost:8085` |
+| **Notification Service** | `http://localhost:8086` |
+| **File Storage Service** | `http://localhost:8087` |
+| **RabbitMQ Management Dashboard** | [http://localhost:15672](http://localhost:15672) *(guest / guest)* |
+| **PostgreSQL Database Engine** | `localhost:5432` |
+| **Prometheus Dashboard** | [http://localhost:9090](http://localhost:9090) |
+| **Grafana Monitoring Dashboard**| [http://localhost:3000](http://localhost:3000) *(admin / admin)* |
+| **OpenTelemetry Collector gRPC**| `localhost:4317` |
+
+---
+
+## Workspace Directory Tree
+
+```
+spring-boot-microservices/
+├── common/                          # Shared library module (Security, Swagger, RabbitMQ)
+├── api-gateway/                     # Spring Cloud API Gateway (Routing & Rate Limiting)
+├── eureka-server/                   # Netflix Eureka Service Discovery Registry
+├── auth-service/                    # Authentication Service (JWT Generation & Lifecycle)
+├── user-service/                    # User Profile Administration Domain
+├── product-service/                 # Product Inventory and FileStorage Integration
+├── order-service/                   # Orders Management Domain (RabbitMQ Publisher)
+├── payment-service/                 # Transactions and Settlement Processing
+├── file-storage-service/            # Dedicated Document and Media Storage Domain
+├── notification-service/            # Dynamic Email/SMS/Push Notification Dispatcher
+├── deployments/                     # Virtualization and Orchestration configs
+│   ├── docker/                      #   Docker Compose orchestration stack
+│   └── kubernetes/                  #   Fully translated Kubernetes manifests (K8s)
+├── docker-compose.yml               # Complete system dependencies virtualization compose
+└── README.md                        # Project architecture documentation
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+- [JDK 21+](https://adoptium.net/)
+- [Maven 3.9+](https://maven.apache.org/)
+- [Docker Engine & Compose](https://docs.docker.com/get-docker/)
+
+### 1. Launch Shared Infrastructure
+Spin up RabbitMQ, Postgres, Prometheus, Loki, Grafana, and OpenTelemetry Collectors:
+```bash
+docker compose up -d
+```
+
+### 2. Compile and Install Shared Common Library
+Before building individual services, install the `common` library module to the local Maven repository:
+```bash
+mvn clean install -pl common
+```
+
+### 3. Build & Run the Microservices Cluster
+Compile the workspace and compile the container images:
+```bash
+docker compose build
+```
+
+Boot up the entire microservices cluster:
+```bash
+docker compose up -d
+```
+
+Verify the status of the ecosystem:
+```bash
+docker compose ps
+```
+
+---
+
+## Integration Testing
+Verify standard API behaviors by executing the Hurl test suite sequentially:
+```bash
+hurl --test hurl/*.hurl
+```
