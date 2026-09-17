@@ -2,99 +2,182 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes rotateSun {
-  from {
-    transform: rotate(0deg);
-  }
+/* =====================================================
+   RETRO BRUTALISM THEME
+   ===================================================== */
 
-  to {
-    transform: rotate(360deg);
-  }
+:root {
+  /* shadcn tokens (HSL triplets) mapped to the retro palette */
+  --background: 42 52% 89%;
+  --foreground: 45 19% 12%;
+  --card: 42 100% 95%;
+  --card-foreground: 45 19% 12%;
+  --popover: 42 100% 95%;
+  --popover-foreground: 45 19% 12%;
+  --primary: 9 51% 38%;
+  --primary-foreground: 42 100% 95%;
+  --secondary: 85 22% 31%;
+  --secondary-foreground: 42 100% 95%;
+  --muted: 42 44% 83%;
+  --muted-foreground: 40 12% 40%;
+  --accent: 38 66% 52%;
+  --accent-foreground: 45 19% 12%;
+  --destructive: 9 51% 38%;
+  --destructive-foreground: 42 100% 95%;
+  --border: 42 14% 14%;
+  --input: 42 14% 14%;
+  --ring: 9 51% 38%;
+  --radius: 0rem;
+
+  /* Derived retro tokens (full colors). They reference the shadcn
+     triplets above, so they automatically follow whichever theme
+     class is active on <html>. badge-fill/ink is the vivid
+     highlight pair (amber in retro, primary in other themes). */
+  --surface: hsl(var(--card));
+  --surface-secondary: hsl(var(--muted));
+  --surface-dark: #252b20;
+  --ink: hsl(var(--foreground));
+  --shadow: hsl(var(--border));
+  --ink-muted: hsl(var(--muted-foreground));
+  --badge-fill: hsl(var(--accent));
+  --badge-ink: #181715;
+  --accent-light: color-mix(in srgb, hsl(var(--accent)) 55%, white);
+  --primary-hover: color-mix(in srgb, hsl(var(--primary)) 82%, black);
+  --secondary-hover: color-mix(in srgb, hsl(var(--secondary)) 82%, black);
+
+  --terminal-background: #1f261c;
+  --terminal-text: #d9e3b8;
+  --terminal-muted: #8d9875;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
 }
 
-@keyframes pulseSun {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-5deg);
-    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
-  }
-
-  50% {
-    transform: translateY(-10px) rotate(5deg);
-    filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.9));
-  }
-}
-
-@keyframes pulseRay {
-  0% {
-    opacity: 0.7;
-    height: 4px;
-  }
-
-  100% {
-    opacity: 1;
-    height: 6px;
-  }
-}
-
-@keyframes floatMoon {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-5deg);
-    filter: drop-shadow(0 0 15px rgba(147, 197, 253, 0.6));
-  }
-
-  50% {
-    transform: translateY(-10px) rotate(5deg);
-    filter: drop-shadow(0 0 25px rgba(96, 165, 250, 0.8));
-  }
-}
+/* =====================================================
+   BASE
+   ===================================================== */
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
-    --primary-foreground: 210 20% 98%;
-    --primary: 262.1 83.3% 57.8%;
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220.9 39.3% 11%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 262.1 83.3% 57.8%;
-    --radius: 0.5rem;
+  * {
+    @apply border-border;
   }
 
-  .dark {
-    --background: 224 71.4% 4.1%;
-    --foreground: 210 20% 98%;
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 210 20% 98%;
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 215 27.9% 16.9%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
-    --accent: 215 27.9% 16.9%;
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 263.4 70% 50.4%;
+  html {
+    scroll-behavior: smooth;
   }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+
+    @apply bg-background text-foreground;
+
+    font-family: var(--font-mono);
+
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+
+    overflow-x: hidden;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  ::selection {
+    background: var(--badge-fill);
+    color: var(--badge-ink);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    letter-spacing: -0.03em;
+  }
+
+}
+
+/* =====================================================
+   ALTERNATIVE THEMES
+   Kept unlayered (same as :root) so they override the
+   retro default by source order. Retro brutalism is the
+   :root default.
+   ===================================================== */
+
+.light,
+.retro {
+  --background: 42 52% 89%;
+  --foreground: 45 19% 12%;
+  --card: 42 100% 95%;
+  --card-foreground: 45 19% 12%;
+  --popover: 42 100% 95%;
+  --popover-foreground: 45 19% 12%;
+  --primary: 9 51% 38%;
+  --primary-foreground: 42 100% 95%;
+  --secondary: 85 22% 31%;
+  --secondary-foreground: 42 100% 95%;
+  --muted: 42 44% 83%;
+  --muted-foreground: 40 12% 40%;
+  --accent: 38 66% 52%;
+  --accent-foreground: 45 19% 12%;
+  --destructive: 9 51% 38%;
+  --destructive-foreground: 42 100% 95%;
+  --border: 45 19% 12%;
+  --input: 45 19% 12%;
+  --ring: 9 51% 38%;
+  --radius: 0rem;
+
+  /* vivid highlight pair for retro components */
+  --badge-fill: hsl(var(--accent));
+  --badge-ink: #181715;
+  --accent-light: color-mix(in srgb, hsl(var(--accent)) 55%, white);
+  --primary-hover: color-mix(in srgb, hsl(var(--primary)) 82%, black);
+  --secondary-hover: color-mix(in srgb, hsl(var(--secondary)) 82%, black);
+  --shadow: hsl(var(--border));
+}
+
+.dark {
+  --background: 40 10% 11%;
+  --foreground: 42 45% 90%;
+  --card: 40 8% 16%;
+  --card-foreground: 42 45% 90%;
+  --popover: 40 8% 16%;
+  --popover-foreground: 42 45% 90%;
+  --primary: 10 75% 52%;
+  --primary-foreground: 42 100% 98%;
+  --secondary: 85 28% 38%;
+  --secondary-foreground: 42 45% 90%;
+  --muted: 40 8% 22%;
+  --muted-foreground: 40 15% 65%;
+  --accent: 38 85% 52%;
+  --accent-foreground: 40 10% 11%;
+  --destructive: 10 75% 52%;
+  --destructive-foreground: 42 100% 98%;
+  --border: 42 45% 90%;
+  --input: 42 45% 90%;
+  --ring: 10 75% 52%;
+  --radius: 0rem;
+
+  /* vivid highlight pair for retro components */
+  --badge-fill: hsl(var(--accent));
+  --badge-ink: #181715;
+  --accent-light: color-mix(in srgb, hsl(var(--accent)) 25%, hsl(var(--card)));
+  --primary-hover: color-mix(in srgb, hsl(var(--primary)) 82%, white);
+  --secondary-hover: color-mix(in srgb, hsl(var(--secondary)) 82%, white);
+  --shadow: #000000;
+}
 
   .gruvbox-light {
     --background: 48 85% 88%;
@@ -117,6 +200,10 @@
     --input: 43 56% 81%;
     --ring: 37 80% 39%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .gruvbox-dark {
@@ -140,6 +227,10 @@
     --input: 20 5% 22%;
     --ring: 40 74% 49%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .everforest-light {
@@ -163,6 +254,10 @@
     --input: 54 19% 93%;
     --ring: 35 55% 48%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .everforest-dark {
@@ -186,6 +281,10 @@
     --input: 192 14% 29%;
     --ring: 35 55% 48%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .tokyo-night {
@@ -209,6 +308,10 @@
     --input: 223 15% 20%;
     --ring: 217 92% 73%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .tokyo-storm {
@@ -232,6 +335,10 @@
     --input: 224 15% 29%;
     --ring: 217 92% 73%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .tokyo-moon {
@@ -255,6 +362,10 @@
     --input: 224 15% 24%;
     --ring: 208 100% 75%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .molokai-light {
@@ -278,6 +389,10 @@
     --input: 27 22% 89%;
     --ring: 339 70% 56%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .molokai-dark {
@@ -301,6 +416,10 @@
     --input: 0 0% 22%;
     --ring: 339 85% 48%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .catppuccin-latte {
@@ -324,6 +443,10 @@
     --input: 220 13% 80%;
     --ring: 220 91% 54%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .catppuccin-frappe {
@@ -347,6 +470,10 @@
     --input: 230 15% 30%;
     --ring: 222 74% 74%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .catppuccin-macchiato {
@@ -370,6 +497,10 @@
     --input: 234 13% 31%;
     --ring: 220 83% 75%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
   }
 
   .catppuccin-mocha {
@@ -393,109 +524,381 @@
     --input: 240 13% 20%;
     --ring: 217 92% 76%;
     --radius: 0.5rem;
+
+    /* vivid highlight pair for retro components */
+    --badge-fill: hsl(var(--primary));
+    --badge-ink: hsl(var(--primary-foreground));
+  }
+
+/* =====================================================
+   BRUTALIST BORDER OVERRIDE (all themes)
+   Retro brutalism is the design language everywhere: every
+   theme gets the same hard, high-contrast 2px ink outline.
+   Border/input tokens follow the theme ink (foreground), and
+   corners stay sharp so the retro-* treatment reads through
+   shadcn components and legacy pages alike.
+   ===================================================== */
+
+.light,
+.dark,
+.gruvbox-light,
+.gruvbox-dark,
+.everforest-light,
+.everforest-dark,
+.tokyo-night,
+.tokyo-storm,
+.tokyo-moon,
+.molokai-light,
+.molokai-dark,
+.catppuccin-latte,
+.catppuccin-frappe,
+.catppuccin-macchiato,
+.catppuccin-mocha {
+  --border: var(--foreground);
+  --input: var(--foreground);
+  --radius: 0rem;
+}
+
+/* Sharp corners everywhere — the retro brutalist border reads
+   wrong on rounded boxes, so flatten all radius utilities except
+   deliberate circles (rounded-full). */
+[class*="rounded-"]:not([class*="rounded-full"]) {
+  border-radius: 0 !important;
+}
+
+/* =====================================================
+   RETRO COMPONENT HELPERS
+   ===================================================== */
+
+@layer components {
+  .retro-border {
+    border: 2px solid var(--ink);
+  }
+
+  .retro-shadow {
+    box-shadow: 5px 5px 0 var(--shadow);
+  }
+
+  .retro-shadow-sm {
+    box-shadow: 3px 3px 0 var(--shadow);
+  }
+
+  .retro-shadow-lg {
+    box-shadow: 8px 8px 0 var(--shadow);
+  }
+
+  .retro-card {
+    border: 2px solid var(--ink);
+
+    background: var(--surface);
+
+    box-shadow: 5px 5px 0 var(--shadow);
+
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .retro-card:hover {
+    transform: translate(-3px, -3px);
+
+    box-shadow: 8px 8px 0 var(--shadow);
+  }
+
+  .retro-panel {
+    border: 2px solid var(--ink);
+
+    background: var(--surface-secondary);
+
+    box-shadow: 4px 4px 0 var(--shadow);
+  }
+
+  .retro-badge {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 0.45rem;
+
+    border: 2px solid var(--ink);
+
+    background: var(--badge-fill);
+
+    color: var(--badge-ink) !important;
+
+    padding: 0.4rem 0.75rem;
+
+    box-shadow: 2px 2px 0 var(--shadow);
+
+    font-size: 0.72rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .bg-badge {
+    color: var(--badge-ink) !important;
+  }
+
+  .retro-badge-neutral {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 0.45rem;
+
+    border: 2px solid var(--ink);
+
+    background: var(--surface);
+
+    color: hsl(var(--foreground));
+
+    padding: 0.3rem 0.6rem;
+
+    box-shadow: 2px 2px 0 var(--shadow);
+
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Brutalist buttons ── */
+
+  .retro-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.5rem;
+
+    border: 2px solid var(--ink);
+
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+
+    padding: 0.75rem 1.5rem;
+
+    box-shadow: 4px 4px 0 var(--shadow);
+
+    font-size: 0.75rem;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+
+    cursor: pointer;
+
+    transition:
+      transform 140ms ease,
+      box-shadow 140ms ease,
+      background-color 140ms ease;
+  }
+
+  .retro-btn:hover {
+    transform: translate(-2px, -2px);
+
+    box-shadow: 6px 6px 0 var(--shadow);
+
+    background-color: var(--primary-hover);
+  }
+
+  .retro-btn:active {
+    transform: translate(2px, 2px);
+
+    box-shadow: 0 0 0 var(--shadow);
+  }
+
+  .retro-btn-secondary {
+    background: var(--surface);
+    color: hsl(var(--foreground));
+  }
+
+  .retro-btn-secondary:hover {
+    background-color: var(--accent-light);
+  }
+
+  .retro-btn-accent {
+    background: var(--badge-fill);
+    color: var(--badge-ink);
+  }
+
+  .retro-btn-accent:hover {
+    background-color: var(--badge-fill);
+  }
+
+  /* ── Chunky highlighted text ── */
+
+  .retro-highlight {
+    display: inline-block;
+
+    padding: 0 0.3em;
+
+    border: 2px solid var(--ink);
+
+    background: var(--badge-fill);
+    color: var(--badge-ink);
+
+    box-shadow: 0.08em 0.08em 0 var(--shadow);
+  }
+
+  /* ── Terminal ── */
+
+  .retro-terminal {
+    position: relative;
+
+    overflow: hidden;
+
+    border: 3px solid var(--ink);
+
+    background: var(--terminal-background);
+    color: var(--terminal-text);
+
+    box-shadow: 7px 7px 0 var(--shadow);
+  }
+
+  .retro-terminal::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    z-index: 10;
+
+    pointer-events: none;
+
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2px,
+      rgba(0, 0, 0, 0.12) 3px
+    );
+
+    opacity: 0.4;
+  }
+
+  .retro-terminal-bar {
+    display: flex;
+    align-items: center;
+
+    gap: 0.4rem;
+
+    border-bottom: 2px solid var(--ink);
+
+    background: var(--surface-secondary);
+    color: var(--ink);
+
+    padding: 0.5rem 0.75rem;
+
+    font-size: 0.72rem;
+    font-weight: 700;
+
+    white-space: nowrap;
+  }
+
+  .retro-terminal-bar i {
+    flex-shrink: 0;
+
+    width: 0.55rem;
+    height: 0.55rem;
+
+    border: 1px solid var(--ink);
+
+    background: var(--badge-fill);
+  }
+
+  .terminal-cursor {
+    display: inline-block;
+
+    color: var(--badge-fill);
+
+    animation: terminalBlink 0.8s steps(1) infinite;
+  }
+
+  /* ── Paper texture ── */
+
+  .retro-paper {
+    position: relative;
+
+    border: 2px solid var(--ink);
+
+    background: var(--surface);
+
+    box-shadow: 6px 6px 0 var(--shadow);
+  }
+
+  .retro-paper::before {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    pointer-events: none;
+
+    background-image: radial-gradient(
+      rgba(0, 0, 0, 0.25) 0.5px,
+      transparent 0.5px
+    );
+
+    background-size: 6px 6px;
+
+    opacity: 0.11;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
+/* =====================================================
+   LEGACY ALIASES
+   Old class names kept so untouched pages inherit the
+   brutalist look instead of breaking.
+   ===================================================== */
 
-  body {
-    @apply bg-background text-foreground;
-    scroll-behavior: smooth;
-  }
+.glass,
+.glass-morphism {
+  border: 2px solid var(--ink);
 
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar {
-    width: 10px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-background;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/20 rounded-full border-2 border-solid border-background;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/30;
-  }
-}
+  background: var(--surface);
 
-/* Glassmorphism Utilities */
-.glass {
-  background-color: hsl(var(--card) / 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid hsl(var(--border) / 0.5);
+  box-shadow: 5px 5px 0 var(--shadow);
 }
 
 .glass-strong {
-  background-color: hsl(var(--card) / 0.8);
-  backdrop-filter: blur(24px);
-  border: 1px solid hsl(var(--border) / 0.4);
+  border: 2px solid var(--ink);
+
+  background: var(--surface);
+
+  box-shadow: 7px 7px 0 var(--shadow);
 }
 
-.glass-morphism {
-  background-color: hsl(var(--card) / 0.5);
-  backdrop-filter: blur(16px);
-  border: 1px solid hsl(var(--foreground) / 0.1);
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+.text-shimmer {
+  color: hsl(var(--primary));
 }
 
-.dark .glass-morphism, 
-.gruvbox-dark .glass-morphism, 
-.everforest-dark .glass-morphism, 
-.tokyo-night .glass-morphism,
-.tokyo-storm .glass-morphism,
-.tokyo-moon .glass-morphism,
-.molokai-dark .glass-morphism,
-.catppuccin-frappe .glass-morphism,
-.catppuccin-macchiato .glass-morphism,
-.catppuccin-mocha .glass-morphism {
-  background-color: hsl(var(--card) / 0.4);
-  border: 1px solid hsl(var(--foreground) / 0.05);
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+.aurora-bg {
+  background: transparent;
+  animation: none;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.neon-glow,
+.neon-text {
+  animation: none;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.gradient-border {
+  position: relative;
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
+.magnetic-card {
+  transition: transform 0.15s ease-out;
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+.cursor-spotlight {
+  display: none;
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-.animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
-.animate-slide-down { animation: slideDown 0.5s ease-out forwards; }
-.animate-scale-in { animation: scaleIn 0.4s ease-out forwards; }
-.animate-float { animation: float 6s ease-in-out infinite; }
-
-.page-transition {
-  animation: fadeIn 0.4s ease-out forwards;
-}
+/* =====================================================
+   TABLE OF CONTENTS
+   ===================================================== */
 
 .toc {
   position: sticky;
@@ -503,7 +906,7 @@
   max-height: calc(100vh - 4rem);
   overflow-y: auto;
   padding: 1rem;
-  border-left: 2px solid #e2e8f0;
+  border-left: 2px solid var(--ink);
 }
 
 .toc ul {
@@ -521,5 +924,231 @@
 }
 
 .toc a:hover {
-  color: #3b82f6;
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+/* =====================================================
+   ANIMATIONS
+   ===================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes terminalBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.page-transition {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.stagger-children > * {
+  opacity: 0;
+  animation: stagger-in 0.5s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.stagger-children > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.stagger-children > *:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.stagger-children > *:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.stagger-children > *:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.stagger-children > *:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+.stagger-children > *:nth-child(7) {
+  animation-delay: 0.35s;
+}
+
+.stagger-children > *:nth-child(8) {
+  animation-delay: 0.4s;
+}
+
+/* =====================================================
+   SCROLLBAR
+   ===================================================== */
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-secondary);
+
+  border-left: 2px solid var(--ink);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid var(--ink);
+
+  background: hsl(var(--primary));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
+}
+
+/* =====================================================
+   APP-SHELL INTERACTION PREFERENCES (src/main.tsx)
+   ===================================================== */
+
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-input="pointer"] :focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 768px) {
+  body {
+    background-size: 18px 18px;
+  }
+
+  .retro-card,
+  .retro-shadow {
+    box-shadow: 3px 3px 0 var(--shadow);
+  }
+
+  .retro-card:hover {
+    transform: none;
+
+    box-shadow: 3px 3px 0 var(--shadow);
+  }
+
+  .retro-shadow-lg,
+  .retro-terminal {
+    box-shadow: 4px 4px 0 var(--shadow);
+  }
+}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -9,6 +9,11 @@ pnpm-debug.log*
 lerna-debug.log*
 cv.typst
 attachment.typst
+cover_letter.typst
+cover_letter_id.typst
+cv_rust.typst
+cv_java.typst
+cv_go.typst
 
 node_modules
 dist

@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useState } from 'react';
 
 const themes = [
+    { value: 'retro', label: 'Retro Brutalism', color: '#f1e8d3', border: '#29261f' },
     { value: 'light', label: 'Light', color: '#ffffff', border: '#e5e5e5' },
     { value: 'dark', label: 'Dark', color: '#1a1b26', border: '#414868' },
     { value: 'gruvbox-light', label: 'Gruvbox Light', color: '#fbf1c7', border: '#d5c4a1' },
@@ -41,79 +42,61 @@ const BottomNav = () => {
     return (
         <>
             <div className="md:hidden fixed bottom-6 left-4 right-4 z-50">
-                <div className="max-w-lg mx-auto bg-card/95 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl shadow-primary/5">
-                    <div className="px-2 py-3">
-                        <div className="flex items-center justify-around gap-1">
-                            {navItems.map((item) => {
-                                const Icon = item.icon;
-                                const active = isActive(item.path);
+                <div className="retro-shadow mx-auto max-w-lg border-2 border-ink bg-surface">
+                    <div className="flex items-stretch justify-around gap-1 px-2 py-2">
+                        {navItems.map((item) => {
+                            const Icon = item.icon;
+                            const active = isActive(item.path);
 
-                                return (
-                                    <Link
-                                        key={item.path}
-                                        to={item.path}
-                                        className={`relative flex flex-col items-center justify-center flex-1 py-2 px-2 rounded-2xl transition-all duration-300 ${active
-                                            ? "text-primary"
-                                            : "text-muted-foreground active:scale-95"
-                                            }`}
-                                    >
-                                        {active && (
-                                            <div className="absolute inset-0 bg-primary/10 rounded-2xl animate-in fade-in zoom-in-95 duration-200"></div>
-                                        )}
-                                        <div className="relative">
-                                            {active && (
-                                                <div className="absolute inset-0 bg-primary/30 blur-lg rounded-full animate-pulse"></div>
-                                            )}
-                                            <Icon
-                                                size={20}
-                                                className={`relative mb-1 transition-transform duration-300 ${active ? "scale-110" : ""
-                                                    }`}
-                                                strokeWidth={active ? 2.5 : 2}
-                                            />
-                                        </div>
-                                        <span
-                                            className={`text-[10px] font-semibold transition-all duration-300 ${active ? "opacity-100" : "opacity-70"
-                                                }`}
-                                        >
-                                            {item.label}
-                                        </span>
-                                        {active && (
-                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full animate-in zoom-in duration-200"></div>
-                                        )}
-                                    </Link>
-                                );
-                            })}
-                            <button
-                                onClick={() => setShowThemeModal(true)}
-                                className="relative flex flex-col items-center justify-center flex-1 py-2 px-2 rounded-2xl text-muted-foreground active:scale-95 transition-all duration-300"
-                            >
-                                <Palette size={20} className="mb-1" strokeWidth={2} />
-                                <span className="text-[10px] font-semibold opacity-70">
-                                    Theme
-                                </span>
-                            </button>
-                        </div>
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={item.path}
+                                    className={`flex flex-1 flex-col items-center justify-center gap-1 border-2 px-2 py-2 transition-all duration-150 ${
+                                        active
+                                            ? "border-ink bg-badge text-badge-ink shadow-retro-sm"
+                                            : "border-transparent text-muted-foreground active:translate-y-0.5"
+                                    }`}
+                                >
+                                    <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                                    <span className="text-[10px] font-black uppercase tracking-wider">
+                                        {item.label}
+                                    </span>
+                                </Link>
+                            );
+                        })}
+                        <button
+                            onClick={() => setShowThemeModal(true)}
+                            className="flex flex-1 flex-col items-center justify-center gap-1 border-2 border-transparent px-2 py-2 text-muted-foreground transition-all duration-150 active:translate-y-0.5"
+                        >
+                            <Palette size={20} strokeWidth={2} />
+                            <span className="text-[10px] font-black uppercase tracking-wider">
+                                Theme
+                            </span>
+                        </button>
                     </div>
                 </div>
             </div>
+
             {showThemeModal && (
                 <div className="md:hidden fixed inset-0 z-[60]">
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/50"
                         onClick={() => setShowThemeModal(false)}
                     />
-                    <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-3xl border-t border-border max-h-[75vh] flex flex-col animate-in slide-in-from-bottom-4 duration-300">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                            <h3 className="font-semibold text-lg">Select Theme</h3>
+                    <div className="animate-slide-up absolute bottom-0 left-0 right-0 max-h-[75vh] border-t-2 border-ink bg-surface shadow-retro-lg flex flex-col">
+                        <div className="flex items-center justify-between border-b-2 border-ink px-5 py-4">
+                            <h3 className="text-base font-black uppercase tracking-wider">Select Theme</h3>
                             <button
                                 onClick={() => setShowThemeModal(false)}
-                                className="p-2 rounded-lg hover:bg-accent active:scale-95 transition"
+                                className="grid size-9 place-items-center border-2 border-ink bg-surface shadow-retro-sm transition-colors hover:bg-accent-light"
+                                aria-label="Close theme selector"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="h-5 w-5" />
                             </button>
                         </div>
 
-                        <div className="overflow-y-auto px-4 py-4 space-y-2">
+                        <div className="space-y-2 overflow-y-auto px-4 py-4">
                             {themes.map((t) => (
                                 <button
                                     key={t.value}
@@ -121,23 +104,21 @@ const BottomNav = () => {
                                         setTheme(t.value as any);
                                         setShowThemeModal(false);
                                     }}
-                                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-left transition active:scale-[0.98] ${theme === t.value
-                                        ? "bg-primary/10 text-primary border-2 border-primary/20"
-                                        : "border-2 border-transparent hover:bg-accent"
-                                        }`}
+                                    className={`flex w-full items-center gap-4 border-2 px-4 py-3.5 text-left transition-all duration-150 ${
+                                        theme === t.value
+                                            ? "border-ink bg-accent-light text-foreground shadow-retro-sm"
+                                            : "border-transparent hover:bg-accent-light"
+                                    }`}
                                 >
-                                    <div
-                                        className="w-8 h-8 rounded-lg border-2 shadow-sm flex-shrink-0"
-                                        style={{
-                                            backgroundColor: t.color,
-                                            borderColor: t.border,
-                                        }}
+                                    <span
+                                        className="h-8 w-8 shrink-0 border-2 border-ink"
+                                        style={{ backgroundColor: t.color }}
                                     />
-                                    <span className="flex-1 font-medium text-base">
+                                    <span className="flex-1 text-base font-bold">
                                         {t.label}
                                     </span>
                                     {theme === t.value && (
-                                        <Check className="w-5 h-5 flex-shrink-0" />
+                                        <Check className="h-5 w-5 shrink-0" />
                                     )}
                                 </button>
                             ))}

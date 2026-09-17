@@ -3,14 +3,43 @@ import React from "react";
 import CodeBlock from "./CodeBlock";
 import Latex from "react-latex";
 import "katex/dist/katex.min.css";
-import { ExternalLink, Quote } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 const PreContext = React.createContext(false);
 
 export const sharedComponents = {
     Latex: ({ children }: { children: string }) => (
-        <div className="overflow-x-auto my-8">
-            <div className="font-serif whitespace-pre-wrap break-words text-base text-foreground bg-accent/30 p-6 rounded-xl border border-border">
+        <div style={{ overflowX: "auto", margin: "2rem 0" }}>
+            <div
+                style={{
+                    fontFamily: "var(--font-mono)",
+                    border: "2px solid hsl(var(--border))",
+                    boxShadow: "4px 4px 0 hsl(var(--border))",
+                    background: "hsl(var(--muted))",
+                    padding: "1.25rem 1.5rem",
+                    fontSize: "0.95rem",
+                    color: "hsl(var(--foreground))",
+                    position: "relative",
+                }}
+            >
+                <span
+                    style={{
+                        position: "absolute",
+                        top: "-11px",
+                        left: "12px",
+                        fontSize: "9px",
+                        fontWeight: 900,
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        background: "hsl(var(--accent))",
+                        border: "2px solid hsl(var(--border))",
+                        padding: "0 6px",
+                        color: "hsl(var(--foreground))",
+                        fontFamily: "var(--font-mono)",
+                    }}
+                >
+                    MATH
+                </span>
                 <Latex>{children}</Latex>
             </div>
         </div>
@@ -18,40 +47,90 @@ export const sharedComponents = {
 
     // ── Tables ──────────────────────────────────────────────────────────────
     table: ({ children }: { children: React.ReactNode }) => (
-        <div className="overflow-x-auto my-10 rounded-2xl border border-border shadow-sm">
-            <table className="w-full text-sm font-sans">{children}</table>
+        <div
+            style={{
+                overflowX: "auto",
+                margin: "2.5rem 0",
+                border: "2px solid hsl(var(--border))",
+                boxShadow: "4px 4px 0 hsl(var(--border))",
+            }}
+        >
+            <table
+                style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.875rem",
+                }}
+            >
+                {children}
+            </table>
         </div>
     ),
     thead: ({ children }: { children: React.ReactNode }) => (
-        <thead className="bg-accent/50">{children}</thead>
+        <thead
+            style={{
+                background: "hsl(var(--foreground))",
+                color: "hsl(var(--background))",
+            }}
+        >
+            {children}
+        </thead>
     ),
     tbody: ({ children }: { children: React.ReactNode }) => (
-        <tbody className="bg-card divide-y divide-border">{children}</tbody>
+        <tbody>{children}</tbody>
     ),
     tr: ({ children }: { children: React.ReactNode }) => (
-        <tr className="hover:bg-accent/30 transition-colors duration-150">{children}</tr>
+        <tr style={{ borderBottom: "1px solid hsl(var(--border))" }}>
+            {children}
+        </tr>
     ),
     th: ({ children }: { children: React.ReactNode }) => (
-        <th className="font-sans px-6 py-4 text-left font-semibold text-foreground text-xs uppercase tracking-wider border-b-2 border-border">
+        <th
+            style={{
+                padding: "0.75rem 1rem",
+                textAlign: "left",
+                fontWeight: 900,
+                fontSize: "0.7rem",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                fontFamily: "var(--font-mono)",
+            }}
+        >
             {children}
         </th>
     ),
     td: ({ children }: { children: React.ReactNode }) => (
-        <td className="font-sans px-6 py-4 text-foreground">{children}</td>
+        <td
+            style={{
+                padding: "0.75rem 1rem",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.875rem",
+                color: "hsl(var(--foreground))",
+                borderRight: "1px solid hsl(var(--border) / 0.4)",
+            }}
+        >
+            {children}
+        </td>
     ),
 
     // ── Code ────────────────────────────────────────────────────────────────
-    code: ({
-        className,
-        children,
-        ...props
-    }: any) => {
+    code: ({ className, children, ...props }: any) => {
         const isInPre = React.useContext(PreContext);
         const isInline = !isInPre && !className && !("data-language" in props);
         if (isInline) {
             return (
                 <code
-                    className="px-1.5 py-0.5 mx-0.5 rounded-md bg-accent text-primary font-mono text-[0.875em] font-medium border border-border/60"
+                    style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "0.85em",
+                        fontWeight: 700,
+                        background: "hsl(var(--foreground))",
+                        color: "hsl(var(--background))",
+                        padding: "0.1em 0.45em",
+                        border: "1.5px solid hsl(var(--border))",
+                        letterSpacing: "0.02em",
+                    }}
                     {...props}
                 >
                     {children}
@@ -65,13 +144,11 @@ export const sharedComponents = {
         );
     },
 
-    pre: ({ children, ...props }: any) => {
-        return (
-            <PreContext.Provider value={true}>
-                <CodeBlock {...props}>{children}</CodeBlock>
-            </PreContext.Provider>
-        );
-    },
+    pre: ({ children, ...props }: any) => (
+        <PreContext.Provider value={true}>
+            <CodeBlock {...props}>{children}</CodeBlock>
+        </PreContext.Provider>
+    ),
 
     figure: ({ children, ...props }: any) => {
         if ("data-rehype-pretty-code-figure" in props) {
@@ -82,64 +159,229 @@ export const sharedComponents = {
 
     // ── Headings ─────────────────────────────────────────────────────────────
     h1: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-        <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground mb-6 mt-14 first:mt-0 pb-4 border-b border-border" {...props}>
+        <h1
+            style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "clamp(1.6rem, 4vw, 2.25rem)",
+                fontWeight: 900,
+                letterSpacing: "-0.03em",
+                textTransform: "uppercase",
+                color: "hsl(var(--foreground))",
+                margin: "3.5rem 0 1.25rem",
+                paddingBottom: "0.75rem",
+                borderBottom: "3px solid hsl(var(--border))",
+                lineHeight: 1.1,
+            }}
+            {...props}
+        >
             {children}
         </h1>
     ),
 
     h2: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-        <h2 className="text-2xl md:text-[28px] font-bold tracking-tight text-foreground mt-16 mb-6 pt-8 border-t border-border/60 first:border-t-0 first:pt-0 first:mt-0" {...props}>
+        <h2
+            style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "clamp(1.2rem, 3vw, 1.7rem)",
+                fontWeight: 900,
+                letterSpacing: "-0.02em",
+                textTransform: "uppercase",
+                color: "hsl(var(--foreground))",
+                margin: "3rem 0 1rem",
+                paddingTop: "0.75rem",
+                paddingLeft: "1rem",
+                borderTop: "2px solid hsl(var(--border))",
+                lineHeight: 1.15,
+                position: "relative",
+            }}
+            {...props}
+        >
+            <span
+                style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "4px",
+                    height: "60%",
+                    background: "hsl(var(--primary))",
+                    display: "block",
+                    marginTop: "0.35rem",
+                }}
+            />
             {children}
         </h2>
     ),
 
     h3: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-        <h3 className="text-xl md:text-[22px] font-semibold text-foreground mt-10 mb-4 flex items-center gap-3" {...props}>
-            <span className="w-1 h-6 rounded-full bg-primary inline-block flex-shrink-0" />
+        <h3
+            style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "clamp(1rem, 2.5vw, 1.3rem)",
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                color: "hsl(var(--foreground))",
+                margin: "2.25rem 0 0.75rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.6rem",
+                lineHeight: 1.2,
+            }}
+            {...props}
+        >
+            <span
+                style={{
+                    display: "inline-block",
+                    width: "20px",
+                    height: "20px",
+                    background: "hsl(var(--accent))",
+                    border: "2px solid hsl(var(--border))",
+                    flexShrink: 0,
+                }}
+            />
             {children}
         </h3>
     ),
 
     h4: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-        <h4 className="text-lg font-semibold text-foreground mt-8 mb-3" {...props}>
+        <h4
+            style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.95rem",
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "hsl(var(--muted-foreground))",
+                margin: "1.75rem 0 0.5rem",
+                borderLeft: "3px solid hsl(var(--accent))",
+                paddingLeft: "0.6rem",
+            }}
+            {...props}
+        >
             {children}
         </h4>
     ),
 
     // ── Body text ─────────────────────────────────────────────────────────────
     p: ({ children }: { children: React.ReactNode }) => (
-        <p className="text-[17px] text-foreground/90 leading-[1.85] mb-7 font-serif">
+        <p
+            style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.975rem",
+                lineHeight: 1.9,
+                color: "hsl(var(--foreground) / 0.88)",
+                marginBottom: "1.5rem",
+                letterSpacing: "0.01em",
+            }}
+        >
             {children}
         </p>
     ),
 
     // ── Lists ─────────────────────────────────────────────────────────────────
     ul: ({ children }: { children: React.ReactNode }) => (
-        <ul className="space-y-2.5 mb-8 ml-1 font-serif">{children}</ul>
+        <ul
+            style={{
+                listStyle: "none",
+                margin: "0 0 1.75rem 0",
+                padding: 0,
+                fontFamily: "var(--font-mono)",
+            }}
+        >
+            {children}
+        </ul>
     ),
     ol: ({ children }: { children: React.ReactNode }) => (
-        <ol className="space-y-2.5 mb-8 ml-1 list-none counter-reset-list font-serif">
+        <ol
+            style={{
+                listStyle: "none",
+                margin: "0 0 1.75rem 0",
+                padding: 0,
+                fontFamily: "var(--font-mono)",
+                counterReset: "brute-ol",
+            }}
+        >
             {children}
         </ol>
     ),
     li: ({ children }: { children: React.ReactNode }) => (
-        <li className="text-[16px] text-foreground/85 leading-[1.8] pl-7 relative before:content-['•'] before:absolute before:left-0 before:text-primary/60 before:font-bold before:text-lg">
+        <li
+            style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.95rem",
+                lineHeight: 1.85,
+                color: "hsl(var(--foreground) / 0.85)",
+                paddingLeft: "1.6rem",
+                marginBottom: "0.45rem",
+                position: "relative",
+            }}
+        >
+            <span
+                style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "0.55em",
+                    width: "8px",
+                    height: "8px",
+                    background: "hsl(var(--primary))",
+                    border: "1.5px solid hsl(var(--border))",
+                    display: "inline-block",
+                    flexShrink: 0,
+                }}
+            />
             {children}
         </li>
     ),
 
     // ── Blockquote ────────────────────────────────────────────────────────────
     blockquote: ({ children }: { children: React.ReactNode }) => (
-        <blockquote className="relative my-10 p-6 pl-8 bg-accent/20 rounded-2xl border-l-[3px] border-primary/40">
-            <Quote className="absolute top-5 right-5 w-8 h-8 text-primary/10" />
-            <div className="font-serif text-foreground/80 italic text-[17px] leading-[1.8] [&>p]:mb-0">
+        <blockquote
+            style={{
+                position: "relative",
+                margin: "2.25rem 0",
+                padding: "1.5rem 1.5rem 1.25rem 1.5rem",
+                background: "hsl(var(--accent) / 0.18)",
+                border: "2px solid hsl(var(--border))",
+                borderLeft: "6px solid hsl(var(--primary))",
+                boxShadow: "4px 4px 0 hsl(var(--border))",
+            }}
+        >
+            <span
+                style={{
+                    position: "absolute",
+                    top: "-12px",
+                    left: "14px",
+                    fontSize: "9px",
+                    fontWeight: 900,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    background: "hsl(var(--primary))",
+                    color: "hsl(var(--primary-foreground))",
+                    border: "2px solid hsl(var(--border))",
+                    padding: "0 8px",
+                    fontFamily: "var(--font-mono)",
+                }}
+            >
+                QUOTE
+            </span>
+            <div
+                style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.975rem",
+                    lineHeight: 1.8,
+                    color: "hsl(var(--foreground) / 0.82)",
+                    fontStyle: "italic",
+                    letterSpacing: "0.015em",
+                }}
+            >
                 {children}
             </div>
         </blockquote>
     ),
 
     // ── Links ─────────────────────────────────────────────────────────────────
-    a: ({ href, children, className }: { href?: string; children: React.ReactNode, className?: string }) => {
+    a: ({ href, children, className }: { href?: string; children: React.ReactNode; className?: string }) => {
         const isExternal = href?.startsWith("http");
         const isAnchor = href?.startsWith("#");
         const isSubheading = className?.includes("subheading-anchor");
@@ -151,16 +393,10 @@ export const sharedComponents = {
                 if (!id) return;
                 const element = document.getElementById(id);
                 if (element) {
-                    const offset = 80; // Account for fixed navbar
+                    const offset = 80;
                     const elementPosition = element.getBoundingClientRect().top;
                     const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-                    window.scrollTo({
-                        top: offsetPosition,
-                        behavior: "smooth"
-                    });
-
-                    // Update URL hash without triggering navigation
+                    window.scrollTo({ top: offsetPosition, behavior: "smooth" });
                     window.history.pushState(null, "", window.location.hash.split("?")[0] + href);
                 }
             }
@@ -171,7 +407,7 @@ export const sharedComponents = {
                 <a
                     href={href}
                     onClick={handleClick}
-                    className="no-underline text-inherit hover:text-primary transition-colors duration-200"
+                    style={{ textDecoration: "none", color: "inherit" }}
                     aria-label="Link to section"
                 >
                     {children}
@@ -183,45 +419,104 @@ export const sharedComponents = {
             <a
                 href={href}
                 onClick={handleClick}
-                className="font-sans inline-flex items-center gap-1 text-primary hover:text-primary/70 font-medium underline decoration-primary/30 underline-offset-[3px] hover:decoration-primary/60 transition-colors duration-200"
+                style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    color: "hsl(var(--primary))",
+                    textDecoration: "underline",
+                    textDecorationThickness: "2px",
+                    textUnderlineOffset: "3px",
+                    textDecorationColor: "hsl(var(--primary) / 0.5)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "3px",
+                }}
                 target={isExternal ? "_blank" : undefined}
                 rel={isExternal ? "noopener noreferrer" : undefined}
             >
                 {children}
-                {isExternal && <ExternalLink className="w-3 h-3 flex-shrink-0" />}
+                {isExternal && <ExternalLink style={{ width: "0.7em", height: "0.7em", flexShrink: 0 }} />}
             </a>
         );
     },
 
     // ── Inline formatting ─────────────────────────────────────────────────────
     strong: ({ children }: { children: React.ReactNode }) => (
-        <strong className="font-bold text-foreground">{children}</strong>
+        <strong
+            style={{
+                fontWeight: 900,
+                color: "hsl(var(--foreground))",
+                fontFamily: "var(--font-mono)",
+                background: "hsl(var(--accent) / 0.35)",
+                padding: "0 3px",
+            }}
+        >
+            {children}
+        </strong>
     ),
     em: ({ children }: { children: React.ReactNode }) => (
-        <em className="italic text-foreground/85">{children}</em>
+        <em
+            style={{
+                fontStyle: "italic",
+                color: "hsl(var(--foreground) / 0.8)",
+                fontFamily: "var(--font-mono)",
+            }}
+        >
+            {children}
+        </em>
     ),
 
     // ── Dividers ──────────────────────────────────────────────────────────────
     hr: () => (
-        <div className="my-14 flex items-center justify-center gap-2">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border" />
-            <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
-            <div className="w-1.5 h-1.5 rounded-full bg-primary/50" />
-            <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border" />
+        <div style={{ margin: "3rem 0", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div style={{ flex: 1, height: "2px", background: "hsl(var(--border))" }} />
+            <span
+                style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "9px",
+                    fontWeight: 900,
+                    letterSpacing: "0.2em",
+                    color: "hsl(var(--muted-foreground))",
+                    padding: "2px 8px",
+                    border: "2px solid hsl(var(--border))",
+                    background: "hsl(var(--muted))",
+                }}
+            >
+                ///
+            </span>
+            <div style={{ flex: 1, height: "2px", background: "hsl(var(--border))" }} />
         </div>
     ),
 
     // ── Images ────────────────────────────────────────────────────────────────
     img: ({ src, alt }: { src?: string; alt?: string }) => (
-        <figure className="my-10">
-            <img
-                src={src}
-                alt={alt}
-                className="rounded-2xl border border-border shadow-md w-full object-cover"
-            />
+        <figure style={{ margin: "2.5rem 0" }}>
+            <div
+                style={{
+                    border: "2px solid hsl(var(--border))",
+                    boxShadow: "5px 5px 0 hsl(var(--border))",
+                    overflow: "hidden",
+                }}
+            >
+                <img
+                    src={src}
+                    alt={alt}
+                    style={{ maxWidth: "100%", height: "auto", display: "block" }}
+                />
+            </div>
             {alt && (
-                <figcaption className="font-sans text-[13px] text-muted-foreground text-center mt-3">
+                <figcaption
+                    style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "0.72rem",
+                        color: "hsl(var(--muted-foreground))",
+                        textAlign: "center",
+                        marginTop: "0.6rem",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        fontWeight: 700,
+                    }}
+                >
                     {alt}
                 </figcaption>
             )}

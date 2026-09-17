@@ -6,22 +6,18 @@ import { useEffect, useState } from "react";
 const Navbar = () => {
     const location = useLocation();
     const [isVisible, setIsVisible] = useState(true);
-    const [isScrolled, setIsScrolled] = useState(false);
     const [lastScrollY, setLastScrollY] = useState(0);
 
     useEffect(() => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
-            
-            // Show/hide logic
+
             if (currentScrollY > lastScrollY && currentScrollY > 80) {
                 setIsVisible(false);
             } else {
                 setIsVisible(true);
             }
-            
-            // Background opacity logic
-            setIsScrolled(currentScrollY > 20);
+
             setLastScrollY(currentScrollY);
         };
 
@@ -34,68 +30,58 @@ const Navbar = () => {
         (path === "/blog" && location.pathname.startsWith("/blog/")) ||
         (path === "/portfolio" && location.pathname.startsWith("/portfolio/"));
 
-    const navLinkClass = (path: string) => {
-        const active = isActive(path);
-        return `relative px-5 py-2 text-sm font-bold transition-all duration-300 rounded-xl overflow-hidden group ${active
-            ? "text-primary"
-            : "text-muted-foreground hover:text-foreground"
-            }`;
-    };
-
     return (
-        <nav 
-          className={`hidden md:block sticky top-0 z-50 transition-all duration-500 transform ${
-            isVisible ? "translate-y-0" : "-translate-y-full"
-          } ${
-            isScrolled ? "py-3" : "py-5"
-          }`}
+        <nav
+            className={`hidden md:block sticky top-0 z-50 border-b-2 border-ink bg-surface transition-transform duration-300 ${
+                isVisible ? "translate-y-0" : "-translate-y-full"
+            }`}
+            style={{ boxShadow: "0 4px 0 var(--shadow)" }}
         >
-            <div className="max-w-5xl mx-auto px-6">
-                <div className={`relative flex items-center justify-between px-6 h-16 rounded-2xl transition-all duration-500 ${
-                  isScrolled ? "glass-strong shadow-2xl shadow-primary/5" : "bg-transparent"
-                }`}>
-                    {/* Top border glow ray */}
-                    <div className={`absolute top-0 left-10 right-10 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent transition-opacity duration-500 ${isScrolled ? "opacity-100" : "opacity-0"}`} />
-
-                    <Link
-                        to="/"
-                        className="flex items-center gap-3 group"
-                    >
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-primary/30 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            <MinecraftIcon className="w-8 h-8 transition-transform duration-500 group-hover:rotate-12" />
-                        </div>
-                        <span className="text-xl font-black tracking-tighter text-foreground group-hover:text-primary transition-colors duration-200">
-                            RH
+            <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+                {/* Brand / Logo */}
+                <Link to="/" className="group flex items-center gap-3" aria-label="Home">
+                    <span className="grid size-9 place-items-center border-2 border-ink bg-badge shadow-retro-sm transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:-rotate-3">
+                        <MinecraftIcon className="size-7" />
+                    </span>
+                    <span className="flex items-center gap-2">
+                        <span className="text-xl font-black tracking-tighter text-foreground">
+                            RH<span className="text-primary">.</span>
                         </span>
-                    </Link>
+                        {/* Live status dot */}
+                        <span className="relative flex size-2">
+                            <span className="absolute inline-flex h-full w-full animate-ping bg-secondary opacity-60"></span>
+                            <span className="relative inline-flex h-2 w-2 border border-ink bg-secondary"></span>
+                        </span>
+                    </span>
+                </Link>
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1 p-1 rounded-xl">
-                            {[
-                                { path: "/", label: "Home" },
-                                { path: "/blog", label: "Blog" },
-                                { path: "/portfolio", label: "Portfolio" },
-                                { path: "/about", label: "About" },
-                            ].map((item) => (
-                                <Link 
-                                  key={item.path} 
-                                  to={item.path} 
-                                  className={navLinkClass(item.path)}
-                                >
-                                    <span className="relative z-10">{item.label}</span>
-                                    {isActive(item.path) && (
-                                        <div className="absolute inset-0 bg-primary/10 animate-in fade-in zoom-in-95 duration-300" />
-                                    )}
-                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-primary transition-all duration-300 group-hover:w-1/2" />
-                                </Link>
-                            ))}
-                        </div>
+                {/* Navigation Items */}
+                <div className="flex items-center gap-2">
+                    {[
+                        { path: "/", label: "Home" },
+                        { path: "/blog", label: "Blog" },
+                        { path: "/portfolio", label: "Portfolio" },
+                        { path: "/about", label: "About" },
+                    ].map((item) => {
+                        const active = isActive(item.path);
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                className={`border-2 px-4 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-150 ${
+                                    active
+                                        ? "-translate-y-0.5 border-ink bg-badge text-badge-ink shadow-retro-sm"
+                                        : "border-transparent text-muted-foreground hover:border-ink hover:bg-accent-light hover:text-foreground"
+                                }`}
+                            >
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+                </div>
 
-                        <div className="ml-2 pl-4 border-l border-border/50">
-                            <ThemeToggle />
-                        </div>
-                    </div>
+                <div className="flex items-center gap-3">
+                    <ThemeToggle />
                 </div>
             </div>
         </nav>

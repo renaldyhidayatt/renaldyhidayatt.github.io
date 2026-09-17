@@ -57,7 +57,23 @@ const config = {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
-				}
+				},
+				ink: 'var(--ink)',
+				shadow: 'var(--shadow)',
+				badge: 'var(--badge-fill)',
+				'badge-ink': 'var(--badge-ink)',
+				surface: 'var(--surface)',
+				'surface-secondary': 'var(--surface-secondary)',
+				'surface-dark': 'var(--surface-dark)',
+				'accent-light': 'var(--accent-light)',
+				'primary-hover': 'var(--primary-hover)',
+				'secondary-hover': 'var(--secondary-hover)'
+			},
+			boxShadow: {
+				retro: '5px 5px 0 0 var(--shadow)',
+				'retro-sm': '3px 3px 0 0 var(--shadow)',
+				'retro-lg': '8px 8px 0 0 var(--shadow)',
+				'none': '0 0 #0000'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

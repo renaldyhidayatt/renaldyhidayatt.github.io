@@ -96,7 +96,8 @@ const BlogPost = () => {
                                     {post.tags.map((tag) => (
                                         <span
                                             key={tag}
-                                            className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg bg-accent text-muted-foreground border border-border"
+                                            className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wider bg-accent text-accent-foreground border-2 border-border"
+                                            style={{ boxShadow: "2px 2px 0 hsl(var(--border))" }}
                                         >
                                             {tag}
                                         </span>
@@ -131,7 +132,7 @@ const BlogPost = () => {
                         </header>
                         
                         {/* Divider */}
-                        <div className="h-px bg-border mt-10" />
+                        <div className="h-[3px] bg-border mt-10" />
                     </div>
                 </div>
 
@@ -140,13 +141,15 @@ const BlogPost = () => {
                     <article className="max-w-[720px] w-full space-y-12">
                         {/* Hero Image */}
                         {post.image && (
-                            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-3xl border border-border shadow-2xl transition-all duration-700 hover:shadow-primary/10">
+                            <div
+                                className="relative w-full overflow-hidden"
+                                style={{ border: "2px solid hsl(var(--border))", boxShadow: "5px 5px 0 hsl(var(--border))" }}
+                            >
                                 <img
                                     src={post.image}
                                     alt={post.title}
-                                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                                    className="w-full h-auto block"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent pointer-events-none" />
                             </div>
                         )}
                         <MDXContent code={post.content} />
@@ -154,7 +157,7 @@ const BlogPost = () => {
 
                     {/* TOC Sidebar */}
                     <aside className="hidden lg:block">
-                        <div className="sticky top-32 pl-8 border-l border-border/10">
+                        <div className="sticky top-32">
                             <TableOfContents toc={post.toc} />
                         </div>
                     </aside>
@@ -162,15 +165,18 @@ const BlogPost = () => {
 
                 {/* ── Related Articles ─────────────────────────── */}
                 <div className="max-w-[960px] mx-auto px-6 mt-20">
-                    <div className="h-px bg-border mb-14" />
+                    <div className="h-[3px] bg-border mb-14" />
 
                     {randomPosts.length > 0 && (
                         <section className="space-y-8">
                             <div className="flex items-center gap-3">
-                                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                                <span
+                                    className="text-[10px] font-black uppercase tracking-widest text-foreground px-2 py-0.5"
+                                    style={{ border: "2px solid hsl(var(--border))", background: "hsl(var(--foreground))", color: "hsl(var(--background))" }}
+                                >
                                     Continue Reading
                                 </span>
-                                <div className="h-px flex-1 bg-border" />
+                                <div className="h-[2px] flex-1 bg-border" />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -178,7 +184,8 @@ const BlogPost = () => {
                                     <Link
                                         key={randomPost.slug}
                                         to={`/blog/${randomPost.slug}`}
-                                        className="group block p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all duration-300"
+                                        className="group block p-5 bg-card transition-all duration-150"
+                                        style={{ border: "2px solid hsl(var(--border))", boxShadow: "3px 3px 0 hsl(var(--border))" }}
                                     >
                                         <div className="space-y-3">
                                             {randomPost.tags?.length > 0 && (
@@ -186,7 +193,8 @@ const BlogPost = () => {
                                                     {randomPost.tags.slice(0, 2).map((tag) => (
                                                         <span
                                                             key={tag}
-                                                            className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent text-muted-foreground"
+                                                            className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-accent text-accent-foreground"
+                                                            style={{ border: "1.5px solid hsl(var(--border))" }}
                                                         >
                                                             {tag}
                                                         </span>
@@ -194,17 +202,17 @@ const BlogPost = () => {
                                                 </div>
                                             )}
 
-                                            <h3 className="text-base font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                                            <h3 className="text-base font-black text-foreground line-clamp-2 uppercase" style={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem" }}>
                                                 {randomPost.title}
                                             </h3>
 
                                             {randomPost.excerpt && (
-                                                <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                <p className="text-[12px] text-muted-foreground line-clamp-2 leading-relaxed" style={{ fontFamily: "var(--font-mono)" }}>
                                                     {randomPost.excerpt}
                                                 </p>
                                             )}
 
-                                            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>
                                                 <Calendar className="w-3 h-3" />
                                                 <time dateTime={randomPost.date}>
                                                     {new Date(randomPost.date).toLocaleDateString("en-US", {
@@ -224,9 +232,10 @@ const BlogPost = () => {
                     <div className="mt-12 mb-8">
                         <Link
                             to="/blog"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent/70 text-foreground rounded-xl transition-colors text-sm font-semibold group"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-foreground text-background text-sm font-black uppercase tracking-wider transition-all"
+                            style={{ fontFamily: "var(--font-mono)", border: "2px solid hsl(var(--border))", boxShadow: "3px 3px 0 hsl(var(--border))" }}
                         >
-                            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                            <ArrowLeft className="w-4 h-4" />
                             All Articles
                         </Link>
                     </div>

@@ -6,6 +6,7 @@ import React, {
 } from 'react';
 
 type Theme =
+  | 'retro'
   | 'light'
   | 'dark'
   | 'gruvbox-light'
@@ -45,8 +46,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('theme') as Theme;
     if (saved) return saved;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'dark' : 'light';
+    return 'retro';
   });
 
   useEffect(() => {

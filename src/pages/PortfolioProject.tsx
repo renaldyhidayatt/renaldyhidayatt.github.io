@@ -77,7 +77,7 @@ const PortfolioProject = () => {
         );
     }
 
-    const statusColor = statusColors[project.status] || "bg-accent text-foreground border-border";
+    const statusColor = statusColors[project.status] || "bg-accent text-accent-foreground border-border";
 
     return (
         <Layout maxWidth="max-w-screen-2xl">
@@ -96,7 +96,10 @@ const PortfolioProject = () => {
 
                         <header className="space-y-5 pb-10">
                             {/* Status badge */}
-                            <span className={`inline-flex px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg border ${statusColor}`}>
+                            <span
+                                className="inline-flex px-2.5 py-1 text-[11px] font-black uppercase tracking-wider border-2 border-border bg-accent text-accent-foreground"
+                                style={{ boxShadow: "2px 2px 0 hsl(var(--border))" }}
+                            >
                                 {project.status}
                             </span>
 
@@ -106,20 +109,24 @@ const PortfolioProject = () => {
                             </h1>
 
                             {/* Excerpt */}
-                            <p className="text-lg text-muted-foreground leading-relaxed font-serif max-w-[600px]">
+                            <p className="text-base text-muted-foreground leading-relaxed max-w-[600px]" style={{ fontFamily: "var(--font-mono)" }}>
                                 {project.excerpt}
                             </p>
 
                             {/* Tech Stack */}
                             <div className="pt-2 space-y-3">
-                                <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+                                <h3
+                                    className="text-[9px] font-black text-foreground uppercase tracking-[0.2em] px-2 py-0.5 inline-block"
+                                    style={{ background: "hsl(var(--foreground))", color: "hsl(var(--background))", border: "2px solid hsl(var(--border))" }}
+                                >
                                     Tech Stack
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
                                     {project.tags.map((tech) => (
                                         <span
                                             key={tech}
-                                            className="px-3 py-1.5 text-[13px] font-semibold rounded-xl bg-accent text-foreground border border-border hover:border-primary/30 transition-colors"
+                                            className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wider bg-accent text-accent-foreground border-2 border-border"
+                                            style={{ boxShadow: "2px 2px 0 hsl(var(--border))", fontFamily: "var(--font-mono)" }}
                                         >
                                             {tech}
                                         </span>
@@ -129,7 +136,7 @@ const PortfolioProject = () => {
                         </header>
 
                         {/* Divider */}
-                        <div className="h-px bg-border" />
+                        <div className="h-[3px] bg-border" />
                     </div>
                 </div>
 
@@ -141,7 +148,7 @@ const PortfolioProject = () => {
 
                     {/* TOC Sidebar */}
                     <aside className="hidden lg:block">
-                        <div className="sticky top-32 pl-8 border-l border-border/10">
+                        <div className="sticky top-32">
                             <TableOfContents toc={project.toc} />
                         </div>
                     </aside>
@@ -149,40 +156,46 @@ const PortfolioProject = () => {
 
                 {/* ── Related Projects ─────────────────────────── */}
                 <div className="max-w-[960px] mx-auto px-6 mt-20">
-                    <div className="h-px bg-border mb-14" />
+                    <div className="h-[3px] bg-border mb-14" />
 
                     {latestProjects.length > 0 && (
                         <section className="space-y-8">
                             <div className="flex items-center gap-3">
-                                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                                <span
+                                    className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5"
+                                    style={{ border: "2px solid hsl(var(--border))", background: "hsl(var(--foreground))", color: "hsl(var(--background))", fontFamily: "var(--font-mono)" }}
+                                >
                                     Explore More
                                 </span>
-                                <div className="h-px flex-1 bg-border" />
+                                <div className="h-[2px] flex-1 bg-border" />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                 {latestProjects.map((latestProject) => {
-                                    const projColor = statusColors[latestProject.status] || "bg-accent text-foreground border-border";
                                     return (
                                         <Link
                                             key={latestProject.slug}
                                             to={`/portfolio/${latestProject.slug}`}
-                                            className="group block p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all duration-300"
+                                            className="group block p-5 bg-card transition-all duration-150"
+                                            style={{ border: "2px solid hsl(var(--border))", boxShadow: "3px 3px 0 hsl(var(--border))" }}
                                         >
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between">
-                                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${projColor}`}>
+                                                    <span
+                                                        className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-accent text-accent-foreground"
+                                                        style={{ border: "1.5px solid hsl(var(--border))", fontFamily: "var(--font-mono)" }}
+                                                    >
                                                         {latestProject.status}
                                                     </span>
-                                                    <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                    <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
                                                 </div>
 
-                                                <h3 className="text-base font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                                                <h3 className="text-base font-black text-foreground line-clamp-2 uppercase" style={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>
                                                     {latestProject.title}
                                                 </h3>
 
                                                 {latestProject.excerpt && (
-                                                    <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                    <p className="text-[12px] text-muted-foreground line-clamp-2 leading-relaxed" style={{ fontFamily: "var(--font-mono)" }}>
                                                         {latestProject.excerpt}
                                                     </p>
                                                 )}
@@ -191,7 +204,8 @@ const PortfolioProject = () => {
                                                     {latestProject.tags.slice(0, 3).map((tag) => (
                                                         <span
                                                             key={tag}
-                                                            className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-accent text-muted-foreground"
+                                                            className="text-[10px] font-black px-2 py-0.5 uppercase bg-accent text-accent-foreground"
+                                                            style={{ border: "1.5px solid hsl(var(--border))", fontFamily: "var(--font-mono)" }}
                                                         >
                                                             {tag}
                                                         </span>
@@ -208,9 +222,10 @@ const PortfolioProject = () => {
                     <div className="mt-12 mb-8">
                         <Link
                             to="/portfolio"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent/70 text-foreground rounded-xl transition-colors text-sm font-semibold group"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-foreground text-background text-sm font-black uppercase tracking-wider transition-all"
+                            style={{ fontFamily: "var(--font-mono)", border: "2px solid hsl(var(--border))", boxShadow: "3px 3px 0 hsl(var(--border))" }}
                         >
-                            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                            <ArrowLeft className="w-4 h-4" />
                             All Projects
                         </Link>
                     </div>

@@ -18,16 +18,15 @@ const TableOfContents = ({ toc }: TableOfContentsProps) => {
         const observer = new IntersectionObserver(
             (entries) => {
                 if (isScrolling) return;
-                
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
                         setActiveId(entry.target.id);
                     }
                 });
             },
-            { 
+            {
                 rootMargin: "-20% 0% -35% 0%",
-                threshold: 0
+                threshold: 0,
             }
         );
 
@@ -44,19 +43,13 @@ const TableOfContents = ({ toc }: TableOfContentsProps) => {
         if (element) {
             setIsScrolling(true);
             setActiveId(id);
-            
+
             const offset = 100;
             const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - offset;
 
-            window.scrollTo({
-                top: offsetPosition,
-                behavior: "smooth",
-            });
-
-            // Re-enable observer after behavior: "smooth" finishes (roughly)
+            window.scrollTo({ top: offsetPosition, behavior: "smooth" });
             setTimeout(() => setIsScrolling(false), 800);
-            
             window.history.pushState(null, "", window.location.hash.split("#")[0] + url);
         }
     };
@@ -64,36 +57,84 @@ const TableOfContents = ({ toc }: TableOfContentsProps) => {
     if (!toc || toc.length === 0) return null;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-3">
-                <div className="h-px w-4 bg-primary/30" />
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/80">
-                    On This Page
-                </h3>
+        <div
+            style={{
+                border: "2px solid hsl(var(--border))",
+                boxShadow: "3px 3px 0 hsl(var(--border))",
+                background: "hsl(var(--card))",
+                overflow: "hidden",
+            }}
+        >
+            {/* Header stamp */}
+            <div
+                style={{
+                    padding: "0.6rem 1rem",
+                    background: "hsl(var(--foreground))",
+                    borderBottom: "2px solid hsl(var(--border))",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                }}
+            >
+                <span
+                    style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "11px",
+                        fontWeight: 900,
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        color: "hsl(var(--background))",
+                    }}
+                >
+                    // ON THIS PAGE
+                </span>
             </div>
-            
-            <nav className="flex flex-col relative">
-                <ul className="space-y-1">
+
+            {/* TOC nav */}
+            <nav style={{ padding: "0.75rem 0" }}>
+                <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                     {toc.map((item) => {
                         const isActive = activeId === item.url.replace("#", "");
                         return (
-                            <li key={item.url} className="space-y-1">
+                            <li key={item.url}>
                                 <a
                                     href={item.url}
                                     onClick={(e) => handleClick(e, item.url)}
-                                    className={`group flex items-center py-2 px-3 text-[13px] font-medium rounded-lg transition-all duration-300 ${
-                                        isActive
-                                            ? "text-primary bg-primary/5 shadow-[inset_0_0_0_1px_rgba(var(--primary-rgb),0.1)]"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                    }`}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "0.5rem",
+                                        padding: "0.6rem 1rem",
+                                        fontFamily: "var(--font-mono)",
+                                        fontSize: "13px",
+                                        fontWeight: isActive ? 900 : 500,
+                                        textDecoration: "none",
+                                        color: isActive
+                                            ? "hsl(var(--primary))"
+                                            : "hsl(var(--foreground) / 0.75)",
+                                        background: isActive
+                                            ? "hsl(var(--accent) / 0.4)"
+                                            : "transparent",
+                                        borderLeft: isActive
+                                            ? "4px solid hsl(var(--primary))"
+                                            : "4px solid transparent",
+                                        transition: "all 0.1s",
+                                        lineHeight: 1.5,
+                                    }}
                                 >
-                                    <div className={`w-1.5 h-1.5 rounded-full mr-3 transition-all duration-300 ${
-                                        isActive ? "bg-primary scale-100 opacity-100" : "bg-muted-foreground/30 scale-50 opacity-0 group-hover:opacity-100"
-                                    }`} />
                                     {item.title}
                                 </a>
+
                                 {item.items && item.items.length > 0 && (
-                                    <ul className="ml-6 space-y-1 border-l border-border/40 pl-4 py-1">
+                                    <ul
+                                        style={{
+                                            listStyle: "none",
+                                            margin: 0,
+                                            padding: 0,
+                                            borderTop: "1px solid hsl(var(--border) / 0.4)",
+                                            borderBottom: "1px solid hsl(var(--border) / 0.4)",
+                                        }}
+                                    >
                                         {item.items.map((subItem) => {
                                             const isSubActive = activeId === subItem.url.replace("#", "");
                                             return (
@@ -101,11 +142,24 @@ const TableOfContents = ({ toc }: TableOfContentsProps) => {
                                                     <a
                                                         href={subItem.url}
                                                         onClick={(e) => handleClick(e, subItem.url)}
-                                                        className={`block py-1.5 text-[12px] transition-all duration-200 ${
-                                                            isSubActive
-                                                                ? "text-primary font-bold translate-x-1"
-                                                                : "text-muted-foreground/70 hover:text-foreground hover:translate-x-0.5"
-                                                        }`}
+                                                        style={{
+                                                            display: "block",
+                                                            padding: "0.5rem 1rem 0.5rem 2rem",
+                                                            fontFamily: "var(--font-mono)",
+                                                            fontSize: "12px",
+                                                            fontWeight: isSubActive ? 800 : 400,
+                                                            textDecoration: "none",
+                                                            color: isSubActive
+                                                                ? "hsl(var(--primary))"
+                                                                : "hsl(var(--foreground) / 0.6)",
+                                                            background: isSubActive
+                                                                ? "hsl(var(--accent) / 0.3)"
+                                                                : "transparent",
+                                                            borderLeft: isSubActive
+                                                                ? "4px solid hsl(var(--primary))"
+                                                                : "4px solid transparent",
+                                                            transition: "all 0.1s",
+                                                        }}
                                                     >
                                                         {subItem.title}
                                                     </a>

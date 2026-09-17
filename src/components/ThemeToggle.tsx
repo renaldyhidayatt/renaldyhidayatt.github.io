@@ -1,10 +1,11 @@
-import { Palette, Check, X } from 'lucide-react';
+import { Palette, Check } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import { useState, useRef, useEffect } from 'react';
 
 const themes = [
-    { value: 'light', label: 'Light', color: '#ffffff', border: '#e5e5e5' },
-    { value: 'dark', label: 'Dark', color: '#1a1b26', border: '#414868' },
+    { value: 'retro', label: 'Retro Brutalism', color: '#f1e8d3', border: '#29261f' },
+    { value: 'dark', label: 'Retro Dark', color: '#1c1b18', border: '#eee7d8' },
+    { value: 'light', label: 'Retro Light', color: '#f1e8d3', border: '#29261f' },
     { value: 'gruvbox-light', label: 'Gruvbox Light', color: '#fbf1c7', border: '#d5c4a1' },
     { value: 'gruvbox-dark', label: 'Gruvbox Dark', color: '#282828', border: '#504945' },
     { value: 'everforest-light', label: 'Everforest Light', color: '#fdf6e3', border: '#e7e5d4' },
@@ -40,12 +41,12 @@ const ThemeToggle = () => {
             <button
                 onClick={() => setOpen(!open)}
                 aria-label="Change theme"
-                className="p-3 rounded-lg bg-card border border-border hover:bg-accent active:scale-95 transition"
+                className="grid size-10 place-items-center border-2 border-ink bg-surface shadow-retro-sm transition-all duration-150 hover:-translate-y-0.5 hover:bg-accent-light hover:shadow-retro active:translate-y-0 active:shadow-retro-sm"
             >
-                <Palette className="w-5 h-5 text-foreground" />
+                <Palette className="h-5 w-5 text-foreground" />
             </button>
             <div
-                className={`absolute right-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-xl z-50 transition-all ${open ? 'opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-95'
+                className={`absolute right-0 z-50 mt-3 w-64 border-2 border-ink bg-surface shadow-retro transition-all duration-150 ${open ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0'
                     }`}
             >
                 <ThemeList theme={theme} onSelect={setTheme} onClose={() => setOpen(false)} />
@@ -60,29 +61,31 @@ const ThemeList = ({
     onClose,
 }: {
     theme: string;
-    onSelect: (v: string) => void;
+    onSelect: (v: any) => void;
     onClose: () => void;
 }) => (
-    <div className="p-2 max-h-[400px] overflow-y-auto">
-        <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
+    <div className="max-h-[400px] overflow-y-auto p-2">
+        <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Select Theme
         </div>
         {themes.map((t) => (
             <button
                 key={t.value}
                 onClick={() => {
-                    onSelect(t.value as any);
+                    onSelect(t.value);
                     onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition ${theme === t.value ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
+                className={`mb-1 flex w-full items-center gap-3 border-2 px-3 py-2.5 text-left transition-all duration-150 ${theme === t.value
+                    ? 'border-ink bg-accent-light text-foreground shadow-retro-sm'
+                    : 'border-transparent hover:bg-accent-light'
                     }`}
             >
-                <div
-                    className="w-6 h-6 rounded-md border-2"
-                    style={{ backgroundColor: t.color, borderColor: t.border }}
+                <span
+                    className="h-6 w-6 shrink-0 border-2 border-ink"
+                    style={{ backgroundColor: t.color }}
                 />
-                <span className="flex-1 text-sm font-medium text-left">{t.label}</span>
-                {theme === t.value && <Check className="w-4 h-4" />}
+                <span className="flex-1 text-sm font-bold">{t.label}</span>
+                {theme === t.value && <Check className="h-4 w-4" />}
             </button>
         ))}
     </div>
