@@ -1,6 +1,6 @@
 ---
 title: "Linux — Cheat Sheet"
-description: "Cheat sheet Linux: struktur sistem & proses boot, filesystem & permission, proses & signal, systemd, jaringan & debugging, storage/LVM, resource limit & cgroup, sysctl, package & user, container dasar, troubleshooting performa, dan jebakan operasional."
+description: "Linux cheat sheet: system structure & boot process, filesystem & permissions, processes & signals, systemd, networking & debugging, storage/LVM, resource limits & cgroups, sysctl, packages & users, basic containers, performance troubleshooting, and operational pitfalls."
 date: "2026-10-22"
 created_at: "2026-10-22"
 updated_at: "2026-10-22"
@@ -17,106 +17,106 @@ tags:
 
 # Linux — Cheat Sheet
 
-> Target: distro berbasis **systemd** (Ubuntu 24.04, Debian 12, RHEL 9, Alma 9), kernel 6.x.
-> Fokus operasional: menjawab "kenapa X tidak hidup", "kenapa lambat", "kenapa disk penuh".
+> Target: **systemd**-based distros (Ubuntu 24.04, Debian 12, RHEL 9, Alma 9), kernel 6.x.
+> Operational focus: answering "why isn't X up", "why is it slow", "why is the disk full".
 
-**Isi sheet ini**
+**What's in this sheet**
 
-- Struktur sistem & boot
-- Filesystem & permission
-- Proses, signal, job control
-- systemd (unit, timer, journal)
-- Paket & user
-- Jaringan & debugging
+- System structure & boot
+- Filesystem & permissions
+- Processes, signals, job control
+- systemd (units, timers, journal)
+- Packages & users
+- Networking & debugging
 - Storage, LVM, mount
-- Resource limit & cgroup v2
+- Resource limits & cgroup v2
 - Kernel & sysctl
-- Container dasar
-- Troubleshooting performa
-- Jebakan (wajib dibaca)
+- Basic containers
+- Performance troubleshooting
+- Pitfalls (must read)
 
 ---
 
-## Struktur sistem & boot
+## System structure & boot
 
 ```text
 BIOS/UEFI → bootloader (GRUB) → kernel + initramfs → init (systemd PID 1)
-   → target (multi-user/graphical) → services (unit) → login
+   → target (multi-user/graphical) → services (units) → login
 ```
 
-| Path | Isi |
+| Path | Contents |
 | :--- | :--- |
 | `/` | root filesystem |
-| `/etc` | konfigurasi (satu-satunya yang manual) |
-| `/var` | data berubah: log, cache, database |
-| `/usr` | binary & library paket |
-| `/opt` | software pihak ketiga |
-| `/tmp` | sementara (bisa dihapus saat reboot) |
-| `/proc` | pseudo-fs proses & kernel (`/proc/cpuinfo`) |
-| `/sys` | pseudo-fs device & driver |
+| `/etc` | configuration (the only part you edit by hand) |
+| `/var` | changing data: logs, cache, databases |
+| `/usr` | package binaries & libraries |
+| `/opt` | third-party software |
+| `/tmp` | temporary (may be wiped on reboot) |
+| `/proc` | pseudo-fs for processes & kernel (`/proc/cpuinfo`) |
+| `/sys` | pseudo-fs for devices & drivers |
 | `/run` | runtime state (tmpfs) |
-| `/dev` | device node |
+| `/dev` | device nodes |
 
 ```bash
 uname -a; uname -r; cat /etc/os-release
 hostnamectl
 systemctl get-default                    # multi-user.target / graphical.target
-journalctl -b                            # log boot ini
-journalctl -b -1                         # boot sebelumnya
-dmesg -T | head -50                      # kernel ring buffer (timestamp manusia)
-lsblk -f                                 # disk + filesystem + mount
+journalctl -b                            # this boot's log
+journalctl -b -1                         # previous boot
+dmesg -T | head -50                      # kernel ring buffer (human-readable timestamps)
+lsblk -f                                 # disks + filesystems + mounts
 ```
 
-| Konsep | Arti |
+| Concept | Meaning |
 | :--- | :--- |
-| initramfs | image sementara untuk mount root |
-| systemd target | pengganti runlevel |
-| rescue.target / emergency.target | maintenance minimal |
-| `/etc/fstab` | tabel mount saat boot |
-| `/etc/default/grub` + `update-grub` | parameter kernel |
+| initramfs | temporary image used to mount root |
+| systemd target | replacement for runlevels |
+| rescue.target / emergency.target | minimal maintenance |
+| `/etc/fstab` | mount table used at boot |
+| `/etc/default/grub` + `update-grub` | kernel parameters |
 
-> **Jebakan:** mengedit `/etc/fstab` dengan UUID salah = boot masuk emergency mode.
-> Selalu uji dengan `mount -a` sebelum reboot.
+> **Pitfall:** editing `/etc/fstab` with the wrong UUID = boot drops into emergency mode.
+> Always test with `mount -a` before rebooting.
 
 ---
 
-## Filesystem & permission
+## Filesystem & permissions
 
 ```bash
-# lihat & navigasi
+# list & navigate
 ls -lah; ls -i; du -sh *; df -hT; stat file
 find . -type f -size +100M -exec ls -lh {} +
 find /var/log -type f -mtime +7 -name '*.log' -delete
 
-# permission
+# permissions
 chmod 640 file                # rw-r-----
-chmod u+x,g-w,o=r file        # simbolik
+chmod u+x,g-w,o=r file        # symbolic
 chown -R app:app /srv/app
-chmod g+s /srv/shared         # setgid: file baru ikut group direktori
-chmod o+t /tmp                # sticky: hanya pemilik bisa hapus
+chmod g+s /srv/shared         # setgid: new files inherit the directory's group
+chmod o+t /tmp                # sticky: only the owner can delete
 
-# ACL
+# ACLs
 getfacl file
 setfacl -m u:deploy:rX -R /srv/app
 setfacl -m g:ops:rw /var/log/app.log
-setfacl -x u:deploy /srv/app     # hapus ACL user
+setfacl -x u:deploy /srv/app     # remove a per-user ACL
 
-# atribut khusus
+# special attributes
 lsattr file
 chattr +i important.conf         # immutable
 chattr -i important.conf
 ```
 
-| Mode | Angka | Arti |
+| Mode | Number | Meaning |
 | :--- | :--- | :--- |
-| `r` | 4 | baca |
-| `w` | 2 | tulis |
-| `x` | 1 | eksekusi (atau masuk direktori) |
-| setuid | 4000 | eksekusi sebagai pemilik |
-| setgid | 2000 | eksekusi sebagai grup / inherit grup |
-| sticky | 1000 | hapus hanya oleh pemilik |
+| `r` | 4 | read |
+| `w` | 2 | write |
+| `x` | 1 | execute (or enter a directory) |
+| setuid | 4000 | execute as the owner |
+| setgid | 2000 | execute as the group / inherit group |
+| sticky | 1000 | delete only by the owner |
 
-| Jenis file | Prefix `ls -l` |
+| File type | `ls -l` prefix |
 | :--- | :--- |
 | regular | `-` |
 | directory | `d` |
@@ -126,16 +126,16 @@ chattr -i important.conf
 | block/char device | `b`/`c` |
 
 ```bash
-# umask menentukan permission default
-umask 027                    # file 640, direktori 750
+# umask determines default permissions
+umask 027                    # files 640, directories 750
 ```
 
-> **Jebakan:** `chmod -R 777` menyelesaikan gejala, bukan sebabnya. Direktori butuh `x`
-> untuk menelusuri; file tidak. Perbaiki grup & ACL, jangan membuka dunia.
+> **Pitfall:** `chmod -R 777` fixes the symptom, not the cause. Directories need `x`
+> to be traversed; files do not. Fix groups & ACLs, don't open up the world.
 
 ---
 
-## Proses, signal, job control
+## Processes, signals, job control
 
 ```bash
 ps aux --sort=-%cpu | head
@@ -143,16 +143,16 @@ ps -eo pid,ppid,stat,etime,cmd --sort=-etimes | head
 pgrep -af 'java'; pgrep -u app -a
 pstree -p 1234
 top -o %MEM; htop; atop
-lsof -p 1234 | head                # file & socket yang dibuka
-lsof -i :8080                      # siapa mendengar port
-fuser -v 8080/tcp                  # proses di port (tanpa lsof)
+lsof -p 1234 | head                # files & sockets currently open
+lsof -i :8080                      # who is listening on the port
+fuser -v 8080/tcp                  # processes on the port (without lsof)
 ```
 
 ```bash
-kill -l                            # daftar signal
-kill -TERM 1234                    # minta berhenti dengan rapi
-kill -HUP 1234                     # reload config (banyak daemon)
-kill -9 1234                       # paksa (tidak ada cleanup!)
+kill -l                            # list of signals
+kill -TERM 1234                    # ask it to stop cleanly
+kill -HUP 1234                     # reload config (many daemons)
+kill -9 1234                       # force (no cleanup!)
 pkill -f 'app.jar'
 killall nginx
 ```
@@ -162,47 +162,47 @@ killall nginx
 cmd &                              # background
 jobs; fg %1; bg %1
 nohup cmd > app.log 2>&1 &
-disown %1                          # lepas dari shell
-screen -S work                     # persisten
+disown %1                          # detach from the shell
+screen -S work                     # persistent
 tmux new -s work
 ```
 
-| Signal | Nomor | Arti |
+| Signal | Number | Meaning |
 | :--- | :--- | :--- |
 | SIGHUP | 1 | hangup / reload config |
 | SIGINT | 2 | Ctrl+C |
-| SIGKILL | 9 | tidak bisa ditangkap — proses mati seketika |
+| SIGKILL | 9 | cannot be caught — the process dies instantly |
 | SIGSEGV | 11 | segfault (bug) |
-| SIGTERM | 15 | permintaan berhenti (default `kill`) |
-| SIGSTOP | 19 | pause (tidak bisa ditangkap) |
-| SIGCONT | 18 | lanjutkan |
-| SIGCHLD | 17 | anak selesai |
+| SIGTERM | 15 | request to stop (default `kill`) |
+| SIGSTOP | 19 | pause (cannot be caught) |
+| SIGCONT | 18 | continue |
+| SIGCHLD | 17 | child exited |
 
-| Status `ps` | Arti |
+| `ps` status | Meaning |
 | :--- | :--- |
 | `R` | running/runnable |
 | `S` | sleeping (interruptible) |
-| `D` | uninterruptible sleep (I/O — sinyal tidak efektif) |
-| `Z` | zombie (parent belum `wait`) |
+| `D` | uninterruptible sleep (I/O — signals have no effect) |
+| `Z` | zombie (parent has not `wait`ed) |
 | `T` | stopped |
 | `I` | idle kernel thread |
 
-> **Jebakan:** proses zombie tidak bisa dibunuh — yang harus diperbaiki adalah parent
-> yang tidak memanggil `wait()`. Proses status `D` juga tidak bisa di-`kill -9`.
+> **Pitfall:** a zombie process cannot be killed — what you need to fix is the parent
+> that isn't calling `wait()`. A process in state `D` also cannot be `kill -9`ed.
 
 ---
 
-## systemd (unit, timer, journal)
+## systemd (units, timers, journal)
 
 ```bash
 systemctl status nginx
 systemctl start|stop|restart|reload nginx
-systemctl enable --now nginx          # aktif + start saat boot
+systemctl enable --now nginx          # enable + start at boot
 systemctl disable --now nginx
 systemctl list-units --type=service --state=running
 systemctl list-units --failed
-systemctl daemon-reload               # setelah mengubah file unit
-systemctl cat nginx                   # tampilkan unit + drop-in
+systemctl daemon-reload               # after changing a unit file
+systemctl cat nginx                   # show the unit + drop-ins
 systemctl show nginx -p MainPID,ExecStart
 systemctl is-active nginx; systemctl is-enabled nginx
 systemctl reset-failed nginx
@@ -253,7 +253,7 @@ ExecStart=/usr/local/bin/backup.sh
 ```ini
 # backup.timer
 [Unit]
-Description=Run backup daily 02:00
+Description=Run backup daily at 02:00
 [Timer]
 OnCalendar=*-*-* 02:00:00
 Persistent=true
@@ -271,27 +271,27 @@ journalctl -u backup.service --since today
 ```bash
 # journal
 journalctl -u nginx --since "1 hour ago" -f
-journalctl -p err -b                     # priority error, boot ini
+journalctl -p err -b                     # priority error, this boot
 journalctl -n 100 --no-pager
 journalctl -o json-pretty -n 1
-journalctl --vacuum-time=14d             # bersihkan log lama
+journalctl --vacuum-time=14d             # clear old logs
 journalctl --disk-usage
 ```
 
-| `Type=` | Kapan |
+| `Type=` | When |
 | :--- | :--- |
-| `simple` | proses foreground (default) |
-| `exec` | tunggu exec berhasil sebelum dianggap start |
-| `notify` | proses kirim `READY=1` via sd_notify |
-| `forking` | daemon klasik yang fork & exit |
-| `oneshot` | tugas sekali jalan |
+| `simple` | foreground process (default) |
+| `exec` | wait for exec to succeed before considering it started |
+| `notify` | the process sends `READY=1` via sd_notify |
+| `forking` | classic daemon that forks & exits |
+| `oneshot` | one-off task |
 
-> **Jebakan:** `Restart=always` pada unit yang gagal start karena konfigurasi salah akan
-> membuat loop restart tanpa henti. Gunakan `Restart=on-failure` + `StartLimitBurst=`.
+> **Pitfall:** `Restart=always` on a unit that fails to start due to bad configuration will
+> create an endless restart loop. Use `Restart=on-failure` + `StartLimitBurst=`.
 
 ---
 
-## Paket & user
+## Packages & users
 
 ```bash
 # Debian/Ubuntu
@@ -306,7 +306,7 @@ apt-mark hold nginx
 dnf install -y nginx; dnf remove nginx; dnf history
 rpm -qa | grep nginx; rpm -ql nginx; rpm -qf /usr/sbin/nginx
 
-# user & grup
+# users & groups
 useradd -m -s /bin/bash -G sudo deploy
 passwd deploy
 usermod -aG docker deploy
@@ -316,31 +316,31 @@ id deploy; groups; getent passwd deploy
 ```
 
 ```bash
-# sudo minimal
+# minimal sudo
 # /etc/sudoers.d/deploy
 deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart app
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
-| `visudo` / `sudoers.d` | salah edit = kehilangan akses root |
-| `NOPASSWD` hanya per command | jangan global |
-| `apt-mark hold` / `dnf versionlock` | cegah upgrade tak sengaja |
-| `-G` menambah grup, `-g` mengganti grup utama | mudah tertukar |
+| `visudo` / `sudoers.d` | a bad edit = losing root access |
+| `NOPASSWD` per command only | never globally |
+| `apt-mark hold` / `dnf versionlock` | prevent accidental upgrades |
+| `-G` adds a group, `-g` changes the primary group | easy to mix up |
 
 ---
 
-## Jaringan & debugging
+## Networking & debugging
 
 ```bash
 ip addr; ip route; ip -br link
 ip addr add 10.0.1.5/24 dev eth0
 ip route add default via 10.0.1.1
 
-ss -tlnp                          # listening TCP + proses
-ss -tunap | head                  # semua socket
-ss -s                             # ringkasan
-ss -ti                             # TCP info (rtt, cwnd)
+ss -tlnp                          # listening TCP + processes
+ss -tunap | head                  # all sockets
+ss -s                             # summary
+ss -ti                            # TCP info (rtt, cwnd)
 
 dig +short example.com; dig @1.1.1.1 example.com A
 cat /etc/resolv.conf; resolvectl status
@@ -362,17 +362,17 @@ nft list ruleset
 iptables -t nat -L -n -v
 ```
 
-| Gejala | Cek pertama |
+| Symptom | Check first |
 | :--- | :--- |
-| Port tidak terbuka | `ss -tlnp` (proses listen?), bukan firewall dulu |
-| Koneksi refused | service mati / listen `127.0.0.1` saja |
-| Koneksi timeout | firewall / route / security group |
-| DNS lambat | `resolvectl status`, `dig` dengan `@resolver` |
-| Paket hilang | `mtr`, `tcpdump`, counter `ip -s link` |
+| Port not open | `ss -tlnp` (is a process listening?), not the firewall first |
+| Connection refused | service is down / listening on `127.0.0.1` only |
+| Connection timeout | firewall / route / security group |
+| Slow DNS | `resolvectl status`, `dig` against `@resolver` |
+| Packets dropped | `mtr`, `tcpdump`, `ip -s link` counters |
 | TLS error | `openssl s_client -connect host:443 -servername host` |
 
-> **Jebakan:** `netstat` sudah usang di banyak distro — pakai `ss`. Dan service yang
-> listen di `127.0.0.1` tidak akan terlihat dari luar meski firewall terbuka.
+> **Pitfall:** `netstat` is deprecated on many distros — use `ss`. And a service listening
+> on `127.0.0.1` will not be reachable from outside even with the firewall open.
 
 ---
 
@@ -381,15 +381,15 @@ iptables -t nat -L -n -v
 ```bash
 lsblk -f; blkid; df -hT; findmnt
 mount /dev/sdb1 /mnt/data; umount /mnt/data
-mount -a                          # uji fstab tanpa reboot
+mount -a                          # test fstab without rebooting
 
 # LVM
 pvs; vgs; lvs
 pvcreate /dev/sdb
 vgcreate data /dev/sdb
 lvcreate -L 50G -n app data
-lvextend -r -L +20G /dev/data/app     # -r resize filesystem sekaligus
-resize2fs /dev/data/app               # ext4 (xfs_growfs untuk XFS)
+lvextend -r -L +20G /dev/data/app     # -r resizes the filesystem too
+resize2fs /dev/data/app               # ext4 (xfs_growfs for XFS)
 
 # swap
 swapon --show; free -h
@@ -398,41 +398,41 @@ mkswap /swapfile && swapon /swapfile
 ```
 
 ```bash
-# cari ruang disk yang hilang
+# find the missing disk space
 du -xh --max-depth=1 / | sort -h | tail
-lsof +L1                          # file terhapus tapi masih dibuka
+lsof +L1                          # deleted files that are still open
 journalctl --vacuum-size=500M
 docker system df
 ```
 
-| Gejala | Penyebab umum |
+| Symptom | Common cause |
 | :--- | :--- |
-| `df` penuh tapi `du` kecil | file terhapus masih dibuka proses |
-| inode habis | banyak file kecil (`df -i`) |
-| read-only filesystem | error I/O → `dmesg`, `mount -o remount,rw /` |
-| I/O lambat | `iostat -xz 1`, `iotop` |
+| `df` full but `du` small | deleted file still held open by a process |
+| inodes exhausted | many small files (`df -i`) |
+| read-only filesystem | I/O error → `dmesg`, `mount -o remount,rw /` |
+| slow I/O | `iostat -xz 1`, `iotop` |
 
-> **Jebakan:** memperluas LV tanpa `-r` (atau `resize2fs`) membuat `df` tetap menunjukkan
-> ukuran lama. Selalu resize filesystem setelah LV.
+> **Pitfall:** extending an LV without `-r` (or `resize2fs`) leaves `df` still reporting
+> the old size. Always resize the filesystem after the LV.
 
 ---
 
-## Resource limit & cgroup v2
+## Resource limits & cgroup v2
 
 ```bash
 ulimit -a
-ulimit -n 65535                   # berlaku untuk shell ini saja
-cat /proc/1234/limits             # limit proses yang berjalan
+ulimit -n 65535                   # applies to this shell only
+cat /proc/1234/limits             # limits of a running process
 
 # cgroup v2
 cat /sys/fs/cgroup/cgroup.controllers
-systemd-cgtop                     # pemakaian per cgroup
+systemd-cgtop                     # usage per cgroup
 cat /sys/fs/cgroup/system.slice/nginx.service/memory.current
 cat /sys/fs/cgroup/system.slice/nginx.service/memory.max
 ```
 
 ```ini
-# limit via systemd unit (paling mudah)
+# limits via a systemd unit (the easiest route)
 [Service]
 LimitNOFILE=65535
 MemoryMax=2G
@@ -442,16 +442,16 @@ IOReadBandwidthMax=/dev/sda 100M
 TasksMax=512
 ```
 
-| Setting | Efek |
+| Setting | Effect |
 | :--- | :--- |
-| `MemoryMax` | batas keras → OOM kill di cgroup |
-| `MemoryHigh` | batas lunak → throttle alokasi |
-| `CPUQuota` | persen dari satu CPU (200% = 2 core) |
-| `TasksMax` | jumlah task/thread |
-| `LimitNOFILE` | fd per proses |
+| `MemoryMax` | hard limit → OOM kill inside the cgroup |
+| `MemoryHigh` | soft limit → throttles allocation |
+| `CPUQuota` | percent of one CPU (200% = 2 cores) |
+| `TasksMax` | number of tasks/threads |
+| `LimitNOFILE` | fds per process |
 
-> **Jebakan:** `ulimit -n` di shell tidak memengaruhi service systemd — limit harus diset
-> di unit (`LimitNOFILE`) atau `/etc/security/limits.conf` untuk session login.
+> **Pitfall:** `ulimit -n` in a shell does not affect systemd services — the limit must be set
+> in the unit (`LimitNOFILE`) or in `/etc/security/limits.conf` for login sessions.
 
 ---
 
@@ -459,8 +459,8 @@ TasksMax=512
 
 ```bash
 sysctl -a | grep net.ipv4.tcp_syncookies
-sysctl -w net.core.somaxconn=4096      # sementara
-sysctl --system                        # reload semua file /etc/sysctl.d
+sysctl -w net.core.somaxconn=4096      # temporary
+sysctl --system                        # reload all /etc/sysctl.d files
 
 cat /proc/meminfo | head
 cat /proc/loadavg
@@ -480,20 +480,20 @@ fs.file-max = 2097152
 vm.swappiness = 10
 ```
 
-| Parameter | Arti |
+| Parameter | Meaning |
 | :--- | :--- |
-| `vm.swappiness` | kecenderungan swap (10–30 server database) |
-| `vm.overcommit_memory` | strategi alokasi (1 = selalu izinkan) |
-| `net.core.somaxconn` | backlog accept maksimum |
-| `fs.file-max` | fd maksimum sistem |
-| `kernel.pid_max` | batas PID |
+| `vm.swappiness` | swap tendency (10–30 for database servers) |
+| `vm.overcommit_memory` | allocation strategy (1 = always allow) |
+| `net.core.somaxconn` | maximum accept backlog |
+| `fs.file-max` | system-wide maximum fds |
+| `kernel.pid_max` | PID limit |
 
-> **Jebakan:** menyetel `vm.overcommit_memory=1` untuk "supaya tidak OOM" justru membuat
-> OOM killer menembak proses acak ketika memori benar-benar habis.
+> **Pitfall:** setting `vm.overcommit_memory=1` to "avoid OOM" actually causes
+> the OOM killer to shoot a random process once memory is truly exhausted.
 
 ---
 
-## Container dasar
+## Basic containers
 
 ```bash
 docker ps -a; docker logs -f --tail 100 app
@@ -502,73 +502,73 @@ docker stats --no-stream
 docker inspect app | head -40
 docker system df; docker system prune -af
 
-# tanpa docker: namespace & cgroup
+# without docker: namespaces & cgroups
 unshare --pid --fork --mount-proc bash
 ip netns add test; ip netns list
-nsenter -t 1234 -n ss -tlnp        # masuk net namespace proses
+nsenter -t 1234 -n ss -tlnp        # enter a process's network namespace
 ```
 
-| Perintah | Fungsi |
+| Command | Function |
 | :--- | :--- |
-| `nsenter` | masuk namespace proses lain (debug container) |
-| `unshare` | buat namespace baru |
-| `systemd-cgls` | pohon cgroup |
-| `systemd-run --scope` | jalankan perintah dengan limit |
+| `nsenter` | enter another process's namespace (container debugging) |
+| `unshare` | create new namespaces |
+| `systemd-cgls` | cgroup tree |
+| `systemd-run --scope` | run a command with limits |
 
-> **Jebakan:** `docker exec` memakai namespace container tapi binary host jika image
-> tidak punya shell. Untuk container distroless gunakan `nsenter` dari host.
+> **Pitfall:** `docker exec` uses the container's namespaces but the host binary if the image
+> has no shell. For distroless containers use `nsenter` from the host.
 
 ---
 
-## Troubleshooting performa
+## Performance troubleshooting
 
 ```bash
-# urutan diagnosa: load → CPU → memori → I/O → jaringan
+# diagnosis order: load → CPU → memory → I/O → network
 uptime; cat /proc/loadavg
 top -b -n1 | head -15
 pidstat 1 5
 vmstat 1 5
 iostat -xz 1 3
 ss -s; ss -ti | head -30
-dmesg -T | tail -50                # OOM, I/O error
+dmesg -T | tail -50                # OOM, I/O errors
 journalctl -p err -b --no-pager | tail -30
 ```
 
-| Gejala | Alat | Petunjuk |
+| Symptom | Tool | Hint |
 | :--- | :--- | :--- |
-| Load tinggi, CPU idle | `ps -eo stat,wchan,cmd` | proses di `D` = I/O menunggu |
-| Memori penuh | `free -h`, `/proc/meminfo` | `available` rendah → akan OOM |
+| High load, idle CPU | `ps -eo stat,wchan,cmd` | processes in `D` = waiting on I/O |
+| Memory full | `free -h`, `/proc/meminfo` | low `available` → about to OOM |
 | OOM kill | `dmesg`, `journalctl -k` | "Killed process … out of memory" |
-| I/O lambat | `iostat -xz` | `%util` ~100, `await` tinggi |
-| Network lambat | `ss -ti`, `mtr` | retransmit, rtt naik |
-| Disk penuh | `df -h`, `df -i` | data vs inode |
-| Boot lambat | `systemd-analyze blame` | unit terlama |
+| Slow I/O | `iostat -xz` | `%util` ~100, high `await` |
+| Slow network | `ss -ti`, `mtr` | retransmits, rising rtt |
+| Disk full | `df -h`, `df -i` | data vs inodes |
+| Slow boot | `systemd-analyze blame` | slowest units |
 
-> **Jebakan:** `load average` tinggi tidak selalu berarti CPU sibuk — proses yang menunggu
-> disk (`D`) juga dihitung. Selalu cek `vmstat` kolom `wa`.
+> **Pitfall:** a high `load average` does not always mean the CPU is busy — processes waiting
+> on disk (`D`) are counted too. Always check the `wa` column in `vmstat`.
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must read)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Fix |
 | :--- | :--- | :--- |
-| `fstab` salah UUID | boot ke emergency mode | `mount -a` sebelum reboot |
-| `chmod -R 777` | masalah "hilang" tapi tidak aman | perbaiki grup/ACL |
-| Direktori tanpa `x` | tidak bisa masuk walau punya `r` | `chmod a+X` |
-| `kill -9` untuk semua | data korup, lock tertinggal | SIGTERM dulu + timeout |
-| Zombie di-`kill` | tidak hilang | perbaiki parent (`wait`) |
-| Proses `D` ditunggu | tidak bisa dibunuh | selesaikan I/O |
-| `Restart=always` + config rusak | restart loop | `on-failure` + `StartLimitBurst` |
-| `daemon-reload` dilupakan | unit lama tetap jalan | `systemctl daemon-reload` |
-| Timer tanpa `Persistent=` | job terlewat saat host mati | `Persistent=true` |
-| `ulimit` di shell | service tidak terpengaruh | `LimitNOFILE` di unit |
-| LVM extend tanpa resize FS | `df` tidak berubah | `lvextend -r` |
-| `df` penuh, `du` kecil | file dibuka proses | `lsof +L1` |
-| inode habis | "No space left" padahal disk lega | `df -i`, bersihkan file kecil |
-| Service listen `localhost` | tidak terjangkau dari luar | bind `0.0.0.0` / proxy |
-| `netstat` di distro baru | perintah tidak ada | `ss` |
-| `sysctl -w` tanpa persistence | hilang setelah reboot | `/etc/sysctl.d/` |
-| `swappiness=0` | bisa OOM mendadak | 10–30 |
-| `NOPASSWD: ALL` | eskalasi trivial | per-command |
-| Container `docker exec` di distroless | tidak ada shell | `nsenter` dari host |
+| Wrong UUID in `fstab` | boot drops into emergency mode | `mount -a` before rebooting |
+| `chmod -R 777` | problem "disappears" but is insecure | fix groups/ACLs |
+| Directory without `x` | cannot enter it even with `r` | `chmod a+X` |
+| `kill -9` for everything | corrupted data, stale locks | SIGTERM first + timeout |
+| Zombie process `kill`ed | it doesn't disappear | fix the parent (`wait`) |
+| Waiting on a `D` process | cannot be killed | let the I/O finish |
+| `Restart=always` + broken config | restart loop | `on-failure` + `StartLimitBurst` |
+| Forgetting `daemon-reload` | the old unit keeps running | `systemctl daemon-reload` |
+| Timer without `Persistent=` | job missed while the host was down | `Persistent=true` |
+| `ulimit` in a shell | services are unaffected | `LimitNOFILE` in the unit |
+| LVM extend without a filesystem resize | `df` doesn't change | `lvextend -r` |
+| `df` full, `du` small | file held open by a process | `lsof +L1` |
+| inodes exhausted | "No space left" even though the disk is roomy | `df -i`, clean up small files |
+| Service listening on `localhost` | unreachable from outside | bind `0.0.0.0` / proxy |
+| `netstat` on newer distros | command not found | `ss` |
+| `sysctl -w` without persistence | lost after reboot | `/etc/sysctl.d/` |
+| `swappiness=0` | can OOM suddenly | 10–30 |
+| `NOPASSWD: ALL` | trivial privilege escalation | per-command |
+| `docker exec` on distroless | no shell available | `nsenter` from the host |

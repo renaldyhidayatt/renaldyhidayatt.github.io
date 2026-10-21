@@ -1,82 +1,83 @@
 ---
-title: "Kenapa Saya Bikin Halaman Cheatsheet (dan Kenapa Bukan Blog)"
-excerpt: "Blog menjawab 'kenapa', cheat sheet menjawab 'kapan dan bagaimana'. Saya bikin section cheatsheet terpisah supaya tidak perlu scouring artikel panjang hanya untuk mengingat satu perintah."
+title: "Why I Built a Cheatsheet Page (and Why Not a Blog)"
+excerpt: "A blog answers 'why', a cheat sheet answers 'when and how'. I built a separate cheatsheet section so you don't have to scour long articles just to remember a single command."
 readTime: "5 min read"
 tags: ["cheatsheet", "writing", "backend", "productivity"]
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
-status: "selesai"
+status: "completed"
 ---
 
-# Kenapa Saya Bikin Halaman Cheatsheet (dan Kenapa Bukan Blog)
+# Why I Built a Cheatsheet Page (and Why Not a Blog)
 
-Ada satu masalah yang tidak pernah selesai kalau cuma punya blog: **niat saya menulis
-penjelasan, kebutuhan saya sering kali cuma satu baris**.
+There is one problem that never gets solved if you only have a blog: **my intent is to write
+explanations, but what I need is often just a single line**.
 
-Contoh nyata: saya lagi debug deadlock di service payment dan butuh ingat cara cek lock
-PostgreSQL. Blog saya tentang *transactional outbox* ada di sana — tapi 3.000 kata, 8
-heading, dan tidak ada cara cepat menuju `pg_locks`. Yang saya butuhkan saat itu: satu
-query, satu output, dan konteks kapan query itu dipakai.
+A real example: I was debugging a deadlock in a payment service and needed to remember how to check
+PostgreSQL locks. My blog post about *transactional outbox* was right there — but it was 3,000 words, 8
+headings, and there was no quick way to get to `pg_locks`. What I needed at that moment was: one
+query, one output, and the context of when that query is used.
 
-Saya jadi punya tiga kebutuhan berbeda yang saling menimpa kalau dipaksakan jadi satu
-halaman:
+So I ended up with three different needs that collide with each other when forced into a single
+page:
 
 | | Blog | Portfolio | Cheatsheet |
 | :--- | :--- | :--- | :--- |
-| Bentuk | esai, cerita, yang menjelaskan *kenapa* | studi kasus + harga keputusan | kamus cepat: *kapan & bagaimana* |
-| Penanda | tanggal tulis | tanggal proyek | **versi yang dikunci** (`Spring Boot 3.5.6`, `PostgreSQL 17`) |
-| Isi | trade-off, sejarah, kegagalan | arsitektur + konsekuensi | **tabel lookup + snippet siap salin + jebakan** |
-| Arah baca | linear, dari atas ke bawah | linear, dari atas ke bawah | **non-linear, langsung ke tabel** |
-| Umur | tetapvalid sebagai catatan sejarah | frozen per versi project | **kedaluwarsa kalau versinya_major berubah** |
+| Form | essays, stories that explain *why* | case studies + the cost of decisions | a quick dictionary: *when & how* |
+| Marker | date written | project date | **locked version** (`Spring Boot 3.5.6`, `PostgreSQL 17`) |
+| Content | trade-offs, history, failures | architecture + consequences | **lookup tables + copy-ready snippets + pitfalls** |
+| Reading direction | linear, top to bottom | linear, top to bottom | **non-linear, straight to the table** |
+| Lifespan | remains valid as a historical record | frozen per project version | **expires when the major version changes** |
 
-Jadi saya bikin section baru: [Cheatsheet](/cheatsheet).
+So I built a new section: [Cheatsheet](/cheatsheet).
 
-## Aturan yang saya pakem sendiri
+## The rules I hold myself to
 
-Supaya ini tidak berubah jadi blog kedua, ada empat aturan yang saya tegakkan.
+So this doesn't turn into a second blog, there are four rules I enforce.
 
-**1. Versi di-pin, tidak ada "terbaru".**
-Setiap sheet buka dengan versi yang persis dipakai di repo saya saat itu. Kalau versi
-library sudah lewat satu major, sheet-nya ditandai usang — bukan saya tulis ulang diam-diam
-dan dianggap usang. Cheatsheet yang diam-diam salah lebih berbahaya daripada tidak ada.
+**1. Versions are pinned, no "latest".**
+Every sheet opens with the exact version used in my repo at that time. If the
+library version has moved past one major, the sheet is marked outdated — I don't quietly rewrite it
+and consider it up to date. A cheatsheet that is quietly wrong is more dangerous than not having one.
 
-**2. Tidak ada narasi.**
-Kalau sebuah paragraf butuh konteks lebih dari dua kalimat, itu bukan tugas cheatsheet
-— itu artikel blog. Cheatsheet menjawab pertanyaan, blog menjawab pertanyaan *plus* cerita
-di baliknya.
+**2. No narrative.**
+If a paragraph needs more than two sentences of context, that's not a cheatsheet's job
+— that's a blog article. A cheatsheet answers a question, a blog answers the question *plus* the story
+behind it.
 
-**3. Setiap jebakan harus punya gejala.**
-Tabel "Jebakan" di tiap sheet tidak boleh berhenti di "ini salah". Formatnya selalu:
+**3. Every pitfall must have a symptom.**
+The "Pitfalls" table in each sheet must not stop at "this is wrong". The format is always:
 
-> Jebakan → gejala yang terlihat → solusi.
+> Pitfall → visible symptom → solution.
 
-"Jebakan: `@Transactional` tidak jalan kalau self-invocation" tanpa gejala = catatan
-pribadi, bukan referensi.
+"Pitfall: `@Transactional` doesn't work on self-invocation" without a symptom = a personal
+note, not a reference.
 
-**4. Snippet harus dijalankan.**
-Aturan mainnya: kalau belum pernah `mvn test` atau `zig test`-kan,.snippet itu tidak
-masuk sheet. Bedanya dengan blog: di blog saya boleh salah lalu dikoreksi di artikel
-berikutnya (itu bagian dari proses). Di cheatsheet, kesalahan langsung dipakai orang lain.
+**4. Snippets must be run.**
+The rule of thumb: if I have never run `mvn test` or `zig test` on it, the snippet doesn't
+go into the sheet. The difference from a blog: on a blog I'm allowed to be wrong and correct it in the next
+article (that's part of the process). In a cheatsheet, mistakes are immediately used by other people.
 
-## Kenapa backend, bukan bahasa saja
+## Why backend, not just languages
 
-Zig cheat sheet saya jadi titik awal, tapi isinya justru yang paling sering saya buka:
-bukan sintaks bahasa, tapi **pola yang berulang di backend**:
+My Zig cheat sheet was the starting point, but it's actually the contents that I open most often:
+not the syntax of a language, but **patterns that repeat in the backend**:
 
-- Satu pattern transaksi: `BEGIN → ubah data → tulis outbox → COMMIT → relay`.
-- Satu pola idempotensi: unique constraint di DB, bukan lock di memori.
-- Satu pola observability: metric untuk agregat, log untuk detail, trace untuk alur.
+- One transaction pattern: `BEGIN → change data → write outbox → COMMIT → relay`.
+- One idempotency pattern: a unique constraint in the DB, not a lock in memory.
+- One observability pattern: metrics for aggregates, logs for details, traces for flows.
 
-Pola-pola itu muncul di project Java, Go, dan MongoDB alike — dan itulah yang bikin
-saya butuh cheatsheet **backend**, bukan cheatsheet per bahasa.
+Those patterns show up in Java, Go, and MongoDB projects alike — and that's what makes
+me need a **backend** cheatsheet, not a cheatsheet per language.
 
-## Yang akan menyusul
+## What's coming next
 
-enam sheet backend sudah ada (Java/Spring Boot, gRPC/Protobuf, Kafka, PostgreSQL,
-Docker/Kubernetes, Observability) plus satu sheet bahasa (Zig). Yang masih di daftar:
-Redis, MongoDB, ClickHouse, Go, dan satu sheet "Linux & CLI harian" untuk yang paling
-sering dipakai waktu debug.
+six backend sheets already exist (Java/Spring Boot, gRPC/Protobuf, Kafka, PostgreSQL,
+Docker/Kubernetes, Observability) plus one language sheet (Zig). Still on the list:
+Redis, MongoDB, ClickHouse, Go, and one "daily Linux & CLI" sheet for the things most
+often used while debugging.
 
-Kalau nanti tiap project punya bagian **"jebakan yang saya temui"**, sheet-sheet ini yang
-menampungnya — dan artikel blog cukup, membahas *mengapa* saya memilih jalan itu.
+If each project later has a **"pitfalls I ran into"** section, these sheets are what
+will hold them — and the blog articles are enough to discuss *why* I chose that path.
+

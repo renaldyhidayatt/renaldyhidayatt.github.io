@@ -1,10 +1,10 @@
 ---
 title: "Platform Labs — Sovereign Mini-Cloud Control Plane in Go"
-excerpt: "15 domain control-plane infrastruktur — security, telemetry, delivery, intelligence — semuanya dalam Go, terhubung lewat satu kontrak gRPC, dan dites end-to-end di atas kontrak yang sama. Dibangun dengan satu prinsip: kejujuran."
+excerpt: "15 infrastructure control-plane domains — security, telemetry, delivery, intelligence — all in Go, connected through a single gRPC contract, and tested end-to-end against that same contract. Built on one principle: honesty."
 date: "2026-01-15"
 created_at: "2026-01-15"
 updated_at: "2026-08-24"
-updated_reason: "Diperbarui agar muncul di urutan teratas portfolio (recently updated / terbaru di-update)."
+updated_reason: "Updated so it appears at the top of the portfolio (recently updated)."
 tags: [
   "go", "grpc", "ebpf", "kubernetes", "observability", "opentelemetry",
   "prometheus", "grafana", "sre", "devsecops", "mitre-attack", "mtls",
@@ -16,83 +16,84 @@ image: "/portofolio/PieroLokaGo/pieroloka-go.png"
 
 # Platform Labs — Sovereign Mini-Cloud Control Plane (Go)
 
-Sebuah **platform lab 15 domain** yang meniru control-plane infrastruktur modern
-— security, telemetry, delivery, dan intelligence — seluruhnya ditulis dalam
-**Go**, masing-masing domain adalah **Go module terpisah**, dan semuanya
-terhubung lewat **kontrak gRPC** yang didefinisikan di satu tempat
-(`GrpcConnect/proto/`) lalu diuji end-to-end di atas kontrak yang sama.
+A **15-domain platform lab** that mirrors a modern infrastructure control plane
+— security, telemetry, delivery, and intelligence — entirely written in
+**Go**, where each domain is a **separate Go module**, and all of them are
+connected through a **gRPC contract** defined in one place
+(`GrpcConnect/proto/`) and then tested end-to-end against that same contract.
 
-Tujuannya bukan menggantikan Kubernetes atau Kafka. Tujuannya berbeda dan
-disengaja: **memahami control-plane dari dalam** — bagaimana reconcile loop,
-deteksi, enforcement, dan actuation benar-benar bekerja — dengan satu komitmen
-desain yang tidak bisa ditawar: **kejujuran**.
+The goal is not to replace Kubernetes or Kafka. The goal is different and
+deliberate: **understanding the control plane from the inside** — how reconcile loops,
+detection, enforcement, and actuation actually work — with one non-negotiable
+design commitment: **honesty**.
 
-> Backend nyata dilaporkan `real`, backend tiruan dilaporkan `model`, yang
-> tidak bisa jalan dilaporkan `unavailable` — tidak ada yang menyamar. Setiap
-> domain mengekspos `GetCapabilities` / `GetFeatures` yang menyatakan status
-> ini apa adanya, dan **test menegakkan kejujuran itu**.
-
----
-
-## Posisi dalam Ekosistem PIERO LOKA
-
-Platform Labs ini adalah **wujud Go dari PIERO LOKA** — platform pemantauan
-keamanan dan FinOps performa tinggi berbasis eBPF — yang di sini dirender ulang
-sebagai control-plane mini-cloud 15 domain yang dibangun dari bawah.
-
-PIERO LOKA memakai pola **Core Dispatcher**: lebih dari 28 kernel hook
-dikonsolidasikan menjadi 6 titik masuk kernel berkinerja tinggi, memakai
-zero-copy ring buffer dan korelasi event internal, sehingga overhead kernel dan
-context switch turun 60–75% dengan overhead sistem di bawah 1,5%.
-
-Disiplin yang dipegang sama: **kejujuran sistem** — sinyal kernel adalah sumber
-kebenaran, dan status fitur dinyatakan apa adanya. Pada wujud Go ini, disiplin
-itu ditegakkan sebagai data (`common.Feature`) dan test, bukan sekadar konvensi.
+> Real backends are reported as `real`, mock backends are reported as `model`, and
+> what cannot run is reported as `unavailable` — nothing masquerades. Every
+> domain exposes `GetCapabilities` / `GetFeatures` that state this status
+> as it is, and **tests enforce that honesty**.
 
 ---
 
-## Tampilan
+## Position in the PIERO LOKA Ecosystem
 
-Dashboard cluster di bawah ini membaca klaster **kind sungguhan** lewat
-`kubectl` (read-only), dengan aksi tulis hanya lewat ArgoCD/Flux dan melewati
-PDP console — pod yang tampil `Running` memang benar-benar jalan, bukan data
-contoh. Panel HITL di sisi kanan sengaja kosong dan menyatakannya: *"Kosong itu
-jujur"* — tidak ada approval high-risk yang menunggu. Kalau ada bagian yang
-tidak bisa diakses, ia melaporkan `unavailable` beserta alasannya, bukan
-ditutup dengan status hijau palsu.
+Platform Labs is the **Go embodiment of PIERO LOKA** — a high-performance
+eBPF-based security and FinOps monitoring platform — rendered here anew
+as a 15-domain mini-cloud control plane built from the ground up.
 
-![Dashboard PIERO LOKA — cluster explorer membaca klaster kind asli via kubectl read-only, aksi tulis lewat ArgoCD/Flux + PDP](/portofolio/PieroLokaGo/dashboard-pieroloka.png)
+PIERO LOKA uses a **Core Dispatcher** pattern: more than 28 kernel hooks
+are consolidated into 6 high-performance kernel entry points, using
+zero-copy ring buffers and internal event correlation, so kernel overhead and
+context switches drop by 60–75% with system overhead below 1.5%.
 
-Agent console memperlihatkan disiplin yang sama di UI-nya: setiap jawaban
-dibubuhi **label kejujuran** (REAL/MODEL) dari generator yang menghasilkannya,
-dan batasannya ditulis di tempat — misalnya "sesi hilang saat domain restart"
-karena session disimpan in-memory. Di footer pun diingatkan: PDP default-deny,
-aksi berisiko menunggu HITL.
-
-![Chat / Agent Console PIERO LOKA — tiap jawaban berlabel REAL/MODEL, batasan in-memory session ditulis terbuka](/portofolio/PieroLokaGo/chat.png)
+The discipline is the same: **system honesty** — kernel signals are the source
+of truth, and feature status is stated as it is. In this Go embodiment, that
+discipline
+is enforced as data (`common.Feature`) and tests, not merely convention.
 
 ---
 
-## Sorotan Sekilas
+## Screenshots
+
+The cluster dashboard below reads a **real kind cluster** through
+`kubectl` (read-only), with write actions only via ArgoCD/Flux and going through
+the PDP console — pods showing `Running` are genuinely running, not sample
+data. The HITL panel on the right is deliberately empty and says so: *"Empty is
+honest"* — no high-risk approvals are pending. If any section cannot be
+accessed, it reports `unavailable` along with the reason, rather than
+being covered up with a fake green status.
+
+![PIERO LOKA dashboard — the cluster explorer reads a real kind cluster via read-only kubectl, write actions via ArgoCD/Flux + PDP](/portofolio/PieroLokaGo/dashboard-pieroloka.png)
+
+The agent console shows the same discipline in its UI: every answer
+carries an **honesty label** (REAL/MODEL) from the generator that produced it,
+and its limitations are stated in place — for example "session lost when the domain restarts"
+because sessions are kept in memory. The footer reminds you too: PDP default-deny,
+risky actions wait for HITL.
+
+![PIERO LOKA chat / agent console — every answer is labeled REAL/MODEL, in-memory session limits are stated openly](/portofolio/PieroLokaGo/chat.png)
+
+---
+
+## At a Glance
 
 | | |
 | :--- | :--- |
-| **Domain** | 15 — tiap domain Go module terpisah, diwired lewat `replace` di `GrpcConnect/go.mod` |
-| **Kontrak** | 18 file `.proto` (3 common + 15 domain) → **386 RPC** bertipe, tanpa `map<string,string>` |
-| **Streaming** | 14 aliran server-streaming — telemetri & progress tanpa polling |
-| **Substrat** | `grpcrun`: health v1, graceful stop, interceptor request-id/OTel/logging, TLS + mTLS domain CA, circuit breaker + retry, OTLP trace & metrik, cert auto-renewal |
-| **Observability** | Full OTel — satu jalur: aplikasi → OTLP → Collector → Prometheus → Grafana; 27 dashboard ter-provision + 8 alert (aktif bila `OTLP_ENDPOINT` di-set) |
-| **Actuation nyata** | proses ber-namespace + cgroup v2 limits/OOM, volume sparse + COW snapshot, modul eBPF, link host via rtnetlink |
-| **eBPF** | 16 modul CORE C (53 objek ELF) + loader, simulator, decoder DWARF byte-accurate, mapctl fastpath |
-| **Otorisasi** | PEP lokal (`WithGrants`) + PDP default-DENY, console 4 role, multi-tenancy MSP-lite |
-| **Uji** | `go test -race` hijau 16/16 package di host pengembangan · 18 file skenario e2e lintas domain (bufconn) |
+| **Domains** | 15 — each domain is a separate Go module, wired via `replace` in `GrpcConnect/go.mod` |
+| **Contract** | 18 `.proto` files (3 common + 15 domain) → **386 typed RPCs**, no `map<string,string>` |
+| **Streaming** | 14 server-streaming flows — telemetry & progress without polling |
+| **Substrate** | `grpcrun`: health v1, graceful stop, request-id/OTel/logging interceptors, TLS + mTLS domain CA, circuit breaker + retry, OTLP traces & metrics, cert auto-renewal |
+| **Observability** | Full OTel — one path: app → OTLP → Collector → Prometheus → Grafana; 27 provisioned dashboards + 8 alerts (active when `OTLP_ENDPOINT` is set) |
+| **Real actuation** | namespaced processes + cgroup v2 limits/OOM, sparse volumes + COW snapshots, eBPF modules, host links via rtnetlink |
+| **eBPF** | 16 CORE C modules (53 ELF objects) + loader, simulator, byte-accurate DWARF decoder, mapctl fastpath |
+| **Authorization** | local PEP (`WithGrants`) + default-DENY PDP, 4-role console, MSP-lite multi-tenancy |
+| **Testing** | `go test -race` green on 16/16 packages on the dev host · 18 cross-domain e2e scenario files (bufconn) |
 
 ---
 
-## Arsitektur 5 Lapis
+## 5-Layer Architecture
 
-Lab ini disusun berlapis, dari hardware fisik sampai gerbang tool agen. Setiap
-lapisan hanya berbicara dengan lapisan di bawahnya lewat kontrak gRPC bertipe.
+The lab is layered, from physical hardware up to the agent tool gateway. Each
+layer only talks to the layer below it through typed gRPC contracts.
 
 ```mermaid
 graph TB
@@ -102,34 +103,34 @@ graph TB
     classDef l1 fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff,stroke-width:1.5px
     classDef l0 fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:1.5px
 
-    subgraph L4["Lapisan 4 — Intelligence & Gateway"]
-        MCP["MCP :5010<br/>Tool Gateway default-deny"]:::l4
+    subgraph L4["Layer 4 — Intelligence & Gateway"]
+        MCP["MCP :5010<br/>default-deny Tool Gateway"]:::l4
         AI["AIAgent :5011<br/>Planner · Memory · Skill · Session"]:::l4
     end
 
-    subgraph L3["Lapisan 3 — Telemetry & Detection"]
+    subgraph L3["Layer 3 — Telemetry & Detection"]
         OPS["Operations :5008<br/>SLO · Insiden · Chaos · Right-size"]:::l3
         DET["Detection Platform :5009<br/>ingest → correlate → investigate"]:::l3
-        EDR["Endpoint :5017<br/>Sensor host · Rule · Respons"]:::l3
+        EDR["Endpoint :5017<br/>Host sensor · Rule · Response"]:::l3
     end
 
-    subgraph L2["Lapisan 2 — Orchestration & Delivery"]
-        CP["ControlPlane :5005<br/>Reconcile loop idempoten"]:::l2
-        DEL["Deliver :5007<br/>Pipeline 8 tahap · Deploy strategy"]:::l2
+    subgraph L2["Layer 2 — Orchestration & Delivery"]
+        CP["ControlPlane :5005<br/>Idempotent reconcile loop"]:::l2
+        DEL["Deliver :5007<br/>8-stage pipeline · Deploy strategy"]:::l2
         PF["PlatformForge :5012<br/>IaC · mini-ArgoCD · Flux model"]:::l2
     end
 
-    subgraph L1["Lapisan 1 — Resource Substrat"]
+    subgraph L1["Layer 1 — Resource Substrate"]
         HW["Hardware :5001"]:::l1
         CMP["Compute :5002<br/>Pod · VM · WASM"]:::l1
         NET["Network :5003<br/>Decode · IPAM · NetFlow"]:::l1
         STO["Storage :5004<br/>Sparse · COW · Object"]:::l1
     end
 
-    subgraph L0["Lapisan 0 — Kernel & Security"]
+    subgraph L0["Layer 0 — Kernel & Security"]
         SEC["Security :5006<br/>PDP · Token · MFA · Audit"]:::l0
         CYB["Cyber :5013<br/>Red/Blue · ATT&CK Simulation"]:::l0
-        KF["KernelForge :5014<br/>16 modul eBPF CORE"]:::l0
+        KF["KernelForge :5014<br/>16 CORE eBPF modules"]:::l0
     end
 
     AI --> MCP
@@ -141,51 +142,51 @@ graph TB
     CP -->|Actuator| CMP
     CP -->|Actuator| STO
     NET -->|KFMapEnforcer UpdateMap| KF
-    CYB -->|Kampanye ATT&CK| KF
+    CYB -->|ATT&CK campaign| KF
     HW --> CMP
     CMP --> KF
     NET --> KF
     STO --> KF
 ```
 
-Prinsip pemisahan lapisan ini bukan sekadar diagram — ia **ditegakkan test**.
-`TestArchitectureNoKernelForgeImport` gagal bila Detection mengimpor
-`gen/kernelforge`: pemilik semantik tidak pernah mengimpor tipe domain lain,
-dan koneksi lintas domain hanya lewat jembatan eksplisit di `bridge/`.
+This layer separation principle is not just a diagram — it is **enforced by tests**.
+`TestArchitectureNoKernelForgeImport` fails if Detection imports
+`gen/kernelforge`: a semantic owner never imports another domain's types,
+and cross-domain connections only go through explicit bridges in `bridge/`.
 
 ---
 
-## 15 Domain — Apa yang Benar-benar Jalan
+## 15 Domains — What Actually Runs
 
-> Angka kolom **RPC** dihasilkan dari `.proto` — verifikasi dengan
+> The **RPC** column numbers are generated from the `.proto` files — verify with
 > `cd GrpcConnect && make count-rpc`.
 
-| Domain | Port | RPC | Yang nyata dijalankan |
+| Domain | Port | RPC | What actually runs |
 | :--- | :--: | :--: | :--- |
-| **Hardware** | :5001 | 15 | Baca `/proc`, `/sys`, `lspci` nyata; NUMA PCI dari sysfs; bagian gagal dilaporkan per-section, bukan disembunyikan; sensor thermal/power (hwmon + power_supply) |
-| **Compute** | :5002 | 21 | `RunPod` proses ber-namespace nyata + **cgroup v2 nyata** (`memory.max`/`cpu.max`/`pids.max`); `oom_killed`/`memory_peak` dibaca dari kernel; WASM interpreter Go murni; `RunVM` QEMU jujur (kvm→host, tcg→MODEL) |
-| **Network** | :5003 | 28 | Decode Ethernet→IP→TCP/UDP/ICMP/ARP; IPAM deterministik persisten; **rtnetlink nyata** (bridge/veth/netns via `NETLINK_ROUTE`); collector NetFlow v5/IPFIX; `mikrotikforge` RouterOS CHR |
-| **Storage** | :5004 | 15 | Volume sparse + snapshot COW + refcount (thin provisioning); MiniFS + fsck; object store SHA-256 + scrub korupsi |
-| **ControlPlane** | :5005 | 15 | Reconcile deterministik + drift HIGH/MED/LOW; **actuator** pod & volume nyata; modul eBPF sebagai desired state |
-| **Security** | :5006 | 14 | Token Ed25519/HMAC + issue cert; **PDP default-DENY** + rule engine; audit stream; **MFA TOTP native** (RFC 6238/4226, secret di-seal AEAD, anti-replay) |
-| **Deliver** | :5007 | 17 | Build container docker nyata (digest + SBOM); pipeline 8 tahap; deploy recreate/rolling/blue-green/canary; **provenance in-toto + SLSA subset** (Ed25519/DSSE) + transparency log Merkle |
-| **Operations** | :5008 | 71 | Push/query metrik; SLO + error budget + burn-rate; war-room insiden; chaos injection; **service map terukur dari trace**; continuous profiling pprof |
-| **Detection** | :5009 | 36 | ingest → normalize → enrich → dedup → index → search → rules → correlate → investigate; rule **Sigma** subset; syslog receiver; endpoint OTLP logs |
-| **MCP** | :5010 | 31 | Tool gateway capability default-deny; eksekusi tool nyata; tool high-risk → PDP Security + **gerbang HITL**; jembatan server MCP eksternal (stdio/HTTP/SSE) |
-| **AIAgent** | :5011 | 39 | Planner + reasoner; aksi langkah via MCP; memory episode; persona/profil, sesi chat durable, katalog skill, org memory `MEMORY.md` |
-| **PlatformForge** | :5012 | 33 | Parser HCL + evaluator typed; mini ArgoCD (repo git nyata, wave/hook/canary); model Flux CD (manifest CRD asli); katalog + scaffold |
-| **Cyber** | :5013 | 11 | Scope gate (loopback ok, eksternal ditolak); **Adversary Simulation** MITRE ATT&CK; BlueForge atribusi akar masalah breach |
-| **KernelForge** | :5014 | 19 | Load/attach kernel (CAP_BPF) atau simulator; stream oneof bertipe; lease auto-unload; primitive `UpdateMap`/`DeleteMapKey`/`ReadMap`; MAC BpfJailer |
-| **Endpoint** | :5017 | 21 | Sensor host Linux nyata (`/proc` poll, inotify FIM, `/proc/net`); rule Sigma lokal → alert ECS; `edrship --live`; respons otomatis ber-PDP |
+| **Hardware** | :5001 | 15 | Reads real `/proc`, `/sys`, `lspci`; NUMA PCI from sysfs; failed sections are reported per-section, not hidden; thermal/power sensors (hwmon + power_supply) |
+| **Compute** | :5002 | 21 | `RunPod` with real namespaced processes + **real cgroup v2** (`memory.max`/`cpu.max`/`pids.max`); `oom_killed`/`memory_peak` read from the kernel; pure-Go WASM interpreter; honest QEMU `RunVM` (kvm→host, tcg→MODEL) |
+| **Network** | :5003 | 28 | Decode Ethernet→IP→TCP/UDP/ICMP/ARP; deterministic persistent IPAM; **real rtnetlink** (bridge/veth/netns via `NETLINK_ROUTE`); NetFlow v5/IPFIX collector; `mikrotikforge` RouterOS CHR |
+| **Storage** | :5004 | 15 | Sparse volumes + COW snapshots + refcount (thin provisioning); MiniFS + fsck; SHA-256 object store + corruption scrub |
+| **ControlPlane** | :5005 | 15 | Deterministic reconcile + HIGH/MED/LOW drift; **real** pod & volume **actuators**; eBPF modules as desired state |
+| **Security** | :5006 | 14 | Ed25519/HMAC tokens + cert issuance; **default-DENY PDP** + rule engine; audit stream; **native TOTP MFA** (RFC 6238/4226, AEAD-sealed secrets, anti-replay) |
+| **Deliver** | :5007 | 17 | Real docker container builds (digest + SBOM); 8-stage pipeline; recreate/rolling/blue-green/canary deploys; **in-toto provenance + SLSA subset** (Ed25519/DSSE) + Merkle transparency log |
+| **Operations** | :5008 | 71 | Push/query metrics; SLO + error budget + burn-rate; incident war-room; chaos injection; **service map measured from traces**; pprof continuous profiling |
+| **Detection** | :5009 | 36 | ingest → normalize → enrich → dedup → index → search → rules → correlate → investigate; **Sigma** rule subset; syslog receiver; endpoint OTLP logs |
+| **MCP** | :5010 | 31 | default-deny capability tool gateway; real tool execution; high-risk tools → Security PDP + **HITL gate**; external MCP server bridges (stdio/HTTP/SSE) |
+| **AIAgent** | :5011 | 39 | Planner + reasoner; step actions via MCP; episodic memory; persona/profile, durable chat sessions, skill catalog, `MEMORY.md` org memory |
+| **PlatformForge** | :5012 | 33 | HCL parser + typed evaluator; mini ArgoCD (real git repos, wave/hook/canary); Flux CD model (real CRD manifests); catalog + scaffold |
+| **Cyber** | :5013 | 11 | Scope gate (loopback ok, external rejected); MITRE ATT&CK **Adversary Simulation**; BlueForge breach root-cause attribution |
+| **KernelForge** | :5014 | 19 | Load/attach to kernel (CAP_BPF) or simulator; typed oneof streams; lease auto-unload; `UpdateMap`/`DeleteMapKey`/`ReadMap` primitives; BpfJailer MAC |
+| **Endpoint** | :5017 | 21 | Real Linux host sensor (`/proc` poll, inotify FIM, `/proc/net`); local Sigma rules → ECS alerts; `edrship --live`; PDP-gated automatic response |
 
-### Distribusi RPC — Berat Ilmu Ada di Observability
+### RPC Distribution — The Weight of the Science Lies in Observability
 
-RPC tidak tersebar rata. **Observability & deteksi (Operations + Detection = 107
-RPC)** jelas jadi pusat gravitasi — konsisten dengan posisi lab ini sebagai bahan
-belajar control-plane, bukan orchestrator generik.
+RPCs are not spread evenly. **Observability & detection (Operations + Detection = 107
+RPCs)** is clearly the center of gravity — consistent with this lab's position as a
+control-plane learning exercise, not a generic orchestrator.
 
 ```mermaid
-pie showData title Distribusi RPC per domain (make count-rpc)
+pie showData title RPC distribution per domain (make count-rpc)
     "Operations" : 71
     "AIAgent" : 39
     "Detection" : 36
@@ -205,125 +206,125 @@ pie showData title Distribusi RPC per domain (make count-rpc)
 
 ---
 
-## Peta 60 Detik — Apa yang Terjadi Saat `make run-lab`
+## 60-Second Map — What Happens on `make run-lab`
 
-Satu perintah menyalakan seluruh lab. **Tidak ada Docker, tidak ada k8s, tidak
-ada database eksternal** — 15 server gRPC + jembatan lintas domain hidup dalam
-satu proses Go, lalu mati dengan rapi saat `Ctrl+C`:
+A single command boots the whole lab. **No Docker, no k8s, no
+external database** — 15 gRPC servers + cross-domain bridges live in
+a single Go process, then shut down cleanly on `Ctrl+C`:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as Developer
     participant M as make run-lab
-    participant L as labnet (satu proses Go)
-    participant CA as domainca.go (CA per domain)
+    participant L as labnet (single Go process)
+    participant CA as domainca.go (per-domain CA)
     participant D as 15 server gRPC :5001-:5017
     participant B as bridge/ (konduktor)
-    participant W as Console :5015 (opsional)
+    participant W as Console :5015 (optional)
 
     U->>M: make run-lab
     M->>L: go run ./cmd/labnet
-    L->>L: baca flag + env + SetupMetrics idempoten
+    L->>L: read flags + env + idempotent SetupMetrics
 
     rect rgb(232, 244, 255)
-        Note over L,D: Boot berurutan mengikuti lapisan L0 -> L4
-        L->>D: listen + EnforceTLS + health v1 + interceptor per domain
+        Note over L,D: Sequential boot following layers L0 -> L4
+        L->>D: listen + EnforceTLS + health v1 + interceptors per domain
         D-->>L: SERVING
     end
 
-    loop tiap domain (15x)
-        L->>D: probe grpc.health.v1 sebelum domain itu dipakai sebagai klien
+    loop each domain (15x)
+        L->>D: probe grpc.health.v1 before that domain is used as a client
         D-->>L: READY
     end
 
     alt LABNET_MTLS=1
-        L->>CA: muat CA + client cert tiap domain (ECDSA P-256)
-        CA-->>L: 15 pasang CA/client cert
-    else plaintext (default dev)
-        L->>L: jaringan compose internal tertutup - keputusan dev yang sadar
+        L->>CA: load CA + client cert for each domain (ECDSA P-256)
+        CA-->>L: 15 CA/client cert pairs
+    else plaintext (dev default)
+        L->>L: closed internal compose network - a conscious dev decision
     end
 
     rect rgb(240, 255, 240)
-        Note over L,B: Jembatan di-wire eksplisit - pemilik semantik tak mengimpor gen domain lain
+        Note over L,B: Bridges wired explicitly - semantic owners don't import other domains' gen
         L->>B: GRPCActuator (ControlPlane -> Compute/Storage)
         L->>B: ModuleReconciler (ControlPlane -> KernelForge)
         L->>B: KFMapEnforcer (Network -> KernelForge UpdateMap)
     end
 
-    L->>D: GetCapabilities sweep 15 domain - Feature real/model/unavailable
-    D-->>L: ringkasan + reason wajib untuk UNAVAILABLE
+    L->>D: GetCapabilities sweep across 15 domains - Feature real/model/unavailable
+    D-->>L: summary + mandatory reason for UNAVAILABLE
 ```
 
-> `labnet` adalah alat dev/lab, bukan topologi produksi. Di produksi tiap domain
-> adalah proses terpisah pada port-nya sendiri — `make run-hardware` sampai
-> `make run-cyber` menjalankan masing-masing domain secara standalone.
+> `labnet` is a dev/lab tool, not a production topology. In production each domain
+> is a separate process on its own port — `make run-hardware` through
+> `make run-cyber` run each domain standalone.
 
 ---
 
-## Kejujuran sebagai Kontrak yang Ditegakkan
+## Honesty as an Enforced Contract
 
-Kejujuran di repo ini bukan budaya, tapi **mekanisme**. Ini bagian yang paling
-saya banggakan, karena ia mengubah klaim menjadi sesuatu yang bisa gagal.
+Honesty in this repo is not a culture, but a **mechanism**. This is the part I am
+most proud of, because it turns claims into something that can fail.
 
-Tiga komponen membuatnya tidak bisa menyusut diam-diam:
+Three components keep it from quietly shrinking:
 
-1. **Model data** — `common.Feature` membawa `kind` (REAL/MODEL/UNAVAILABLE)
-   plus capability terstruktur: `availability`, `execution_mode`
-   (OS/KERNEL/SIM/MODEL/NONE), dan `requirements` (mis. `CAP_BPF`, `/dev/kvm`).
-2. **Pelaporan agregat** — `ListForgeSummaries` merangkum hitungan
-   real/model/unavailable per domain dalam satu panggilan.
-3. **Test penegak** — e2e menegakkan kebijakan atas `GetFeatures` nyata:
-   `availability` wajib dari kosakata resmi, `UNAVAILABLE` **wajib punya
-   `reason`** — test gagal bila capability dilaporkan tidak sesuai kenyataan.
+1. **Data model** — `common.Feature` carries `kind` (REAL/MODEL/UNAVAILABLE)
+   plus structured capability: `availability`, `execution_mode`
+   (OS/KERNEL/SIM/MODEL/NONE), and `requirements` (e.g. `CAP_BPF`, `/dev/kvm`).
+2. **Aggregate reporting** — `ListForgeSummaries` summarizes the
+   real/model/unavailable counts per domain in one call.
+3. **Enforcing tests** — e2e enforces the policy against real `GetFeatures`:
+   `availability` must come from the official vocabulary, `UNAVAILABLE` **must have
+   a `reason`** — the test fails if a capability is reported in a way that doesn't match reality.
 
 ```mermaid
 flowchart TD
-    subgraph HOST["Kondisi host yang dicatat saat runtime"]
-        CAPB["CAP_BPF ada?"]
-        KVM["/dev/kvm ada?"]
-        K8S["cluster k8s bisa dihubungi?"]
-        SIGDIR["DETECTION_SIGMA_DIR di-set?"]
+    subgraph HOST["Host conditions recorded at runtime"]
+        CAPB["CAP_BPF present?"]
+        KVM["/dev/kvm present?"]
+        K8S["k8s cluster reachable?"]
+        SIGDIR["DETECTION_SIGMA_DIR set?"]
     end
 
-    subgraph FEAT["common.Feature - data kontrak, bukan label"]
+    subgraph FEAT["common.Feature - contract data, not a label"]
         KIND["kind: REAL / MODEL / UNAVAILABLE"]
         MODE["execution_mode: OS / KERNEL / SIM / MODEL / NONE"]
-        REASON["reason - WAJIB bila UNAVAILABLE"]
+        REASON["reason - MANDATORY when UNAVAILABLE"]
     end
 
-    subgraph GATE["Ditegakkan test - gagal bila menyamar"]
-        T1["capability_test.go<br/>kosakata availability + reason wajib"]
+    subgraph GATE["Enforced by tests - fails on masquerading"]
+        T1["capability_test.go<br/>availability vocabulary + mandatory reason"]
         T2["TestArchitectureNoKernelForgeImport"]
-        T4["GetCapabilities Compute<br/>cgroup_v2 + kvm apa adanya"]
+        T4["GetCapabilities Compute<br/>cgroup_v2 + kvm as-is"]
     end
 
-    HOST -->|"dinilai, bukan diasumsikan"| FEAT
-    FEAT -->|"diverifikasi"| GATE
-    FEAT --> AGG["ListForgeSummaries + Laporan Kejujuran HTML + HonestyBadge"]
-    AGG --> UI["Console + dashboard: apa yang nyata, apa yang model, apa yang tidak ada"]
+    HOST -->|"evaluated, not assumed"| FEAT
+    FEAT -->|"verified"| GATE
+    FEAT --> AGG["ListForgeSummaries + HTML Honesty Report + HonestyBadge"]
+    AGG --> UI["Console + dashboards: what is real, what is model, what is missing"]
     GATE --> UI
 
-    EX1["Tanpa CAP_BPF -> LoadModule GAGAL apa adanya,<br/>modul jalan origin=SIMULATOR.<br/>Tidak ada tombol 'sembunyikan simulator'."]:::ok
-    EX2["Tanpa /dev/kvm -> RunVM laporkan acceleration=tcg (MODEL),<br/>tak pernah klaim VM 'ready'."]:::ok
+    EX1["Without CAP_BPF -> LoadModule FAILS as-is,<br/>modules run origin=SIMULATOR.<br/>No 'hide simulator' button."]:::ok
+    EX2["Without /dev/kvm -> RunVM reports acceleration=tcg (MODEL),<br/>never claims the VM is 'ready'."]:::ok
     KIND --> EX1
     MODE --> EX2
     classDef ok fill:#0b1f14,stroke:#166534,color:#bbf7d0
 ```
 
-**Contoh nyata:** di host tanpa `CAP_BPF`, KernelForge tetap boot — loader
-kernel gagal apa adanya, modul jalan `origin=SIMULATOR`, dan `GetFeatures`
-menyatakan itu. Tidak ada tombol "sembunyikan simulator".
+**Real example:** on a host without `CAP_BPF`, KernelForge still boots — the kernel
+loader fails as-is, modules run with `origin=SIMULATOR`, and `GetFeatures`
+says so. There is no "hide simulator" button.
 
-**Contoh kedua:** tanpa `/dev/kvm`, `RunVM` melaporkan `acceleration=tcg`
-(lambat, MODEL) dan tidak pernah mengklaim VM "ready"; dengan KVM → `host`.
+**Second example:** without `/dev/kvm`, `RunVM` reports `acceleration=tcg`
+(slow, MODEL) and never claims the VM is "ready"; with KVM → `host`.
 
 ---
 
-## Siklus Hidup Satu Request
+## Lifecycle of a Single Request
 
-Setiap request melewati tepat satu jalur: dibuat di client bersertifikat,
-diklasifikasi di gateway, dieksekusi dengan grant eksplisit, dan dicatat.
+Every request goes through exactly one path: created at a certified client,
+classified at the gateway, executed with an explicit grant, and recorded.
 
 ```mermaid
 flowchart LR
@@ -335,14 +336,14 @@ flowchart LR
 
     C["Client / Console / Agent"]:::client
     MW["grpcrun interceptor<br/>request-id · OTel · logging · TLS"]:::gw
-    GRANT["PEP lokal WithGrants<br/>atau PDP EvaluatePolicy (high-risk)"]:::sec
-    SVC["Handler domain"]:::svc
-    STORE["Store / Actuator nyata"]:::store
-    AUD["Audit ring bounded"]:::sec
+    GRANT["local PEP WithGrants<br/>or PDP EvaluatePolicy (high-risk)"]:::sec
+    SVC["Domain handler"]:::svc
+    STORE["Real Store / Actuator"]:::store
+    AUD["Bounded audit ring"]:::sec
 
     C -->|"mTLS"| MW
     MW --> GRANT
-    GRANT -->|"grant ada"| SVC
+    GRANT -->|"grant present"| SVC
     GRANT -->|"deny"| AUD
     SVC --> STORE
     SVC --> AUD
@@ -350,17 +351,17 @@ flowchart LR
     SVC --> C
 ```
 
-Poin desainnya: **otorisasi berada sedekat mungkin dengan eksekusi** — PEP
-lokal di KernelForge + ControlPlane + MCP, dan PDP (`EvaluatePolicy`) di domain
-Security untuk tool high-risk. Tidak ada satu "god gateway" yang menilai semua;
-justru sebaliknya, tiap domain memegang keputusan atas sumber dayanya sendiri.
+The design point: **authorization sits as close as possible to execution** — a local
+PEP in KernelForge + ControlPlane + MCP, and the PDP (`EvaluatePolicy`) in the
+Security domain for high-risk tools. There is no single "god gateway" judging everything;
+quite the opposite, each domain holds the decision over its own resources.
 
 ---
 
-## Rantai Respons Keamanan (S1) — Ownership Benar
+## Security Response Chain (S1) — Correct Ownership
 
-Ini alur yang menjadi inti dari lab: satu temuan tidak berhenti di alert, ia
-mengalir sampai ada penegakan — dan setiap langkah punya pemilik yang jelas.
+This is the core flow of the lab: a finding doesn't stop at an alert, it
+flows through until enforcement happens — and every step has a clear owner.
 
 ```mermaid
 sequenceDiagram
@@ -374,31 +375,31 @@ sequenceDiagram
     participant HITL as HITL Gate
 
     EDR->>DET: event / finding (edrship --live)
-    DET->>KF: korelasi + telemetri kernel
-    KF-->>DET: BPFEvent (oneof bertipe)
-    DET->>OPS: finding -> insiden otomatis
-    OPS->>PDP: minta keputusan respons
+    DET->>KF: correlation + kernel telemetry
+    KF-->>DET: BPFEvent (typed oneof)
+    DET->>OPS: finding -> automatic incident
+    OPS->>PDP: request response decision
     PDP-->>OPS: ALLOW / DENY (default-DENY)
     alt high-risk
-        OPS->>HITL: gerbang HITL (operator console)
+        OPS->>HITL: HITL gate (operator console)
         HITL-->>OPS: approve / reject
     end
     OPS->>NET: BlockIP
     NET->>KF: UpdateMap (network_block_list)
-    KF-->>NET: terpasang / gagal (dilaporkan apa adanya)
+    KF-->>NET: installed / failed (reported as-is)
 ```
 
-**Ownership semantik ini dijaga ketat:** Network yang memiliki `BlockIP`,
-KernelForge yang memiliki `UpdateMap`, Security yang memiliki keputusan
-`EvaluatePolicy`. Tidak ada domain yang menyentuh peta domain lain secara
-langsung — semuanya lewat kontrak.
+**This semantic ownership is strictly guarded:** Network owns `BlockIP`,
+KernelForge owns `UpdateMap`, Security owns the `EvaluatePolicy`
+decision. No domain touches another domain's maps
+directly — everything goes through contracts.
 
 ---
 
-## Observability — Satu Jalur, Titik
+## Observability — One Path, Period
 
-Metrik di lab ini **bukan** kumpulan blok gRPC generik. Setiap angka di dashboard
-punya sumber nyata di kode:
+The metrics in this lab are **not** a pile of generic gRPC blocks. Every number on the dashboards
+has a real source in code:
 
 ```mermaid
 graph TB
@@ -407,11 +408,11 @@ graph TB
     classDef viz fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:2px,font-weight:bold
     classDef alert fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1.5px
 
-    SVCS["15 Domain + bridge<br/>instrumen bisnis + runtime Go + gRPC per-RPC"]:::svc
-    COL["OTel Collector<br/>satu pipeline metrik"]:::collector
-    PROM["Prometheus :9090<br/>scrape + rules alert"]:::collector
-    GRAF["Grafana :3000<br/>27 dashboard ter-provision"]:::viz
-    AM["Alertmanager<br/>8 alert"]:::alert
+    SVCS["15 domains + bridge<br/>business instruments + Go runtime + per-RPC gRPC"]:::svc
+    COL["OTel Collector<br/>single metrics pipeline"]:::collector
+    PROM["Prometheus :9090<br/>scrape + alert rules"]:::collector
+    GRAF["Grafana :3000<br/>27 provisioned dashboards"]:::viz
+    AM["Alertmanager<br/>8 alerts"]:::alert
 
     SVCS -->|"OTLP"| COL
     COL --> PROM
@@ -419,199 +420,199 @@ graph TB
     PROM --> AM
 ```
 
-Yang diekspor bukan cuma health. Ada **runtime Go** (GC pause histogram dari
-`runtime/metrics`, heap, goroutine), **metrik per-RPC** gRPC dengan atribut
-`domain`, dan **instrumen bisnis per domain** — semua bermuara ke Prometheus
-dan diverifikasi oleh test (`grpcrun/metrics_otlp_test.go` mendekode dan
-mengasert isinya) dan oleh audit `deploy/grafana/check_metrics.py` yang
-memastikan setiap metrik di dashboard benar-benar dideklarasikan di kode Go.
+What is exported is not just health. There is the **Go runtime** (GC pause histogram from
+`runtime/metrics`, heap, goroutines), **per-RPC** gRPC metrics with a `domain`
+attribute, and **per-domain business instruments** — all flowing into Prometheus
+and verified by tests (`grpcrun/metrics_otlp_test.go` decodes and
+asserts their contents) and by the `deploy/grafana/check_metrics.py` audit that
+ensures every metric on the dashboards is actually declared in the Go code.
 
-**Status jujur OTLP:** exporter aktif **hanya bila `OTLPEndpoint` di-set** ke
-kolektor luar. Tanpa env itu, span no-op dan **metrik mati total** — dinyatakan
-jujur, bukan "seolah direkam".
+**Honest OTLP status:** the exporter is active **only if `OTLPEndpoint` is set** to
+an external collector. Without that env var, spans are no-op and **metrics are completely dead** — stated
+honestly, not "as if recorded".
 
 ---
 
-## Actuation Nyata — Bukan Sekadar Reconcile Diagram
+## Real Actuation — Not Just a Reconcile Diagram
 
-Bagian yang membedakan lab ini dari sekadar "CRD yang dinamai ulang": beberapa
-jalur benar-benar mengubah keadaan sistem.
+What sets this lab apart from a mere "renamed CRD": several
+paths actually change the system state.
 
-| Jalur | Yang benar-benar terjadi |
+| Path | What actually happens |
 | :--- | :--- |
-| `compute.pod` | Proses dengan namespace baru (PID/UTS/IPC/Mount/User) + **cgroup v2** `memory.max`/`cpu.max`/`pids.max`; `oom_killed` dibaca dari `memory.events` |
-| `storage.volume` | Volume **sparse** + snapshot **COW** dengan refcount; `physical_size` = byte fisik nyata |
-| rtnetlink | Buat/hapus bridge & veth, naikkan link, pindah netns via socket `NETLINK_ROUTE` (pakai `x/sys/unix`, tanpa library pihak ketiga) |
-| eBPF | Load/attach ke kernel bila ada `CAP_BPF`; jika tidak, simulator jujur `origin=SIMULATOR` |
-| Right-sizing | Sampler **cgroup v2 nyata** → rekomendasi (persentil × headroom, clamp) → apply desired-state ber-HITL → **resize cgroup live** dengan kill switch |
+| `compute.pod` | Process with new namespaces (PID/UTS/IPC/Mount/User) + **cgroup v2** `memory.max`/`cpu.max`/`pids.max`; `oom_killed` read from `memory.events` |
+| `storage.volume` | **Sparse** volume + **COW** snapshots with refcount; `physical_size` = actual physical bytes |
+| rtnetlink | Create/delete bridges & veths, bring links up, move netns via `NETLINK_ROUTE` sockets (using `x/sys/unix`, no third-party libraries) |
+| eBPF | Load/attach to the kernel when `CAP_BPF` is available; otherwise an honest `origin=SIMULATOR` simulator |
+| Right-sizing | **Real cgroup v2** sampler → recommendation (percentile × headroom, clamp) → HITL-gated desired-state apply → **live cgroup resize** with a kill switch |
 
 ---
 
-## Teknologi & Stack
+## Tech & Stack
 
-| Kategori | Teknologi | Peran |
+| Category | Technology | Role |
 | :--- | :--- | :--- |
-| **Bahasa** | Go 1.26 | Satu bahasa untuk seluruh 15 domain; tiap domain module terpisah |
-| **RPC** | gRPC + Protocol Buffers | Kontrak bertipe, 386 RPC, 14 stream |
-| **Jembatan** | Modul Go murni | `bridge/` sebagai konduktor; tanpa import lintas domain |
-| **Kernel** | eBPF (C + loader Go) | 16 modul CORE, 53 objek ELF, decoder DWARF |
-| **Telemetri** | OpenTelemetry | Satu jalur OTLP → Collector → Prometheus → Grafana |
-| **Visibilitas** | Prometheus + Grafana + Tempo | 27 dashboard, 8 alert, trace-driven service map |
-| **Keamanan** | mTLS domain CA (ECDSA P-256) | Cert auto-renewal; PDP default-DENY; MFA TOTP |
-| **Agen** | MCP + AI orchestration | Tool gateway default-deny, HITL, bridge MCP eksternal |
+| **Language** | Go 1.26 | One language for all 15 domains; each domain is a separate module |
+| **RPC** | gRPC + Protocol Buffers | Typed contracts, 386 RPCs, 14 streams |
+| **Bridges** | Pure Go modules | `bridge/` as the conductor; no cross-domain imports |
+| **Kernel** | eBPF (C + Go loader) | 16 CORE modules, 53 ELF objects, DWARF decoder |
+| **Telemetry** | OpenTelemetry | One path OTLP → Collector → Prometheus → Grafana |
+| **Visibility** | Prometheus + Grafana + Tempo | 27 dashboards, 8 alerts, trace-driven service map |
+| **Security** | mTLS domain CA (ECDSA P-256) | Cert auto-renewal; default-DENY PDP; TOTP MFA |
+| **Agent** | MCP + AI orchestration | default-deny tool gateway, HITL, external MCP bridges |
 | **Deploy** | Docker Compose (dev) | labnet + collector + tempo + prometheus + grafana |
 
 ---
 
-## Keputusan Teknis & Trade-off
+## Technical Decisions & Trade-offs
 
-**Satu repo, 15 module terpisah — bukan mono-module.**
-Setiap domain adalah Go module sendiri dengan `go.mod`-nya. Ini menahan
-kecenderungan import silang: bila Detection ingin memakai tipe KernelForge, ia
-harus menyentuh `gen/`, dan **ada test yang gagal** (`TestArchitectureNoKernelForgeImport`).
-Biayanya, wiring lebih repot lewat `replace` di `GrpcConnect/go.mod` — tapi
-batas arsitektur jadi nyata, bukan sekadar konvensi.
+**One repo, 15 separate modules — not a mono-module.**
+Each domain is its own Go module with its own `go.mod`. This curbs
+the tendency toward cross-imports: if Detection wants to use a KernelForge type, it
+has to touch `gen/`, and **a test fails** (`TestArchitectureNoKernelForgeImport`).
+The cost is messier wiring via `replace` in `GrpcConnect/go.mod` — but
+the architectural boundaries become real, not just convention.
 
-**Substrat `grpcrun` yang dipakai semua domain.**
-Health, TLS, breaker, retry, OTel, cert renewal — semuanya di satu tempat.
-Konsistensi lintas 15 domain datang gratis. Risikonya: bug di substrat
-menyebar ke semua domain sekaligus; mitigasinya adalah `grpcrun` sendiri diuji
-dengan receiver OTLP in-process.
+**The `grpcrun` substrate used by every domain.**
+Health, TLS, breaker, retry, OTel, cert renewal — all in one place.
+Cross-domain consistency across 15 domains comes for free. The risk: a bug in the substrate
+spreads to every domain at once; the mitigation is that `grpcrun` itself is tested
+with an in-process OTLP receiver.
 
-**Kontrak bertipe, tanpa `map<string,string`.**
-Payload berbentuk pesan protobuf dengan field bertipe. Ini membuat kesalahan
-kontrak gagal saat compile, bukan saat runtime. Ongkosnya lebih banyak
-`.proto` dan regenerasi, tapi tidak ada lagi "field ajaib" yang isinya string
-tak terdokumentasi.
+**Typed contracts, no `map<string,string`.**
+Payloads are protobuf messages with typed fields. This makes contract
+errors fail at compile time, not at runtime. The cost is more
+`.proto` files and regeneration, but there are no more "magic fields" holding undocumented
+strings.
 
-**Kejujuran dijadikan data, bukan niat.**
-`common.Feature` membawa `kind` + `availability` + `requirements` + `reason`.
-Konsekuensinya, setiap fitur baru harus jujur soal kebutuhannya sejak awal —
-tidak bisa menunda dengan "nanti saja dilaporkan". Trade-off-nya bertambah satu
-level boilerplate di setiap fitur; menurut saya itu harga yang wajar untuk klaim
-yang bisa diverifikasi.
+**Honesty made into data, not intent.**
+`common.Feature` carries `kind` + `availability` + `requirements` + `reason`.
+Consequently, every new feature must be honest about its requirements from the start —
+it cannot be deferred with "it'll be reported later". The trade-off is one extra
+level of boilerplate per feature; to me that is a fair price for claims
+that can be verified.
 
-**Lab lebih memilih "satu proses untuk semua" saat dev.**
-`labnet` menyalakan 15 domain dalam satu proses tanpa Docker/k8s/DB eksternal.
-Ini mempercepat iterasi drastis, tapi secara sadar **bukan** topologi produksi —
-dan README menyatakannya terang-terangan.
-
----
-
-## Yang Sudah Jalan, Yang Masih Setengah, dan Yang Belum Ada
-
-Saya berusaha tidak menjual lebih dari yang ada. Ini peta jujurnya — mana yang
-benar-benar berjalan, mana yang sengaja disederhanakan, dan mana yang masih
-menunggu.
-
-**Benar-benar jalan di host sungguhan:** pod dengan namespace sendiri + cgroup v2,
-volume sparse + snapshot COW, object store dengan scrub SHA-256, decode paket
-jaringan, pipeline Detection penuh, rule Sigma subset, sensor Endpoint di host,
-mTLS domain CA, modul eBPF dari loader sampai simulator, eksekusi tool MCP, metrik
-OTel lengkap, dan watcher klaster lewat client-go.
-
-**Sengaja dibuat sederhana:** reconcile network (netlink-nya belum di-wire
-sepenuhnya), step `deploy` di workflow (masih no-op), katalog k8s di PlatformForge,
-dan target chaos (baru model).
-
-**Belum ada karena infrastrukturnya belum tersedia:** cluster k8s sungguhan
-(sengaja di-skip), push ke registry, kolektor OTLP kelas produksi (compose di sini
-baru kelas dev), Alertmanager keluar, gate *live-root* untuk resize cgroup, dan
-admission webhook.
-
-Semua status per fitur diumumkan lewat `GetCapabilities`/`GetFeatures`, dan test
-yang menjaga agar pengumuman itu tidak melenceng dari kenyataan. Kalau klaim dan
-realita berbeda, yang menang adalah test — bukan README.
+**The lab prefers "one process for everything" during dev.**
+`labnet` boots 15 domains in one process without Docker/k8s/external DB.
+This drastically speeds up iteration, but is consciously **not** a production topology —
+and the README states that plainly.
 
 ---
 
-## Menjalankan
+## What Already Works, What Is Half-Done, and What Is Missing
 
-Semua tooling ada di `Makefile` dalam `GrpcConnect/`:
+I try not to oversell beyond what exists. Here is the honest map — what
+actually runs, what is deliberately simplified, and what is still
+pending.
+
+**Genuinely running on a real host:** pods with their own namespaces + cgroup v2,
+sparse volumes + COW snapshots, an object store with SHA-256 scrub, network packet
+decoding, the full Detection pipeline, the Sigma rule subset, the host Endpoint sensor,
+mTLS domain CA, eBPF modules from loader to simulator, MCP tool execution, complete
+OTel metrics, and the cluster watcher via client-go.
+
+**Deliberately simplified:** network reconcile (its netlink is not fully
+wired), the `deploy` step in workflows (still a no-op), the k8s catalog in PlatformForge,
+and chaos targets (model only).
+
+**Not there yet because the infrastructure isn't available:** a real k8s cluster
+(deliberately skipped), pushing to a registry, a production-grade OTLP collector (the compose file here
+is dev-grade), outgoing Alertmanager, the *live-root* gate for cgroup resize, and
+admission webhooks.
+
+Every per-feature status is announced via `GetCapabilities`/`GetFeatures`, and it is the tests
+that keep those announcements from drifting from reality. If claim and
+reality differ, the test wins — not the README.
+
+---
+
+## Running
+
+All tooling lives in the `Makefile` inside `GrpcConnect/`:
 
 ```bash
 cd GrpcConnect
 
 make gen            # generate proto -> gen/
-make test           # unit test semua package (go test -race ./...)
-make test-e2e       # 18 file skenario e2e lintas domain (bufconn, -race)
-make count-rpc      # hitung RPC per domain dari .proto
-make run-lab        # boot 15 domain + jembatan (satu proses, dev)
+make test           # unit test all packages (go test -race ./...)
+make test-e2e       # 18 cross-domain e2e scenario files (bufconn, -race)
+make count-rpc      # count RPCs per domain from the .proto files
+make run-lab        # boot 15 domains + bridges (single process, dev)
 
-LABNET_MTLS=1 make run-lab   # idem, mTLS domain CA aktif
+LABNET_MTLS=1 make run-lab   # same, with mTLS domain CA enabled
 make run-hardware            # Hardware :5001 (standalone)
 make run-compute             # Compute :5002
-# ... satu target per domain, sampai: make run-cyber (Cyber :5013)
+# ... one target per domain, up to: make run-cyber (Cyber :5013)
 make run                      # KernelForge :5014 (cmd/bpfgrpc)
 ```
 
-**Environment variable yang mengubah perilaku (jujur dilaporkan di capability):**
+**Environment variables that change behavior (honestly reported in capabilities):**
 
-| Variabel | Efek |
+| Variable | Effect |
 | :--- | :--- |
-| `LABNET_MTLS=1` | Semua klien labnet load client cert dari domain CA masing-masing |
-| `OTLP_ENDPOINT=host:port` | Aktifkan span + metrik OTLP ke kolektor; **tanpa ini metrik mati total** |
-| `NETWORK_IPAM_DIR=/path` | IPAM persisten (snapshot JSON atomik); tanpa ini in-memory |
-| `DETECTION_SIGMA_DIR=/path` | Load rule Sigma; file gagal dilewati + dilaporkan |
-| `PIEROLOKA_IFACE` / `PIEROLOKA_CGROUP2` / `PIEROLOKA_UPROBE` | Target attach eBPF (XDP/TC, cgroup_skb, uprobe SSL) |
+| `LABNET_MTLS=1` | All labnet clients load a client cert from their respective domain CA |
+| `OTLP_ENDPOINT=host:port` | Enable OTLP spans + metrics to the collector; **without it, metrics are completely dead** |
+| `NETWORK_IPAM_DIR=/path` | Persistent IPAM (atomic JSON snapshot); otherwise in-memory |
+| `DETECTION_SIGMA_DIR=/path` | Load Sigma rules; failed files are skipped + reported |
+| `PIEROLOKA_IFACE` / `PIEROLOKA_CGROUP2` / `PIEROLOKA_UPROBE` | eBPF attach targets (XDP/TC, cgroup_skb, SSL uprobe) |
 
 ---
 
 ## Port Map Registry
 
-| Domain / Layanan | Port |
+| Domain / Service | Port |
 | :--- | :--- |
 | Hardware · Compute · Network · Storage | :5001 · :5002 · :5003 · :5004 |
 | ControlPlane · Security · Deliver | :5005 · :5006 · :5007 |
 | Operations · Detection · MCP | :5008 · :5009 · :5010 |
 | AIAgent · PlatformForge · Cyber · KernelForge | :5011 · :5012 · :5013 · :5014 |
-| Console (satu biner, React ter-embed) | :5015 |
-| Agent Web UI (mandiri, SSE) | :5016 |
+| Console (single binary, embedded React) | :5015 |
+| Agent Web UI (standalone, SSE) | :5016 |
 | Endpoint | :5017 |
 | Grafana · Prometheus | :3000 · :9090 |
 
 ---
 
-## Struktur Repo
+## Repo Structure
 
 ```text
 platformlab/
-├── GrpcConnect/          kontrak + substrat + 15 service + e2e  (module inti)
-│   ├── proto/            18 file: common (3) + 15 domain -> gen/
-│   ├── gen/              hasil generate (go + grpc stubs)
+├── GrpcConnect/          contract + substrate + 15 services + e2e  (core module)
+│   ├── proto/            18 files: common (3) + 15 domains -> gen/
+│   ├── gen/              generated output (go + grpc stubs)
 │   ├── grpcrun/          server/client/interceptor/TLS/domainca/breaker/OTLP/metrics
 │   ├── bridge/           GRPCActuator, ModuleReconciler, KFMapEnforcer, ...
-│   ├── <domain>/         implementasi service + service_test.go (bufconn)
-│   ├── console/          web console satu biner (REST/WS + web/ React ter-embed)
-│   ├── e2e/              18 file: S1-S5, B0-B8, capability, mTLS, kernel + harness
-│   └── capability/       kosakata availability resmi - dipakai test penegak
-├── Hardware/ Compute/ Network/ Storage/     engine domain (Go module sendiri)
-├── ControlPlane/ Deliver/ Operations/       idem
-├── DetectionRuntime/                        Detection Platform (9 modul)
-├── Security/ Mcp/ AIAgent/ Cyber/           idem
+│   ├── <domain>/         service implementation + service_test.go (bufconn)
+│   ├── console/          single-binary web console (REST/WS + embedded React in web/)
+│   ├── e2e/              18 files: S1-S5, B0-B8, capability, mTLS, kernel + harness
+│   └── capability/       official availability vocabulary - used by enforcing tests
+├── Hardware/ Compute/ Network/ Storage/     domain engines (own Go module)
+├── ControlPlane/ Deliver/ Operations/       ditto
+├── DetectionRuntime/                        Detection Platform (9 modules)
+├── Security/ Mcp/ AIAgent/ Cyber/           ditto
 ├── PlatformDeveloper/                       PlatformForge (IaC, GitOps, portal)
-├── Endpoint/                                domain Endpoint ke-15 (EDR)
-├── bpf/                 16 modul CORE C + bpfrun (loader/simulator/decoder)
+├── Endpoint/                                the 15th Domain: Endpoint (EDR)
+├── bpf/                 16 CORE C modules + bpfrun (loader/simulator/decoder)
 ├── docker-compose.yml   labnet + collector + tempo + prometheus + grafana
-├── deploy/              config otel-collector, tempo, prometheus, grafana
-├── planning/            dokumen iterasi (Planning*.md)
-└── MAPPING.md, Kritik.md  audit asal-usul & kritik arsitektur
+├── deploy/              otel-collector, tempo, prometheus, grafana configs
+├── planning/            iteration documents (Planning*.md)
+└── MAPPING.md, Kritik.md  origin audit & architecture critique
 ```
 
 ---
 
-## Kesimpulan
+## Conclusion
 
-Platform Labs adalah latihan membangun control-plane dari bawah ke atas dengan
-satu disiplin yang keras: **jangan pernah mengklaim lebih dari yang benar-benar
-jalan**. Setiap klaim real/model/unavailable adalah data yang ditegakkan test,
-setiap metrik di dashboard punya deklarasi di kode, dan setiap batas yang belum
-tercapai ditulis terang-terangan alih-alih disembunyikan.
+Platform Labs is an exercise in building a control plane from the bottom up with
+one hard discipline: **never claim more than what actually
+runs**. Every real/model/unavailable claim is data enforced by tests,
+every metric on the dashboards has a declaration in code, and every limit not yet
+reached is written out plainly instead of hidden.
 
-Hasilnya bukan orkestrator generik, tetapi sesuatu yang lebih berguna untuk
-belajar: sebuah sistem di mana diagram arsitektur, kemampuan nyata, dan status
-runtime **sepakat satu sama lain** — dan bila tidak, test yang akan menangkapnya.
+The result is not a generic orchestrator, but something more useful for
+learning: a system where the architecture diagram, the real capabilities, and the
+runtime status **agree with each other** — and when they don't, the tests will catch it.
 
 <p align="center">
-  Dibangun dengan Go, gRPC, eBPF, OpenTelemetry, dan obsesi pada kejujuran sistem.
+  Built with Go, gRPC, eBPF, OpenTelemetry, and an obsession with system honesty.
 </p>

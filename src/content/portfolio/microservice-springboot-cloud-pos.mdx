@@ -1,6 +1,6 @@
 ---
 title: "Distributed Microservices — Point of Sale Platform (Spring Boot Cloud)"
-excerpt: "Backend point-of-sale microservices di Java 21 / Spring Boot 3.5.3 dengan Spring Cloud 2025.0.0: 20 modul Maven, tiap domain terisolasi dengan database + Flyway sendiri, Eureka discovery, OpenFeign, Kafka transactional outbox, RabbitMQ, dan pipeline analitik ClickHouse."
+excerpt: "Point-of-sale microservices backend in Java 21 / Spring Boot 3.5.3 with Spring Cloud 2025.0.0: 20 Maven modules, each domain isolated with its own database + Flyway, Eureka discovery, OpenFeign, Kafka transactional outbox, RabbitMQ, and a ClickHouse analytics pipeline."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -400,13 +400,13 @@ mvn -pl common,auth-service,user-service,role-service,merchant-service,cashier-s
 
 ## Design Decisions & Known Limitations
 
-Keputusan desain yang disengaja (bukan bug) — didokumentasikan agar tidak "diperbaiki" tanpa sadar:
+Deliberate design decisions (not bugs) — documented so they are not "fixed" unknowingly:
 
-| ID | Keputusan | Perilaku | Alasan |
+| ID | Decision | Behavior | Reason |
 |---|---|---|---|
-| SC-1 | Spring Cloud stack, bukan gRPC | Sinkron antar-service via OpenFeign REST, bukan gRPC | Konsistensi ekosistem Spring Cloud + Eureka discovery; gRPC tersedia di versi Quarkus |
-| SC-2 | RabbitMQ untuk order publication | Order controller mengirim ke `order-queue` langsung; tidak lewat Kafka | Notifikasi order bersifat point-to-point, cocok untuk queue, bukan event streaming |
-| SC-3 | Soft-delete (cashier, merchant columns) tanpa read-filter global | `deleted_at` diisi saat delete; query list tidak otomatis menyaring | Perilaku app-level eksplisit; filter diterapkan di query service yang membutuhkan |
+| SC-1 | Spring Cloud stack, not gRPC | Synchronous inter-service communication via OpenFeign REST, not gRPC | Consistency of the Spring Cloud ecosystem + Eureka discovery; gRPC is available in the Quarkus version |
+| SC-2 | RabbitMQ for order publication | The order controller sends directly to `order-queue`; not through Kafka | Order notifications are point-to-point, suited to a queue rather than event streaming |
+| SC-3 | Soft-delete (cashier, merchant columns) without a global read filter | `deleted_at` is set on delete; list queries do not filter automatically | Explicit app-level behavior; the filter is applied in the service queries that need it |
 
 ---
 

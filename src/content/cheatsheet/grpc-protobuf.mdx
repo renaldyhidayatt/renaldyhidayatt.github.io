@@ -1,6 +1,6 @@
 ---
 title: "gRPC & Protobuf — Cheat Sheet"
-description: "Cheat sheet gRPC + Protobuf untuk JVM dan Go: definisi kontrak, status code, deadline, interceptor, streaming, error mapping, dan jebakan streaming yang meledakkan memory."
+description: "gRPC + Protobuf cheat sheet for JVM and Go: contract definitions, status codes, deadlines, interceptors, streaming, error mapping, and pitfalls with streaming that blows up memory."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -17,40 +17,40 @@ tags:
 
 # gRPC & Protobuf — Cheat Sheet
 
-> Target: **Protobuf 3.25+** (proto3) + **gRPC 1.6x**, dipakai bareng **Spring gRPC** (JVM) dan
-> **grpc-go** (Go). Semua snippet di bawah dipakai di service E-Commerce, POS, dan Payment Gateway
-> dan **diverifikasi compile**.
+> Target: **Protobuf 3.25+** (proto3) + **gRPC 1.6x**, used alongside **Spring gRPC** (JVM) and
+> **grpc-go** (Go). All snippets below are used in the E-Commerce, POS, and Payment Gateway services
+> and are **compile-verified**.
 
-**Isi sheet ini**
+**What's in this sheet**
 
-- Kontrak `.proto`
-- Definisi service & message
-- Naming & kompatibilitas
-- Status code & error mapping
-- Deadline, timeout, retry
-- Interceptor (logging, tracing, auth)
+- The `.proto` contract
+- Service & message definitions
+- Naming & compatibility
+- Status codes & error mapping
+- Deadlines, timeouts, retries
+- Interceptors (logging, tracing, auth)
 - Streaming: unary, server, client, bidi
 - Spring gRPC (server & client)
 - grpc-go (server & client)
-- Jebakan (wajib dibaca)
+- Pitfalls (must-read)
 
 ---
 
-## Kontrak `.proto`
+## The `.proto` contract
 
 ```proto
 syntax = "proto3";
 
-package com.sanedge.pos.order.v1;      // package = namespace, WAJIB versioned
+package com.sanedge.pos.order.v1;      // package = namespace, MUST be versioned
 
-option java_multiple_files = true;      // tiap message jadi file Java terpisah
+option java_multiple_files = true;      // each message becomes a separate Java file
 option java_package = "com.sanedge.pos.order.v1";
 option java_outer_classname = "OrderProto";
 option go_package = "github.com/sanedge/pos/gen/order/v1;orderv1";
 
-// Enum: JANGAN pakai 0 sebagai nilai bermakna
+// Enums: DO NOT use 0 as a meaningful value
 enum OrderStatus {
-  ORDER_STATUS_UNSPECIFIED = 0;   // default proto3 — selalu ada
+  ORDER_STATUS_UNSPECIFIED = 0;   // proto3 default — always present
   ORDER_STATUS_PENDING = 1;
   ORDER_STATUS_PAID = 2;
   ORDER_STATUS_FAILED = 3;
@@ -60,7 +60,7 @@ message Order {
   string id = 1;                 // NEVER change the type of an existing field
   string merchant_id = 2;
   OrderStatus status = 3;
-  int64 total_price_cents = 4;   // uang dalam satuan terkecil, JANGAN float/double
+  int64 total_price_cents = 4;   // money in the smallest unit, DO NOT use float/double
   repeated OrderItem items = 5;
   google.protobuf.Timestamp created_at = 6;
   map<string, string> attributes = 7;
@@ -75,12 +75,12 @@ message OrderItem {
 message ListOrdersRequest {
   string merchant_id = 1;
   int32 page_size = 2;           // default page size
-  string page_token = 3;         // cursor, bukan offset
-  string idempotency_key = 4;    // untuk mutasi
+  string page_token = 3;         // cursor, not an offset
+  string idempotency_key = 4;    // for mutations
 }
 ```
 
-**Struktur folder kontrak** (satu proto per domain, shared library):
+**Contract folder structure** (one proto per domain, shared library):
 
 ```
 common/src/main/proto/
@@ -93,20 +93,20 @@ common/src/main/proto/
 
 ---
 
-## Definisi service & message
+## Service & message definitions
 
 ```proto
 service OrderService {
   // Unary: 1 request → 1 response
   rpc CreateOrder (CreateOrderRequest) returns (Order);
 
-  // Server streaming: 1 request → N response (stream server ke client)
+  // Server streaming: 1 request → N responses (stream from server to client)
   rpc WatchOrders (WatchOrdersRequest) returns (stream Order);
 
-  // Client streaming: N request → 1 response
+  // Client streaming: N requests → 1 response
   rpc UploadOrders (stream Order) returns (UploadSummary);
 
-  // Bidi: N request ↔ N response
+  // Bidi: N requests ↔ N responses
   rpc SyncOrders (stream SyncRequest) returns (stream SyncResponse);
 }
 ```
@@ -146,56 +146,56 @@ func (s *OrderServer) CreateOrder(ctx context.Context, req *orderv1.CreateOrderR
 
 ---
 
-## Naming & kompatibilitas
+## Naming & compatibility
 
-Aturan yang menjaga wire-format backward-compatible:
+Rules that keep the wire format backward-compatible:
 
-| Aturan | Contoh | Kenapa |
+| Rule | Example | Why |
 | :--- | :--- | :--- |
-| Field number **tidak boleh** diubah/ditukar | `id = 1` selalu `id` | Nomor = identitas di wire |
-| Field yang dihapus → `reserved` | `reserved 4, 7;` | Cegah dipakai ulang |
-| Tipe field **tidak boleh** berubah | `int64` → `string` = BREAKING | Data lama jadi tidak terbaca |
-| Tipe baru → field baru | tambah `optional string note = 12;` | Aman, field lama default |
-| `optional` = field boleh absent | `optional string coupon = 8;` | Scalar proto3 tanpa `optional` selalu ada (default) |
-| Enum: tambah nilai, jangan ubah urutan | tambah `ORDER_STATUS_CANCELLED = 4;` | Ordinal/string consistency |
-| Enum 0 = `UNSPECIFIED` | wajib |.protobuf lama tidak tahu enum baru → fallback ke 0 |
-| Package di-version | `com.sanedge.pos.order.v1` | Boleh ada v1 & v2 berdampingan |
-| Service name & method name stable | `OrderService/CreateOrder` | Nama = bagian dari kontrak |
+| Field numbers **must not** be changed/swapped | `id = 1` is always `id` | The number is the identity on the wire |
+| Removed fields → `reserved` | `reserved 4, 7;` | Prevents reuse |
+| Field type **must not** change | `int64` → `string` = BREAKING | Old data becomes unreadable |
+| New type → new field | add `optional string note = 12;` | Safe, old field stays default |
+| `optional` = field may be absent | `optional string coupon = 8;` | proto3 scalars without `optional` always exist (default) |
+| Enums: add values, never reorder | add `ORDER_STATUS_CANCELLED = 4;` | Ordinal/string consistency |
+| Enum 0 = `UNSPECIFIED` | required | Old protobuf doesn't know the new enum → falls back to 0 |
+| Package is versioned | `com.sanedge.pos.order.v1` | v1 & v2 can coexist |
+| Service name & method name stable | `OrderService/CreateOrder` | The name is part of the contract |
 
 ```proto
 message Order {
-  reserved 4, 7;                  // pernah ada `discount` & `note`, sudah dihapus
-  reserved "discount_code";       // jangan dipakai lagi
+  reserved 4, 7;                  // `discount` & `note` used to exist, already removed
+  reserved "discount_code";       // do not reuse
 
   string id = 1;
   string merchant_id = 2;
   OrderStatus status = 3;
-  optional string coupon_code = 8;  // field baru → aman
+  optional string coupon_code = 8;  // new field → safe
 }
 ```
 
 ---
 
-## Status code & error mapping
+## Status codes & error mapping
 
-**Peta resmi `grpc status` → HTTP** (dipakai gateway & tracing):
+**Official `grpc status` → HTTP map** (used by gateways & tracing):
 
-| gRPC code | HTTP | Kapan dipakai |
+| gRPC code | HTTP | When to use |
 | :--- | :--- | :--- |
-| `OK` | 200 | sukses |
-| `INVALID_ARGUMENT` | 400 | input salah → **jangan** retry |
-| `UNAUTHENTICATED` | 401 | token hilang/expired |
-| `PERMISSION_DENIED` | 403 | tidak boleh akses |
-| `NOT_FOUND` | 404 | resource tidak ada |
-| `ALREADY_EXISTS` | 409 | bentrok unik |
-| `FAILED_PRECONDITION` | 400 | state belum memenuhi syarat |
-| `RESOURCE_EXHAUSTED` | 429 | rate limit / quota habis |
-| `ABORTED` | 409 | optimistic lock gagal → **retryable** |
+| `OK` | 200 | success |
+| `INVALID_ARGUMENT` | 400 | bad input → **do not** retry |
+| `UNAUTHENTICATED` | 401 | token missing/expired |
+| `PERMISSION_DENIED` | 403 | not allowed to access |
+| `NOT_FOUND` | 404 | resource doesn't exist |
+| `ALREADY_EXISTS` | 409 | unique constraint conflict |
+| `FAILED_PRECONDITION` | 400 | state doesn't meet preconditions |
+| `RESOURCE_EXHAUSTED` | 429 | rate limit / quota exhausted |
+| `ABORTED` | 409 | optimistic lock failed → **retryable** |
 | `UNAVAILABLE` | 503 | dependency down → **retryable** |
-| `DEADLINE_EXCEEDED` | 504 | timeout → retryable *hanya* kalau idempoten |
-| `INTERNAL` | 500 | bug di server |
-| `UNIMPLEMENTED` | 501 | method tidak ada (versi client > server) |
-| `DATA_LOSS` | 500 | data rusak |
+| `DEADLINE_EXCEEDED` | 504 | timeout → retryable *only* if idempotent |
+| `INTERNAL` | 500 | bug in the server |
+| `UNIMPLEMENTED` | 501 | method doesn't exist (client version > server) |
+| `DATA_LOSS` | 500 | corrupted data |
 
 ```java
 // Mapping exception → status (JVM)
@@ -216,14 +216,14 @@ public final class GrpcErrorMapper {
         if (t instanceof AccessDeniedException)
             return Status.PERMISSION_DENIED.withDescription("forbidden").withCause(t).asRuntimeException();
 
-        // WAJIB: jangan bocorkan detail internal ke client
+        // REQUIRED: never leak internal details to the client
         return Status.INTERNAL.withDescription("internal error").withCause(t).asRuntimeException();
     }
 }
 ```
 
 ```go
-// Mapping error → status (Go)
+// Mapping errors → status (Go)
 func ToStatus(err error) error {
     switch {
     case err == nil:
@@ -242,18 +242,18 @@ func ToStatus(err error) error {
 }
 ```
 
-> **Jebakan:** `Status.INTERNAL.withDescription(err.Error())` membocorkan nama tabel/kolom
-> ke client. Description harus generik; detail ada di log server.
+> **Pitfall:** `Status.INTERNAL.withDescription(err.Error())` leaks table/column names
+> to the client. The description must be generic; the details belong in the server log.
 
 ---
 
-## Deadline, timeout, retry
+## Deadlines, timeouts, retries
 
-Deadline adalah **propagasi otomatis**: nilai deadline dari caller ikut tersalin ke setiap call
-di bawahnya. Kalau tidak, satu chain panjang bisa menggantung.
+A deadline is **automatic propagation**: the caller's deadline value is copied to every call
+below it. Without it, a long chain can hang.
 
 ```java
-// JVM client — selalu set deadline
+// JVM client — always set a deadline
 OrderServiceGrpc.OrderServiceBlockingStub stub =
         OrderServiceGrpc.newBlockingStub(channel)
                 .withDeadlineAfter(2, TimeUnit.SECONDS);
@@ -272,20 +272,20 @@ if errors.Is(err, context.DeadlineExceeded) {
 }
 ```
 
-| Praktik | Nilai |
+| Practice | Value |
 | :--- | :--- |
-| Deadline default | 2–5 detik untuk call internal |
-| Deadline total | daha pendek untuk chain panjang (edge → 3 service) |
-| Retry | hanya `UNAVAILABLE` & `ABORTED`, **dan** operasi idempoten |
-| Backoff | exponential + jitter, max 3 percobaan |
-| Retry budget | batasi 10% request, kalau tidak → retry storm |
+| Default deadline | 2–5 seconds for internal calls |
+| Total deadline | shorter for long chains (edge → 3 services) |
+| Retry | only `UNAVAILABLE` & `ABORTED`, **and** idempotent operations |
+| Backoff | exponential + jitter, max 3 attempts |
+| Retry budget | cap at 10% of requests, otherwise → retry storm |
 
 ---
 
-## Interceptor
+## Interceptors
 
-Interceptor = tempat paling murah untuk hal yang lintas semua RPC: logging, tracing, auth,
-metric. Taruh di **server** untuk observability, di **client** untuk retry/auth.
+An interceptor is the cheapest place for things that cross all RPCs: logging, tracing, auth,
+metrics. Put them in the **server** for observability, in the **client** for retry/auth.
 
 ```java
 // Server interceptor — logging + trace propagation
@@ -339,7 +339,7 @@ func UnaryRetryInterceptor(maxAttempts int) grpc.UnaryClientInterceptor {
 ## Streaming: unary, server, client, bidi
 
 ```java
-// Server streaming — iterator di server
+// Server streaming — iterator on the server
 @Override
 public void watchOrders(WatchOrdersRequest req, StreamObserver<Order> observer) {
     Flux<Order> flux = orderService.watch(req.getMerchantId());
@@ -363,16 +363,16 @@ func (s *OrderServer) WatchOrders(req *orderv1.WatchOrdersRequest, srv orderv1.O
 }
 ```
 
-| Jenis | Cardinality | Use case |
+| Type | Cardinality | Use case |
 | :--- | :--- | :--- |
-| Unary | 1 → 1 | mayoritas (99% RPC) |
-| Server streaming | 1 → N | notifikasi order, live update, tail log |
+| Unary | 1 → 1 | the majority (99% of RPCs) |
+| Server streaming | 1 → N | order notifications, live updates, log tailing |
 | Client streaming | N → 1 | bulk upload, batch insert |
-| Bidi | N ↔ N | chat, sinkronisasi dua arah, interaktif |
+| Bidi | N ↔ N | chat, two-way sync, interactive |
 
-> **Jebakan:** streaming membuka koneksi **lama**. Di Envoy/Nginx butuh `grpc_http2_max_duration`
-> yang cukup, dan tiap stream menahan 1 goroutine/thread. Kalau ribuan order monitoring aktif
-> bersamaan, thread server habis.
+> **Pitfall:** streaming opens a **long-lived** connection. In Envoy/Nginx you need a sufficient
+> `grpc_http2_max_duration`, and each stream holds 1 goroutine/thread. If thousands of order
+> monitors are active at once, the server threads run out.
 
 ---
 
@@ -406,7 +406,7 @@ OrderServiceGrpc.OrderServiceBlockingStub orderStub(
         @Qualifier("orderChannel") ManagedChannel channel) {
     return OrderServiceGrpc.newBlockingStub(channel)
             .withDeadlineAfter(2, TimeUnit.SECONDS)
-            .withWaitForReady();            // antri saat service belum ready, jangan langsung error
+            .withWaitForReady();            // queue while the service isn't ready, don't fail immediately
 }
 ```
 
@@ -469,18 +469,18 @@ conn, err := grpc.NewClient(
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must-read)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Solution |
 | :--- | :--- | :--- |
-| Deadline tidak di-set | Panggilan menggantung, resource habis | `withDeadlineAfter` / `context.WithTimeout` |
-| Retry tanpa idempotency | Transaksi dobel | Kunci idempotency di DB + `idempotency_key` di request |
-| Streaming panjang di behind proxy | Stream putus di 60 detik | Naikkan `grpc_http2_max_duration`, pakai keepalive |
-| `INTERNAL` + detail error mentah | Bocor struktur DB ke client | Description generik, detail di log |
-| Enum mulai dari 1 tanpa `UNSPECIFIED` | Client lama dapat nilai ngawur | Selalu definisikan `*_UNSPECIFIED = 0` |
-| Ganti nomor field | Data lama salah baca | Nomor field adalah kontrak permanen |
-| `float64` untuk uang | Selisih pembulatan | `int64` cents / `BigDecimal` |
-| Marshal/Unmarshal di loop | CPU meledak | Batch message, atau pakai streaming |
-| gRPC tanpa mTLS | Traffic bisa diintip | TLS + token per-RPC (metadata) |
-| Header auth tanpa expiration | Token bocor | Validasi `exp` + `aud` + `iss` di interceptor |
-| `waitForReady` tanpa deadline | Request menumpuk | Tetap pasang deadline |
+| Deadline not set | Calls hang, resources exhausted | `withDeadlineAfter` / `context.WithTimeout` |
+| Retry without idempotency | Duplicate transactions | Idempotency key in the DB + `idempotency_key` in the request |
+| Long streaming behind a proxy | Streams drop at 60 seconds | Raise `grpc_http2_max_duration`, use keepalive |
+| `INTERNAL` + raw error details | DB structure leaked to the client | Generic description, details in the log |
+| Enum starts at 1 without `UNSPECIFIED` | Old clients get nonsense values | Always define `*_UNSPECIFIED = 0` |
+| Changing a field number | Old data misread | The field number is a permanent contract |
+| `float64` for money | Rounding differences | `int64` cents / `BigDecimal` |
+| Marshal/Unmarshal in a loop | CPU blows up | Batch messages, or use streaming |
+| gRPC without mTLS | Traffic can be sniffed | TLS + per-RPC token (metadata) |
+| Auth header without expiration | Token leaks | Validate `exp` + `aud` + `iss` in the interceptor |
+| `waitForReady` without a deadline | Requests pile up | Still set a deadline |

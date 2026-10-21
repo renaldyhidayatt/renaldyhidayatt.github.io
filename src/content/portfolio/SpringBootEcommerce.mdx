@@ -1,11 +1,11 @@
 ---
 title: "Spring Boot E-commerce API"
-excerpt: "API E-commerce lengkap dan terintegrasi yang dibangun dengan Java 21, Spring Boot, Spring Security & JWT, PostgreSQL, dan didokumentasikan menggunakan Swagger OpenAPI."
+excerpt: "A complete, integrated E-commerce API built with Java 21, Spring Boot, Spring Security & JWT, and PostgreSQL, documented with Swagger OpenAPI."
 date: "2026-05-21"
 created_at: "2026-05-21"
 updated_at: "2026-05-21"
 tags: ["java", "springboot", "springsecurity", "jwt", "postgresql", "maven", "swagger", "openapi"]
-status: "selesai"
+status: "completed"
 image: "/portofolio/SpringBootEcommerce/SpringBootEcommerce.png"
 ---
 
@@ -140,9 +140,9 @@ erDiagram
     SHIPPING_ADDRESSES {
         Long shippingAddressId PK
         Integer orderId FK
-        String alamat
-        String kota
-        String negara
+        String streetAddress
+        String city
+        String country
     }
 
     TRANSACTIONS {

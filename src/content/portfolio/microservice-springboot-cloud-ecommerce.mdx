@@ -1,6 +1,6 @@
 ---
 title: "Distributed Microservices — E-Commerce Platform (Spring Boot Cloud)"
-excerpt: "Backend e-commerce microservices di Java 21 / Spring Boot 3.5.3 dengan Spring Cloud 2025.0.0: 29 modul Maven, tiap domain terisolasi dengan database + Flyway sendiri, Eureka discovery, OpenFeign, Kafka transactional outbox, RabbitMQ, dan pipeline analitik ClickHouse."
+excerpt: "E-commerce microservices backend in Java 21 / Spring Boot 3.5.3 with Spring Cloud 2025.0.0: 29 Maven modules, each domain isolated with its own database + Flyway, Eureka discovery, OpenFeign, Kafka transactional outbox, RabbitMQ, and a ClickHouse analytics pipeline."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -429,15 +429,15 @@ mvn -pl common,auth-service,user-service,product-service,order-service,notificat
 
 ## Design Decisions & Known Limitations
 
-Keputusan desain yang disengaja (bukan bug) — didokumentasikan agar tidak "diperbaiki" tanpa sadar:
+Deliberate design decisions (not bugs) — documented so they are not "fixed" unknowingly:
 
-| ID | Keputusan | Perilaku | Alasan |
+| ID | Decision | Behavior | Reason |
 |---|---|---|---|
-| EC-1 | Spring Cloud stack, bukan gRPC | Sinkron antar-service via OpenFeign REST, bukan gRPC | Konsistensi ekosistem Spring Cloud + Eureka discovery; gRPC tersedia di versi Quarkus |
-| EC-2 | RabbitMQ untuk order publication | Order controller mengirim ke `order-queue` langsung; tidak lewat Kafka | Notifikasi order bersifat point-to-point, cocok untuk queue, bukan event streaming |
-| EC-3 | Idempotency key di ledger transaksi | Kunci unik pada `idempotency_key` di tabel transaksi | Mencegah double debit saat consumer Kafka memproses ulang event yang sama |
-| EC-4 | Merchant suite dipecah jadi 4 service satelit | Detail, business, policy, dan award punya database masing-masing | Data tumbuh dan diakses berbeda; pemecahan menjaga tabel utama tetap ramping |
-| EC-5 | Soft-delete tanpa read-filter global | `deleted_at` diisi saat delete; query list tidak otomatis menyaring | Perilaku app-level eksplisit; filter diterapkan di query service yang membutuhkan |
+| EC-1 | Spring Cloud stack, not gRPC | Synchronous inter-service communication via OpenFeign REST, not gRPC | Consistency of the Spring Cloud ecosystem + Eureka discovery; gRPC is available in the Quarkus version |
+| EC-2 | RabbitMQ for order publication | The order controller sends directly to `order-queue`; not through Kafka | Order notifications are point-to-point, suited to a queue rather than event streaming |
+| EC-3 | Idempotency key in the transaction ledger | Unique constraint on `idempotency_key` in the transaction table | Prevents double debit when a Kafka consumer reprocesses the same event |
+| EC-4 | Merchant suite split into 4 satellite services | Detail, business, policy, and award each have their own database | The data grows and is accessed differently; the split keeps the main table lean |
+| EC-5 | Soft-delete without a global read filter | `deleted_at` is set on delete; list queries do not filter automatically | Explicit app-level behavior; the filter is applied in the service queries that need it |
 
 ---
 

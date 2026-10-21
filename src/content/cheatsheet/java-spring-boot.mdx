@@ -1,6 +1,6 @@
 ---
 title: "Spring Boot 3.5 — Cheat Sheet (Full Feature)"
-description: "Cheat sheet Spring Boot 3.5.6 lengkap: auto-configuration, DI, konfigurasi, web MVC, validasi, JPA + transaksi, caching, security, HTTP client, messaging Kafka/RabbitMQ, async & scheduling, Resilience4j, Actuator, observability, testing, virtual thread, native image, build & deploy."
+description: "Complete Spring Boot 3.5.6 cheat sheet: auto-configuration, DI, configuration, web MVC, validation, JPA + transactions, caching, security, HTTP client, Kafka/RabbitMQ messaging, async & scheduling, Resilience4j, Actuator, observability, testing, virtual threads, native image, build & deploy."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -21,25 +21,25 @@ tags:
 
 > Target: **Spring Boot 3.5.6** (Spring Framework 6.2, Spring Security 6.5, Spring Data 2025.0.0,
 > Spring Cloud 2025.0.0, Flyway 11.7, Micrometer 1.15, Kafka 3.9, JUnit 5.12, Mockito 5.17,
-> Testcontainers 1.21). Dipakai di E-Commerce, POS, dan Payment Gateway.
+> Testcontainers 1.21). Used in E-Commerce, POS, and Payment Gateway.
 >
-> **Materi bahasa Java (record, sealed, pattern matching, virtual thread sebagai fitur
-> bahasa, Stream, Optional, boxing) ada di sheet terpisah: `languages/java`.** Sheet ini
-> khusus **fitur Spring Boot**-nya. Semua snippet dipakai di repo dan **diverifikasi**.
+> **Java language material (records, sealed, pattern matching, virtual threads as a language
+> feature, Stream, Optional, boxing) lives in a separate sheet: `languages/java`.** This sheet
+> covers **Spring Boot features** only. All snippets are used in the repo and are **verified**.
 
-**Isi sheet ini**
+**What's in this sheet**
 
-- Mental model Spring Boot
-- `@SpringBootApplication` & struktur
+- Spring Boot mental model
+- `@SpringBootApplication` & structure
 - Auto-configuration
 - Dependency injection
-- Konfigurasi & properties
-- Profile & environment
+- Configuration & properties
+- Profiles & environment
 - Web MVC
 - Bean validation
 - Spring Data JPA
-- Transaksi
-- Migrasi skema (Flyway/Liquibase)
+- Transactions
+- Schema migration (Flyway/Liquibase)
 - SQL: JdbcTemplate, R2DBC, jOOQ
 - Caching
 - Spring Security
@@ -51,36 +51,37 @@ tags:
 - Actuator & metrics
 - Observability & structured logging
 - Testing
-- Performa: virtual thread, pool, container
+- Performance: virtual threads, pools, containers
 - Build, run & deploy
-- Konfigurasi paling sering dipakai
-- Jebakan (wajib dibaca)
+- Most frequently used configuration
+- Pitfalls (must read)
 
 ---
 
-## Mental model Spring Boot
+## Spring Boot mental model
 
-| Konsep | Ringkasan |
+| Concept | Summary |
 | :--- | :--- |
-| Auto-configuration | Boot **membuat bean** yang kemungkinan kamu butuhkan, **hanya kalau** tidak ada bean milikmu → kamu selalu bisa override |
-| Starter | dependency set + auto-configuration + default konfigurasi |
-| Convention over configuration | Nama bean & property yang diharapkan sudah diasumsikan |
-| `@ComponentScan` | memindai paket milikmu, bukan `java.*` |
-| Sifat bean | **singleton** default; prototype/scoped kalau perlu |
-| `@Bean` di `@Configuration` | **proxy** → bisa saling memanggil, aman |
-| `@Bean` di `@Component` | **bukan proxy** → inter-bean reference tidak_di chinasional |
-| Type-based injection | tipe bean jadi kuncinya → **1 tipe = 1 bean** (atau `@Primary`/`@Qualifier`) |
-| `@Transactional` | bekerja lewat **proxy** → self-invocation tidak di-transaksikan |
-| Condition | `@ConditionalOn*` dipakai saat **auto-configuration**, `@Conditional` untuk app |
+| Auto-configuration | Boot **creates the beans** you probably need, **only if** you don't have your own → you can always override |
+| Starter | dependency set + auto-configuration + default configuration |
+| Convention over configuration | Expected bean & property names are already assumed |
+| `@ComponentScan` | scans your package, not `java.*` |
+| Bean scope | **singleton** by default; prototype/scoped when needed |
+| `@Bean` in `@Configuration` | **proxy** → can call each other, safe |
+| `@Bean` in `@Component` | **not a proxy** → inter-bean references are not intercepted |
+| Type-based injection | the bean type is the key → **1 type = 1 bean** (or `@Primary`/`@Qualifier`) |
+| `@Transactional` | works through a **proxy** → self-invocation is not transactional |
+| Condition | `@ConditionalOn*` is used in **auto-configuration**, `@Conditional` for apps |
 
 ---
 
-## `@SpringBootApplication` & struktur
+## `@SpringBootApplication` & structure
 
 ```java
 @SpringBootApplication
 // = @SpringBootConfiguration (@Configuration) + @EnableAutoConfiguration + @ComponentScan
 public class OrderServiceApplication {
+
     public static void main(String[] args) {
         SpringApplication.run(OrderServiceApplication.class, args);
     }
@@ -93,8 +94,8 @@ order-service/
 │   ├── OrderServiceApplication.java      # @SpringBootApplication
 │   ├── config/                           # @Configuration, @Bean
 │   ├── controller/                       # @RestController
-│   ├── service/                          # @Service (bisa .impl)
-│   ├── repository/                       # @Repository (interface Spring Data)
+│   ├── service/                          # @Service (can be .impl)
+│   ├── repository/                       # @Repository (Spring Data interface)
 │   ├── entity/                           # @Entity
 │   ├── dto/                              # record DTO + mapper
 │   ├── client/                           # @FeignClient / RestClient
@@ -125,21 +126,21 @@ spring:
       ddl-auto: validate
 ```
 
-> **Jebakan:** `@SpringBootApplication` harus berada di **paket root** aplikasi, di atas
-> semua `@Component` yang mau discan. Kalau satu paket lebih tinggi, komponennya tidak
-> ditemukan (dan tidak ada error — aplikasinya jalan, tapi service-nya `null`).
+> **Pitfall:** `@SpringBootApplication` must sit in the application's **root package**, above
+> every `@Component` you want scanned. One package higher and the components are not
+> found (and there is no error — the app starts, but the service is `null`).
 
 ---
 
 ## Auto-configuration
 
 ```java
-// auto-configuration class (dalam paket o.s.a.autoconfigure.*)
+// auto-configuration class (inside the o.s.a.autoconfigure.* package)
 @AutoConfiguration
-@ConditionalOnClass(RedisTemplate.class)              // hanya kalau class ada di classpath
-@ConditionalOnMissingBean(RedisTemplate.class)         // hanya kalau user belum bikin sendiri
+@ConditionalOnClass(RedisTemplate.class)              // only if the class is on the classpath
+@ConditionalOnMissingBean(RedisTemplate.class)         // only if the user hasn't created their own
 @ConditionalOnProperty(name = "app.cache.enabled", havingValue = "true")
-@AutoConfigureAfter(DataSourceAutoConfiguration.class) // urutan auto-config
+@AutoConfigureAfter(DataSourceAutoConfiguration.class) // auto-config ordering
 public class CacheAutoConfiguration {
 
     @Bean
@@ -155,19 +156,19 @@ public class CacheAutoConfiguration {
 com.sanedge.order.config.CacheAutoConfiguration
 ```
 
-| Anotasi | Arti |
+| Annotation | Meaning |
 | :--- | :--- |
-| `@AutoConfiguration` | penanda auto-configuration (bukan `@Configuration` biasa) |
-| `@ConditionalOnClass` | hanya aktif kalau class ada → **proteksi `NoClassDefFoundError`** |
-| `@ConditionalOnMissingBean` | hanya aktif kalau bean belum ada → **titik override user** |
+| `@AutoConfiguration` | auto-configuration marker (not a regular `@Configuration`) |
+| `@ConditionalOnClass` | only active if the class is present → **`NoClassDefFoundError` protection** |
+| `@ConditionalOnMissingBean` | only active if the bean doesn't exist yet → **user override point** |
 | `@ConditionalOnProperty` | based on property |
-| `@ConditionalOnBooleanProperty` | (3.5) versi boolean dari `@ConditionalOnProperty` |
-| `@ConditionalOnBean` | hanya kalau bean tertentu ada |
-| `@AutoConfigureBefore/After` | urutan |
+| `@ConditionalOnBooleanProperty` | (3.5) boolean version of `@ConditionalOnProperty` |
+| `@ConditionalOnBean` | only if a specific bean exists |
+| `@AutoConfigureBefore/After` | ordering |
 
-> **Jebakan:** `@ConditionalOnMissingBean` **hanya boleh dipakai di auto-configuration**,
-> bukan di `@Configuration` milikmu — urutan evaluasi bean tidak terjamin, hasilnya bisa
-> berubah sesuai urutan scan. Ini alasan Spring Boot memisahkan `@AutoConfiguration`.
+> **Pitfall:** `@ConditionalOnMissingBean` **may only be used in auto-configuration**,
+> not in your own `@Configuration` — bean evaluation order is not guaranteed and the result
+> can change with scan order. This is why Spring Boot separates `@AutoConfiguration`.
 
 ---
 
@@ -177,9 +178,9 @@ com.sanedge.order.config.CacheAutoConfiguration
 @Service
 public class OrderService {
 
-    private final OrderRepository repository;      // WAJIB constructor injection
+    private final OrderRepository repository;      // MUST be constructor injection
     private final UserClient userClient;
-    private final Clock clock;                    // bean Clock — mudah di-test (mock waktu)
+    private final Clock clock;                    // Clock bean — easy to test (mock time)
 
     public OrderService(OrderRepository repository, UserClient userClient, Clock clock) {
         this.repository = repository;
@@ -190,7 +191,7 @@ public class OrderService {
 ```
 
 ```java
-// beberapa bean bertipe sama → @Qualifier
+// multiple beans of the same type → @Qualifier
 @Service
 public class NotificationService {
     private final Sender emailSender;
@@ -200,12 +201,12 @@ public class NotificationService {
                                @Qualifier("smsSender") Sender smsSender) { ... }
 }
 
-// @Primary = default kalau tidak ada qualifier
+// @Primary = the default when no qualifier is given
 @Service
 @Primary
 public class DefaultSender implements Sender { ... }
 
-// @Order = urutan saat mengoleksi bean
+// @Order = ordering when collecting beans
 @Component
 @Order(1)
 class FirstValidator implements Validator { ... }
@@ -213,7 +214,7 @@ class FirstValidator implements Validator { ... }
 // optional dependency
 @Service
 public class ReportService {
-    private final ObjectProvider<EmailSender> emailSender;   // lazy, bisa tidak ada
+    private final ObjectProvider<EmailSender> emailSender;   // lazy, may be absent
 
     public void send() {
         EmailSender s = emailSender.getIfAvailable();
@@ -222,21 +223,21 @@ public class ReportService {
 }
 ```
 
-| Cara | Kapan |
+| Approach | When |
 | :--- | :--- |
-| Constructor injection | **default** — dependency wajib, mudah di-test |
-| Setter injection | dependency opsional yang bisa berubah |
-| Field injection (`@Autowired`) | **jangan** — field `null` tanpa container, sulit di-test |
-| `@Qualifier` | lebih dari satu bean bertipe sama |
-| `@Primary` | tentukan default |
-| `ObjectProvider<T>` | dependency opsional / lazy |
+| Constructor injection | **default** — required dependency, easy to test |
+| Setter injection | optional dependency that can change |
+| Field injection (`@Autowired`) | **don't** — field is `null` without the container, hard to test |
+| `@Qualifier` | more than one bean of the same type |
+| `@Primary` | pick the default |
+| `ObjectProvider<T>` | optional / lazy dependency |
 
-> **Jebakan:** satu tipe bean = satu instance. Kalau butuh dua `Sender` berbeda tanpa
-> `@Qualifier`, aplikasi **tidak akan start** (`NoUniqueBeanDefinitionException`).
+> **Pitfall:** one bean type = one instance. If you need two different `Sender`s without a
+> `@Qualifier`, the app **won't start** (`NoUniqueBeanDefinitionException`).
 
 ---
 
-## Konfigurasi & properties
+## Configuration & properties
 
 ```java
 @ConfigurationProperties(prefix = "app.ratelimit")
@@ -246,12 +247,12 @@ public record RateLimitProperties(
         Duration window
 ) {}
 
-// daftarkan 3 cara (pilih salah satu)
-@EnableConfigurationProperties(RateLimitProperties.class)   // di @Configuration
-@ConfigurationPropertiesScan                                       // di @SpringBootApplication
-@ConfigurationPropertiesScan("com.sanedge")                     // scan sekilas
+// register it 3 ways (pick one)
+@EnableConfigurationProperties(RateLimitProperties.class)   // on @Configuration
+@ConfigurationPropertiesScan                                       // on @SpringBootApplication
+@ConfigurationPropertiesScan("com.sanedge")                     // scan a specific package
 
-// pakai di bean
+// use it in a bean
 @Service
 public class RateLimiter {
     private final RateLimitProperties props;
@@ -268,24 +269,24 @@ app:
 ```
 
 ```java
-// @Value — untuk nilai tunggal
+// @Value — for single values
 @Value("${app.ratelimit.max-per-minute:500}") int maxPerMinute;
 
-//SpEL pada @Value
+//SpEL in @Value
 @Value("#{systemProperties['java.version']}") String javaVersion;
 ```
 
-| Binding | Catatan |
+| Binding | Note |
 | :--- | :--- |
-| `record` | immutable, constructor binding — **paling recommended** |
-| `@ConfigurationProperties` + `record` | prefix wajib, key `kebab-case` |
-| `@Value` | hanya nilai tunggal; tidak ada validasi tipe |
-| Constructor binding | butuh 1 constructor, atau `@ConstructorBinding` |
-| `@DefaultValue` | nilai default saat property tidak ada |
-| List/Map dari YAML | `List<Foo>` / `Map<String, Foo>` otomatis |
+| `record` | immutable, constructor binding — **most recommended** |
+| `@ConfigurationProperties` + `record` | prefix required, `kebab-case` keys |
+| `@Value` | single values only; no type validation |
+| Constructor binding | requires 1 constructor, or `@ConstructorBinding` |
+| `@DefaultValue` | default value when the property is absent |
+| List/Map from YAML | `List<Foo>` / `Map<String, Foo>` automatically |
 
 ```yaml
-# daftar & map
+# lists & maps
 app:
   features:
     - name: a
@@ -298,19 +299,19 @@ app:
 
 ---
 
-## Profile & environment
+## Profiles & environment
 
 ```yaml
-# aktifkan profile
+# activate a profile
 spring:
   profiles:
     active: prod
-# atau: --spring.profiles.active=prod,observability
+# or: --spring.profiles.active=prod,observability
 ```
 
 ```java
 @Configuration
-@Profile("!prod")                       // aktif kecuali prod
+@Profile("!prod")                       // active except in prod
 public class DevLoggingConfig { ... }
 
 @Bean
@@ -319,22 +320,22 @@ public DataSource prodDataSource() { ... }
 ```
 
 ```yaml
-# import konfigurasi lain
+# import other configuration
 spring:
   config:
     import:
       - optional:classpath:common-defaults.yaml
       - optional:file:./config/local.yaml
-      - env:MY_CONFIGURATION            # (3.5) muat banyak property dari 1 env var
+      - env:MY_CONFIGURATION            # (3.5) load many properties from 1 env var
 ```
 
-| Precedence | Urut |
+| Precedence | Order |
 | :--- | :--- |
-| Tertinggi | argumen CLI → `SPRING_APPLICATION_JSON` → `SPRING_APPLICATION_JSON` env → env var → profile-specific → `application.yaml` → default |
+| Highest | CLI arguments → `SPRING_APPLICATION_JSON` → `SPRING_APPLICATION_JSON` env → env vars → profile-specific → `application.yaml` → defaults |
 
-> **Jebakan (3.5):** property boolean `.enabled` **harus** `true`/`false` — nilai lain
-> (`yes`, `1`, `on`) tidak lagi dianggap `true` dan **tidak** error, hanya tidak aktif.
-> Ini jebakan yang diam-diam mematikan fitur.
+> **Pitfall (3.5):** boolean `.enabled` properties **must** be `true`/`false` — other values
+> (`yes`, `1`, `on`) are no longer treated as `true` and **do not** raise an error, they just
+> stay inactive. This is the pitfall that silently disables features.
 
 ---
 
@@ -367,7 +368,7 @@ public class OrderController {
 ```
 
 ```java
-// filter (setiap request) — didaftarkan di @Configuration
+// filter (every request) — registered in @Configuration
 @Component
 public class CorrelationIdFilter extends OncePerRequestFilter {
     @Override
@@ -380,7 +381,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
     }
 }
 
-// (3.5) registrasi filter via anotasi
+// (3.5) register a filter via annotation
 @Configuration(proxyBeanMethods = false)
 class WebConfig {
     @Bean
@@ -389,16 +390,16 @@ class WebConfig {
 }
 ```
 
-| Konsep | Beda dengan |
+| Concept | Difference |
 | :--- | :--- |
-| `@RestController` | `@Controller` + `@ResponseBody` (JSON otomatis) |
-| `@ResponseBody` |Serialisasi JSON, `@RequestBody` deserialisasi |
-| `ResponseEntity` | kontrol status + header + body |
-| `ProblemDetail` | format error RFC 9457 (bawaan Spring 6) |
-| `@ControllerAdvice` | handler error global (bukan per controller) |
-| Filter (servlet) | jalan **sebelum** DispatcherServlet |
-| `HandlerInterceptor` | jalan **setelah** handler, pre/post |
-| `@RestControllerAdvice` | gabungan advice + `@ResponseBody` |
+| `@RestController` | `@Controller` + `@ResponseBody` (JSON automatically) |
+| `@ResponseBody` |Serializes JSON, `@RequestBody` deserializes |
+| `ResponseEntity` | controls status + headers + body |
+| `ProblemDetail` | RFC 9457 error format (built into Spring 6) |
+| `@ControllerAdvice` | global error handler (not per controller) |
+| Servlet filter | runs **before** the DispatcherServlet |
+| `HandlerInterceptor` | runs **after** the handler, pre/post |
+| `@RestControllerAdvice` | advice + `@ResponseBody` combined |
 
 ```java
 @RestControllerAdvice
@@ -442,19 +443,19 @@ public record CreateOrderRequest(
         @Pattern(regexp = "^[A-Z]{3}-\\d{4}$") String reference
 ) {}
 
-// validasi method (butuh @Validated di class)
+// method validation (requires @Validated on the class)
 @Service
 @Validated
 public class OrderService {
     public void transfer(@Valid TransferRequest req) { ... }
 }
 
-// groups: validasi berbeda per operasi
+// groups: different validation per operation
 public interface OnCreate {}
 public interface OnUpdate {}
 
 public record OrderRequest(
-        @Null(groups = OnUpdate.class) Long id,   // null saat create, wajib saat update
+        @Null(groups = OnUpdate.class) Long id,   // null on create, required on update
         @NotNull(groups = OnCreate.class) Long productId
 ) {}
 
@@ -463,7 +464,7 @@ public OrderResponse create(@Validated(OnCreate.class) @RequestBody OrderRequest
 ```
 
 ```java
-// validator kustom
+// custom validator
 @Component
 public class MerchantCodeValidator implements ConstraintValidator<ValidMerchantCode, String> {
     @Override
@@ -473,17 +474,17 @@ public class MerchantCodeValidator implements ConstraintValidator<ValidMerchantC
 }
 ```
 
-| Annotasi | Validasi |
+| Annotation | Validates |
 | :--- | :--- |
-| `@NotNull` `@NotBlank` `@NotEmpty` | keberadaan |
-| `@Min` `@Max` `@Positive` `@PositiveOrZero` | angka |
+| `@NotNull` `@NotBlank` `@NotEmpty` | presence |
+| `@Min` `@Max` `@Positive` `@PositiveOrZero` | numbers |
 | `@Size` `@Email` `@Pattern` `@URL` | format |
-| `@Past` `@Future` `@PastOrPresent` | waktu |
-| `@AssertTrue` | ekspresi kustom |
-| `@Valid` | validasi nested object |
+| `@Past` `@Future` `@PastOrPresent` | time |
+| `@AssertTrue` | custom expression |
+| `@Valid` | nested object validation |
 
-> **Jebakan:** validasi **request body** jalan otomatis; validasi **method** perlu
-> `@Validated` di class. Tanpa itu, constraint di parameter diabaikan diam-diam.
+> **Pitfall:** **request body** validation runs automatically; **method** validation needs
+> `@Validated` on the class. Without it, parameter constraints are silently ignored.
 
 ---
 
@@ -492,13 +493,13 @@ public class MerchantCodeValidator implements ConstraintValidator<ValidMerchantC
 ```java
 public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
 
-    // derived query — nama method = query
+    // derived query — method name = query
     List<Order> findByMerchantIdAndStatus(Long merchantId, OrderStatus status);
     Optional<Order> findFirstByOrderNo(String orderNo);
     boolean existsByIdempotencyKey(String key);
     long countByStatusAndCreatedAtAfter(OrderStatus status, Instant after);
 
-    // @Query + JOIN FETCH — hindari N+1
+    // @Query + JOIN FETCH — avoid N+1
     @Query("select o from Order o join fetch o.items where o.id = :id")
     Optional<Order> findByIdWithItems(@Param("id") Long id);
 
@@ -506,12 +507,12 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     @Query(value = "SELECT * FROM orders WHERE merchant_id = :m AND created_at > :since", nativeQuery = true)
     List<Order> findNative(@Param("m") Long merchantId, @Param("since") Instant since);
 
-    // @Modifying + transaksi
+    // @Modifying + transaction
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Order o set o.status = :s where o.id = :id")
     int updateStatus(@Param("id") Long id, @Param("s") OrderStatus s);
 
-    // projection — ambil subset kolom
+    // projection — fetch a subset of columns
     @Query("select new com.sanedge.order.dto.OrderSummary(o.id, o.totalPrice) from Order o where o.merchantId = :m")
     List<OrderSummary> summaryByMerchant(@Param("m") Long merchantId);
 
@@ -525,7 +526,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 ```
 
 ```java
-// Specification — query dinamis
+// Specification — dynamic query
 @Service
 @RequiredArgsConstructor
 public class OrderSearchService {
@@ -561,25 +562,25 @@ class JpaConfig {
 }
 ```
 
-| Konsep | Catatan |
+| Concept | Note |
 | :--- | :--- |
 | Derived query | method name = query; `And`/`Or`, `Between`, `Top3`, `IgnoreCase` |
-| `@Query` JPQL | portable, `join fetch` untuk relasi |
-| `@Query` native | SQL mentah, butuh nama kolom/tabel persis |
-| `@EntityGraph` | eager loading 1 query (alternatif `join fetch`) |
-| Projection | `interface` atau `record` constructor — **tanpa load entity** |
+| `@Query` JPQL | portable, `join fetch` for relations |
+| `@Query` native | raw SQL, needs exact column/table names |
+| `@EntityGraph` | eager loading in 1 query (alternative to `join fetch`) |
+| Projection | `interface` or `record` constructor — **without loading the entity** |
 | `Pageable` / `Sort` | pagination + sort, `PageRequest.of(p, s, Sort.by(...))` |
-| `@Modifying` | bulk update/delete → **harus dalam transaksi** |
+| `@Modifying` | bulk update/delete → **must be inside a transaction** |
 | `@Version` | optimistic locking → `OptimisticLockingFailureException` |
-| `Specification` | query dinamis, komposable |
-| `@EntityGraph` + pagination | hati-hati: bisa menarik terlalu banyak baris |
+| `Specification` | dynamic, composable query |
+| `@EntityGraph` + pagination | careful: can pull too many rows |
 
-> **Jebakan:** `@Modifying` **tidak** jalan tanpa `@Transactional`. Dan bulk update **tidak**
-> menyentuh `persistence context` → pakai `clearAutomatically = true`.
+> **Pitfall:** `@Modifying` does **not** work without `@Transactional`. And a bulk update does **not**
+> touch the persistence context → use `clearAutomatically = true`.
 
 ---
 
-## Transaksi
+## Transactions
 
 ```java
 @Service
@@ -591,7 +592,7 @@ public class OrderService {
     @Transactional(readOnly = true)                  // query: skip flush + dirty check
     public List<Order> findAll() { ... }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)   // transaksi terpisah
+    @Transactional(propagation = Propagation.REQUIRES_NEW)   // separate transaction
     public void writeAudit(String message) { ... }
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
@@ -605,30 +606,30 @@ public class OrderService {
 }
 ```
 
-| Propagation | Arti |
+| Propagation | Meaning |
 | :--- | :--- |
-| `REQUIRED` | ikut transaksi existing, atau buat baru (default) |
-| `REQUIRES_NEW` | selalu transaksi baru (transaksi lama di-suspend) |
-| `NESTED` | savepoint di dalam transaksi |
-| `SUPPORTS` | ikut kalau ada |
-| `NOT_SUPPORTED` | non-transaksional |
-| `MANDATORY` | wajib ada transaksi aktif |
+| `REQUIRED` | join the existing transaction, or create a new one (default) |
+| `REQUIRES_NEW` | always a new transaction (the old one is suspended) |
+| `NESTED` | savepoint inside the transaction |
+| `SUPPORTS` | join if one exists |
+| `NOT_SUPPORTED` | non-transactional |
+| `MANDATORY` | an active transaction is required |
 
-| Atribut | Arti |
+| Attribute | Meaning |
 | :--- | :--- |
-| `readOnly` | hint: tidak ada flush, boleh di-cache |
+| `readOnly` | hint: no flush, may be cached |
 | `isolation` | `READ_COMMITTED` (default), `REPEATABLE_READ`, `SERIALIZABLE` |
-| `rollbackFor` | exception yang **memicu** rollback (default: unchecked saja) |
-| `noRollbackFor` | exception yang **tidak** memicu rollback |
-| `timeout` | batas durasi transaksi |
-| `label` | label untuk monitoring |
+| `rollbackFor` | exceptions that **trigger** rollback (default: unchecked only) |
+| `noRollbackFor` | exceptions that **do not** trigger rollback |
+| `timeout` | transaction duration limit |
+| `label` | label for monitoring |
 
-> **Jebakan:** `@Transactional` bekerja lewat **proxy** → panggilan `this.method()` di class
-> yang sama **tidak** ditransaksikan. Fix: pindahkan ke bean lain, atau self-inject proxy.
+> **Pitfall:** `@Transactional` works through a **proxy** → a `this.method()` call in the same
+> class is **not** transactional. Fix: move it to another bean, or self-inject the proxy.
 
 ---
 
-## Migrasi skema (Flyway/Liquibase)
+## Schema migration (Flyway/Liquibase)
 
 ```text
 src/main/resources/db/migration/
@@ -636,7 +637,7 @@ src/main/resources/db/migration/
 ├── V20260815093100__create_order_items_table.sql
 ├── V20260820094500__add_index_orders_status.sql
 ├── R__seed_reference_data.sql           # repeatable
-└── U20260815093000__create_orders_table.sql   # undo (opsional)
+└── U20260815093000__create_orders_table.sql   # undo (optional)
 ```
 
 ```yaml
@@ -644,24 +645,24 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: true          # hanya saat mengadopsi DB existing
+    baseline-on-migrate: true          # only when adopting an existing DB
     baseline-version: 0
     validate-on-migrate: true
-    out-of-order: false               # migrasi lama setelah baru → error (default)
+    out-of-order: false               # old migration after a new one → error (default)
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
-| `V<timestamp>__desc.sql` | nomor urut = urutan eksekusi; `V2` menabrak `V10` |
-| `R__desc.sql` | repeatable (seed/view), jalan tiap checksum berubah |
-| 1 DB = 1 zona history | beberapa modul satu DB → pisahkan `flyway_schema_history` |
-| Jangan edit file yang sudah dipakai | checksum mismatch → **boot gagal** |
-| `baseline-on-migrate` | hanya sekali, saat adopsi DB existing |
-| Migrasi di service terpisah | jangan jalan di tiap replica aplikasi |
+| `V<timestamp>__desc.sql` | the number is the execution order; `V2` collides with `V10` |
+| `R__desc.sql` | repeatable (seed/view), runs whenever the checksum changes |
+| 1 DB = 1 history zone | multiple modules sharing one DB → separate the `flyway_schema_history` |
+| Never edit a file that has already been used | checksum mismatch → **boot fails** |
+| `baseline-on-migrate` | only once, when adopting an existing DB |
+| Migrations in a separate service | don't run them in every app replica |
 
 ```bash
-mvn -pl order-service flyway:info     # status migrasi
-mvn -pl order-service flyway:migrate  # jalankan manual (dev)
+mvn -pl order-service flyway:info     # migration status
+mvn -pl order-service flyway:migrate  # run manually (dev)
 ```
 
 ---
@@ -691,7 +692,7 @@ public class ReportDao {
 ```
 
 ```java
-// R2DBC (reaktif) — jangan campur dengan JPA di service yang sama
+// R2DBC (reactive) — don't mix with JPA in the same service
 @Repository
 public class OrderReactiveRepository extends ReactiveCrudRepository<Order, Long> {
     public Flux<Order> findByStatus(OrderStatus status) {
@@ -701,7 +702,7 @@ public class OrderReactiveRepository extends ReactiveCrudRepository<Order, Long>
 ```
 
 ```java
-// jOOQ — type-safe SQL dari DDL
+// jOOQ — type-safe SQL generated from the DDL
 @Repository
 public class OrderJooqRepository {
     private final DSLContext dsl;
@@ -714,16 +715,16 @@ public class OrderJooqRepository {
 }
 ```
 
-| Tool | Kapan |
+| Tool | When |
 | :--- | :--- |
-| Spring Data JPA | domain kaya, query tak dinamis, butuh object graph |
-| `JdbcTemplate` | query SQL manual, performanya paling transparan |
-| jOOQ | SQL kompleks dengan type-safety dari DDL |
-| R2DBC | web reaktif; **jangan campur** dengan JPA |
+| Spring Data JPA | rich domain, non-dynamic queries, needs an object graph |
+| `JdbcTemplate` | hand-written SQL, the most transparent performance |
+| jOOQ | complex SQL with type-safety from the DDL |
+| R2DBC | reactive web; **do not mix** with JPA |
 
-> **Jebakan:** mencampur `spring-boot-starter-web` (Tomcat/MVC) dan
-> `spring-boot-starter-webflux` (Netty/reaktif) → aplikasi jalan tapi **stack-nya
-> tidak deterministik**. Pilih satu.
+> **Pitfall:** mixing `spring-boot-starter-web` (Tomcat/MVC) and
+> `spring-boot-starter-webflux` (Netty/reactive) → the app starts but the **stack is
+> non-deterministic**. Pick one.
 
 ---
 
@@ -767,7 +768,7 @@ spring:
 ```
 
 ```java
-// CacheManager custom + TTL per cache
+// custom CacheManager + per-cache TTL
 @Bean
 CacheManager cacheManager(RedisConnectionFactory factory) {
     RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
@@ -779,14 +780,14 @@ CacheManager cacheManager(RedisConnectionFactory factory) {
 }
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
-| Cache key eksplisit | default pakai `toString()` param → hashcode tak stabil |
-| Jangan cache `null` | `cache-null-values: false` |
-| TTL wajib | cache tanpa TTL = data basi selamanya |
-| `@Cacheable` di **service**, bukan controller | layer yang tepat & reusable |
-| Cache evict di path yang sama | write-through tidak otomatis |
-| `@Cacheable` + `@Transactional` | urutannya penting: cache di luar transaksi |
+| Explicit cache key | the default uses the param's `toString()` → unstable hashcode |
+| Don't cache `null` | `cache-null-values: false` |
+| TTL is mandatory | a cache without TTL = stale data forever |
+| `@Cacheable` on the **service**, not the controller | the right layer & reusable |
+| Evict the cache on the same path | write-through is not automatic |
+| `@Cacheable` + `@Transactional` | ordering matters: cache outside the transaction |
 
 ---
 
@@ -795,13 +796,13 @@ CacheManager cacheManager(RedisConnectionFactory factory) {
 ```java
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity                       // untuk @PreAuthorize
+@EnableMethodSecurity                       // for @PreAuthorize
 public class SecurityConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http, JwtDecoder decoder) throws Exception {
         return http
-            .csrf(csrf -> csrf.disable())    // API stateless → CSRF tidak relevan
+            .csrf(csrf -> csrf.disable())    // stateless API → CSRF is irrelevant
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -845,26 +846,26 @@ spring:
           jwk-set-uri: https://keycloak/realms/superapp/protocol/openid-connect/certs
 ```
 
-| Konsep | Arti |
+| Concept | Meaning |
 | :--- | :--- |
-| `SecurityFilterChain` | bean; **satu chain per request** |
-| `authorizeHttpRequests` | declarative rule (ganti `authorizeRequests` yang deprecated) |
-| `SessionCreationPolicy.STATELESS` | API tanpa session/cookie |
-| `csrf().disable()` | hanya untuk API stateless (bukan untuk form) |
-| `oauth2ResourceServer().jwt()` | verifikasi JWT dari issuer/JWKS |
-| `@PreAuthorize` | otorisasi level method |
-| `BCryptPasswordEncoder` | hash password |
+| `SecurityFilterChain` | bean; **one chain per request** |
+| `authorizeHttpRequests` | declarative rule (replaces the deprecated `authorizeRequests`) |
+| `SessionCreationPolicy.STATELESS` | API without session/cookie |
+| `csrf().disable()` | only for stateless APIs (not for forms) |
+| `oauth2ResourceServer().jwt()` | verify JWTs from the issuer/JWKS |
+| `@PreAuthorize` | method-level authorization |
+| `BCryptPasswordEncoder` | password hashing |
 
-> **Jebakan:** `csrf` **tidak boleh** dimatikan kalau aplikasi pakai cookie/session
-> (form login). Untuk API token, `disable()` aman. Dan `SecurityFilterChain` yang salah
-> ordering → filter JWT tidak jalan.
+> **Pitfall:** `csrf` **must not** be disabled if the app uses cookies/sessions
+> (form login). For token APIs, `disable()` is safe. Also, a `SecurityFilterChain` with the wrong
+> ordering → the JWT filter doesn't run.
 
 ---
 
 ## HTTP client
 
 ```java
-// RestClient (Spring 6.1+, adalah default baru)
+// RestClient (Spring 6.1+, the new default)
 @Service
 public class UserClient {
 
@@ -895,7 +896,7 @@ public class UserClient {
 ```
 
 ```java
-// HTTP Interface client (@HttpServiceClient) — deklaratif, ala Feign tapi native
+// HTTP Interface client (@HttpServiceClient) — declarative, Feign-like but native
 @HttpServiceClient("/api/users")
 public interface UserHttpService {
 
@@ -905,7 +906,7 @@ public interface UserHttpService {
 ```
 
 ```java
-// WebClient (reaktif)
+// WebClient (reactive)
 @Service
 public class ReactiveUserClient {
     private final WebClient client = WebClient.builder()
@@ -920,15 +921,15 @@ public class ReactiveUserClient {
 }
 ```
 
-| Client | Stack | Catatan |
+| Client | Stack | Note |
 | :--- | :--- | :--- |
-| `RestClient` | blocking (servlet) | **default di Spring Boot 3.2+** |
-| `RestTemplate` | blocking | masih dipakai, status lama |
-| `WebClient` | reaktif | untuk stack WebFlux |
-| `@HttpServiceClient` | blocking | deklaratif, native Spring |
+| `RestClient` | blocking (servlet) | **default in Spring Boot 3.2+** |
+| `RestTemplate` | blocking | still used, legacy |
+| `WebClient` | reactive | for the WebFlux stack |
+| `@HttpServiceClient` | blocking | declarative, native Spring |
 
-> **Jebakan:** `RestTemplate` tanpa timeout → request menggantung selamanya. Set timeout
-> di `ClientHttpRequestFactory` (bukan di `RestTemplate`).
+> **Pitfall:** `RestTemplate` without a timeout → requests hang forever. Set the timeout
+> on the `ClientHttpRequestFactory` (not on the `RestTemplate`).
 
 ---
 
@@ -949,7 +950,7 @@ public class PaymentEventConsumer {
             bridge.handle(record.value());
             ack.acknowledge();
         } catch (Exception e) {
-            throw e;            // biarkan error handler yang menangani (DLQ)
+            throw e;            // let the error handler deal with it (DLQ)
         }
     }
 }
@@ -965,7 +966,7 @@ spring:
       enable-auto-commit: false
       max-poll-records: 100
       properties:
-        max.poll.interval.ms: 300000      # (3.5) properti eksplisit
+        max.poll.interval.ms: 300000      # (3.5) explicit property
         spring.json.trusted.packages: "com.sanedge.*"
     producer:
       acks: all
@@ -994,20 +995,20 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual
-        default-requeue-rejected: false       # jangan requeue → kirim ke DLQ
+        default-requeue-rejected: false       # don't requeue → send to the DLQ
         prefetch: 20
     publisher:
       confirm-type: correlated
       returns: true
 ```
 
-| Topik | Aturan |
+| Topic | Rule |
 | :--- | :--- |
-| Commit manual | `enable-auto-commit: false` + `ack.acknowledge()` **setelah** sukses |
-| Retry | hanya untuk error transien; error permanen → DLQ |
-| DLQ | **wajib** ada + metrik + alert, kalau tidak event hilang |
-| Dedup | `consumer_inbox` / unique constraint di DB |
-| Key | set key = penentu partisi & ordering |
+| Manual commit | `enable-auto-commit: false` + `ack.acknowledge()` **after** success |
+| Retry | only for transient errors; permanent errors → DLQ |
+| DLQ | **mandatory** + metrics + alerts, otherwise events are lost |
+| Dedup | `consumer_inbox` / a unique constraint in the DB |
+| Key | set the key = decides partition & ordering |
 
 ---
 
@@ -1027,7 +1028,7 @@ public class OrderService {
     }
 }
 
-// listener dalam aplikasi
+// in-app listener
 @Component
 class OrderCreatedListener {
 
@@ -1035,7 +1036,7 @@ class OrderCreatedListener {
     @EventListener
     public void onCreated(OrderCreated event) { ... }
 
-    // baru jalan SETELAH transaksi commit
+    // only runs AFTER the transaction commits
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void afterCommit(OrderCreated event) { ... }
 }
@@ -1043,13 +1044,13 @@ class OrderCreatedListener {
 
 | `@EventListener` | `@TransactionalEventListener` |
 | :--- | :--- |
-| jalan **langsung** (dalam transaksi) | jalan **setelah** commit |
-| bisa rollback | tidak bisa rollback |
-| untuk log/cache | untuk kirim event ke luar (Kafka) |
+| runs **immediately** (inside the transaction) | runs **after** commit |
+| can roll back | cannot roll back |
+| for logs/cache | for sending events outside (Kafka) |
 
-> **Jebakan:** publish event **di dalam** `@Transactional` → listener jalan sebelum commit →
-> consumer bisa membaca data yang belum committed. Pakai `AFTER_COMMIT`, atau lebih baik
-> pakai **transactional outbox**.
+> **Pitfall:** publishing an event **inside** `@Transactional` → the listener runs before commit →
+> a consumer can read uncommitted data. Use `AFTER_COMMIT`, or better, use a
+> **transactional outbox**.
 
 ---
 
@@ -1074,7 +1075,7 @@ public class AsyncConfig {
         return ex;
     }
 
-    // TaskDecorator → salin MDC (trace id) ke thread async
+    // TaskDecorator → copy MDC (trace id) to the async thread
     @Bean
     TaskDecorator mdcTaskDecorator() {
         return runnable -> {
@@ -1092,7 +1093,7 @@ public class AsyncConfig {
 @Service
 public class ReportService {
 
-    @Async("orderExecutor")           // WAJIB nama executor
+    @Async("orderExecutor")           // the executor name is REQUIRED
     public CompletableFuture<String> generate(Long id) { ... }
 
     @Scheduled(cron = "0 3 * * *", zone = "UTC")
@@ -1116,14 +1117,14 @@ spring:
         pool:
           size: 2
         thread-name-prefix: sched-
-    # (3.5) paksa auto-configured executor walau ada bean Executor custom
+    # (3.5) force the auto-configured executor even if a custom Executor bean exists
     # mode: force
 ```
 
-> **Jebakan:** `@Async` tanpa nama executor memakai `applicationTaskExecutor` (di 3.5
-> nama `taskExecutor` **dihapus**). Dan `@Async` di method private / self-invocation
-> → **tidak jalan** (proxy). Exception di `@Async` hilang kalau return type `void` →
-> pakai `CompletableFuture` atau `AsyncUncaughtExceptionHandler`.
+> **Pitfall:** `@Async` without an executor name uses `applicationTaskExecutor` (in 3.5 the
+> name `taskExecutor` is **removed**). Also, `@Async` on a private method / self-invocation
+> → **does not run** (proxy). Exceptions in `@Async` are lost if the return type is `void` →
+> use `CompletableFuture` or an `AsyncUncaughtExceptionHandler`.
 
 ---
 
@@ -1181,16 +1182,16 @@ resilience4j:
         limit-refresh-period: 1s
 ```
 
-| Prinsip | Aturan |
+| Principle | Rule |
 | :--- | :--- |
-| Retry | hanya error transien, dan operasi **idempoten** |
-| Circuit breaker | buka saat gagal terus → hentikan request ke host mati |
-| Bulkhead | batasi jumlah request bersamaan → anti-penuhan |
-| Time limiter | batas waktu, cancel future |
-| Rate limiter | batas request per periode |
+| Retry | only transient errors, and **idempotent** operations |
+| Circuit breaker | opens after repeated failures → stop requests to a dead host |
+| Bulkhead | caps concurrent requests → anti-saturation |
+| Time limiter | time limit, cancel the future |
+| Rate limiter | request limit per period |
 
-> **Jebakan:** retry tanpa idempotency key = **double charge**. Dan `fallbackMethod` harus
-> punya signature yang cocok (argumen + `Throwable`).
+> **Pitfall:** retry without an idempotency key = **double charge**. And `fallbackMethod` must
+> have a matching signature (arguments + `Throwable`).
 
 ---
 
@@ -1214,7 +1215,7 @@ management:
         liveness:
           include: livenessState
     heapdump:
-      access: none            # (3.5) default sudah none
+      access: none            # (3.5) already none by default
   metrics:
     tags:
       application: ${spring.application.name}
@@ -1225,7 +1226,7 @@ management:
     metrics:
       export:
         pushgateway:
-          address: pushgateway:9091     # (3.5) properti baru (pushgateway client baru)
+          address: pushgateway:9091     # (3.5) new property (new pushgateway client)
   tracing:
     sampling:
       probability: 1.0
@@ -1264,16 +1265,16 @@ public class PaymentMetrics {
 }
 ```
 
-| Endpoint | Pakai untuk |
+| Endpoint | Use for |
 | :--- | :--- |
 | `/actuator/health` | probe (readiness/liveness group) |
 | `/actuator/prometheus` | scrape metrics |
-| `/actuator/metrics` | debug metrik |
+| `/actuator/metrics` | debug metrics |
 | `/actuator/info` | build info |
-| `/actuator/loggers` | ubah level log runtime |
-| `/actuator/env` | **jangan** expose publik |
-| `/actuator/heapdump` | (3.5) default `access: none` — harus di-enable eksplisit |
-| `/actuator/quartz/jobs/{group}/{name}` | (3.5) trigger Quartz job via POST |
+| `/actuator/loggers` | change log levels at runtime |
+| `/actuator/env` | **do not** expose publicly |
+| `/actuator/heapdump` | (3.5) default `access: none` — must be enabled explicitly |
+| `/actuator/quartz/jobs/{group}/{name}` | (3.5) trigger a Quartz job via POST |
 
 ---
 
@@ -1286,7 +1287,7 @@ logging:
     com.sanedge: DEBUG
   structured:
     format:
-      console: ecs            # ecs | gelf | logstash | logback (3.5: ECS nested)
+      console: ecs            # ecs | gelf | logstash | logback (3.5: nested ECS)
     json:
       stacktrace:
         max-length: 2048
@@ -1304,7 +1305,7 @@ logging:
 ```
 
 ```java
-// correlation id otomatis + MDC
+// automatic correlation id + MDC
 @Component
 public class CorrelationIdFilter extends OncePerRequestFilter {
     @Override
@@ -1316,20 +1317,20 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
 }
 ```
 
-| Konsep | Fungsi |
+| Concept | Purpose |
 | :--- | :--- |
-| Micrometer | facade metrik (Counter, Timer, Gauge, DistributionSummary) |
-| Micrometer Tracing | span & trace id, bridge ke OTel/Zipkin |
-| MDC | simpan context (request id, user id) per thread |
-| Structured logging | log JSON (ECS/GELF/Logstash) → mudah di-parse Loki |
-| `management.observations.*` | (3.5) nama property baru (ganti `micrometer.observations.*` yang deprecated) |
+| Micrometer | metrics facade (Counter, Timer, Gauge, DistributionSummary) |
+| Micrometer Tracing | span & trace id, bridge to OTel/Zipkin |
+| MDC | stores context (request id, user id) per thread |
+| Structured logging | JSON logs (ECS/GELF/Logstash) → easy to parse in Loki |
+| `management.observations.*` | (3.5) new property name (replaces the deprecated `micrometer.observations.*`) |
 
 ---
 
 ## Testing
 
 ```java
-// 1. Unit test murni (tanpa Spring)
+// 1. Pure unit test (no Spring)
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
     @Mock OrderRepository repository;
@@ -1342,11 +1343,11 @@ class OrderServiceTest {
     }
 }
 
-// 2. Slice web — MockMvc (tanpa server)
+// 2. Web slice — MockMvc (no server)
 @WebMvcTest(OrderController.class)
 class OrderControllerTest {
     @Autowired MockMvc mvc;
-    @MockitoBean OrderCommandService command;      // @MockBean deprecated di 3.4+
+    @MockitoBean OrderCommandService command;      // @MockBean is deprecated in 3.4+
 
     @Test
     void returns400() throws Exception {
@@ -1355,7 +1356,7 @@ class OrderControllerTest {
     }
 }
 
-// 3. Slice data — Testcontainers + @ServiceConnection
+// 3. Data slice — Testcontainers + @ServiceConnection
 @DataJpaTest
 @Testcontainers
 class OrderRepositoryTest {
@@ -1365,7 +1366,7 @@ class OrderRepositoryTest {
     @Autowired OrderRepository repository;
 }
 
-// 4. Integrasi penuh
+// 4. Full integration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OrderIntegrationTest {
     @LocalServerPort int port;
@@ -1384,15 +1385,15 @@ class CacheAutoConfigurationTest {
 }
 ```
 
-| Slice | Annotation | Yang di-load |
+| Slice | Annotation | What gets loaded |
 | :--- | :--- | :--- |
 | Web | `@WebMvcTest` | MVC + security + controller |
 | Data | `@DataJpaTest` | JPA + repository + transaction |
-| JSON | `@JsonTest` | Jackson saja |
+| JSON | `@JsonTest` | Jackson only |
 | REST client | `@RestClientTest` | `RestClient` + mock server |
 | Reactive | `@WebFluxTest` | WebFlux |
-| Config | `ApplicationContextRunner` | auto-configuration spesifik |
-| Full | `@SpringBootTest` | semuanya |
+| Config | `ApplicationContextRunner` | specific auto-configuration |
+| Full | `@SpringBootTest` | everything |
 
 ```java
 // Testcontainers + Docker Compose
@@ -1405,27 +1406,27 @@ class OrderIT {
 }
 ```
 
-| Praktik | Kenapa |
+| Practice | Why |
 | :--- | :--- |
-| Slice test, bukan `@SpringBootTest` untuk semua | jauh lebih cepat |
-| `@ServiceConnection` | container otomatis jadi bean (`@DynamicPropertySource` manual sudah deprecated) |
-| `disabledWithoutDocker = true` | test tidak gagal di CI tanpa Docker |
-| `@MockitoBean` | pengganti `@MockBean` (deprecated 3.4+) |
-| `ApplicationContextRunner` | uji auto-configuration tanpa context penuh |
-| Fokus pada **kontrak** | assert perilaku, bukan implementasi |
+| Slice tests, not `@SpringBootTest` for everything | far faster |
+| `@ServiceConnection` | the container automatically becomes a bean (manual `@DynamicPropertySource` is deprecated) |
+| `disabledWithoutDocker = true` | tests don't fail on CI without Docker |
+| `@MockitoBean` | replaces `@MockBean` (deprecated in 3.4+) |
+| `ApplicationContextRunner` | test auto-configuration without a full context |
+| Focus on the **contract** | assert behavior, not implementation |
 
-> **Jebakan:** `spring.test.print-condition-evaluation-report=false` (3.5) untuk pakai
-> context runner yang ramai — kalau tidak, laporan kondisi membanjiri output test.
+> **Pitfall:** `spring.test.print-condition-evaluation-report=false` (3.5) to use a
+> quiet context runner — otherwise the condition report floods the test output.
 
 ---
 
-## Performa: virtual thread, pool, container
+## Performance: virtual threads, pools, containers
 
 ```yaml
 spring:
   threads:
     virtual:
-      enabled: true            # (3.2+) JDK 21+, I/O-bound jadi ringan
+      enabled: true            # (3.2+) JDK 21+, I/O-bound work becomes cheap
   datasource:
     hikari:
       maximum-pool-size: 20
@@ -1446,28 +1447,28 @@ server:
     max-parameter-count: 10000
 ```
 
-| Topik | Saran |
+| Topic | Advice |
 | :--- | :--- |
-| Virtual thread | aktifkan untuk I/O-bound (web + JDBC blocking) |
-| Connection pool | **tidak** ikut naik karena virtual thread — tetap batasi DB |
+| Virtual threads | enable for I/O-bound work (web + blocking JDBC) |
+| Connection pool | does **not** scale up with virtual threads — still limit the DB |
 | `server.shutdown: graceful` | graceful shutdown + `terminationGracePeriodSeconds` |
-| `spring.main.lazy-initialization` | startup cepat, tapi error jadi saat request pertama |
+| `spring.main.lazy-initialization` | fast startup, but errors show up on the first request |
 | CDS / AOT | `spring-boot:run -Dspring-boot.run.jvmArguments="-XX:ArchiveClassesAtExit=app.jsa"` |
-| Undertow vs Tomcat | Undertow lebih ringan I/O; Tomcat fitur lengkap |
-| HTTP/2 | butuh TLS + h2, cek dukungan client |
+| Undertow vs Tomcat | Undertow is lighter on I/O; Tomcat is feature-complete |
+| HTTP/2 | requires TLS + h2, check client support |
 | Batch insert | `hibernate.order_inserts/updates` + `jdbc.batch_size` |
 
 ```java
-// (3.5) virtual thread metrics otomatis ada kalau micrometer-java21 di classpath
-// TaskExecutor untuk virtual thread
+// (3.5) virtual thread metrics are automatic if micrometer-java21 is on the classpath
+// TaskExecutor for virtual threads
 @Bean
 TaskExecutor virtualExecutor() {
     return new TaskExecutorAdapter(Executors.newVirtualThreadPerTaskExecutor());
 }
 ```
 
-> **Jebakan:** virtual thread + `synchronized` = memblokir **carrier thread** (pool kecil).
-> Untuk bagian kritis, pakai `ReentrantLock`.
+> **Pitfall:** virtual threads + `synchronized` = blocks the **carrier thread** (small pool).
+> For critical sections, use `ReentrantLock`.
 
 ---
 
@@ -1496,19 +1497,19 @@ TaskExecutor virtualExecutor() {
 
 ```bash
 mvn clean package                          # build + test
-mvn -pl order-service spring-boot:run      # run satu service
-mvn -pl order-service spring-boot:start    # run di background
+mvn -pl order-service spring-boot:run      # run a single service
+mvn -pl order-service spring-boot:start    # run in the background
 mvn -pl order-service spring-boot:stop
 mvn -pl order-service spring-boot:restart
 mvn -pl order-service spring-boot:build-image   # OCI image
 mvn -pl order-service spring-boot:help
 
-# native image (GraalVM) — butuh native build tools
+# native image (GraalVM) — requires native build tools
 mvn -Pnative native:compile -DskipTests
 ```
 
 ```yaml
-# spring-boot-devtools (dev only) — restart cepat & live reload
+# spring-boot-devtools (dev only) — fast restart & live reload
 spring:
   devtools:
     restart:
@@ -1517,20 +1518,20 @@ spring:
       enabled: true
 ```
 
-| Opsi | Output |
+| Option | Output |
 | :--- | :--- |
-| `package` | fat jar (bisa `java -jar`) |
-| `package` + `layers` | layered jar (lebih kecil & cache-friendly di Docker) |
-| `build-image` | OCI image (pakai builder bawaan / Buildpacks) |
-| `-Pnative` | native executable (start ~10 ms, butuh GraalVM) |
+| `package` | fat jar (runs with `java -jar`) |
+| `package` + `layers` | layered jar (smaller & cache-friendly in Docker) |
+| `build-image` | OCI image (uses the built-in builder / Buildpacks) |
+| `-Pnative` | native executable (starts in ~10 ms, requires GraalVM) |
 
-> **Jebakan (3.5):** default builder Cloud Native Buildpacks sudah diganti ke
-> `paketobuildpacks/builder-noble-java-tiny` → image **tidak punya shell**. Kalau butuh
-> shell untuk debug, pilih run image `paketobuildpacks/ubuntu-noble-run-base`.
+> **Pitfall (3.5):** the default Cloud Native Buildpacks builder has changed to
+> `paketobuildpacks/builder-noble-java-tiny` → the image **has no shell**. If you need a
+> shell for debugging, choose the run image `paketobuildpacks/ubuntu-noble-run-base`.
 
 ---
 
-## Konfigurasi paling sering dipakai
+## Most frequently used configuration
 
 ```yaml
 spring:
@@ -1603,31 +1604,32 @@ resilience4j:
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must read)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Fix |
 | :--- | :--- | :--- |
-| `@Transactional` self-invocation | Transaksi tidak jalan | Pisah ke bean lain / self-inject proxy |
+| `@Transactional` self-invocation | Transaction doesn't apply | Move to another bean / self-inject the proxy |
 | `open-in-view: true` | `LazyInitializationException`, N+1 | Set `false` + `join fetch` |
-| N+1 query | 1 + N query per list | `@EntityGraph`, `join fetch`, projection |
-| `@Autowired` field | `null` di unit test | Constructor injection |
-| 2 bean bertipe sama | `NoUniqueBeanDefinitionException` | `@Qualifier` / `@Primary` |
-| `@MockBean` | Deprecated warning | `@MockitoBean` |
-| `@ConditionalOnMissingBean` di `@Configuration` | Perilaku tidak deterministik | Hanya di auto-configuration |
-| `.enabled=yes` | Fitur diam-diam mati (3.5: harus `true`/`false`) | Pakai `true`/`false` |
-| `ddl-auto: update` | Schema berubah diam-diam | `validate` + Flyway |
+| N+1 query | 1 + N queries per list | `@EntityGraph`, `join fetch`, projection |
+| `@Autowired` field | `null` in unit tests | Constructor injection |
+| 2 beans of the same type | `NoUniqueBeanDefinitionException` | `@Qualifier` / `@Primary` |
+| `@MockBean` | Deprecation warning | `@MockitoBean` |
+| `@ConditionalOnMissingBean` in `@Configuration` | Non-deterministic behavior | Only in auto-configuration |
+| `.enabled=yes` | Feature silently disabled (3.5: must be `true`/`false`) | Use `true`/`false` |
+| `ddl-auto: update` | Schema changes silently | `validate` + Flyway |
 | BigDecimal `equals` | `1.0` != `1.00` | `compareTo() == 0` |
-| `EnumType.ORDINAL` | Reorder enum = data lama salah | `EnumType.STRING` |
-| `@Async` di method private | Tidak jalan | Public + proxy |
-| `@Async` tanpa nama executor | Pakai executor default (nama `taskExecutor` dihapus di 3.5) | `@Async("namaExecutor")` |
-| `@Scheduled` di banyak replica | Job jalan N kali | ShedLock / 1 replica |
-| `@Cacheable` tanpa TTL | Data basi selamanya | Set TTL di CacheManager |
-| `RestTemplate` tanpa timeout | Request menggantung | Set timeout di request factory |
-| Retry tanpa idempotency | Double charge | Idempotency key |
-| `csrf().disable()` di aplikasi cookie | Keamanan rusak | Hanya untuk API stateless |
-| Event publish di dalam transaksi | Consumer baca data belum commit | `AFTER_COMMIT` atau outbox |
-| Mix MVC + WebFlux | Stack tidak deterministik | Pilih satu |
-| `spring.threads.virtual.enabled` + `synchronized` | Carrier thread terblokir | `ReentrantLock` |
-| Pool size naik bareng virtual thread | DB kewalahan | Batasi pool tetap |
-| Image buildpack tanpa shell | `kubectl exec` gagal | Pakai run image dengan shell |
-| `management.endpoint.env` di publik | Rahasia bocor | Batasi exposure + authorization |
+| `EnumType.ORDINAL` | Reordering the enum corrupts old data | `EnumType.STRING` |
+| `@Async` on a private method | Doesn't run | Public + proxy |
+| `@Async` without an executor name | Uses the default executor (the `taskExecutor` name is removed in 3.5) | `@Async("executorName")` |
+| `@Scheduled` on many replicas | Job runs N times | ShedLock / 1 replica |
+| `@Cacheable` without TTL | Stale data forever | Set a TTL in the CacheManager |
+| `RestTemplate` without a timeout | Requests hang | Set a timeout on the request factory |
+| Retry without idempotency | Double charge | Idempotency key |
+| `csrf().disable()` in a cookie-based app | Security is broken | Only for stateless APIs |
+| Publishing events inside a transaction | Consumer reads uncommitted data | `AFTER_COMMIT` or outbox |
+| Mixing MVC + WebFlux | Non-deterministic stack | Pick one |
+| `spring.threads.virtual.enabled` + `synchronized` | Carrier thread blocked | `ReentrantLock` |
+| Pool size raised along with virtual threads | DB overwhelmed | Keep the pool capped |
+| Buildpack image without a shell | `kubectl exec` fails | Use a run image with a shell |
+| `management.endpoint.env` exposed publicly | Secrets leak | Restrict exposure + authorization |
+

@@ -1,6 +1,6 @@
 ---
 title: "Go 1.26 Cheat Sheet"
-description: "Cheat sheet Go 1.26: goroutine & channel, context, error wrapping, generics, slices/maps, HTTP, testing (termasuk synctest), benchmarking, go fix modernizers, dan jebakan concurrency yang mahal."
+description: "Go 1.26 cheat sheet: goroutines & channels, context, error wrapping, generics, slices/maps, HTTP, testing (including synctest), benchmarking, go fix modernizers, and expensive concurrency pitfalls."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -16,16 +16,16 @@ tags:
 
 # Go 1.26 Cheat Sheet
 
-> Target: **Go 1.26** (Februari 2026). Rilisan ini membawa `new` yang menerima ekspresi,
-> `go fix` yang berubah jadi *modernizer*, garbage collector **Green Tea** sebagai default,
-> `errors.AsType`, dan `crypto/hpke`. Semua snippet di bawah dipakai di service Go
-> (microservice federated) dan **diverifikasi compile**.
+> Target: **Go 1.26** (February 2026). This release brings `new` accepting an expression,
+> `go fix` turned into a *modernizer*, the **Green Tea** garbage collector as the default,
+> `errors.AsType`, and `crypto/hpke`. All snippets below are used in Go services
+> (federated microservices) and are **compile-verified**.
 
-**Isi sheet ini**
+**What's in this sheet**
 
 - CLI & toolchain
-- Mental model 5 menit
-- Yang baru di 1.26
+- 5-minute mental model
+- What's new in 1.26
 - Goroutine, channel, select
 - Context
 - Error handling
@@ -42,68 +42,68 @@ tags:
 - std lib: encoding (JSON v2, csv, base64, hex)
 - std lib: net/http & template
 - std lib: database/sql, crypto, hashing
-- std lib: testing lanjutan
-- Jebakan (wajib dibaca)
+- std lib: advanced testing
+- Pitfalls (must read)
 
 ---
 
 ## CLI & toolchain
 
 ```sh
-go build ./...                 # compile semua paket
+go build ./...                 # compile all packages
 go build -o bin/api ./cmd/api  # output binary
 go run ./cmd/api               # compile + run
-go test ./...                  # jalankan test
+go test ./...                  # run tests
 go test -race ./...            # race detector
 go test -run TestCheckout -v ./internal/order
 go test -bench=. -benchmem ./internal/crypto
 go test -coverprofile=cover.out ./... && go tool cover -html=cover.out
-go vet ./...                   # analyzer bawaan (termasuk 'waitgroup' & 'hostport' baru di 1.25)
-go fix ./...                   # MODERNIZER: rapikan kode ke idiom terbaru
-gofmt -w .                     # format (gofumpt lebih ketat, opsional)
-go mod tidy                    # rapikan go.mod/go.sum
-go mod download                # prefetch dependency
+go vet ./...                   # built-in analyzers (including new 'waitgroup' & 'hostport' in 1.25)
+go fix ./...                   # MODERNIZER: rewrite code to the latest idioms
+gofmt -w .                     # format (gofumpt is stricter, optional)
+go mod tidy                    # tidy go.mod/go.sum
+go mod download                # prefetch dependencies
 go work init ./svc-a ./svc-b   # workspace multi-repo
-go build -trimpath -ldflags="-s -w"   # binary kecil + path reproduibel
+go build -trimpath -ldflags="-s -w"   # smaller binary + reproducible paths
 ```
 
-| Perintah | Fungsi |
+| Command | Purpose |
 | :--- | :--- |
 | `go build` | compile |
-| `go run` | compile & jalankan (bukan untuk prod) |
-| `go test` | test; `-race`, `-bench`, `-cover`, `-count`, `-shuffle` |
-| `go vet` | analyzer: printf, copylocks, lostcancel, unreachable |
-| `go fix` | **1.26**: modernizer otomatis (bukan lagi "fixer" lama) |
+| `go run` | compile & run (not for prod) |
+| `go test` | tests; `-race`, `-bench`, `-cover`, `-count`, `-shuffle` |
+| `go vet` | analyzers: printf, copylocks, lostcancel, unreachable |
+| `go fix` | **1.26**: automatic modernizer (no longer the old "fixer") |
 | `go tool pprof` | profiling |
-| `go doc` | dokumentasi paket |
+| `go doc` | package documentation |
 
-> `go fix` versi 1.26 dibangun di atas framework analisis yang sama dengan `go vet`, jadi
-> perbaikannya aman (tidak mengubah perilaku program). Kalau ada hasil yang salah, laporkan.
+> The 1.26 version of `go fix` is built on the same analysis framework as `go vet`, so
+> its rewrites are safe (they do not change program behavior). If you get an incorrect result, report it.
 
 ---
 
-## Mental model 5 menit
+## 5-minute mental model
 
-| Konsep | Ringkasan |
+| Concept | Summary |
 | :--- | :--- |
-| Goroutine | unit eksekusi ringan; `go f()` |
-| Channel | communicate antar goroutine; typed, FIFO |
-| `defer` | jalan saat fungsi keluar (LIFO) — termasuk saat panic |
-| Zero value | setiap tipe punya nilai awal yang **berguna** (`0`, `""`, `nil`, `false`) |
-| Interface | satisfied **implisit** — tipe punya method-nya, tidak perlu deklarasi |
-| Error | nilai, bukan exception; selalu cek `err != nil` |
-| Pointer | alias ke memori; `&` ambil address, `*` deref |
-| Slices | header (ptr, len, cap) — append bisa reallocate |
-| Map | hash map bawaan; **tidak aman** untuk concurrent write |
-| Generic | param tipe untuk menghindari duplikasi tanpa kehilangan type safety |
-| `context.Context` | pembatalan + deadline + nilai lintas request |
+| Goroutine | lightweight execution unit; `go f()` |
+| Channel | communicate between goroutines; typed, FIFO |
+| `defer` | runs when the function exits (LIFO) — including on panic |
+| Zero value | every type has a **useful** initial value (`0`, `""`, `nil`, `false`) |
+| Interface | satisfied **implicitly** — the type has the methods, no declaration needed |
+| Error | a value, not an exception; always check `err != nil` |
+| Pointer | alias to memory; `&` takes the address, `*` dereferences |
+| Slices | header (ptr, len, cap) — append may reallocate |
+| Map | built-in hash map; **not safe** for concurrent writes |
+| Generic | type parameters to avoid duplication without losing type safety |
+| `context.Context` | cancellation + deadline + request-scoped values |
 
 ---
 
-## Yang baru di 1.26
+## What's new in 1.26
 
 ```go
-// `new` sekarang menerima EKSPRESI, bukan hanya tipe
+// `new` now accepts an EXPRESSION, not just a type
 type Person struct {
     Name string `json:"name"`
     Age  *int   `json:"age"`   // pointer = optional
@@ -112,13 +112,13 @@ type Person struct {
 func personJSON(name string, born time.Time) ([]byte, error) {
     return json.Marshal(Person{
         Name: name,
-        Age:  new(yearsSince(born)),   // 1.26: new(ekspresi)
+        Age:  new(yearsSince(born)),   // 1.26: new(expression)
     })
 }
 ```
 
 ```go
-// Generic boleh merujuk ke dirinya sendiri di daftar type parameter
+// Generics may refer to themselves in the type parameter list
 type Adder[A Adder[A]] interface {
     Add(A) A
 }
@@ -126,29 +126,29 @@ type Adder[A Adder[A]] interface {
 func algo[A Adder[A]](x, y A) A { return x.Add(y) }
 ```
 
-| Perubahan 1.26 | Dampak |
+| 1.26 change | Impact |
 | :--- | :--- |
-| `new(expr)` | field optional yang berbasis nilai bisa diisi tanpa variabel sementara |
-| Generic self-reference | Batasan type parameter bisa lebih ekspresif |
-| `go fix` → modernizer | Migrasi idiom lama otomatis (`interface{}` → `any`, dsb) |
-| **Green Tea GC** (default) | Overhead GC turun 10–40% untuk program GC-heavy |
-| `errors.AsType[T]` | Versi generik dari `errors.As` — type-safe & lebih cepat |
-| `slog.NewMultiHandler` | Satu log record ke banyak handler sekaligus |
-| `http.ServeMux` trailing slash | Redirect 301 → **307** (tidak mengubah method) |
-| `http.CrossOriginProtection` | Proteksi CSRF berbasis Fetch metadata |
-| `os.Root` (method baru) | Operasi file aman terhadap symlink escaping |
-| `testing.T.ArtifactDir` | Direktori output test (screenshot, dump) |
-| `B.Loop` | Benchmark modern; tidak lagi/Askor inlining |
-| `testing/cryptotest` | `SetGlobalRandom` untuk test kriptografi deterministik |
+| `new(expr)` | value-based optional fields can be set without a temporary variable |
+| Generic self-reference | Type parameter constraints can be more expressive |
+| `go fix` → modernizer | Automatic migration of old idioms (`interface{}` → `any`, etc.) |
+| **Green Tea GC** (default) | GC overhead drops 10–40% for GC-heavy programs |
+| `errors.AsType[T]` | Generic version of `errors.As` — type-safe & faster |
+| `slog.NewMultiHandler` | One log record to many handlers at once |
+| `http.ServeMux` trailing slash | Redirect 301 → **307** (does not change the method) |
+| `http.CrossOriginProtection` | CSRF protection based on Fetch metadata |
+| `os.Root` (new method) | File operations safe against symlink escaping |
+| `testing.T.ArtifactDir` | Test output directory (screenshots, dumps) |
+| `B.Loop` | Modern benchmark; prevents inlining of the loop body |
+| `testing/cryptotest` | `SetGlobalRandom` for deterministic cryptography tests |
 | `crypto/hpke` | Hybrid Public Key Encryption (RFC 9180) |
-| `runtime/secret` (eksperimen) | Penghapusan aman data rahasia (register/stack/heap) |
-| `simd/archsimd` (eksperimen) | SIMD arsitektur-spesifik (GOEXPERIMENT=simd) |
-| Goroutine leak profile (eksperimen) | `GOEXPERIMENT=goroutineleakprofile` |
-| Heap base randomization | Randomized heap base di 64-bit (hardening) |
-| Go 1.24.6+ untuk bootstrap | Toolchain requirement naik |
+| `runtime/secret` (experimental) | Secure wiping of secret data (registers/stack/heap) |
+| `simd/archsimd` (experimental) | Architecture-specific SIMD (GOEXPERIMENT=simd) |
+| Goroutine leak profile (experimental) | `GOEXPERIMENT=goroutineleakprofile` |
+| Heap base randomization | Randomized heap base on 64-bit (hardening) |
+| Go 1.24.6+ for bootstrap | Toolchain requirement raised |
 
-> Green Tea bisa dimatikan dengan `GOEXPERIMENT=nogreenteagc` (diperkirakan dihapus di 1.27),
-> sama seperti `GOEXPERIMENT=norandomizedheapbase64` untuk randomisasi heap.
+> Green Tea can be disabled with `GOEXPERIMENT=nogreenteagc` (expected to be removed in 1.27),
+> just like `GOEXPERIMENT=norandomizedheapbase64` for heap randomization.
 
 ---
 
@@ -158,7 +158,7 @@ func algo[A Adder[A]](x, y A) A { return x.Add(y) }
 // goroutine + WaitGroup (1.25+: WaitGroup.Go)
 var wg sync.WaitGroup
 for _, item := range items {
-    wg.Go(func() {           // 1.25+: tanpa Add(1)/defer Done()
+    wg.Go(func() {           // 1.25+: no Add(1)/defer Done()
         process(item)
     })
 }
@@ -167,21 +167,21 @@ wg.Wait()
 
 ```go
 // channel: producer/consumer
-ch := make(chan Order, 100)   // buffer = 100; unbuffered = blocking strict
+ch := make(chan Order, 100)   // buffer = 100; unbuffered = strict blocking
 go func() {
-    defer close(ch)            // producer menutup channel
+    defer close(ch)            // the producer closes the channel
     for _, o := range orders {
         ch <- o
     }
 }()
 
-for o := range ch {            // range berhenti saat channel ditutup
+for o := range ch {            // range stops when the channel is closed
     handle(o)
 }
 ```
 
 ```go
-// select: beberapa channel + timeout + cancel
+// select: multiple channels + timeout + cancel
 select {
 case o := <-orders:
     handle(o)
@@ -201,13 +201,13 @@ out := make(chan Result, len(jobs))
 for _, job := range jobs {
     wg.Go(func() { out <- run(job) })
 }
-go func() { wg.Wait(); close(out) }()   // tutup setelah semua selesai
+go func() { wg.Wait(); close(out) }()   // close after everything finishes
 
 for r := range out { collect(r) }
 ```
 
 ```go
-// context: batalkan semua worker
+// context: cancel all workers
 ctx, cancel := context.WithCancel(context.Background())
 defer cancel()
 go func() {
@@ -222,29 +222,29 @@ go func() {
 }()
 ```
 
-| Prinsip | Aturan |
+| Principle | Rule |
 | :--- | :--- |
-| Blocking | Channel unbuffered memblokir sampai ada penerima |
-| Close | Hanya producer yang menutup; menutup dua kali = panic |
-| Select default | `default` membuat select non-blocking |
-| Loop variable | Go 1.22+ **per-iteration** — aman dipakai di goroutine tanpa salin |
-| Goroutine bocor | Goroutine yang terblokir selamanya tidak hilang; harus di-cancel via context |
+| Blocking | An unbuffered channel blocks until a receiver arrives |
+| Close | Only the producer closes; closing twice = panic |
+| Select default | `default` makes select non-blocking |
+| Loop variable | Go 1.22+ **per-iteration** — safe to use in a goroutine without copying |
+| Goroutine leak | A permanently blocked goroutine never goes away; it must be cancelled via context |
 
 ---
 
 ## Context
 
 ```go
-// making: selalu dari parent, jangan simpan di struct
+// making: always from a parent, never store in a struct
 ctx, cancel := context.WithTimeout(parent, 2*time.Second)
-defer cancel()          // WAJIB — kalau tidak, timer bocor sampai parent selesai
+defer cancel()          // MANDATORY — otherwise the timer leaks until the parent finishes
 
-ctx = context.WithValue(ctx, RequestIDKey, id)   // hanya untuk data lintas request (trace id)
+ctx = context.WithValue(ctx, RequestIDKey, id)   // only for cross-request data (trace id)
 v := ctx.Value(RequestIDKey).(string)
 ```
 
 ```go
-// propagate: parameter context HARUS di parameter pertama
+// propagate: the context parameter MUST be the first parameter
 func (s *Service) Get(ctx context.Context, id string) (*Order, error) {
     req, _ := http.NewRequestWithContext(ctx, "GET", s.url+id, nil)
     resp, err := s.client.Do(req)
@@ -256,41 +256,41 @@ func (s *Service) Get(ctx context.Context, id string) (*Order, error) {
 }
 ```
 
-| Fungsi | Arti |
+| Function | Meaning |
 | :--- | :--- |
-| `WithCancel` | batalkan manual |
-| `WithTimeout` / `WithDeadline` | batas waktu |
-| `WithCancelCause` | batalkan **dengan alasan** (Go 1.20+) |
-| `WithValue` | simpan nilai; JANGAN untuk parameter wajib |
-| `ctx.Done()` | channel yang ditutup saat context selesai |
-| `ctx.Err()` | `Canceled` atau `DeadlineExceeded` |
+| `WithCancel` | cancel manually |
+| `WithTimeout` / `WithDeadline` | time limit |
+| `WithCancelCause` | cancel **with a reason** (Go 1.20+) |
+| `WithValue` | store a value; DO NOT use for required parameters |
+| `ctx.Done()` | channel closed when the context is done |
+| `ctx.Err()` | `Canceled` or `DeadlineExceeded` |
 
-> **Jebakan:** `context.Background()` di dalam fungsi yang menerima `ctx` = membatalkan
-> propagasi timeout. Selalu teruskan `ctx` dari pemanggil.
+> **Pitfall:** `context.Background()` inside a function that receives `ctx` = breaks
+> timeout propagation. Always pass along the caller's `ctx`.
 
 ---
 
 ## Error handling
 
 ```go
-// wrapping dengan konteks
+// wrapping with context
 if err != nil {
     return fmt.Errorf("load order %s: %w", id, err)   // %w = bungkus
 }
 
-// cek tipe error
+// check error type
 var e *sql.ErrNoRows
 if errors.As(err, &e) { ... }
 
-// cek sentinel
+// check sentinel
 if errors.Is(err, sql.ErrNoRows) { ... }
 
-// gabung beberapa error (1.20+)
+// join several errors (1.20+)
 if err := doAll(); err != nil {
-    return errors.Join(err1, err2)   // errors.Is/As tetap jalan
+    return errors.Join(err1, err2)   // errors.Is/As still work
 }
 
-// AsType (1.26) — generik, type-safe
+// AsType (1.26) — generic, type-safe
 if n, ok := errors.AsType[*net.OpError](err); ok {
     log.Printf("network: %v", n)
 }
@@ -299,13 +299,13 @@ if n, ok := errors.AsType[*net.OpError](err); ok {
 var ErrNotFound = errors.New("not found")
 ```
 
-| Konvensi | Contoh |
+| Convention | Example |
 | :--- | :--- |
 | Error value (sentinel) | `var ErrNotFound = errors.New(...)` |
 | Error type | `type ValidationError struct{ Field string }` + `Error() string` |
-| Wrap | `%w` — **hanya** satu level wrap per kata kunci |
-| String | lowercase, tanpa koma atau titik di akhir |
-| Inspect | `errors.Is` untuk sentinel, `errors.As` untuk tipe |
+| Wrap | `%w` — **only** one wrap level per keyword |
+| String | lowercase, no comma or trailing period |
+| Inspect | `errors.Is` for sentinels, `errors.As` for types |
 
 ---
 
@@ -321,17 +321,17 @@ slices.SortFunc(users, func(a, b User) int { return a.Age - b.Age })
 slices.SortStableFunc(users, cmp.Compare(a.Age, b.Age))
 
 // search
-i, ok := slices.BinarySearch(sorted, target)     // wajib sorted
+i, ok := slices.BinarySearch(sorted, target)     // must be sorted
 found := slices.Contains(users, u)
 idx := slices.Index(users, u)
 first := slices.ContainsFunc(users, func(u User) bool { return u.Active })
 
 // modify
 users = slices.Clone(users)
-users = slices.Delete(users, i)          // shift kiri, mirip orderedRemove
+users = slices.Delete(users, i)          // shifts left, similar to orderedRemove
 users = slices.Insert(users, 0, newUser)
 users = slices.Concat(a, b)
-clear(users)                             // nolkan tanpa alloc baru (1.21+)
+clear(users)                             // zero out without a new alloc (1.21+)
 
 // min/max
 m, n := min(a, b), max(a, b)              // builtin 1.21+
@@ -344,7 +344,7 @@ keys := slices.Sorted(maps.Keys(m))       // Go 1.23+: iterator-based
 for k, v := range maps.All(m) { ... }     // Go 1.23+
 
 // copy
-copy(dst, src)                            // builtin, bukan slices.Copy
+copy(dst, src)                            // builtin, not slices.Copy
 ```
 
 ```go
@@ -354,7 +354,7 @@ strings.Join(parts, "-")
 strings.TrimSpace(s)
 strings.HasPrefix(s, "GET ")
 strings.Cut(s, "=")                       // before, after, found
-strings.Builder                           // concat efisien
+strings.Builder                           // efficient concat
 var b strings.Builder
 b.WriteString("a")
 b.WriteByte('b')
@@ -366,7 +366,7 @@ s := b.String()
 ## Generics
 
 ```go
-// fungsi generik
+// generic function
 func Map[T, U any](in []T, f func(T) U) []U {
     out := make([]U, 0, len(in))
     for _, v := range in {
@@ -388,7 +388,7 @@ func Sum[T Number](xs []T) T {
     return total
 }
 
-// tipe generik
+// generic type
 type Stack[T any] struct {
     items []T
 }
@@ -405,22 +405,22 @@ func (s *Stack[T]) Pop() (T, bool) {
 }
 ```
 
-| Konvensi | Bentuk |
+| Convention | Form |
 | :--- | :--- |
-| Batas | `any`, `comparable`, atau union `~int \| ~string` |
-| `~` | izinkan type alias (mis. `type MyInt int`) |
-| Jangan | generic untuk 1–2 tipe saja; pakai interface kecil saja |
+| Constraint | `any`, `comparable`, or a union `~int \| ~string` |
+| `~` | allow type aliases (e.g. `type MyInt int`) |
+| Don't | use generics for just 1–2 types; use a small interface instead |
 
 ---
 
 ## HTTP server & client
 
 ```go
-// server dengan timeouts (JANGAN tanpa ini)
+// server with timeouts (DO NOT skip these)
 srv := &http.Server{
     Addr:              ":8080",
     Handler:           mux,
-    ReadHeaderTimeout: 5 * time.Second,   // wajib —slowloris protection
+    ReadHeaderTimeout: 5 * time.Second,   // mandatory — slowloris protection
     ReadTimeout:       15 * time.Second,
     WriteTimeout:      30 * time.Second,
     IdleTimeout:       120 * time.Second,
@@ -438,17 +438,17 @@ if err := srv.Shutdown(ctx); err != nil { log.Fatal(err) }
 ```
 
 ```go
-// ServeMux dengan method pattern (1.22+)
+// ServeMux with method patterns (1.22+)
 mux := http.NewServeMux()
 mux.HandleFunc("GET /api/orders/{id}", getOrder)   // {id} = wildcard
 mux.HandleFunc("POST /api/orders", createOrder)
 ```
 
 ```go
-// client dengan timeout & connection pool
+// client with timeout & connection pool
 tr := &http.Transport{
     MaxIdleConns:        100,
-    MaxIdleConnsPerHost: 20,       // default 2 — penyebab utama connection leak!
+    MaxIdleConnsPerHost: 20,       // default 2 — the main cause of connection leaks!
     IdleConnTimeout:     90 * time.Second,
 }
 client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
@@ -460,9 +460,9 @@ defer resp.Body.Close()
 body, _ := io.ReadAll(resp.Body)
 ```
 
-> **Jebakan:** `http.DefaultTransport` punya `MaxIdleConnsPerHost = 2`. Untuk service yang
-> memanggil banyak host secara paralel, connection dibuang terus-menerus → handshake
-> TLS tiap request. Set `MaxIdleConnsPerHost` secara eksplisit.
+> **Pitfall:** `http.DefaultTransport` has `MaxIdleConnsPerHost = 2`. For a service that
+> calls many hosts in parallel, connections get discarded constantly → a TLS handshake
+> on every request. Set `MaxIdleConnsPerHost` explicitly.
 
 ---
 
@@ -476,9 +476,9 @@ data, err := json.Marshal(user)
 var u User
 if err := json.Unmarshal(data, &u); err != nil { ... }
 
-// decode streaming (body besar)
+// streaming decode (large body)
 dec := json.NewDecoder(resp.Body)
-dec.DisallowUnknownFields()      // opsional: tolak field tak dikenal
+dec.DisallowUnknownFields()      // optional: reject unknown fields
 for {
     var order Order
     if err := dec.Decode(&order); err == io.EOF { break }
@@ -486,7 +486,7 @@ for {
     handle(order)
 }
 
-// marshal dengan indent
+// marshal with indent
 data, _ := json.MarshalIndent(user, "", "  ")
 
 // map[string]any
@@ -499,15 +499,15 @@ func (t Time) MarshalJSON() ([]byte, error) {
 }
 ```
 
-| Tag | Arti |
+| Tag | Meaning |
 | :--- | :--- |
-| `json:"name"` | nama field |
+| `json:"name"` | field name |
 | `json:"-"` | abaikan |
-| `json:"name,omitempty"` | omit kalau kosong |
+| `json:"name,omitempty"` | omit when empty |
 | `json:"-"` + custom | field privat tetap diserialisasi lewat method |
 
-> `encoding/json/v2` masih **eksperimen** di 1.25–1.26 (aktif via `GOEXPERIMENT=jsonv2`).
-> Jangan dipakai di produksi sebelum stabil.
+> `encoding/json/v2` is still **experimental** in 1.25–1.26 (enabled via `GOEXPERIMENT=jsonv2`).
+> Do not use it in production before it stabilizes.
 
 ---
 
@@ -532,10 +532,10 @@ if err := row.Scan(&id, &total); err != nil {
     return err
 }
 
-// transaksi
+// transaction
 tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 if err != nil { return err }
-defer tx.Rollback()   // no-op kalau sudah Commit
+defer tx.Rollback()   // no-op if already Committed
 
 if _, err := tx.ExecContext(ctx, `UPDATE accounts SET balance = balance - $1 WHERE id = $2`, amt, src); err != nil {
     return err
@@ -546,13 +546,13 @@ if _, err := tx.ExecContext(ctx, `INSERT INTO outbox(...) VALUES(...)`); err != 
 return tx.Commit()
 ```
 
-| Praktik | Kenapa |
+| Practice | Why |
 | :--- | :--- |
-| Selalu `?`/placeholder, jangan string concat | SQL injection |
-| `QueryRowContext` untuk 1 baris | Otomatis menutup row |
-| `defer tx.Rollback()` | Aman baik commit maupun error |
-| `SetConnMaxLifetime` | Load balancer kills koneksi idle |
-| `rows.Close()` + `rows.Err()` | Jangan lupa cek error setelah loop |
+| Always `?`/placeholders, never string concat | SQL injection |
+| `QueryRowContext` for a single row | Closes the row automatically |
+| `defer tx.Rollback()` | Safe on both commit and error |
+| `SetConnMaxLifetime` | Load balancers kill idle connections |
+| `rows.Close()` + `rows.Err()` | Don't forget to check for errors after the loop |
 
 ---
 
@@ -573,7 +573,7 @@ func TestCalculate(t *testing.T) {
     }
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            t.Parallel()                     // test paralel
+            t.Parallel()                     // parallel test
             got, err := Calculate(tt.amount)
             if (err != nil) != tt.wantErr {
                 t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
@@ -587,21 +587,21 @@ func TestCalculate(t *testing.T) {
 ```
 
 ```go
-// benchmark modern (1.24+): B.Loop
+// modern benchmark (1.24+): B.Loop
 func BenchmarkHash(b *testing.B) {
     h := NewHasher()
     b.ReportAllocs()
-    for b.Loop() {                    // bukan for i := 0; i < b.N; i++
+    for b.Loop() {                    // not for i := 0; i < b.N; i++
         h.Write([]byte("payload"))
     }
 }
 ```
 
 ```go
-// concurrency test dengan virtual time (1.25+: synctest GA)
+// concurrency test with virtual time (1.25+: synctest GA)
 func TestTimeout(t *testing.T) {
     synctest.Test(t, func(t *testing.T) {
-        // clock virtual: timeout 1 menit = instan
+        // virtual clock: a 1-minute timeout = instant
         ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
         defer cancel()
         <-ctx.Done()
@@ -614,7 +614,7 @@ func TestTimeout(t *testing.T) {
 func FuzzParse(f *testing.F) {
     f.Add("42")
     f.Fuzz(func(t *testing.T, s string) {
-        _, _ = Parse(s)   // tidak boleh panic
+        _, _ = Parse(s)   // must not panic
     })
 }
 ```
@@ -623,7 +623,7 @@ func FuzzParse(f *testing.F) {
 go test -fuzz=FuzzParse -fuzztime=30s ./...
 ```
 
-| Fitur | Perintah |
+| Feature | Command |
 | :--- | :--- |
 | Race detector | `go test -race ./...` |
 | Shuffle | `go test -shuffle=on` |
@@ -631,17 +631,17 @@ go test -fuzz=FuzzParse -fuzztime=30s ./...
 | Coverage | `go test -coverprofile=cover.out ./...` |
 | Bench | `go test -bench=. -benchmem ./...` |
 | Profiling | `go test -cpuprofile=cpu.out ./...` |
-| Leak check | `go test -race` + `goleak` (library pihak ketiga) |
+| Leak check | `go test -race` + `goleak` (third-party library) |
 
 ---
 
 ## Build, module, release
 
 ```sh
-# multi-module dalam satu repo
+# multiple modules in one repo
 go work init ./service/api ./service/worker
 go work use ./service/api
-go build ./service/api/...        # build per modul (GOWORK=off untuk isolation)
+go build ./service/api/...        # build per module (use GOWORK=off for isolation)
 
 # build tags
 go build -tags=integration ./...
@@ -658,19 +658,19 @@ go build -trimpath -ldflags="-s -w -X main.version=$(git describe --tags --alway
 ```go
 // build constraint
 //go:build linux && amd64
-// +build linux,amd64     // bentuk lama — masih dipakai tool lama
+// +build linux,amd64     // old form — still used by older tools
 
 package platform
 ```
 
-| go.mod | Arti |
+| go.mod | Meaning |
 | :--- | :--- |
-| `go 1.25.0` | bahasa & std lib minimum (1.26 `go mod init` default ke `1.25.0`) |
-| `toolchain go1.26.0` | toolchain minimum untuk build |
-| `require` | dependency langsung |
-| `// indirect` | dependency transitif |
-| `replace` | arahkan ke fork/path lokal |
-| `exclude` | jangan pernah pakai versi tertentu |
+| `go 1.25.0` | minimum language & std lib (1.26 `go mod init` defaults to `1.25.0`) |
+| `toolchain go1.26.0` | minimum toolchain for builds |
+| `require` | direct dependencies |
+| `// indirect` | transitive dependencies |
+| `replace` | point to a fork/local path |
+| `exclude` | never use a specific version |
 
 ---
 
@@ -682,7 +682,7 @@ go test -bench=. -cpuprofile=cpu.out ./pkg/...
 go tool pprof -http=:8080 cpu.out
 
 # memory & alloc
-go test -bench=. -benchmem ./pkg/...      # allocs/op & B/op per iterasi
+go test -bench=. -benchmem ./pkg/...      # allocs/op & B/op per iteration
 go tool pprof -http=:8080 mem.out
 
 # runtime stats
@@ -690,11 +690,11 @@ curl localhost:6060/debug/pprof/goroutine?debug=1
 ```
 
 ```go
-// escape analysis: apakah variabel lolos ke heap?
+// escape analysis: does the variable escape to the heap?
 go build -gcflags='-m' ./pkg/...      # "moved to heap: x" = escape
 go build -gcflags='-m=2' ./pkg/...   // detail
 
-// benchmark yang jujur
+// an honest benchmark
 var sink Result
 func BenchmarkParse(b *testing.B) {
     b.ReportAllocs()
@@ -704,13 +704,13 @@ func BenchmarkParse(b *testing.B) {
 }
 ```
 
-| Gejala | Cek |
+| Symptom | Check |
 | :--- | :--- |
-| Alokasi tinggi | `-benchmem`, escape analysis, `sync.Pool` untuk buffer |
-| Lock kontensi | `go tool pprof` → mutex profile |
-| Goroutine banyak | goroutine profile, cek leak |
-| Blocking | `runtime/trace` atau execution trace |
-| GC sering | `GOGC` tuning, kurangi alokasi |
+| High allocations | `-benchmem`, escape analysis, `sync.Pool` for buffers |
+| Lock contention | `go tool pprof` → mutex profile |
+| Many goroutines | goroutine profile, check for leaks |
+| Blocking | `runtime/trace` or execution trace |
+| Frequent GC | `GOGC` tuning, reduce allocations |
 
 ---
 
@@ -727,17 +727,17 @@ import (
     "time"
 )
 
-// fmt: verb yang sering dipakai
-fmt.Printf("%+v\n", user)          // field + nama (struct)
-fmt.Printf("%#v\n", user)          // sintaks Go literal
+// fmt: commonly used verbs
+fmt.Printf("%+v\n", user)          // fields + names (struct)
+fmt.Printf("%#v\n", user)          // Go literal syntax
 fmt.Printf("%q\n", "hi")           // "hi" (quoted)
-fmt.Printf("%T\n", user)           // tipe
+fmt.Printf("%T\n", user)           // type
 fmt.Printf("%6.2f|%-6s|%05d\n", 3.14159, "ab", 42)
 fmt.Printf("%x %X %b %o\n", 255, 255, 5, 8)
-s := fmt.Sprintf("%v", 1)            // string (alokasi)
-fmt.Fprintln(os.Stderr, "err")       // tulis ke stream apa pun
+s := fmt.Sprintf("%v", 1)            // string (allocation)
+fmt.Fprintln(os.Stderr, "err")       // write to any stream
 
-// slog (1.21+): terstruktur, handler JSON/Text
+// slog (1.21+): structured, JSON/Text handlers
 logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
     Level:     slog.LevelDebug,
     AddSource: true,
@@ -747,7 +747,7 @@ logger.Info("order created", "id", 42, "total", 1500)
 logger.Error("db failed", "err", err)
 
 // os: file & environment
-data, err := os.ReadFile("config.json")            // seluruh file
+data, err := os.ReadFile("config.json")            // whole file
 err = os.WriteFile("out.txt", data, 0o644)
 f, err := os.OpenFile("log.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 defer f.Close()
@@ -759,7 +759,7 @@ cwd, _ := os.Getwd()
 port := os.Getenv("PORT")
 if v, ok := os.LookupEnv("PORT"); ok { _ = v }
 os.Setenv("A", "1")
-os.Exit(1)                                           // defer TIDAK jalan
+os.Exit(1)                                           // defer does NOT run
 
 // time
 now := time.Now()
@@ -773,14 +773,14 @@ ticker := time.NewTicker(time.Second)
 defer ticker.Stop()
 tm := time.NewTimer(2 * time.Second)
 defer tm.Stop()
-loc, _ := time.LoadLocation("Asia/Jakarta")          // butuh tzdata (CGO off: embed)
+loc, _ := time.LoadLocation("Asia/Jakarta")          // needs tzdata (CGO off: embed it)
 
 // math & rand
 math.Max(1.0, 2.0)
 math.Sqrt(16)
 math.Abs(-3.5)
 math.IsNaN(x)
-r := rand.New(rand.NewSource(time.Now().UnixNano())) // BUKAN crypto-safe
+r := rand.New(rand.NewSource(time.Now().UnixNano())) // NOT crypto-safe
 
 // sync & atomic
 var mu sync.Mutex
@@ -798,17 +798,17 @@ counter.Load()
 counter.CompareAndSwap(1, 2)
 ```
 
-| Paket | Yang penting | Catatan |
+| Package | What matters | Notes |
 | :--- | :--- | :--- |
-| `fmt` | `%v` `%+v` `%#v` `%q` `%T` `%w` | `Sprintf` alokasi, `Fprintf` untuk stream |
-| `log/slog` | `Info/Error/Warn/Debug`, handler JSON/Text | pakai sejak 1.21 |
-| `os` | `ReadFile`, `WriteFile`, `Getenv`, `LookupEnv` | `os.Exit` melewati `defer` |
-| `time` | `Duration`, `Ticker`, `Timer`, `LoadLocation` | layout format = `2006-01-02` |
-| `math` | `Max`, `Sqrt`, `Round`, `IsNaN` | uang jangan `float64` |
-| `sync` | `Mutex`, `RWMutex`, `Once`, `WaitGroup` | `RWMutex` untung bila read >> write |
-| `sync/atomic` | `atomic.Int64`, `Bool`, `Pointer` | tipe generik sejak 1.19 |
+| `fmt` | `%v` `%+v` `%#v` `%q` `%T` `%w` | `Sprintf` allocates, `Fprintf` for streams |
+| `log/slog` | `Info/Error/Warn/Debug`, JSON/Text handlers | use it since 1.21 |
+| `os` | `ReadFile`, `WriteFile`, `Getenv`, `LookupEnv` | `os.Exit` skips `defer` |
+| `time` | `Duration`, `Ticker`, `Timer`, `LoadLocation` | format layout = `2006-01-02` |
+| `math` | `Max`, `Sqrt`, `Round`, `IsNaN` | never use `float64` for money |
+| `sync` | `Mutex`, `RWMutex`, `Once`, `WaitGroup` | `RWMutex` pays off when reads >> writes |
+| `sync/atomic` | `atomic.Int64`, `Bool`, `Pointer` | generic types since 1.19 |
 
-> **Jebakan:** `Ticker`/`Timer` tanpa `Stop()` = goroutine bocor. Selalu `defer ticker.Stop()`.
+> **Pitfall:** `Ticker`/`Timer` without `Stop()` = goroutine leak. Always `defer ticker.Stop()`.
 
 ---
 
@@ -825,41 +825,41 @@ import (
     "path/filepath"
 )
 
-// io.Copy — stream tanpa memuat ke memori
+// io.Copy — stream without loading into memory
 src, _ := os.Open("in.bin")
 defer src.Close()
 dst, _ := os.Create("out.bin")
 defer dst.Close()
 _, err := io.Copy(dst, src)
 
-// bufio: baca per baris & tulis buffered
+// bufio: read line by line & buffered writes
 sc := bufio.NewScanner(src)
-sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)      // naikkan batas baris (default 64K)
+sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)      // raise the line limit (default 64K)
 for sc.Scan() {
-    line := sc.Bytes()                              // []byte sementara, salin bila disimpan
+    line := sc.Bytes()                              // temporary []byte, copy it if you keep it
     _ = line
 }
 if err := sc.Err(); err != nil { return err }
 
 w := bufio.NewWriter(dst)
-w.WriteString("halo\n")
-w.Flush()                                           // WAJIB, jika tidak buffer hilang
+w.WriteString("hello\n")
+w.Flush()                                           // MANDATORY, otherwise the buffer is lost
 
-// komposisi Reader/Writer
-r := io.LimitReader(src, 1<<20)                     // maksimum 1 MiB
-r = io.TeeReader(src, os.Stdout)                    // baca + salin
-mw := io.MultiWriter(os.Stdout, dst)                // satu tulis, banyak tujuan
+// composing Reader/Writer
+r := io.LimitReader(src, 1<<20)                     // maximum 1 MiB
+r = io.TeeReader(src, os.Stdout)                    // read + copy
+mw := io.MultiWriter(os.Stdout, dst)                // one write, many destinations
 var buf bytes.Buffer
 io.Copy(&buf, r)
 
-// embed: file ikut binary
+// embed: files bundled into the binary
 //go:embed templates/*.html
 var tmplFS embed.FS
 
 //go:embed version.txt
 var version string
 
-// fs.FS — akses seragam (disk, embed, zip)
+// fs.FS — uniform access (disk, embed, zip)
 sub, _ := fs.Sub(tmplFS, "templates")
 entries, _ := fs.ReadDir(sub, ".")
 for _, e := range entries {
@@ -880,19 +880,19 @@ filepath.WalkDir(".", func(p string, d fs.DirEntry, err error) error {
 matched, _ := filepath.Match("*.go", "main.go")
 ```
 
-| API | Fungsi |
+| API | Purpose |
 | :--- | :--- |
-| `io.Copy` | salin stream (pakai `WriterTo`/`ReaderFrom` bila ada) |
-| `io.ReadAll` | baca sampai EOF (batasi ukurannya!) |
-| `io.LimitReader` | batasi jumlah byte |
-| `io.MultiWriter` | satu tulis → banyak tujuan |
-| `bufio.Scanner` | baca per baris/token (batas default 64K) |
-| `bufio.Writer` | buffered write — wajib `Flush` |
-| `embed.FS` | aset ikut binary, tanpa `os` |
-| `fs.WalkDir` | traversal hemat alokasi |
-| `filepath.Join` | path portabel (jangan string concat) |
+| `io.Copy` | copy a stream (uses `WriterTo`/`ReaderFrom` when available) |
+| `io.ReadAll` | read until EOF (limit the size!) |
+| `io.LimitReader` | limit the number of bytes |
+| `io.MultiWriter` | one write → many destinations |
+| `bufio.Scanner` | read line/token by token (default limit 64K) |
+| `bufio.Writer` | buffered write — `Flush` is mandatory |
+| `embed.FS` | assets bundled in the binary, no `os` needed |
+| `fs.WalkDir` | allocation-light traversal |
+| `filepath.Join` | portable paths (never string concat) |
 
-> **Jebakan:** `io.ReadAll` pada `http.Request.Body` tanpa `io.LimitReader` = OOM oleh klien.
+> **Pitfall:** `io.ReadAll` on `http.Request.Body` without `io.LimitReader` = OOM caused by a client.
 
 ---
 
@@ -904,10 +904,10 @@ import (
     "encoding/csv"
     "encoding/hex"
     "encoding/json"
-    "encoding/json/v2"     // GOEXPERIMENT=jsonv2 di 1.25/1.26
+    "encoding/json/v2"     // GOEXPERIMENT=jsonv2 in 1.25/1.26
 )
 
-const jsonv1 = json // alias agar snippet v1 & v2 jelas
+const jsonv1 = json // alias so the v1 & v2 snippets stay clear
 
 type Order struct {
     ID     int64             `json:"id"`
@@ -916,7 +916,7 @@ type Order struct {
     Extra  map[string]string `json:"extra,omitempty"`
 }
 
-// json v2: API eksplisit, lebih cepat & deterministik
+// json v2: explicit API, faster & deterministic
 var buf bytes.Buffer
 if err := json.MarshalWrite(&buf, order, json.Deterministic(true)); err != nil {
     return err
@@ -927,7 +927,7 @@ if err := json.UnmarshalRead(bytes.NewReader(buf.Bytes()), &got); err != nil {
     return err
 }
 
-// json v1 tetap ada (stabil)
+// json v1 is still there (stable)
 dec := jsonv1.NewDecoder(resp.Body)
 dec.DisallowUnknownFields()
 var v1 Order
@@ -935,7 +935,7 @@ if err := dec.Decode(&v1); err != nil && err != io.EOF { return err }
 
 // CSV
 cr := csv.NewReader(src)
-cr.FieldsPerRecord = -1        // baris boleh beda jumlah kolom
+cr.FieldsPerRecord = -1        // rows may have a different number of columns
 records, _ := cr.ReadAll()
 cw := csv.NewWriter(dst)
 cw.Write([]string{"id", "total"})
@@ -943,25 +943,25 @@ cw.Flush()
 if err := cw.Error(); err != nil { return err }
 
 // base64 & hex
-s := base64.StdEncoding.EncodeToString([]byte("halo"))
+s := base64.StdEncoding.EncodeToString([]byte("hello"))
 raw, _ := base64.StdEncoding.DecodeString(s)
-u := base64.URLEncoding.EncodeToString([]byte("a?b"))       // aman untuk URL
+u := base64.URLEncoding.EncodeToString([]byte("a?b"))       // URL-safe
 h := hex.EncodeToString([]byte{0xde, 0xad})
 b, _ := hex.DecodeString(h)
 ```
 
-| Paket | Catatan |
+| Package | Notes |
 | :--- | :--- |
-| `encoding/json` v1 | stabil; `Decoder` untuk stream, `MarshalIndent` untuk debug |
-| `encoding/json/v2` | eksperimen (GOEXPERIMENT), `MarshalWrite/UnmarshalRead` |
-| `encoding/csv` | `Comma`/`LazyQuotes` untuk file nyata |
-| `encoding/base64` | `URLEncoding` untuk query/JWT, `RawStdEncoding` tanpa padding |
+| `encoding/json` v1 | stable; `Decoder` for streams, `MarshalIndent` for debugging |
+| `encoding/json/v2` | experimental (GOEXPERIMENT), `MarshalWrite/UnmarshalRead` |
+| `encoding/csv` | `Comma`/`LazyQuotes` for real-world files |
+| `encoding/base64` | `URLEncoding` for query/JWT, `RawStdEncoding` without padding |
 | `encoding/hex` | hash & ID |
-| `encoding/gob` | serialisasi antar proses Go (bukan API publik) |
-| `encoding/xml` | `xml.Decoder` untuk dokumen besar |
+| `encoding/gob` | serialization between Go processes (not a public API) |
+| `encoding/xml` | `xml.Decoder` for large documents |
 
-> **Jebakan:** `json.Decoder` tidak menolak field tak dikenal secara default; tambahkan
-> `DisallowUnknownFields()` bila kontrak API ketat.
+> **Pitfall:** `json.Decoder` does not reject unknown fields by default; add
+> `DisallowUnknownFields()` when the API contract is strict.
 
 ---
 
@@ -976,17 +976,17 @@ import (
     "text/template"
 )
 
-// routing (1.22+): method + wildcard, tanpa framework
+// routing (1.22+): method + wildcard, no framework
 mux := http.NewServeMux()
 mux.HandleFunc("GET /api/orders/{id}", func(w http.ResponseWriter, r *http.Request) {
     id := r.PathValue("id")
     w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusCreated)              // set status SEBELUM Write
+    w.WriteHeader(http.StatusCreated)              // set the status BEFORE Write
     _ = json.NewEncoder(w).Encode(map[string]string{"id": id})
 })
 mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./public"))))
 
-// middleware sebagai http.Handler
+// middleware as an http.Handler
 func withAuth(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         if r.Header.Get("Authorization") == "" {
@@ -998,7 +998,7 @@ func withAuth(next http.Handler) http.Handler {
 }
 handler := withAuth(mux)
 
-// test handler tanpa server nyata
+// test a handler without a real server
 req := httptest.NewRequest("GET", "/api/orders/7", nil)
 rec := httptest.NewRecorder()
 handler.ServeHTTP(rec, req)
@@ -1008,19 +1008,19 @@ body := rec.Body.String()
 // template: html/template meng-escape otomatis
 t := template.Must(template.ParseFiles("templates/index.html"))
 ht := htmltemplate.Must(htmltemplate.ParseFiles("templates/index.html"))
-_ = ht.Execute(w, map[string]any{"Name": "<b>"})   // di-escape jadi &lt;b&gt;
+_ = ht.Execute(w, map[string]any{"Name": "<b>"})   // escaped to &lt;b&gt;
 ```
 
-| Hal | Bahas |
+| Item | Discussed |
 | :--- | :--- |
-| `http.ServeMux` | pattern `GET`/`POST` (1.22+), `{id}` + `r.PathValue` |
-| `http.Client` | `Transport` sendiri, `Timeout` eksplisit |
-| `http.FileServer` | `StripPrefix` wajib untuk sub-path |
-| `httptest` | `NewRequest` + `NewRecorder` = test tanpa port |
-| `text/template` | teks mentah (config, email) |
-| `html/template` | HTML — auto-escape, pakai ini untuk halaman |
+| `http.ServeMux` | `GET`/`POST` patterns (1.22+), `{id}` + `r.PathValue` |
+| `http.Client` | your own `Transport`, explicit `Timeout` |
+| `http.FileServer` | `StripPrefix` is mandatory for sub-paths |
+| `httptest` | `NewRequest` + `NewRecorder` = tests without a port |
+| `text/template` | raw text (config, email) |
+| `html/template` | HTML — auto-escapes, use this for pages |
 
-> **Jebakan:** `w.WriteHeader` setelah `w.Write` diabaikan diam-diam. Set header & status dulu.
+> **Pitfall:** `w.WriteHeader` after `w.Write` is silently ignored. Set headers & status first.
 
 ---
 
@@ -1039,12 +1039,12 @@ import (
     "time"
 )
 
-// pool koneksi
-db, err := sql.Open("pgx", dsn)          // TIDAK membuka koneksi, hanya validasi DSN
+// connection pool
+db, err := sql.Open("pgx", dsn)          // does NOT open a connection, only validates the DSN
 db.SetMaxOpenConns(20)
 db.SetMaxIdleConns(10)
 db.SetConnMaxLifetime(30 * time.Minute)
-db.PingContext(ctx)                      // verifikasi di readiness, bukan saat boot
+db.PingContext(ctx)                      // verify at readiness, not at boot
 
 // query & exec
 row := db.QueryRowContext(ctx, "SELECT total FROM orders WHERE id = $1", id)
@@ -1056,105 +1056,105 @@ sum := sha256.Sum256([]byte("payload"))
 mac := hmac.New(sha256.New, secret)
 mac.Write([]byte("msg"))
 sig := mac.Sum(nil)
-hmac.Equal(sig, expected)                // bandingkan constant-time
+hmac.Equal(sig, expected)                // constant-time comparison
 
-// checksum ringan (bukan kripto)
+// lightweight checksum (not crypto)
 crc32.ChecksumIEEE([]byte("data"))
 fnv.New64a()
 
-// AES-GCM: mode yang aman untuk dipakai langsung
-block, err := aes.NewCipher(key)         // key 16/24/32 byte
+// AES-GCM: the safe mode to use directly
+block, err := aes.NewCipher(key)         // key of 16/24/32 bytes
 gcm, err := cipher.NewGCM(block)
 nonce := make([]byte, gcm.NonceSize())
 if _, err := rand.Read(nonce); err != nil { return err }
 ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 ```
 
-| Paket | Fungsi | Catatan |
+| Package | Purpose | Notes |
 | :--- | :--- | :--- |
 | `database/sql` | pool, `QueryContext`, `BeginTx` | driver di-import terpisah (`_ "github.com/jackc/pgx/v5/stdlib"`) |
-| `context` | deadline tiap query | cegah query menggantung |
-| `crypto/aes` + `cipher` | AES-GCM | nonce **unik** per pesan |
-| `crypto/rand` | acak kripto | jangan `math/rand` untuk token |
-| `crypto/hmac` | tanda tangan pesan | `hmac.Equal` untuk bandingkan |
-| `hash/fnv`, `hash/crc32` | hash ringan | bukan untuk keamanan |
-| `crypto/sha256` | checksum, input KDF | password hash: `bcrypt`/`argon2` |
+| `context` | deadline per query | prevents hanging queries |
+| `crypto/aes` + `cipher` | AES-GCM | **unique** nonce per message |
+| `crypto/rand` | cryptographic randomness | never `math/rand` for tokens |
+| `crypto/hmac` | message signing | use `hmac.Equal` for comparison |
+| `hash/fnv`, `hash/crc32` | lightweight hashing | not for security |
+| `crypto/sha256` | checksums, KDF input | password hashing: `bcrypt`/`argon2` |
 
-> **Jebakan:** `sql.Open` tidak membuat koneksi; error koneksi baru muncul saat query pertama.
+> **Pitfall:** `sql.Open` does not create a connection; connection errors only show up on the first query.
 
 ---
 
-## std lib: testing lanjutan (testdata, ArtifactDir, race)
+## std lib: advanced testing (testdata, ArtifactDir, race)
 
 ```go
-// golden file: output besar yang tidak ditulis ulang manual
+// golden file: large output that is not rewritten by hand
 func TestRender(t *testing.T) {
     got := render(config())
     golden := filepath.Join("testdata", t.Name()+".golden")
 
-    if *update {                              // flag -update
+    if *update {                              // the -update flag
         if err := os.WriteFile(golden, got, 0o644); err != nil { t.Fatal(err) }
     }
     want, err := os.ReadFile(golden)
     if err != nil { t.Fatal(err) }
     if !bytes.Equal(got, want) {
-        dir := t.ArtifactDir()                // 1.26: direktori output test
+        dir := t.ArtifactDir()                // 1.26: test output directory
         path := filepath.Join(dir, "got.txt")
         _ = os.WriteFile(path, got, 0o644)
-        t.Fatalf("diff: lihat %s vs %s", path, golden)
+        t.Fatalf("diff: see %s vs %s", path, golden)
     }
 }
 
-// cleanup otomatis (LIFO)
+// automatic cleanup (LIFO)
 func TestServer(t *testing.T) {
     srv := httptest.NewServer(handler())
     t.Cleanup(srv.Close)
     t.Cleanup(func() { t.Log("cleanup") })
 }
 
-// helper pakai t.Helper agar error menunjuk baris pemanggil
+// use t.Helper so errors point at the caller's line
 func assertEqual[T comparable](t *testing.T, got, want T) {
     t.Helper()
     if got != want { t.Fatalf("got %v, want %v", got, want) }
 }
 ```
 
-| Fitur | Pakai |
+| Feature | Use |
 | :--- | :--- |
-| `testdata/` | input & golden file; diabaikan tool Go |
-| `-update` flag | regenerasi golden secara sadar |
-| `t.ArtifactDir()` | simpan output gagal (1.26) |
-| `t.Cleanup` | teardown LIFO, lebih aman dari defer |
-| `t.Helper` | error menunjuk lokasi pemanggil |
-| `t.TempDir()` | direktori sementara terhapus otomatis |
-| `-race` | wajib untuk paket ber-goroutine |
-| `-count=100 ./pkg` | uji flakiness |
+| `testdata/` | inputs & golden files; ignored by Go tooling |
+| `-update` flag | deliberately regenerate goldens |
+| `t.ArtifactDir()` | save failing output (1.26) |
+| `t.Cleanup` | LIFO teardown, safer than defer |
+| `t.Helper` | errors point at the caller location |
+| `t.TempDir()` | temporary directory removed automatically |
+| `-race` | mandatory for packages that use goroutines |
+| `-count=100 ./pkg` | test for flakiness |
 
-> **Jebakan:** golden file yang berubah tanpa review = test yang selalu lolos. Diff golden saat PR.
+> **Pitfall:** a golden file changed without review = a test that always passes. Diff the goldens in the PR.
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must read)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Fix |
 | :--- | :--- | :--- |
-| Loop variable di goroutine (pra-1.22) | Semua goroutine baca variabel terakhir | Go 1.22+ aman per-iteration; tetap salin kalau butuh cross-version |
-| `defer` di dalam loop | Semua defer jalan di akhir fungsi | Bungkus per-iterasi dalam func |
-| `context.Background()` di dalam fungsi ber-ctx | Timeout tidak propagasi | Terima & teruskan `ctx` |
-| Lupa `defer cancel()` | Context & timer bocor | `defer cancel()` langsung setelah dibuat |
-| `wg.Add(1)` lupa / salah urutan | Panic "negative WaitGroup counter" | Pakai `wg.Go` (1.25+) |
-| Menutup channel dua kali | Panic | Producer saja yang close |
-| Kirim ke channel yang tidak dibaca | Goroutine memblokir selamanya | Select dengan `ctx.Done()` |
-| Map ditulis dari 2 goroutine | Fatal error: concurrent map writes | `sync.Map` atau lock per key |
-| `interface{}` vs `any` | Gaya campur | Pakai `any` (1.18+) |
-| `http.DefaultTransport` | Connection dibuang terus (2 per host) | Transport sendiri + `MaxIdleConnsPerHost` |
-| `rows.Close()` lupa | Connection leak | `defer rows.Close()` + cek `rows.Err()` |
-| `err != nil` dicek setelah `defer resp.Body.Close()` | Body tidak terkirim | Cek error sebelum defer |
-| `time.Now()` untuk durasi | Selalu positif, tidak bisa negatif | `time.Since(start)` |
-| `fmt.Sprintf` untuk SQL | SQL injection | Selalu placeholder |
-| `panic` di goroutine | Proses crash | `recover()` di goroutine yang sama |
-| `float64` untuk uang | Selisih pembulatan | `int64` cents / `decimal` |
-| Struct dengan `sync.Mutex` disalin | `go vet` copylocks | Pakai pointer |
-| `interface{}` di API publik | Sulit di-evolusi | Generic atau trait kecil |
-| `unsafe` tanpa alasan | Bug sulit dilacak | Tulis invariant di komentar |
-| Slice di-loop dengan `append` | O(n²) alokasi | Pre-alokasi dengan `make(..., 0, len(x))` |
+| Loop variable in a goroutine (pre-1.22) | Every goroutine reads the last value | Go 1.22+ is per-iteration safe; still copy if you need cross-version support |
+| `defer` inside a loop | All defers run at the end of the function | Wrap each iteration in a func |
+| `context.Background()` inside a function that takes ctx | Timeout does not propagate | Accept & pass along `ctx` |
+| Forgetting `defer cancel()` | Context & timer leak | `defer cancel()` right after creation |
+| Missing / misordered `wg.Add(1)` | Panic "negative WaitGroup counter" | Use `wg.Go` (1.25+) |
+| Closing a channel twice | Panic | Only the producer closes |
+| Sending to a channel nobody reads | Goroutine blocks forever | Select with `ctx.Done()` |
+| Map written from 2 goroutines | Fatal error: concurrent map writes | `sync.Map` or a per-key lock |
+| `interface{}` vs `any` | Mixed style | Use `any` (1.18+) |
+| `http.DefaultTransport` | Connections keep getting discarded (2 per host) | Your own Transport + `MaxIdleConnsPerHost` |
+| Forgetting `rows.Close()` | Connection leak | `defer rows.Close()` + check `rows.Err()` |
+| Checking `err != nil` after `defer resp.Body.Close()` | Body is never sent | Check the error before the defer |
+| `time.Now()` for durations | Always positive, can never be negative | `time.Since(start)` |
+| `fmt.Sprintf` for SQL | SQL injection | Always use placeholders |
+| `panic` in a goroutine | Process crash | `recover()` in the same goroutine |
+| `float64` for money | Rounding errors | `int64` cents / `decimal` |
+| Struct with `sync.Mutex` copied | `go vet` copylocks | Use a pointer |
+| `interface{}` in a public API | Hard to evolve | Generics or a small trait |
+| `unsafe` without a reason | Hard-to-track bugs | Write the invariant in a comment |
+| Slicing in a loop with `append` | O(n²) allocations | Pre-allocate with `make(..., 0, len(x))` |

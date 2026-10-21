@@ -1,6 +1,6 @@
 ---
 title: "Distributed Microservices — E-Commerce Platform (Java Spring Boot)"
-excerpt: "Backend e-commerce microservices di Java 21 / Spring Boot 3.5.6: katalog, cart, checkout, merchant suite, review, dan ledger transaksi sebagai gRPC service terpisah. Kafka transactional outbox dengan DLQ, ClickHouse analytics, chaos engineering, dan Kubernetes + ArgoCD GitOps."
+excerpt: "E-commerce microservices backend in Java 21 / Spring Boot 3.5.6: catalog, cart, checkout, merchant suite, reviews, and transaction ledger as separate gRPC services. Kafka transactional outbox with DLQ, ClickHouse analytics, chaos engineering, and Kubernetes + ArgoCD GitOps."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -408,15 +408,15 @@ sequenceDiagram
 
 ## Design Decisions & Known Limitations
 
-Keputusan desain yang disengaja (bukan bug) — didokumentasikan agar tim tidak
-"memperbaiki" perilaku berikut tanpa sadar:
+Deliberate design decisions (not bugs) — documented so the team does not
+accidentally "fix" the following behaviors:
 
-| ID | Keputusan | Perilaku | Alasan |
+| ID | Decision | Behavior | Reason |
 |---|---|---|---|
-| EC-2 | Invalidasi cache lewat **Kafka**, bukan RPC | Perubahan status merchant/transaction mempublikasikan event cache-invalidation; consumer lokal masing-masing service meng-evict cache-nya | Menghindari dependency runtime antar-service untuk hal yang boleh sedikit terlambat — dan tetap eventual karena Kafka |
-| EC-3 | Consumer email pakai **manual commit + DLQ** | Event baru di-commit setelah diproses; retry habis → publish ke `<topic>.dlq` | Notifikasi boleh gagal tanpa menggagalkan checkout, tapi tidak boleh hilang diam-diam |
-| EC-4 | Backfill ClickHouse lewat **outbox** | Backfill menulis baris OLTP ke tabel outbox dengan `event_id = backfill:<domain>:<id>` lalu di-relay ke Kafka | Idempotency dari constraint `event_id` — backfill bisa dijalankan ulang tanpa menghasilkan duplikat |
-| EC-5 | Statistik analitik **tidak** menyentuh PostgreSQL | Query agregat dilayani ClickHouse lewat stats-reader dengan cache Redis (TTL 300s) | Query analitik berat akan menguras pool transaksi yang dipakai path checkout |
+| EC-2 | Cache invalidation via **Kafka**, not RPC | Merchant/transaction status changes publish a cache-invalidation event; each service's local consumer evicts its own cache | Avoids runtime dependencies between services for something that may be slightly delayed — and stays eventual thanks to Kafka |
+| EC-3 | Email consumer uses **manual commit + DLQ** | The event is committed only after processing; retries exhausted → publish to `<topic>.dlq` | Notifications may fail without failing checkout, but must not be lost silently |
+| EC-4 | ClickHouse backfill via **outbox** | Backfill writes OLTP rows to the outbox table with `event_id = backfill:<domain>:<id>` and then relays them to Kafka | Idempotency from the `event_id` constraint — backfill can be re-run without producing duplicates |
+| EC-5 | Analytics statistics do **not** touch PostgreSQL | Aggregate queries are served by ClickHouse via stats-reader with a Redis cache (TTL 300s) | Heavy analytical queries would drain the transaction pool used by the checkout path |
 
 ---
 

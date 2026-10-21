@@ -1,6 +1,6 @@
 ---
-title: "Zig Cheat Sheet — Edisi std lib (0.16)"
-description: "Cheat sheet Zig 0.16 dengan fokus std lib: std.Io, allocator, kontainer, networking, concurrency, JSON, crypto, dan testing. Semua snippet diverifikasi compile & run di Zig 0.16.0."
+title: "Zig Cheat Sheet — std lib Edition (0.16)"
+description: "Zig 0.16 cheat sheet focused on the std lib: std.Io, allocators, containers, networking, concurrency, JSON, crypto, and testing. Every snippet is verified to compile & run on Zig 0.16.0."
 date: "2026-10-07"
 created_at: "2026-10-07"
 updated_at: "2026-10-07"
@@ -14,34 +14,34 @@ tags:
   - memory
 ---
 
-# Zig Cheat Sheet — Edisi std lib
+# Zig Cheat Sheet — std lib Edition
 
-> Target: **Zig 0.16.0** (stabil per Oktober 2026).
-> std lib Zig berubah besar antar versi — 0.15 merombak total `Reader`/`Writer`, 0.16 memindahkan hampir semua I/O ke balik interface **`std.Io`** dan mengganti tanda tangan `main`. Semua snippet di sini **diverifikasi compile & run** di Zig 0.16.0.
+> Target: **Zig 0.16.0** (stable as of October 2026).
+> Zig's std lib changes drastically between versions — 0.15 completely reworked `Reader`/`Writer`, and 0.16 moved almost all I/O behind the **`std.Io`** interface and changed the `main` signature. Every snippet here is **verified to compile & run** on Zig 0.16.0.
 
-**Daftar isi**
+**Table of contents**
 
 - [CLI & toolchain](#cli--toolchain)
-- [Mental model 5 menit](#mental-model-5-menit)
-- [Titik masuk: `main` di 0.16](#titik-masuk-main-di-016)
+- [5-minute mental model](#mental-model-5-minute)
+- [Entry point: `main` in 0.16](#entry-point-main-in-016)
 - [Print & `std.Io.Writer` / `std.Io.Reader`](#print--stdiowriter--stdioreader)
 - [String builder: `Writer.Allocating`](#string-builder-writerallocating)
 - [Error handling](#error-handling)
 - [Memory & allocator](#memory--allocator)
-- [Kontainer data](#kontainer-data)
+- [Data containers](#data-containers)
 - [String & `std.mem`](#string--stdmem)
-- [Format specifier](#format-specifier)
+- [Format specifiers](#format-specifiers)
 - [Filesystem](#filesystem)
 - [Networking](#networking)
 - [Concurrency](#concurrency)
 - [Process & environment](#process--environment)
 - [JSON](#json)
 - [Crypto, hash, random, base64](#crypto-hash-random-base64)
-- [Math, sort, bit](#math-sort-bit)
+- [Math, sort, bits](#math-sort-bits)
 - [Testing](#testing)
 - [build.zig minimal](#buildzig-minimal)
-- [Builtin penting](#builtin-penting)
-- [Migrasi 0.15 → 0.16](#migrasi-015--016)
+- [Important builtins](#important-builtins)
+- [Migrating 0.15 → 0.16](#migrating-015--016)
 
 ---
 
@@ -49,148 +49,148 @@ tags:
 
 ```sh
 zig init                 # scaffold project: build.zig + src/main.zig + build.zig.zon
-zig run main.zig         # compile + run langsung
-zig test src/main.zig    # jalankan semua blok test di file
+zig run main.zig         # compile + run directly
+zig test src/main.zig    # run all test blocks in the file
 zig build -Doptimize=ReleaseFast
 zig build test
-zig fmt .                # formatter resmi (satu-satunya gaya — tidak ada debat)
+zig fmt .                # official formatter (the only style — no debates)
 zig build-exe m.zig -O ReleaseFast -fstrip
 ```
 
-| Mode optimasi | Artinya |
+| Optimization mode | Meaning |
 |---|---|
-| `Debug` (default) | paling lambat, paling banyak safety check + leak checker aktif |
-| `ReleaseSafe` | cepat, safety check tetap on (UB tetap ketangkap) |
-| `ReleaseFast` | paling cepat, safety check dimatikan |
-| `ReleaseSmall` | ukuran binary terkecil |
+| `Debug` (default) | slowest, most safety checks + leak checker active |
+| `ReleaseSafe` | fast, safety checks stay on (UB still caught) |
+| `ReleaseFast` | fastest, safety checks disabled |
+| `ReleaseSmall` | smallest binary size |
 
 ---
 
-## Mental model 5 menit
+## 5-minute mental model
 
-| Konsep | Ringkasan |
+| Concept | Summary |
 |---|---|
-| `var` / `const` | `const` = immutable (default yang benar). Variabel yang tidak diubah tapi dideklarasi `var` = **compile error**. |
-| Tipe integer | `u8 u16 u32 u64 u128 usize`, versi signed `i8..i128`, `u0`/`i0` juga ada. |
-| Comptime | Semua yang bisa dievaluasi saat compile **dievaluasi saat compile** — generic pakai `comptime T: type`, bukan template. |
-| Tanpa hidden control flow | Tidak ada operator overloading, tidak ada exception. Allocation, error, cast — semua eksplisit. |
-| Allocator eksplisit | Fungsi yang butuh heap menerima `std.mem.Allocator` sebagai parameter. |
-| `defer` / `errdefer` | `defer` jalan saat scope keluar (LIFO); `errdefer` hanya saat keluar lewat error return. |
-| Optional | `?T` — null-safe, diakses `.?` atau `if (x) \|v\| ...`. |
-| Error union | `E!T` — error adalah nilai, bukan exception. |
-| Slice | `[]T` = pointer + length. String = `[]const u8` (bukan tipe sendiri). |
-| Sentinel | `[:0]const u8` = slice diakhiri `\0` (untuk FFI C). |
+| `var` / `const` | `const` = immutable (the correct default). A variable that is never mutated but declared `var` = **compile error**. |
+| Integer types | `u8 u16 u32 u64 u128 usize`, signed versions `i8..i128`, and `u0`/`i0` also exist. |
+| Comptime | Everything that can be evaluated at compile time **is evaluated at compile time** — generics use `comptime T: type`, not templates. |
+| No hidden control flow | No operator overloading, no exceptions. Allocation, errors, casts — all explicit. |
+| Explicit allocators | Functions that need the heap take a `std.mem.Allocator` as a parameter. |
+| `defer` / `errdefer` | `defer` runs when the scope exits (LIFO); `errdefer` only when exiting through an error return. |
+| Optional | `?T` — null-safe, accessed via `.?` or `if (x) \|v\| ...`. |
+| Error union | `E!T` — an error is a value, not an exception. |
+| Slice | `[]T` = pointer + length. String = `[]const u8` (not its own type). |
+| Sentinel | `[:0]const u8` = slice terminated by `\0` (for C FFI). |
 
 ---
 
-## Titik masuk: `main` di 0.16
+## Entry point: `main` in 0.16
 
-0.16 mengganti `main` — sekarang bisa menerima `std.process.Init` yang sudah berisi
-**allocator siap pakai** dan **implementasi `Io`** (dipilih otomatis sesuai target):
+0.16 changed `main` — it can now receive a `std.process.Init` that already contains
+**a ready-to-use allocator** and **an `Io` implementation** (picked automatically for the target):
 
 ```zig
 const std = @import("std");
 
 pub fn main(init: std.process.Init) !void {
-    const io = init.io;   // interface I/O: file, net, sleep, mutex, ...
-    const gpa = init.gpa; // allocator umum (debug mode: leak checking aktif)
-    _ = init.arena;       // arena untuk lifetime sepanjang proses
+    const io = init.io;   // I/O interface: file, net, sleep, mutex, ...
+    const gpa = init.gpa; // general allocator (debug mode: leak checking active)
+    _ = init.arena;       // arena for process-lifetime allocations
     _ = init.environ_map; // environment variables
     _ = init.minimal.args;
 }
 ```
 
-> `main` klasik `pub fn main() !void` dan `pub fn main() !u8` masih valid.
-> `Init.Minimal` (`init.minimal`) adalah subset: hanya `environ` + `args`.
+> The classic `main` `pub fn main() !void` and `pub fn main() !u8` are still valid.
+> `Init.Minimal` (`init.minimal`) is a subset: only `environ` + `args`.
 
-| Field `Init` | Isi |
+| `Init` field | Contents |
 |---|---|
-| `gpa` | `std.mem.Allocator` umum, threadsafe, leak-checked di Debug |
-| `arena` | `*std.heap.ArenaAllocator` seumur proses — free all sekali di akhir |
-| `io` | `std.Io` — context untuk semua operasi I/O di 0.16 |
-| `environ_map` | `*std.process.Environ.Map` (lihat [Process](#process--environment)) |
-| `minimal.args` | argument CLI (lihat [Process](#process--environment)) |
+| `gpa` | general `std.mem.Allocator`, threadsafe, leak-checked in Debug |
+| `arena` | process-lifetime `*std.heap.ArenaAllocator` — free all at once at the end |
+| `io` | `std.Io` — context for all I/O operations in 0.16 |
+| `environ_map` | `*std.process.Environ.Map` (see [Process](#process--environment)) |
+| `minimal.args` | CLI arguments (see [Process](#process--environment)) |
 
 ---
 
 ## Print & `std.Io.Writer` / `std.Io.Reader`
 
-### Cepat: debug print (ke stderr, tanpa buffer)
+### Quick: debug print (to stderr, unbuffered)
 
 ```zig
-std.debug.print("nilai: {d}\n", .{42}); // tidak butuh io, cocok untuk debugging
+std.debug.print("value: {d}\n", .{42}); // no io needed, handy for debugging
 ```
 
-### Idiomatik: buffered writer ke stdout
+### Idiomatic: buffered writer to stdout
 
-Output **buffer-based** — buffer milikmu, flush eksplisit. Ini pola inti 0.15/0.16:
+Output is **buffer-based** — the buffer is yours, flush is explicit. This is the core 0.15/0.16 pattern:
 
 ```zig
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
-    var stdout_buffer: [4096]u8 = undefined;                 // buffer di stack
+    var stdout_buffer: [4096]u8 = undefined;                 // buffer on the stack
     var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buffer);
     const out = &stdout_writer.interface;                    // *std.Io.Writer
 
     try out.print("hello {s}\n", .{"world"});
-    try out.writeAll("tanpa format\n");
+    try out.writeAll("without format\n");
     try out.writeByte('\n');
-    try out.flush();                                         // WAJIB sebelum exit
+    try out.flush();                                         // REQUIRED before exit
 }
 ```
 
-> Lupa `flush()` = output hilang (masih nanggung di buffer). Pasang `defer out.flush() catch {};`
-> kalau banyak exit path.
+> Forgetting `flush()` = lost output (still sitting in the buffer). Add `defer out.flush() catch {};`
+> when there are many exit paths.
 
-| `std.Io.Writer` | Fungsi |
+| `std.Io.Writer` | Function |
 |---|---|
-| `print(fmt, args)` | tulis dengan format specifier |
-| `writeAll(bytes)` | tulis semua byte |
-| `write(bytes)` | tulis, bisa parsial (return jumlah tertulis) |
+| `print(fmt, args)` | write with format specifiers |
+| `writeAll(bytes)` | write all bytes |
+| `write(bytes)` | write, may be partial (returns bytes written) |
 | `writeByte(b)` | 1 byte |
-| `flush()` | dorong buffer ke tujuan |
-| `unusedCapacitySlice()` | ruang kosong buffer sebagai `[]u8` |
-| `undo(n)` | mundur `n` byte (misal hapus pemisah terakhir) |
-| `std.Io.Writer.fixed(buf)` | writer yang menulis ke buffer tetap |
+| `flush()` | push the buffer to the destination |
+| `unusedCapacitySlice()` | free buffer space as `[]u8` |
+| `undo(n)` | rewind `n` bytes (e.g. drop the last separator) |
+| `std.Io.Writer.fixed(buf)` | writer that writes to a fixed buffer |
 
-| `std.Io.Reader` | Fungsi |
+| `std.Io.Reader` | Function |
 |---|---|
 | `takeByte()` | 1 byte |
-| `takeDelimiter('\n')` | 1 baris (tanpa delimiter), `null` saat EOF |
-| `peek(n)` | lihat `n` byte tanpa mengkonsumsi |
-| `discardAll(n)` | buang `n` byte |
-| `streamRemaining(writer)` | salin sisa stream ke writer (pump) |
+| `takeDelimiter('\n')` | 1 line (without delimiter), `null` at EOF |
+| `peek(n)` | look at `n` bytes without consuming |
+| `discardAll(n)` | discard `n` bytes |
+| `streamRemaining(writer)` | copy the rest of the stream to a writer (pump) |
 
-### Membaca & menulis file
+### Reading & writing files
 
 ```zig
 const io = init.io;
 const cwd = std.Io.Dir.cwd();
 
-// tulis
+// write
 {
     const f = try cwd.createFile(io, "out.txt", .{ .truncate = true });
-    defer f.close(io);                                   // close butuh io di 0.16!
+    defer f.close(io);                                   // close needs io in 0.16!
     var buf: [256]u8 = undefined;
     var fw = f.writer(io, &buf);
-    try fw.interface.writeAll("halo file\n");
+    try fw.interface.writeAll("hello file\n");
     try fw.interface.flush();
 }
 
-// baca
+// read
 {
     const f = try cwd.openFile(io, "out.txt", .{});
     defer f.close(io);
     var buf: [256]u8 = undefined;
     var fr = f.reader(io, &buf);
-    if (try fr.interface.takeDelimiter('\n')) |line| {   // line pinjam dari buf
+    if (try fr.interface.takeDelimiter('\n')) |line| {   // line borrows from buf
         std.debug.print("{s}\n", .{line});
     }
 }
 ```
 
-### Sleep, clock, durasi
+### Sleep, clock, duration
 
 ```zig
 try io.sleep(.fromMilliseconds(100), .real); // std.Io.Duration.fromMilliseconds
@@ -200,24 +200,24 @@ const ms = io.now(.real).toMilliseconds();
 std.debug.print("unix ms: {d}\n", .{ms});
 ```
 
-> Timer klasik (`std.time.Timer`) sudah hilang di 0.16 — pakai `io.now(.real)` sebelum/sesudah,
-> atau `io.now(.awake)`/`.monotonic` untuk pengukuran interval.
+> The classic timer (`std.time.Timer`) is gone in 0.16 — use `io.now(.real)` before/after,
+> or `io.now(.awake)`/`.monotonic` for interval measurements.
 
 ---
 
 ## String builder: `Writer.Allocating`
 
-Pengganti idiomatik "append ke `ArrayList(u8)` sambil format" — writer yang otomatis
-realokasi ke heap:
+The idiomatic replacement for "append to an `ArrayList(u8)` while formatting" — a writer that
+automatically reallocates on the heap:
 
 ```zig
 var aw: std.Io.Writer.Allocating = .init(init.gpa);
 defer aw.deinit();
 
 try aw.writer.print("user={f} id={d}", .{ user, 7 });
-const owned: []u8 = try aw.toOwnedSlice();   // ambil alih memori
+const owned: []u8 = try aw.toOwnedSlice();   // take ownership of the memory
 defer init.gpa.free(owned);
-// juga: aw.written() — slice pinjaman, aw.writer langsung
+// also: aw.written() — borrowed slice, aw.writer directly
 ```
 
 ---
@@ -233,87 +233,87 @@ fn parse(s: []const u8) ParseError!u32 {
     if (s.len == 0) return error.Invalid;
     if (s.len > 10) return error.TooLong;
     return std.fmt.parseInt(u32, s, 10) catch |e| switch (e) {
-        error.Overflow => return error.TooLong,   // konversi error antar set
+        error.Overflow => return error.TooLong,   // convert errors between sets
         else => return error.Invalid,
     };
 }
 
-// konsumsi
-const x = parse("42") catch 0;            // fallback nilai
-const y = try parse("42");                // propagate ke caller
-const z = parse("42") catch |err| {       // tangkap + inspect
-    std.debug.print("gagal: {s}\n", .{@errorName(err)});
+// consuming
+const x = parse("42") catch 0;            // fallback value
+const y = try parse("42");                // propagate to caller
+const z = parse("42") catch |err| {       // catch + inspect
+    std.debug.print("failed: {s}\n", .{@errorName(err)});
     return err;
 };
 
-// cleanup saat sukses & error
+// cleanup on success & error
 var f = try cwd.openFile(io, "a.txt", .{});
-defer f.close(io);                        // selalu jalan
-errdefer cleanup_partial();               // hanya jika keluar dengan error
+defer f.close(io);                        // always runs
+errdefer cleanup_partial();               // only if exiting with an error
 
 // unwrap
 const v: ?u32 = null;
 const w = v orelse 0;                     // default
-const t = v.?;                            // panic kalau null — hanya untuk invariant
+const t = v.?;                            // panics if null — for invariants only
 if (v) |val| {} else {}                   // destructuring
 if (v) |val| {}                           // optional + payload
-for (items, 0..) |item, i| {}             // elemen + index
+for (items, 0..) |item, i| {}             // element + index
 ```
 
-- `unreachable` = assert compiler (panic di ReleaseSafe, UB di ReleaseFast).
-- Error trace otomatis di Debug/ReleaseSafe — jangan buang, itu fitur terbaik Zig.
+- `unreachable` = a compiler assert (panic in ReleaseSafe, UB in ReleaseFast).
+- Error traces are automatic in Debug/ReleaseSafe — don't throw them away, they're Zig's best feature.
 
 ---
 
 ## Memory & allocator
 
-Semua heap lewat interface `std.mem.Allocator`:
+All heap access goes through the `std.mem.Allocator` interface:
 
 ```zig
-const mem: []u8 = try alloc.alloc(u8, 1024);   // alokasi N elemen
+const mem: []u8 = try alloc.alloc(u8, 1024);   // allocate N elements
 defer alloc.free(mem);
 
-const copy: []u8 = try alloc.dupe(u8, "teks"); // duplikat slice/string
+const copy: []u8 = try alloc.dupe(u8, "text"); // duplicate a slice/string
 defer alloc.free(copy);
 
 var buf: []u8 = try alloc.alloc(u8, 8);
 buf = try alloc.realloc(buf, 64);              // resize
 defer alloc.free(buf);
 
-const p = try alloc.create(User);              // satu elemen
+const p = try alloc.create(User);              // a single element
 defer alloc.destroy(p);
 ```
 
-| Allocator | Kapan dipakai |
+| Allocator | When to use |
 |---|---|
-| `init.gpa` / `std.heap.DebugAllocator(.{})` | default dev — deteksi double-free, use-after-free, **leak** |
-| `std.heap.smp_allocator` | production multithread (pilihan gpa di Release) |
-| `std.heap.ArenaAllocator` | banyak objek kecil seumur fase — **free all sekali**, tidak perlu free per item |
-| `std.heap.FixedBufferAllocator` | alokasi dari buffer statis — zero malloc, deterministik |
-| `std.heap.page_allocator` | syscall mmap per alloc — paling sederhana, paling lambat |
-| `std.heap.c_allocator` | pakai malloc libc (butuh `link_libc`) |
-| `std.testing.allocator` | di test — gagalkan test jika ada leak |
+| `init.gpa` / `std.heap.DebugAllocator(.{})` | dev default — detects double-free, use-after-free, **leaks** |
+| `std.heap.smp_allocator` | multithreaded production (the gpa choice in Release) |
+| `std.heap.ArenaAllocator` | many small objects with a phase lifetime — **free all at once**, no per-item free |
+| `std.heap.FixedBufferAllocator` | allocate from a static buffer — zero malloc, deterministic |
+| `std.heap.page_allocator` | mmap syscall per alloc — simplest, slowest |
+| `std.heap.c_allocator` | uses libc malloc (requires `link_libc`) |
+| `std.testing.allocator` | in tests — fails the test on any leak |
 
-### Pola arena (paling sering dipakai)
+### Arena pattern (most commonly used)
 
 ```zig
 var arena = std.heap.ArenaAllocator.init(gpa);
-defer arena.deinit();                     // bebek SEMUA alokasi arena di sini
+defer arena.deinit();                     // releases ALL arena allocations here
 const a = arena.allocator();
 
-const s1 = try a.dupe(u8, "bebas");       // tidak perlu free satu-satu
+const s1 = try a.dupe(u8, "free");        // no need to free individually
 const s2 = try std.fmt.allocPrint(a, "{d}", .{99});
 ```
 
-> Aturan praktis: fungsi publik menerima `Allocator` apa pun; internal yang butuh
-> scratch memory bikin arena sendiri dan `defer` deinit-nya.
+> Rule of thumb: public functions accept any `Allocator`; internal code that needs
+> scratch memory makes its own arena and `defer`s its deinit.
 
 ---
 
-## Kontainer data
+## Data containers
 
-> **0.15+: `std.ArrayList` itu *unmanaged*** — allocator dikirim per-method, init pakai
-> `.empty`. Versi managed masih ada sebagai `std.array_list.Managed(T)`.
+> **0.15+: `std.ArrayList` is *unmanaged*** — the allocator is passed per method, init uses
+> `.empty`. The managed version still exists as `std.array_list.Managed(T)`.
 
 ### ArrayList
 
@@ -325,51 +325,51 @@ try list.append(gpa, 1);
 try list.appendSlice(gpa, &.{ 2, 3, 4 });
 try list.insert(gpa, 0, 99);
 const last = list.pop();                  // ?T
-const removed = list.orderedRemove(0);    // shift kiri
+const removed = list.orderedRemove(0);    // shifts left
 try list.ensureTotalCapacity(gpa, 1000);
-_ = try list.toOwnedSlice(gpa);           // jadikan []u32 milik sendiri
+_ = try list.toOwnedSlice(gpa);           // turn it into an owned []u32
 
-std.debug.print("{any}\n", .{list.items}); // akses via .items
+std.debug.print("{any}\n", .{list.items}); // access via .items
 ```
 
 ### HashMap
 
 ```zig
-// key string → pakai StringHashMap; key int/enum → AutoHashMap
+// string keys → use StringHashMap; int/enum keys → AutoHashMap
 var map = std.StringHashMap(u32).init(gpa);
 defer map.deinit();
 
-try map.put("satu", 1);
-try map.put("dua", 2);
-if (map.get("satu")) |v| {}               // ?V
-if (map.getPtr("satu")) |ptr| {}          // ?*V — mutasi in-place
-const old = map.fetchPut("satu", 10);     // put + return nilai lama
-_ = map.remove("dua");
-const ada = map.contains("satu");
+try map.put("one", 1);
+try map.put("two", 2);
+if (map.get("one")) |v| {}                // ?V
+if (map.getPtr("one")) |ptr| {}           // ?*V — in-place mutation
+const old = map.fetchPut("one", 10);      // put + return the old value
+_ = map.remove("two");
+const exists = map.contains("one");
 
 var it = map.iterator();
 while (it.next()) |e| {
-    // e.key_ptr.*, e.value_ptr.* — urutan TIDAK stabil
+    // e.key_ptr.*, e.value_ptr.* — order is NOT stable
 }
 
-// unmanaged (tanpa allocator tersimpan):
+// unmanaged (no stored allocator):
 var um: std.HashMapUnmanaged(u32, u32) = .empty;
 defer um.deinit(gpa);
 try um.put(gpa, 1, 1);
 ```
 
-### Kontainer lain (sekali lihat)
+### Other containers (quick look)
 
 ```zig
-// ArrayHashMap — seperti HashMap tapi mempertahankan urutan insert + iterasi cepat
+// ArrayHashMap — like HashMap but preserves insert order + fast iteration
 var ahl = std.StringArrayHashMap(u32).init(gpa);
 try ahl.put("a", 1);                      // ahl.keys(), ahl.values()
 
-// MultiArrayList — struct of arrays otomatis (cache-friendly untuk SoA)
+// MultiArrayList — automatic struct of arrays (cache-friendly for SoA)
 var mal: std.MultiArrayList(User) = .empty;
 try mal.append(gpa, .{ .name = "a", .age = 1 });
 
-// PriorityQueue — 0.16: comparator mengembalikan std.math.Order, allocator per-push
+// PriorityQueue — 0.16: comparator returns std.math.Order, allocator per push
 const PQ = std.PriorityQueue(u32, void, struct {
     fn lt(_: void, a: u32, b: u32) std.math.Order {
         return std.math.order(a, b);
@@ -378,19 +378,19 @@ const PQ = std.PriorityQueue(u32, void, struct {
 var pq = PQ.initContext({});
 defer pq.deinit(gpa);
 try pq.push(gpa, 3);
-const min = pq.pop();                     // ?T — elemen terkecil
+const min = pq.pop();                     // ?T — smallest element
 
-// Deque — deque dua arah
+// Deque — double-ended deque
 var dq: std.Deque(u32) = .empty;
 defer dq.deinit(gpa);
 try dq.pushBack(gpa, 1);
 const front = dq.popFront();              // ?T
 
-// Linked list — intrusive: embed Node ke struct, akses payload via @fieldParentPtr
+// Linked list — intrusive: embed a Node in your struct, access the payload via @fieldParentPtr
 const Item = struct { data: u32, node: std.DoublyLinkedList.Node = undefined };
 var lst: std.DoublyLinkedList = .{};
 var item = Item{ .data = 1 };
-lst.append(&item.node);                   // prepend/insertAfter/remove/pop juga ada
+lst.append(&item.node);                   // prepend/insertAfter/remove/pop also exist
 const payload: *Item = @fieldParentPtr("node", lst.first.?);
 
 // BitStack (stack of bits) & DynamicBitSet
@@ -398,14 +398,14 @@ var bits = try std.DynamicBitSetUnmanaged.initEmpty(gpa, 128);
 defer bits.deinit(gpa);
 bits.set(3);                              // bits.isSet(3), bits.toggle(), ...
 
-// EnumSet / EnumMap — array-backed, O(1) tanpa hash
+// EnumSet / EnumMap — array-backed, O(1) with no hashing
 const S = std.EnumSet(Direction);
 var s = S.initEmpty();
 s.insert(.north);
 const M = std.EnumMap(Direction, u8);
 var m = M.init(.{ .north = 1, .south = 2 });
 
-// StaticStringMap — lookup literal saat comptime, O(len) tanpa alokasi
+// StaticStringMap — literal lookup at comptime, O(len) with no allocation
 const cmd = std.StaticStringMap(u8).initComptime(.{
     .{ "add", 'a' }, .{ "delete", 'd' },
 });
@@ -416,85 +416,85 @@ const c = cmd.get("add").?;
 
 ## String & `std.mem`
 
-String di Zig = `[]const u8`. Encoding UTF-8 dianggap bytes — util unicode ada di `std.unicode`.
+A string in Zig = `[]const u8`. UTF-8 is treated as bytes — unicode utilities live in `std.unicode`.
 
 ```zig
-const s = "halo dunia";
+const s = "hello world";
 const m = std.mem;
 
 m.eql(u8, "abc", "abc")            // true
 m.startsWith(u8, s, "ha")          // true
-m.endsWith(u8, s, "ia")            // true
-m.indexOf(u8, s, "dun")            // ?usize
-m.lastIndexOf(u8, s, "a")          // ?usize
-m.count(u8, s, "a")                // usize — jumlah kemunculan
+m.endsWith(u8, s, "ld")            // true
+m.indexOf(u8, s, "wor")            // ?usize
+m.lastIndexOf(u8, s, "o")          // ?usize
+m.count(u8, s, "o")                // usize — number of occurrences
 
-// split & tokenize: keduanya iterator
+// split & tokenize: both are iterators
 var sp = m.splitScalar(u8, "a,b,,c", ',');
-//   → "a" "b" "" "c"      (segmen kosong dipertahankan)
+//   → "a" "b" "" "c"      (empty segments are kept)
 var tk = m.tokenizeScalar(u8, " a , b ", ',');
-//   → "a" "b"             (kosong & whitespace dilewati)
+//   → "a" "b"             (empty & whitespace are skipped)
 
 m.trim(u8, "  x  ", " ")           // "x"
 m.trimLeft(u8, "  x", " ")
-m.replaceOwned(u8, gpa, "a-b", "-", "+")   // ![]u8 — milik gpa
+m.replaceOwned(u8, gpa, "a-b", "-", "+")   // ![]u8 — owned by gpa
 
-// gabung string (butuh allocator)
+// join strings (needs an allocator)
 const full = try m.concat(gpa, u8, &.{ "a", "b" });   // "ab"
 const fmted = try std.fmt.allocPrint(gpa, "{s}-{d}", .{ "id", 7 });
 
-// duplikasi & nol-terminasi
+// duplicate & null-terminate
 const d = try gpa.dupe(u8, s);
-const z = try gpa.dupeZ(u8, s);    // [:0]u8 untuk API C
+const z = try gpa.dupeZ(u8, s);    // [:0]u8 for C APIs
 
-// compare-ignoring-case & kawan-kawan: std.ascii
+// case-insensitive compare & friends: std.ascii
 std.ascii.eqlIgnoreCase("Ab", "ab")   // true
 std.ascii.upperString(&dst, src);     // std.ascii.isDigit, toUpper, ...
 ```
 
-| `std.unicode` | Fungsi |
+| `std.unicode` | Function |
 |---|---|
-| `utf8ValidateSlice(bytes)` | validasi UTF-8 |
-| `utf8CountCodepoints(s)` | hitung codepoint (bukan byte!) |
+| `utf8ValidateSlice(bytes)` | validate UTF-8 |
+| `utf8CountCodepoints(s)` | count codepoints (not bytes!) |
 | `utf8Encode(cp, out)` | encode `u21` → bytes |
 
 ---
 
-## Format specifier
+## Format specifiers
 
-Semua lewat `std.Io.Writer.print` / `std.debug.print` / `allocPrint`.
+Everything goes through `std.Io.Writer.print` / `std.debug.print` / `allocPrint`.
 
-| Spec | Contoh output | Catatan |
+| Spec | Example output | Notes |
 |---|---|---|
-| `{s}` | `teks` | string / slice of u8 |
-| `{d}` | `42` | int & float desimal |
+| `{s}` | `text` | string / slice of u8 |
+| `{d}` | `42` | decimal int & float |
 | `{x}` / `{X}` | `ff` / `FF` | hex lower/upper |
-| `{b}` | `1010` | biner |
-| `{o}` | `17` | oktal |
+| `{b}` | `1010` | binary |
+| `{o}` | `17` | octal |
 | `{e}` / `{E}` | `1.23e4` | scientific |
 | `{c}` | `a` | char ASCII |
 | `{u}` | `é` | codepoint unicode |
-| `{B}` | `1.536kB` | ukuran byte human-readable |
-| `{f}` | — | panggil method `format(self, *Writer)` milik tipe |
-| `{any}` | `{ 1, 2 }` | debug-dump apa saja |
-| `{*}` | `main.User@...` | alamat + tipe |
+| `{B}` | `1.536kB` | human-readable byte size |
+| `{f}` | — | calls the type's `format(self, *Writer)` method |
+| `{any}` | `{ 1, 2 }` | debug-dump anything |
+| `{*}` | `main.User@...` | address + type |
 
 ```zig
 std.debug.print("[{d:5}]", .{42});     // [   42]  — width 5
-std.debug.print("[{s:>8}]", .{"zig"}); // [     zig] — rata kanan
-std.debug.print("[{d:.2}]", .{3.14159}); // [3.14] — presisi
+std.debug.print("[{s:>8}]", .{"zig"}); // [     zig] — right aligned
+std.debug.print("[{d:.2}]", .{3.14159}); // [3.14] — precision
 
-// custom format — dipanggil dengan {f}
+// custom format — invoked with {f}
 const User = struct {
     name: []const u8,
     age: u8,
     pub fn format(u: User, w: *std.Io.Writer) std.Io.Writer.Error!void {
-        try w.print("{s} ({d} tahun)", .{ u.name, u.age });
+        try w.print("{s} ({d} years old)", .{ u.name, u.age });
     }
 };
 // std.debug.print("{f}", .{user});
 
-// parsing sebaliknya
+// parsing the other way
 const n = try std.fmt.parseInt(i32, "-42", 10);
 const f = try std.fmt.parseFloat(f64, "3.14");
 ```
@@ -503,8 +503,8 @@ const f = try std.fmt.parseFloat(f64, "3.14");
 
 ## Filesystem
 
-> 0.16: `File` & `Dir` pindah dari `std.fs` ke **`std.Io.File` / `std.Io.Dir`**.
-> `std.fs` tinggal menyisakan path utils (`std.fs.path.*`).
+> 0.16: `File` & `Dir` moved from `std.fs` to **`std.Io.File` / `std.Io.Dir`**.
+> `std.fs` only keeps path utilities (`std.fs.path.*`).
 
 ```zig
 const io = init.io;
@@ -516,15 +516,15 @@ const f = try cwd.openFile(io, "src/main.zig", .{});
 defer f.close(io);
 const st = try f.stat(io);              // .size, .kind, .mode
 
-// membuat direktori
-try cwd.createDir(io, "baru", .default_dir);       // .fromMode(0o755) = custom mode
+// create directories
+try cwd.createDir(io, "new", .default_dir);        // .fromMode(0o755) = custom mode
 try cwd.createDirPath(io, "a/b/c");                // mkdir -p
 
-// hapus & ganti nama (perhatikan: io di akhir)
-try cwd.deleteFile(io, "lama.txt");
+// delete & rename (note: io comes last)
+try cwd.deleteFile(io, "old.txt");
 try cwd.rename("a.txt", cwd, "b.txt", io);
 
-// daftar isi direktori — WAJIB .iterate = true, tanpa allocator
+// list a directory — requires .iterate = true, no allocator needed
 var d = try cwd.openDir(io, "src", .{ .iterate = true });
 defer d.close(io);
 var it = d.iterate();
@@ -532,36 +532,36 @@ while (try it.next(io)) |entry| {
     // entry.name: []const u8, entry.kind: .file / .directory / .sym_link / ...
 }
 
-// walk rekursif (butuh allocator; next() butuh io)
+// recursive walk (needs an allocator; next() needs io)
 var walker = try cwd.walk(gpa);
 defer walker.deinit();
 while (try walker.next(io)) |entry| {
     // entry.path, entry.basename, entry.kind
 }
 
-// stat path langsung
+// stat a path directly
 const info = try cwd.statFile(io, "src/main.zig", .{});
 
-// path utils
+// path utilities
 std.fs.path.join(gpa, &.{ "a", "b", "c.zig" });   // "a/b/c.zig" (OS-aware)
 std.fs.path.basename("a/b/c.zig")                 // "c.zig"
 std.fs.path.dirname("a/b/c.zig")                  // "a/b"
 std.fs.path.extension("x.tar.gz")                 // ".gz"
-std.fs.max_path_bytes                             // batas path OS
+std.fs.max_path_bytes                             // OS path limit
 ```
 
 ---
 
 ## Networking
 
-Semua via `std.Io.net` (0.16). `Stream` bisa dibungkus reader/writer ber-buffer seperti file.
+All via `std.Io.net` (0.16). A `Stream` can be wrapped in buffered reader/writers just like a file.
 
 ```zig
 const io = init.io;
 
-// --- client TCP ---
+// --- TCP client ---
 const addr = try std.Io.net.IpAddress.parse("127.0.0.1", 8080);
-//   atau resolve DNS (butuh io): try std.Io.net.IpAddress.resolve(io, "example.com", 443)
+//   or resolve DNS (needs io): try std.Io.net.IpAddress.resolve(io, "example.com", 443)
 const stream = try addr.connect(io, .{});
 defer stream.close(io);
 
@@ -570,7 +570,7 @@ var w = stream.writer(io, &wbuf);
 try w.interface.writeAll("ping\n");
 try w.interface.flush();
 
-// --- server TCP ---
+// --- TCP server ---
 var server = try addr.listen(io, .{ .reuse_address = true });
 while (true) {
     const conn = try server.accept(io);   // std.Io.net.Stream
@@ -578,15 +578,15 @@ while (true) {
     var rbuf: [4096]u8 = undefined;
     var r = conn.reader(io, &rbuf);
     if (try r.interface.takeDelimiter('\n')) |line| {
-        // proses line...
+        // process the line...
     }
 }
 
 // unix socket
-const ua: std.Io.net.UnixAddress = ...;   // listen/connect juga tersedia
+const ua: std.Io.net.UnixAddress = ...;   // listen/connect also available
 ```
 
-### HTTP client satu-layar
+### One-screen HTTP client
 
 ```zig
 var client: std.http.Client = .{ .allocator = init.gpa, .io = io };
@@ -597,17 +597,17 @@ defer aw.deinit();
 
 const result = try client.fetch(.{
     .location = .{ .url = "https://example.com" },
-    .response_writer = &aw.writer,        // body ditulis ke sini
+    .response_writer = &aw.writer,        // body is written here
 });
-// result.status: .ok, dst. — body di aw.written()
+// result.status: .ok, etc. — body in aw.written()
 ```
 
 ---
 
 ## Concurrency
 
-> 0.16: primitif sinkronisasi pindah ke **`std.Io`** dan metode-nya butuh `io`
-> (karena bisa jadi titik cancel). `std.Thread` (OS thread klasik) tetap ada.
+> 0.16: synchronization primitives moved to **`std.Io`** and their methods need `io`
+> (because they can become cancellation points). `std.Thread` (classic OS threads) still exists.
 
 ```zig
 // --- thread ---
@@ -619,15 +619,15 @@ std.Thread.yield() catch {};
 var mu: std.Io.Mutex = .init;
 try mu.lock(io);                // cancelable
 defer mu.unlock(io);
-// mu.lockUncancelable(io)      // tidak bisa dibatalkan
+// mu.lockUncancelable(io)      // cannot be cancelled
 // mu.tryLock()                 // bool — non-blocking
 
 // --- condition variable ---
 var cond: std.Io.Condition = .init;
-// thread A (menunggu):
-try cond.wait(io, &mu);         // otomatis release mutex saat tunggu
-// thread B (memberi tahu):
-cond.signal(io);                // atau cond.broadcast(io)
+// thread A (waiting):
+try cond.wait(io, &mu);         // releases the mutex automatically while waiting
+// thread B (notifying):
+cond.signal(io);                // or cond.broadcast(io)
 
 // --- semaphore ---
 var sem: std.Io.Semaphore = .{};    // permits default 0
@@ -643,7 +643,7 @@ const v = val.load(.acquire);
 // compare-exchange:
 if (val.cmpxchgStrong(5, 10, .seq_cst, .seq_cst)) |old| {}
 
-// builtins atomik level rendah
+// low-level atomic builtins
 const a = @atomicLoad(u32, &plain_var, .seq_cst);
 @atomicStore(u32, &plain_var, 1, .release);
 ```
@@ -653,21 +653,21 @@ const a = @atomicLoad(u32, &plain_var, .seq_cst);
 ## Process & environment
 
 ```zig
-// --- argument CLI ---
+// --- CLI arguments ---
 var args = init.minimal.args.iterate();
 while (args.next()) |arg| {         // arg: [:0]const u8
     std.debug.print("{s}\n", .{arg});
 }
-// atau ambil semua sekaligus (butuh allocator):
+// or grab them all at once (needs an allocator):
 const all = try init.minimal.args.toSlice(init.arena.allocator());
 
 // --- environment variables ---
 const home = init.environ_map.get("HOME");     // ?[]const u8
-try init.environ_map.put("MODE", "dev");       // set env proses sendiri
+try init.environ_map.put("MODE", "dev");       // set an env var for this process
 
-// --- jalankan child process, tangkap output ---
+// --- run a child process, capture output ---
 const res = try std.process.run(init.gpa, init.io, .{
-    .argv = &.{ "echo", "hai" },
+    .argv = &.{ "echo", "hi" },
     .cwd = .inherit,
     // .environ_map = ..., .stdout_limit = ...
 });
@@ -678,7 +678,7 @@ switch (res.term) {
     else => return error.CommandFailed,
 }
 
-// --- spawn tanpa menunggu ---
+// --- spawn without waiting ---
 var child = try std.process.spawn(init.io, .{ .argv = &.{ "ls", "-la" } });
 const term = try child.wait(init.io);
 ```
@@ -690,18 +690,18 @@ const term = try child.wait(init.io);
 ```zig
 const User = struct { name: []const u8, age: u8 };
 
-// parse ter-tipe → Parsed(User) (memori milik arena internal)
+// typed parse → Parsed(User) (memory owned by an internal arena)
 const parsed = try std.json.parseFromSlice(User, gpa, "{\"name\":\"ani\",\"age\":30}", .{});
-defer parsed.deinit();                       // WAJIB
+defer parsed.deinit();                       // REQUIRED
 _ = parsed.value;                            // User
 
 // serialize
 const out = try std.json.Stringify.valueAlloc(gpa, parsed.value, .{});
 defer gpa.free(out);
 // out = {"name":"ani","age":30}
-// ke writer: std.json.Stringify.value(val, .{}, &writer)
+// to a writer: std.json.Stringify.value(val, .{}, &writer)
 
-// dynamic (schema tak dikenal)
+// dynamic (unknown schema)
 const dyn = try std.json.parseFromSlice(std.json.Value, gpa, blob, .{});
 defer dyn.deinit();
 switch (dyn.value) {
@@ -719,23 +719,23 @@ switch (dyn.value) {
 var digest: [32]u8 = undefined;
 std.crypto.hash.sha2.Sha256.hash("hello", &digest, .{});
 
-// streaming (bisa update berkali-kali)
+// streaming (can update many times)
 var h = std.crypto.hash.sha2.Sha256.init(.{});
 h.update("ha");
 h.update("lo");
 h.final(&digest);
-// keluarga lengkap di std.crypto.hash: sha2 (Sha256/Sha512), Sha3, blake3,
+// full family in std.crypto.hash: sha2 (Sha256/Sha512), Sha3, blake3,
 // Md5, Sha1 (legacy), hmac, ...
 
 // --- random ---
-var prng = std.Random.DefaultPrng.init(0xDEADBEEF);   // seeded, deterministik
+var prng = std.Random.DefaultPrng.init(0xDEADBEEF);   // seeded, deterministic
 const rnd = prng.random();
 const dice = rnd.intRangeAtMost(u8, 1, 6);
 const f = rnd.float(f32);
 var blob: [16]u8 = undefined;
 rnd.bytes(&blob);
 
-// CSPRNG: std.Random.DefaultCsprng (ChaCha) — isi seed dari entropy OS
+// CSPRNG: std.Random.DefaultCsprng (ChaCha) — seed it from OS entropy
 
 // --- base64 ---
 const enc = std.base64.standard.Encoder;
@@ -746,40 +746,40 @@ _ = enc.encode(dst, src);
 
 ---
 
-## Math, sort, bit
+## Math, sort, bits
 
 ```zig
 // std.math
 std.math.min(3, 9); std.math.max(3, 9);
 std.math.clamp(x, 0, 100);
-std.math.absInt(-5) catch {};                  // error jika MIN_INT
+std.math.absInt(-5) catch {};                  // error on MIN_INT
 std.math.pow(f64, 2, 10);
-std.math.cast(u8, 300);                        // ?u8 — null jika overflow
+std.math.cast(u8, 300);                        // ?u8 — null on overflow
 std.math.lossyCast(u8, 3.7);                   // saturate + trunc
 std.math.isNan(x); std.math.isInf(x);
-@sqrt(9.0); @sin(x); @log(x);                  // matematika dasar = builtin
+@sqrt(9.0); @sin(x); @log(x);                  // basic math = builtins
 ```
 
 ```zig
-// sort — lessThan generic: std.sort.asc(T) / std.sort.desc(T)
+// sort — generic lessThan: std.sort.asc(T) / std.sort.desc(T)
 std.mem.sort(i32, &arr, {}, std.sort.asc(i32));     // stable
-std.mem.sortUnstable(i32, &arr, {}, std.sort.asc(i32)); // lebih cepat
+std.mem.sortUnstable(i32, &arr, {}, std.sort.asc(i32)); // faster
 // custom comparator:
 std.mem.sort(User, &users, ctx, struct {
     fn lt(c: Ctx, a: User, b: User) bool { return a.age < b.age; }
 }.lt);
-// algoritma langsung: std.sort.pdq (unstable), std.sort.block (stable), std.sort.insertion
+// direct algorithms: std.sort.pdq (unstable), std.sort.block (stable), std.sort.insertion
 ```
 
-| Bit builtin | Arti |
+| Bit builtin | Meaning |
 |---|---|
-| `@popCount(x)` | jumlah bit 1 |
+| `@popCount(x)` | number of set bits |
 | `@clz` / `@ctz` | leading/trailing zero |
 | `@byteSwap` | endianness swap |
-| `@bitReverse` | balik semua bit |
-| `@bitCast` | reinterpret bit antar tipe sama ukuran |
-| `@truncate` | potong lebar int |
-| `@intCast` | cast int aman (panic jika kepotong, checked runtime) |
+| `@bitReverse` | reverse all bits |
+| `@bitCast` | reinterpret bits between same-size types |
+| `@truncate` | cut an int's width |
+| `@intCast` | safe int cast (panics if truncated, runtime checked) |
 
 ---
 
@@ -788,41 +788,41 @@ std.mem.sort(User, &users, ctx, struct {
 ```zig
 const std = @import("std");
 
-test "nama bebas" {
-    const alloc = std.testing.allocator;      // leak = test GAGAL otomatis
+test "any name" {
+    const alloc = std.testing.allocator;      // a leak = the test FAILS automatically
 
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
 
     var list: std.ArrayList(u8) = .empty;
     defer list.deinit(alloc);
-    try list.appendSlice(alloc, "halo");
+    try list.appendSlice(alloc, "hello");
 
     try std.testing.expectEqual(@as(usize, 4), list.items.len);
-    try std.testing.expectEqualStrings("halo", list.items);
-    try std.testing.expectEqualSlices(u8, "halo", list.items);
-    try std.testing.expect(std.mem.eql(u8, "halo", list.items));
+    try std.testing.expectEqualStrings("hello", list.items);
+    try std.testing.expectEqualSlices(u8, "hello", list.items);
+    try std.testing.expect(std.mem.eql(u8, "hello", list.items));
     try std.testing.expectError(error.Overflow, std.fmt.parseInt(u8, "999", 10));
 }
 
-test "gagal alokasi berurutan" {
-    // stress test: paksa OOM di tiap posisi alokasi
+test "sequential allocation failures" {
+    // stress test: force OOM at every allocation position
     try std.testing.checkAllAllocationFailures(std.testing.allocator, myFunc, .{});
 }
 ```
 
 ```sh
-zig test src/main.zig            # jalankan
-zig test src/main.zig -lc        # butuh libc
-zig build test                   # via build system
+zig test src/main.zig            # run
+zig test src/main.zig -lc        # needs libc
+zig build test                   # via the build system
 ```
 
-- `std.debug.assert(ok)` — hilang di ReleaseFast, panic di mode lain.
-- Return error trace: jangan `catch` di test — biarkan propagate.
+- `std.debug.assert(ok)` — gone in ReleaseFast, panics in other modes.
+- Error traces on return: do not `catch` in tests — let them propagate.
 
 ---
 
-## build.zig minimal
+## Minimal build.zig
 
 ```zig
 const std = @import("std");
@@ -841,7 +841,7 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(exe);
 
     const run = b.addRunArtifact(exe);
-    b.step("run", "Jalankan app").dependOn(&run.step);
+    b.step("run", "Run the app").dependOn(&run.step);
 
     const tests = b.addTest(.{ .root_module = mod });
     b.step("test", "Run tests").dependOn(&tests.step);
@@ -850,48 +850,48 @@ pub fn build(b: *std.Build) void {
 
 ```sh
 zig build -Doptimize=ReleaseFast
-zig build -Dtarget=x86_64-linux-musl      # cross-compile: TANPA toolchain lain
+zig build -Dtarget=x86_64-linux-musl      # cross-compile: WITHOUT any other toolchain
 zig build -Dtarget=aarch64-windows
 ```
 
 ---
 
-## Builtin penting
+## Important builtins
 
-| Builtin | Fungsi |
+| Builtin | Function |
 |---|---|
-| `@import("file.zig")` | import module/file |
-| `@as(T, val)` | coerce eksplisit |
-| `@intCast` / `@floatFromInt` / `@intFromFloat` | konversi numerik (checked) |
+| `@import("file.zig")` | import a module/file |
+| `@as(T, val)` | explicit coercion |
+| `@intCast` / `@floatFromInt` / `@intFromFloat` | numeric conversion (checked) |
 | `@enumFromInt` / `@intFromEnum` | enum ⇄ int |
-| `@tagName(e)` | nama enum sebagai `[:0]const u8` |
-| `@ptrCast` / `@alignCast` / `@constCast` / `@volatileCast` | cast pointer eksplisit |
-| `@sizeOf(T)` / `@alignOf(T)` / `@bitSizeOf(T)` | ukuran & layout |
-| `@typeInfo(T)` / `@typeName(T)` | refleksi saat comptime |
-| `@embedFile("path")` | bawa file jadi `*const [n:0]u8` saat compile |
-| `@panic("msg")` | panic manual |
-| `@splat(n)` | buat vector dengan nilai sama |
-| `@min` / `@max` / `@abs` / `@sqrt` / `@exp` / `@log` | matematika |
-| `@fieldParentPtr` | dari field → pointer struct induk (intrusive pattern) |
+| `@tagName(e)` | enum name as `[:0]const u8` |
+| `@ptrCast` / `@alignCast` / `@constCast` / `@volatileCast` | explicit pointer casts |
+| `@sizeOf(T)` / `@alignOf(T)` / `@bitSizeOf(T)` | size & layout |
+| `@typeInfo(T)` / `@typeName(T)` | comptime reflection |
+| `@embedFile("path")` | bake a file in as `*const [n:0]u8` at compile time |
+| `@panic("msg")` | manual panic |
+| `@splat(n)` | build a vector with the same value |
+| `@min` / `@max` / `@abs` / `@sqrt` / `@exp` / `@log` | math |
+| `@fieldParentPtr` | field → parent struct pointer (intrusive pattern) |
 
 ---
 
-## Migrasi 0.15 → 0.16
+## Migrating 0.15 → 0.16
 
-| Dulu (≤0.14 / 0.15) | Sekarang (0.16) |
+| Before (≤0.14 / 0.15) | Now (0.16) |
 |---|---|
 | `std.fs.File` | `std.Io.File` |
 | `std.io.getStdOut()` | `std.Io.File.stdout()` |
-| `file.writer()` / `file.reader()` (0.15) | `file.writer(io, &buf)` — buffer + `io` eksplisit |
+| `file.writer()` / `file.reader()` (0.15) | `file.writer(io, &buf)` — explicit buffer + `io` |
 | `std.io.getStdOut().writer().print(...)` | buffered `Io.Writer` + `flush()` |
 | `file.close()` | `file.close(io)` |
-| `std.net` | `std.Io.net` (dan semua ops butuh `io`) |
-| `std.Thread.Mutex` | `std.Io.Mutex` (`lock(io)` dll.) |
+| `std.net` | `std.Io.net` (and all ops need `io`) |
+| `std.Thread.Mutex` | `std.Io.Mutex` (`lock(io)` etc.) |
 | `std.time.Timer` | `io.now(clock)` — `Clock` = `.real`, `.awake`, `.monotonic` |
 | `std.fs.cwd()` | `std.Io.Dir.cwd()` |
-| `std.ArrayList` managed | unmanaged sejak 0.15 (`init` → `.empty`, allocator per method) |
-| `pub fn main() !void` | tetap jalan, tapi `pub fn main(init: std.process.Init) !void` = idiomatic 0.16 (gpa + io siap pakai) |
+| `std.ArrayList` managed | unmanaged since 0.15 (`init` → `.empty`, allocator per method) |
+| `pub fn main() !void` | still works, but `pub fn main(init: std.process.Init) !void` = idiomatic 0.16 (gpa + io ready to use) |
 
-**Sumber utama:** [Release notes Zig 0.16.0](https://ziglang.org/download/0.16.0/release-notes.html) ·
-[source std lib](https://github.com/ziglang/zig/tree/master/lib/std) — saat ragu, baca
-source `lib/std` langsung: std lib Zig sangat terdokumentasi lewat doc-comment.
+**Main sources:** [Zig 0.16.0 release notes](https://ziglang.org/download/0.16.0/release-notes.html) ·
+[std lib source](https://github.com/ziglang/zig/tree/master/lib/std) — when in doubt, read
+the `lib/std` source directly: Zig's std lib is heavily documented through doc-comments.

@@ -1,6 +1,6 @@
 ---
 title: "Terraform — Cheat Sheet"
-description: "Cheat sheet Terraform: alur init/plan/apply, HCL & tipe, variabel & validasi, for_each/locals, resource & module, dependency, terraform_remote_state, import & moved, lifecycle, state & workspace, drift, testing, CI, plus jebakan yang mahal."
+description: "Terraform cheat sheet: init/plan/apply flow, HCL & types, variables & validation, for_each/locals, resources & modules, dependencies, terraform_remote_state, import & moved, lifecycle, state & workspace, drift, testing, CI, plus the expensive pitfalls."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -17,74 +17,74 @@ tags:
 
 # Terraform — Cheat Sheet
 
-> Target: **Terraform 1.9+** (OpenTofu 1.8 compatible untuk hampir semua contoh).
-> Contoh memakai pola umum: satu root module, beberapa child module, remote state di cloud
-> storage, CI yang menjalankan `plan` lalu `apply` dari plan file.
+> Target: **Terraform 1.9+** (OpenTofu 1.8 compatible with almost all examples).
+> Examples use a common pattern: one root module, several child modules, remote state in cloud
+> storage, CI that runs `plan` and then `apply` from a plan file.
 
-**Isi sheet ini**
+**What's in this sheet**
 
-- Mental model & alur kerja
-- Struktur project & module
-- Perintah harian
-- Provider & autentikasi
-- Variabel, tipe, validasi
+- Mental model & workflow
+- Project & module structure
+- Daily commands
+- Providers & authentication
+- Variables, types, validation
 - `for_each`, `count`, `locals`, `dynamic`
-- Resource, data source, dependency
-- Module
-- `terraform_remote_state` & dependency antar stack
+- Resources, data sources, dependencies
+- Modules
+- `terraform_remote_state` & cross-stack dependencies
 - Import & `moved`
 - `lifecycle` (meta-argument)
-- Output & rahasia
-- State, backend, workspace
+- Outputs & secrets
+- State, backend, workspaces
 - Drift & reconciliation
-- Testing & validasi
+- Testing & validation
 - CI/CD
-- Jebakan (wajib dibaca)
+- Pitfalls (must read)
 
 ---
 
-## Mental model & alur kerja
+## Mental model & workflow
 
 ```text
-kode (.tf) ──> init ──> plan ──> apply ──> state ──> remote
-                │          │        │        │
-                │          │        │        └── sumber kebenaran pemetaan kode ↔ resource
-                │          │        └── provider memanggil API
-                │          └── diff state + kode + kondisi nyata (refresh)
-                └── unduh provider & module, tulis lock file
+code (.tf) ──> init ──> plan ──> apply ──> state ──> remote
+               │          │        │        │
+               │          │        │        └── source of truth mapping code ↔ resources
+               │          │        └── provider calls the API
+               │          └── diff of state + code + real conditions (refresh)
+               └── download providers & modules, write lock file
 ```
 
-| Konsep | Arti |
+| Concept | Meaning |
 | :--- | :--- |
-| **Configuration** | file `.tf`/`.tf.json` yang Anda tulis |
-| **State** | catatan resource nyata mana yang diwakili tiap alamat kode |
-| **Provider** | plugin yang menerjemahkan HCL ke API (AWS, GCP, Kubernetes, ...) |
-| **Resource** | objek yang dikelola (`aws_instance`, `kubernetes_deployment`) |
-| **Data source** | objek yang hanya **dibaca** (`data aws_ami`) |
-| **Module** | paket konfigurasi yang bisa dipakai ulang |
+| **Configuration** | the `.tf`/`.tf.json` files you write |
+| **State** | record of which real resources each code address represents |
+| **Provider** | plugin that translates HCL into API calls (AWS, GCP, Kubernetes, ...) |
+| **Resource** | an object that is managed (`aws_instance`, `kubernetes_deployment`) |
+| **Data source** | an object that is only **read** (`data aws_ami`) |
+| **Module** | a reusable configuration package |
 
-> **Pegangan utama:** Terraform membandingkan **kode ↔ state ↔ kenyataan**. Kalau ketiganya
-> tidak sinkron, hasil `plan` aneh. Hampir semua masalah "kok mau recreate?" berasal dari sini.
+> **Main takeaway:** Terraform compares **code ↔ state ↔ reality**. If the three are
+> out of sync, the `plan` output gets weird. Nearly every "why does it want to recreate?" issue originates here.
 
 ---
 
-## Struktur project & module
+## Project & module structure
 
 ```text
 infra/
 ├── envs/
-│   ├── staging/           # root module (jalankan terraform di sini)
+│   ├── staging/           # root module (run terraform from here)
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   ├── outputs.tf
 │   │   ├── backend.tf
 │   │   └── terraform.tfvars
-│   └── production/        # root module lain, state terpisah
+│   └── production/        # another root module, separate state
 ├── modules/
-│   ├── network/           # child module: input, output, tanpa provider config
+│   ├── network/           # child module: inputs, outputs, no provider config
 │   ├── app/               # child module
 │   └── database/
-└── .gitignore             # .terraform/, *.tfstate*, *.tfplan, *.tfvars (jika berisi nilai nyata)
+└── .gitignore             # .terraform/, *.tfstate*, *.tfplan, *.tfvars (if they contain real values)
 ```
 
 ```hcl
@@ -95,7 +95,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.60"          # minor bebas, major dikunci
+      version = "~> 5.60"          # minor is free, major is pinned
     }
   }
 }
@@ -116,49 +116,49 @@ module "app" {
 }
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
-| Root module = 1 lingkungan = 1 state | blast radius kecil, plan cepat |
-| Child module tanpa blok `provider` | provider diwarisi dari root |
-| Child module punya `variables.tf` + `outputs.tf` | kontrak jelas, mudah diuji |
-| `.terraform.lock.hcl` di-commit | versi provider identik di CI & laptop |
-| `.terraform/` di-gitignore | berisi binary provider |
-| Jangan simpan `terraform.tfstate` di git | berisi data sensitif & cepat konflik |
+| Root module = 1 environment = 1 state | small blast radius, fast plan |
+| Child modules have no `provider` block | providers are inherited from the root |
+| Child modules have `variables.tf` + `outputs.tf` | clear contract, easy to test |
+| Commit `.terraform.lock.hcl` | identical provider versions in CI & on laptops |
+| `.terraform/` in gitignore | contains provider binaries |
+| Never store `terraform.tfstate` in git | contains sensitive data & conflicts quickly |
 
 ---
 
-## Perintah harian
+## Daily commands
 
 ```bash
-terraform init                    # unduh provider & module, tulis lock
-terraform init -upgrade           # upgrade sesuai constraint
-terraform validate                # syntax + tipe, tanpa koneksi
+terraform init                    # download providers & modules, write lock
+terraform init -upgrade           # upgrade according to constraints
+terraform validate                # syntax + types, no connection
 terraform fmt -recursive          # format HCL
-terraform plan -out=tf.plan       # simpan rencana
-terraform show tf.plan            # baca rencana (human readable)
-terraform apply tf.plan           # apply rencana yang sudah diperiksa
-terraform apply -auto-approve     # CI saja, setelah plan direview
+terraform plan -out=tf.plan       # save the plan
+terraform show tf.plan            # read the plan (human readable)
+terraform apply tf.plan           # apply the plan you already reviewed
+terraform apply -auto-approve     # CI only, after the plan has been reviewed
 
 terraform output -json
 terraform state list
 terraform state show 'aws_instance.app[0]'
-terraform console                 # REPL untuk uji ekspresi
+terraform console                 # REPL for testing expressions
 ```
 
-| Perintah | Kapan |
+| Command | When |
 | :--- | :--- |
-| `plan -detailed-exitcode` | CI: 0 = no changes, 1 = error, 2 = ada perubahan |
-| `plan -target=...` | darurat saja — tidak menjamin keadaan akhir konsisten |
-| `apply -replace=...` | recreate satu resource secara eksplisit |
-| `import` / `moved` | adopsi resource lama tanpa destroy |
-| `state mv` / `state rm` | refactor alamat tanpa menyentuh remote |
-| `force-unlock <id>` | state terkunci karena proses mati |
-| `refresh` | sinkronkan state dengan kenyataan (plan sudah melakukannya) |
-| `destroy` | hapus seluruh stack — pakai hanya untuk lingkungan sementara |
+| `plan -detailed-exitcode` | CI: 0 = no changes, 1 = error, 2 = there are changes |
+| `plan -target=...` | emergencies only — does not guarantee a consistent end state |
+| `apply -replace=...` | explicitly recreate a single resource |
+| `import` / `moved` | adopt existing resources without destroying them |
+| `state mv` / `state rm` | refactor addresses without touching the remote |
+| `force-unlock <id>` | state locked because the process died |
+| `refresh` | sync state with reality (plan already does this) |
+| `destroy` | tear down the whole stack — use only for ephemeral environments |
 
 ---
 
-## Provider & autentikasi
+## Providers & authentication
 
 ```hcl
 terraform {
@@ -170,7 +170,7 @@ terraform {
 
 provider "aws" {
   region = var.region
-  # kredensial TIDAK di sini — pakai env / profil / OIDC role
+  # credentials DO NOT go here — use env / profile / OIDC role
   default_tags {
     tags = { Project = var.project, ManagedBy = "terraform", Env = var.env }
   }
@@ -182,36 +182,36 @@ provider "kubernetes" {
 ```
 
 ```bash
-# kredensial lewat environment (tidak pernah masuk repo/state)
+# credentials via environment (never end up in the repo/state)
 export AWS_PROFILE=dev
 export AWS_REGION=ap-southeast-1
-# CI/cloud: OIDC role, bukan static key
+# CI/cloud: OIDC role, not static keys
 
-# pakai provider alternatif per region / per akun
+# use an alternate provider per region / per account
 # provider "aws" { alias = "replica"; region = "ap-northeast-1" }
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
-| Kredensial via env/OIDC | static key di file = bocor di git history |
-| `alias` untuk multi-region/akun | satu root module, banyak provider instance |
-| `default_tags` di provider | tagging konsisten tanpa mengulang di tiap resource |
-| Pin provider per major | upgrade major = breaking change + force-new |
-| `insecure` / `skip_credentials_validation` | hanya untuk endpoint lokal/self-hosted, jangan produksi |
+| Credentials via env/OIDC | static keys in files = leaked in git history |
+| `alias` for multi-region/account | one root module, many provider instances |
+| `default_tags` on the provider | consistent tagging without repeating it on every resource |
+| Pin providers per major | major upgrade = breaking change + force-new |
+| `insecure` / `skip_credentials_validation` | only for local/self-hosted endpoints, never production |
 
 ---
 
-## Variabel, tipe, validasi
+## Variables, types, validation
 
 ```hcl
 # variables.tf
 variable "env" {
-  description = "Nama lingkungan"
+  description = "Environment name"
   type        = string
 
   validation {
     condition     = contains(["staging", "production"], var.env)
-    error_message = "env harus staging atau production."
+    error_message = "env must be staging or production."
   }
 }
 
@@ -225,7 +225,7 @@ variable "network" {
 }
 
 variable "instances" {
-  description = "Instance per aplikasi. Key = nama unik."
+  description = "Instance per application. Key = unique name."
   type = map(object({
     size    = string
     count   = optional(number, 1)
@@ -236,12 +236,12 @@ variable "instances" {
 
 variable "db_password" {
   type      = string
-  sensitive = true            # disembunyikan di output/log CLI
+  sensitive = true            # hidden in CLI output/logs
 }
 ```
 
 ```hcl
-# terraform.tfvars (nilai nyata — jangan commit bila berisi data sensitif)
+# terraform.tfvars (real values — do not commit if they contain sensitive data)
 env  = "production"
 region = "ap-southeast-1"
 
@@ -251,18 +251,18 @@ instances = {
 }
 ```
 
-| Sumber nilai (rendah → tinggi) | Catatan |
+| Value source (low → high) | Note |
 | :--- | :--- |
-| `default` di `variable` | nilai aman |
-| `terraform.tfvars` / `*.auto.tfvars` | otomatis dibaca |
-| `-var-file=...` | eksplisit per lingkungan |
-| `TF_VAR_nama` | CI & secret injection |
-| `-var nama=nilai` | override cepat di terminal |
-| `TF_CLI_ARGS_plan="-var-file=x"` | pengaruhi semua invokasi |
+| `default` in `variable` | safe value |
+| `terraform.tfvars` / `*.auto.tfvars` | read automatically |
+| `-var-file=...` | explicit per environment |
+| `TF_VAR_name` | CI & secret injection |
+| `-var name=value` | quick override in the terminal |
+| `TF_CLI_ARGS_plan="-var-file=x"` | affects all invocations |
 
-> **Jebakan #1:** `sensitive = true` hanya menyembunyikan nilai di **output CLI** — nilai tetap
-> tersimpan plaintext di state. Jangan simpan password di variabel kalau bisa memakai referensi
-> ke secret manager.
+> **Pitfall #1:** `sensitive = true` only hides the value in **CLI output** — the value is still
+> stored in plaintext in state. Don't store passwords in variables if you can reference
+> a secret manager instead.
 
 ---
 
@@ -276,12 +276,12 @@ locals {
     Owner   = var.owner
   }
 
-  # flatten: list objek -> map ber-key stabil
+  # flatten: list of objects -> map with stable keys
   subnets = {
     for s in var.subnets : "${s.az}-${s.tier}" => s
   }
 
-  # resolve default + label
+  # resolve defaults + label
   apps = {
     for name, cfg in var.instances : name => merge(cfg, {
       name = "${var.env}-${name}"
@@ -290,22 +290,22 @@ locals {
   }
 }
 
-# for_each = alamat stabil (key), aman ditambah/dihapus
+# for_each = stable addresses (keys), safe to add/remove
 resource "aws_instance" "app" {
   for_each = local.apps
 
   ami           = data.aws_ami.app.id
   instance_type = each.value.size
-  count         = each.value.count   # <- ini SALAH: count tidak bisa dari for_each item
+  count         = each.value.count   # <- this is WRONG: count cannot come from a for_each item
 }
 
-# count = indeks numerik, untuk resource "sebanyak N"
+# count = numeric index, for "N copies of" a resource
 resource "aws_iam_user" "ci" {
   count = 3
   name  = "ci-runner-${count.index + 1}"
 }
 
-# dynamic block: blok berulang dari list
+# dynamic block: repeating block from a list
 resource "aws_security_group" "app" {
   name   = "${var.env}-app"
   vpc_id = module.network.vpc_id
@@ -322,25 +322,25 @@ resource "aws_security_group" "app" {
 }
 ```
 
-| Pola | Hasil |
+| Pattern | Result |
 | :--- | :--- |
-| `for_each` dengan map/set | alamat ber-key; hapus satu item tidak menggeser yang lain |
-| `count` | alamat ber-indeks; hapus elemen tengah menggeser semua sesudahnya |
-| `merge()` | gabung map; nilai kanan menimpa |
-| `flatten()` / `tolist()` / `toset()` | normalisasi tipe untuk `for_each` |
-| `lookup(map, key, default)` | nilai dengan cadangan |
-| `try(expr, fallback)` | aman untuk atribut yang mungkin tidak ada |
-| `for ... : k => v` | proyeksi/transformasi koleksi |
-| `one(list)` | ambil satu elemen / null (pengganti `[0]` yang error saat kosong) |
+| `for_each` with a map/set | keyed addresses; removing one item does not shift the others |
+| `count` | index-based addresses; removing a middle element shifts everything after it |
+| `merge()` | merge maps; right-hand values win |
+| `flatten()` / `tolist()` / `toset()` | type normalization for `for_each` |
+| `lookup(map, key, default)` | value with a fallback |
+| `try(expr, fallback)` | safe for attributes that may not exist |
+| `for ... : k => v` | collection projection/transformation |
+| `one(list)` | take one element / null (replacement for `[0]` which errors when empty) |
 
-> **Jebakan #2:** `count` tidak boleh bergantung pada nilai yang belum diketahui saat plan
+> **Pitfall #2:** `count` must not depend on a value that is unknown at plan time
 > ("The 'count' value depends on resource attributes that cannot be determined until apply").
-> Solusi: pindahkan keputusan ke variabel/locals atau pakai `for_each`.
-> **Jebakan #3:** `for_each` tidak menerima list — pakai `toset()` atau map.
+> Fix: move the decision into a variable/locals or use `for_each`.
+> **Pitfall #3:** `for_each` does not accept a list — use `toset()` or a map.
 
 ---
 
-## Resource, data source, dependency
+## Resources, data sources, dependencies
 
 ```hcl
 data "aws_ami" "app" {
@@ -367,7 +367,7 @@ resource "aws_instance" "app" {
     version = var.app_version
   })
 
-  # eksplisit: tunggu resource lain selesai dulu
+  # explicit: wait for other resources to finish first
   depends_on = [aws_iam_role_policy.app]
 
   tags = each.value.tags
@@ -379,22 +379,22 @@ resource "aws_instance" "app" {
 }
 ```
 
-| Mekanisme | Kapan |
+| Mechanism | When |
 | :--- | :--- |
-| **Implicit dependency** | referensi antar resource (`module.x.y`, `aws_x.y.id`) — paling disarankan |
-| **Explicit `depends_on`** | efek samping yang tidak terlihat di atribut (IAM propagation, DNS) |
-| `data` | baca objek yang sudah ada (AMI, VPC, secret) — selalu di-refresh saat plan |
-| `ephemeral` (1.10+) | data sensitif yang tidak boleh masuk state |
-| `terraform_data` | resource no-op untuk memicu `triggers_replace` / provisoner lokal |
-| `provisioner` | **hindari**; pakai cloud-init/user_data atau configuration management |
+| **Implicit dependency** | references between resources (`module.x.y`, `aws_x.y.id`) — most recommended |
+| **Explicit `depends_on`** | side effects that are not visible in attributes (IAM propagation, DNS) |
+| `data` | read an existing object (AMI, VPC, secret) — always refreshed at plan time |
+| `ephemeral` (1.10+) | sensitive data that must not enter state |
+| `terraform_data` | no-op resource to trigger `triggers_replace` / local provisioners |
+| `provisioner` | **avoid**; use cloud-init/user_data or configuration management |
 
-> **Jebakan #4:** `data` yang mereferensikan resource di modul yang sama bisa terbaca
-> **sebelum** resource itu dibuat saat apply pertama — hasilnya error atau nilai kosong.
-> Jangan campur `data` dan `resource` untuk objek yang sama dalam satu root module.
+> **Pitfall #4:** a `data` source that references a resource in the same module may be read
+> **before** that resource is created on the first apply — resulting in an error or an empty value.
+> Don't mix `data` and `resource` for the same object within one root module.
 
 ---
 
-## Module
+## Modules
 
 ```hcl
 # modules/network/variables.tf
@@ -407,7 +407,7 @@ output "private_subnet_ids"  { value = aws_subnet.private[*].id }
 ```
 
 ```hcl
-# root — pakai module lokal
+# root — use a local module
 module "network" {
   source = "../../modules/network"
 
@@ -415,7 +415,7 @@ module "network" {
   az_count   = 3
 }
 
-# module registry (pin versi!)
+# registry module (pin the version!)
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.24"
@@ -427,32 +427,32 @@ module "eks" {
 ```
 
 ```bash
-terraform init                      # ambil module
-terraform init -upgrade             # upgrade module sesuai constraint
+terraform init                      # fetch modules
+terraform init -upgrade             # upgrade modules according to constraints
 terraform get -update
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
-| `source` + `version` untuk registry | tanpa versi = build tidak reproducible |
-| `providers = { aws = aws.replica }` | modul memakai provider instance tertentu |
-| Modul tidak boleh menulis state sendiri | `terraform` di dalam modul = dua sumber kebenaran |
-| `count`/`for_each` di modul diperbolehkan | berhati-hati: mengubah key = recreate isi modul |
-| `terraform-docs` | dokumentasi input/output otomatis |
-| Module kecil & spesifik | modul "serba bisa" sulit diuji & di-upgrade |
+| `source` + `version` for registry | no version = non-reproducible build |
+| `providers = { aws = aws.replica }` | module uses a specific provider instance |
+| Modules must not write their own state | `terraform` inside a module = two sources of truth |
+| `count`/`for_each` on modules is allowed | careful: changing the key = recreating module contents |
+| `terraform-docs` | automatic input/output documentation |
+| Small, specific modules | "does everything" modules are hard to test & upgrade |
 
-> **Jebakan #5:** mengubah `source` dari lokal ke registry (atau sebaliknya) tanpa
-> `state mv` akan membuat Terraform menganggap semua isi modul sebagai resource baru.
+> **Pitfall #5:** changing `source` from local to registry (or vice versa) without
+> `state mv` makes Terraform treat all module contents as new resources.
 
 ---
 
-## `terraform_remote_state` & dependency antar stack
+## `terraform_remote_state` & cross-stack dependencies
 
 ```hcl
-# stack network: mengekspos output
+# network stack: exposes outputs
 output "vpc_id" { value = aws_vpc.this.id }
 
-# stack app: membaca output stack lain
+# app stack: reads another stack's outputs
 data "terraform_remote_state" "network" {
   backend = "s3"
   config = {
@@ -467,28 +467,28 @@ resource "aws_instance" "app" {
 }
 ```
 
-| Pendekatan | Kapan |
+| Approach | When |
 | :--- | :--- |
-| `terraform_remote_state` | stack terpisah tapi butuh output-nya (coupling longgar) |
-| `data` provider (SSM/VPC lookup) | hindari coupling state sama sekali — lebih tahan refactor |
-| Satu root module | untuk sistem kecil; hindari bila blast radius besar |
-| `dependency` di Terragrunt / orchestration | urutan apply antar stack otomatis |
+| `terraform_remote_state` | separate stack but you need its outputs (loose coupling) |
+| Provider `data` (SSM/VPC lookup) | avoid state coupling entirely — more refactor-proof |
+| Single root module | for small systems; avoid if the blast radius is large |
+| `dependency` in Terragrunt / orchestration | automatic apply ordering across stacks |
 
-> **Jebakan #6:** `terraform_remote_state` membuat stack pembaca bergantung pada **format
-> state** stack penulis. Rename output = stack pembaca rusak di plan berikutnya.
+> **Pitfall #6:** `terraform_remote_state` makes the reader stack depend on the writer stack's
+> **state format**. Renaming an output = the reader stack breaks on the next plan.
 
 ---
 
 ## Import & `moved`
 
 ```hcl
-# 1.9+: blok import — resource ditulis manual, lalu diadopsi
+# 1.9+: import block — the resource is written manually, then adopted
 import {
   to = aws_instance.app["api"]
   id = "i-0123456789abcdef0"
 }
 
-# ubah alamat tanpa destroy (refactor)
+# change the address without destroying (refactor)
 moved {
   from = aws_instance.old_name
   to   = aws_instance.app["api"]
@@ -501,26 +501,26 @@ moved {
 ```
 
 ```bash
-# CLI: satu per satu
+# CLI: one at a time
 terraform import 'aws_instance.app["api"]' i-0123456789abcdef0
-terraform plan                       # cocokkan config sampai "No changes"
+terraform plan                       # match the config until "No changes"
 
-# terima kasih untuk resource yang akan dihapus
-terraform state rm 'aws_instance.legacy'   # berhenti mengelola, TIDAK menghapus
+# unmanage a resource that is about to be deleted
+terraform state rm 'aws_instance.legacy'   # stop managing it, does NOT delete it
 ```
 
-| Skenario | Tool |
+| Scenario | Tool |
 | :--- | :--- |
-| Adopsi resource yang dibuat manual | `import` block / `terraform import` |
-| Rename resource / modul | `moved` block (1.1+) |
-| Pindah key `for_each` | `moved` dari `["a"]` ke `["b"]` |
-| Berhenti mengelola | `state rm` |
-| Pindah antar state | `terraform state pull/push` atau `import` di stack baru |
-| Import massal | generator (`former2`/`terraformer`) lalu rapikan |
+| Adopt a manually created resource | `import` block / `terraform import` |
+| Rename a resource / module | `moved` block (1.1+) |
+| Move a `for_each` key | `moved` from `["a"]` to `["b"]` |
+| Stop managing | `state rm` |
+| Move between states | `terraform state pull/push` or `import` in the new stack |
+| Bulk import | generator (`former2`/`terraformer`) then clean up |
 
-> **Jebakan #7:** import tidak menulis konfigurasi. Setelah `import`, wajib menulis blok
-> resource yang **identik** dengan kenyataan — selisih atribut = diff yang mencoba mengubah
-> infrastruktur nyata pada `apply` berikutnya.
+> **Pitfall #7:** import does not write configuration. After `import`, you must write a
+> resource block that is **identical** to reality — any attribute difference = a diff that tries to change
+> the real infrastructure on the next `apply`.
 
 ---
 
@@ -528,36 +528,36 @@ terraform state rm 'aws_instance.legacy'   # berhenti mengelola, TIDAK menghapus
 
 ```hcl
 lifecycle {
-  prevent_destroy       = true                     # tolak destroy (data penting)
+  prevent_destroy       = true                     # refuse destroy (important data)
   create_before_destroy = true                     # zero-downtime replace
   ignore_changes        = [tags["LastModified"], user_data]
-  replace_triggered_by  = [null_resource.version]  # recreate bila trigger berubah
-  precondition {                                    # 1.2+: validasi sebelum operasi
+  replace_triggered_by  = [null_resource.version]  # recreate when the trigger changes
+  precondition {                                    # 1.2+: validate before the operation
     condition     = var.env != "production" || var.multi_az
-    error_message = "production wajib multi_az."
+    error_message = "production requires multi_az."
   }
   postcondition {
     condition     = self.private_ip != ""
-    error_message = "instance harus punya private IP."
+    error_message = "instance must have a private IP."
   }
 }
 ```
 
-| Atribut | Efek | Risiko |
+| Attribute | Effect | Risk |
 | :--- | :--- | :--- |
-| `prevent_destroy` | apply gagal saat berencana destroy | harus dihapus manual untuk destroy yang disengaja |
-| `ignore_changes` | diff atribut diabaikan | drift tidak terdeteksi (disengaja) |
-| `create_before_destroy` | resource baru dulu | bentrok nama/ID unik & biaya ganda sementara |
-| `replace_triggered_by` | recreate saat referensi berubah | recreate berantai |
-| `precondition` / `postcondition` | gerbang validasi | plan gagal lebih awal (bagus) |
+| `prevent_destroy` | apply fails when it plans a destroy | must be removed manually for an intentional destroy |
+| `ignore_changes` | attribute diffs are ignored | drift goes undetected (intentional) |
+| `create_before_destroy` | new resource first | unique name/ID conflicts & temporary double cost |
+| `replace_triggered_by` | recreate when a reference changes | chained recreations |
+| `precondition` / `postcondition` | validation gate | plan fails earlier (good) |
 
-> **Jebakan #8:** `prevent_destroy` tidak melindungi dari `terraform destroy -target` pada
-> resource **induk**, dan tidak menghalangi perubahan di luar Terraform (hapus manual di
-> console). Ia hanya menjaga destroy yang direncanakan Terraform.
+> **Pitfall #8:** `prevent_destroy` does not protect against `terraform destroy -target` on the
+> **parent** resource, and does not block changes made outside Terraform (manual deletion in the
+> console). It only guards destroys planned by Terraform.
 
 ---
 
-## Output & rahasia
+## Outputs & secrets
 
 ```hcl
 output "app_endpoints" {
@@ -571,24 +571,24 @@ output "db_connection" {
 
 output "admin_password" {
   value     = random_password.admin.result
-  sensitive = true            # tetap plaintext di state!
+  sensitive = true            # still plaintext in state!
 }
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
-| Output = kontrak antar stack/modul | rename = breaking change |
-| `sensitive` hanya kosmetik | state tetap plaintext — enkripsi backend |
-| Jangan output secret | pakai secret manager + `data`/`ephemeral` |
-| `terraform output -json` | dipakai skrip CI & tooling |
-| `precondition` di modul | gagal cepat saat kontrak output tidak terpenuhi |
+| Outputs = the contract between stacks/modules | rename = breaking change |
+| `sensitive` is cosmetic only | state stays plaintext — encrypt the backend |
+| Never output secrets | use a secret manager + `data`/`ephemeral` |
+| `terraform output -json` | used by CI scripts & tooling |
+| `precondition` in modules | fail fast when the output contract is not met |
 
 ---
 
-## State, backend, workspace
+## State, backend, workspaces
 
 ```hcl
-# backend.tf — state remote dengan locking
+# backend.tf — remote state with locking
 terraform {
   backend "s3" {
     bucket         = "tfstate-prod"
@@ -605,61 +605,61 @@ terraform state list
 terraform state show 'aws_instance.app["api"]'
 terraform state mv 'aws_instance.a' 'aws_instance.b'
 terraform state rm 'aws_instance.c'
-terraform state pull > backup.tfstate          # cadangan sebelum refactor
+terraform state pull > backup.tfstate          # backup before refactoring
 
 terraform workspace list
 terraform workspace new staging
 terraform workspace select production
 ```
 
-| Topik | Praktik |
+| Topic | Practice |
 | :--- | :--- |
-| Backend | remote (S3+GCS+Azure) + **locking**; jangan lokal untuk tim |
-| Enkripsi | wajib — state berisi atribut sensitif |
-| Versioning bucket | rollback state cepat & aman |
-| Workspace | hanya untuk lingkungan identik & kecil; untuk beda struktur pakai direktori terpisah |
-| `terraform.tfstate.backup` | bukan pengganti versioning |
-| Manual edit state | hanya via `state mv/rm`, jangan edit JSON |
+| Backend | remote (S3+GCS+Azure) + **locking**; never local for a team |
+| Encryption | mandatory — state contains sensitive attributes |
+| Bucket versioning | fast & safe state rollback |
+| Workspaces | only for identical, small environments; for different structures use separate directories |
+| `terraform.tfstate.backup` | not a substitute for versioning |
+| Manual state edits | only via `state mv/rm`, never edit the JSON |
 
-> **Jebakan #9:** workspace berbagi **kode** — kalau staging butuh resource berbeda,
-> `count`/`for_each` akan berubah dan bisa menghapus resource di workspace lain saat
-> environment dibedakan dengan `terraform.workspace` di dalam `count`.
+> **Pitfall #9:** workspaces share **code** — if staging needs different resources,
+> `count`/`for_each` will change and can delete resources in another workspace when the
+> environment is differentiated with `terraform.workspace` inside `count`.
 
 ---
 
 ## Drift & reconciliation
 
 ```bash
-# deteksi di CI
+# detect in CI
 terraform plan -detailed-exitcode -lock=false; echo "exit=$?"   # 2 = drift
 
-# lihat apa yang di luar kode
-terraform plan -refresh-only        # tampilkan drift tanpa mengubah resource
-terraform apply -refresh-only       # terima kenyataan ke state
+# see what is outside the code
+terraform plan -refresh-only        # show drift without changing resources
+terraform apply -refresh-only       # accept reality into state
 ```
 
-| Drift | Respons ideal |
+| Drift | Ideal response |
 | :--- | :--- |
-| Perubahan manual kecil yang benar | terima ke kode (update config), lalu `plan` → no changes |
-| Perubahan manual yang salah | `apply` untuk mengembalikan ke kode |
-| Resource dibuat di luar Terraform | `import` + tulis config |
-| Resource dihapus di luar | putuskan: recreate (apply) atau `state rm` |
-| Atribut yang memang dinamis | `ignore_changes` dengan alasan tertulis |
+| Small manual change that is correct | accept it into the code (update config), then `plan` → no changes |
+| Manual change that is wrong | `apply` to restore it to the code |
+| Resource created outside Terraform | `import` + write config |
+| Resource deleted outside | decide: recreate (apply) or `state rm` |
+| Attributes that are genuinely dynamic | `ignore_changes` with a written rationale |
 
-> **Jebakan #10:** `plan` yang tidak melakukan refresh (`-refresh=false`) menyembunyikan
-> drift. Hanya pakai saat yakin state baru saja di-refresh (mis. plan dan apply berurutan).
+> **Pitfall #10:** a `plan` without refresh (`-refresh=false`) hides
+> drift. Only use it when you are sure state was just refreshed (e.g. plan and apply back to back).
 
 ---
 
-## Testing & validasi
+## Testing & validation
 
 ```bash
 terraform fmt -check -recursive
 terraform validate
-tflint                                 # lint provider-aware
+tflint                                 # provider-aware lint
 checkov -d .                           # security scan
-trivy config .                         # alternatif security scan
-terraform plan -lock=false -input=false   # gate di CI
+trivy config .                         # alternative security scan
+terraform plan -lock=false -input=false   # gate in CI
 ```
 
 ```hcl
@@ -675,7 +675,7 @@ run "plan_app" {
 
   assert {
     condition     = aws_instance.app["api"].instance_type == "t3.small"
-    error_message = "instance api harus t3.small"
+    error_message = "api instance must be t3.small"
   }
 }
 
@@ -684,55 +684,55 @@ run "apply_and_check" {
 
   assert {
     condition     = output.app_endpoints["web"] != ""
-    error_message = "endpoint web kosong"
+    error_message = "web endpoint is empty"
   }
 }
 ```
 
-| Layer uji | Butuh cloud? | Cakupan |
+| Test layer | Needs cloud? | Coverage |
 | :--- | :--- | :--- |
-| `validate` + `fmt` | tidak | sintaks, tipe |
-| `tflint` / `checkov` | tidak | praktik provider & keamanan |
-| `terraform test` (`command = plan`) | tidak | logika variabel & plan |
-| `terraform test` (`command = apply`) | ya (atau localstack) | perilaku nyata |
-| Terratest / kitchen-terraform | ya | integrasi end-to-end |
+| `validate` + `fmt` | no | syntax, types |
+| `tflint` / `checkov` | no | provider & security practices |
+| `terraform test` (`command = plan`) | no | variable & plan logic |
+| `terraform test` (`command = apply`) | yes (or localstack) | real behavior |
+| Terratest / kitchen-terraform | yes | end-to-end integration |
 
 ---
 
 ## CI/CD
 
 ```yaml
-# contoh alur (format generik)
-plan:      terraform init -> validate -> plan -out=tf.plan -> simpan artifact
-review:    komentar plan ke PR (plan harus dibaca manusia)
-apply:     terraform apply tf.plan        # hanya pada branch main, setelah approve
-cleanup:   terraform destroy -auto-approve (lingkungan ephemeral)
+# example flow (generic format)
+plan:      terraform init -> validate -> plan -out=tf.plan -> save artifact
+review:    comment the plan to the PR (the plan must be read by a human)
+apply:     terraform apply tf.plan        # only on the main branch, after approval
+cleanup:   terraform destroy -auto-approve (ephemeral environments)
 ```
 
-| Aturan CI | Kenapa |
+| CI rule | Why |
 | :--- | :--- |
-| `plan` dan `apply` memakai **plan file yang sama** | apply tidak bisa berbeda dari yang direview |
-| State locking aktif | dua pipeline tidak saling menimpa |
-| `-input=false` | CI tidak boleh menunggu input |
-| Kredensial OIDC/short-lived | tidak ada static key di runner |
-| `TF_IN_AUTOMATION=1` | output lebih tenang & konsisten |
-| Plan di-comment ke PR | review = keputusan sadar, bukan auto-approve buta |
+| `plan` and `apply` use the **same plan file** | apply cannot differ from what was reviewed |
+| State locking enabled | two pipelines don't overwrite each other |
+| `-input=false` | CI must not wait for input |
+| OIDC/short-lived credentials | no static keys in the runner |
+| `TF_IN_AUTOMATION=1` | quieter, more consistent output |
+| Plan commented to the PR | review = a conscious decision, not blind auto-approve |
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must read)
 
-| Jebakan | Gejala | Solusi |
+| Pitfall | Symptom | Fix |
 | :--- | :--- | :--- |
-| `count` dari atribut yang belum diketahui | "depends on resource attributes that cannot be determined" | pindah ke variabel/locals atau `for_each` |
-| Ubah key `for_each` | destroy + create semua | `moved` block |
-| `for_each` diberi list | error "must be a map or set" | `toset(list)` |
-| Import tanpa menulis config | plan mau mengubah/menghapus resource | tulis config identik, plan → No changes |
-| `sensitive` dianggap enkripsi | secret terbaca di state | enkripsi backend + secret manager |
-| State lokal untuk tim | konflik & kehilangan resource | remote backend + locking |
-| `ignore_changes` berlebihan | drift tidak terlihat | batasi ke atribut dinamis |
-| `create_before_destroy` pada nama unik | bentrok nama/ID saat replace | `name_prefix` / alamat unik |
-| `data` + `resource` objek yang sama | nilai kosong saat apply pertama | gunakan referensi resource |
-| Upgrade provider tanpa pin | force-new tak terduga | `~>` + commit lock file |
-| `apply` tanpa membaca plan | perubahan destruktif | `plan -out` → review → `apply plan` |
-| Provider di dalam child module | dua konfigurasi provider bersaing | provider hanya di root |
+| `count` from an unknown attribute | "depends on resource attributes that cannot be determined" | move it to a variable/locals or `for_each` |
+| Change a `for_each` key | destroy + create everything | `moved` block |
+| `for_each` given a list | error "must be a map or set" | `toset(list)` |
+| Import without writing config | plan wants to change/delete resources | write identical config, plan → No changes |
+| `sensitive` mistaken for encryption | secrets readable in state | encrypt the backend + secret manager |
+| Local state for a team | conflicts & lost resources | remote backend + locking |
+| Excessive `ignore_changes` | drift is invisible | limit it to dynamic attributes |
+| `create_before_destroy` on a unique name | name/ID conflict during replace | `name_prefix` / unique address |
+| `data` + `resource` for the same object | empty value on the first apply | use the resource reference |
+| Upgrading a provider without pinning | unexpected force-new | `~>` + commit the lock file |
+| `apply` without reading the plan | destructive changes | `plan -out` → review → `apply plan` |
+| Provider inside a child module | two competing provider configs | providers only at the root |

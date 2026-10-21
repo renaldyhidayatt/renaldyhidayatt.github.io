@@ -1,6 +1,6 @@
 ---
 title: "Distributed Microservices — Payment Gateway Platform (Spring Boot Cloud)"
-excerpt: "Backend payment gateway microservices di Java 21 / Spring Boot 3.5.3 dengan Spring Cloud 2025.0.0: 20 modul Maven, ledger transaksi dengan idempotency key, saldo/topup/transfer/withdraw terisolasi per database, Eureka discovery, Kafka transactional outbox, dan analitik ClickHouse."
+excerpt: "Payment gateway microservices backend in Java 21 / Spring Boot 3.5.3 with Spring Cloud 2025.0.0: 20 Maven modules, transaction ledger with idempotency keys, balance/top-up/transfer/withdraw isolated per database, Eureka discovery, Kafka transactional outbox, and ClickHouse analytics."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -21,7 +21,7 @@ status: "ongoing"
 image: "/portofolio/microservice_springboot_cloud/microservice-springboot-cloud-paymentgateway.png"
 ---
 
-{/* Catatan penulis: angka jumlah modul, database, dan test di dokumen ini adalah placeholder — sesuaikan dengan hasil repo sebenarnya sebelum dipublikasikan. */}
+{/* Author's note: the module, database, and test counts in this document are placeholders — adjust them to the actual repository before publishing. */}
 
 # Distributed Microservices — Payment Gateway Platform (Spring Boot Cloud)
 
@@ -419,15 +419,15 @@ mvn -pl common,auth-service,user-service,role-service,merchant-service,card-serv
 
 ## Design Decisions & Known Limitations
 
-Keputusan desain yang disengaja (bukan bug) — didokumentasikan agar tidak "diperbaiki" tanpa sadar:
+Deliberate design decisions (not bugs) — documented so they are not "fixed" unknowingly:
 
-| ID | Keputusan | Perilaku | Alasan |
+| ID | Decision | Behavior | Reason |
 |---|---|---|---|
-| PG-1 | Spring Cloud stack, bukan gRPC | Sinkron antar-service via OpenFeign REST, bukan gRPC | Konsistensi ekosistem Spring Cloud + Eureka discovery; gRPC tersedia di versi Quarkus |
-| PG-2 | Idempotency key di ledger, bukan distributed lock | Kunci unik pada `idempotency_key` di tabel transaksi | Aturan uniqueness di database lebih sederhana dan tahan mati mendadak dibanding lock |
-| PG-3 | Saldo dimiliki satu service | Semua debit/kredit saldo lewat `saldo-service` lewat Feign | Tidak ada dua sumber kebenaran atas saldo; sacrifice satu round-trip demi konsistensi |
-| PG-4 | RabbitMQ untuk publikasi transaksi | Transaction controller mengirim ke `transaction-queue` langsung; tidak lewat Kafka | Notifikasi transaksi bersifat point-to-point, cocok untuk queue, bukan event streaming |
-| PG-5 | Soft-delete tanpa read-filter global | `deleted_at` diisi saat delete; query list tidak otomatis menyaring | Perilaku app-level eksplisit; filter diterapkan di query service yang membutuhkan |
+| PG-1 | Spring Cloud stack, not gRPC | Synchronous inter-service communication via OpenFeign REST, not gRPC | Consistency of the Spring Cloud ecosystem + Eureka discovery; gRPC is available in the Quarkus version |
+| PG-2 | Idempotency key in the ledger, not a distributed lock | Unique constraint on `idempotency_key` in the transaction table | Database uniqueness rules are simpler and survive sudden crashes better than a lock |
+| PG-3 | Balance owned by a single service | All balance debit/credit goes through `saldo-service` via Feign | There is no dual source of truth for balance; sacrifice one round-trip for consistency |
+| PG-4 | RabbitMQ for transaction publication | The transaction controller sends directly to `transaction-queue`; not through Kafka | Transaction notifications are point-to-point, suited to a queue rather than event streaming |
+| PG-5 | Soft-delete without a global read filter | `deleted_at` is set on delete; list queries do not filter automatically | Explicit app-level behavior; the filter is applied in the service queries that need it |
 
 ---
 

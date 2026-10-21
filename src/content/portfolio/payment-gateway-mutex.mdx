@@ -5,7 +5,7 @@ date: "2025-01-31"
 created_at: "2025-01-31"
 updated_at: "2025-01-31"
 tags: ["golang", "sync.Mutex"]
-status: "selesai"
+status: "completed"
 image: "/portofolio/payment_gateway_grpc.png"
 ---
 
@@ -13,14 +13,14 @@ image: "/portofolio/payment_gateway_grpc.png"
 
 This project simulates a payment gateway handling operations like card transactions, top-ups, withdrawals, and transfers. The system includes users, cards, merchants, and financial transactions while ensuring data consistency with **Go's sync.Mutex**.
 
-## Fitur Utama
+## Key Features
 - **Card Transactions**: Process payments using credit/debit cards.
 - **Top-ups**: Add balance to cards via multiple methods.
 - **Withdrawals**: Withdraw funds from a card securely.
 - **Transfers**: Transfer funds between registered cards.
 - **Merchant Integration**: Allow merchants to process payments.
 
-## Teknologi yang Digunakan
+## Technologies Used
 - **Backend**: Golang
 - **Concurrency Handling**: sync.Mutex
 - **Database**: PostgreSQL
@@ -47,7 +47,7 @@ Merchant authentication is a static API key checked on payment endpoints, which 
 **Docker for packaging**
 The service compiles to a single binary and ships in a container, keeping the run story uniform across machines. It is the least contentious choice in the project, with the usual cost of maintaining images for little benefit beyond reproducibility.
 
-## Instalasi
+## Installation
 ```bash
 # Clone the repository
 $ git clone https://github.com/MamangRust/golang-payment-mutex.git
@@ -60,7 +60,7 @@ $ go build
 $ ./payment-gateway
 ```
 
-## Model Data
+## Data Model
 ### Card
 - `CardID`: Unique identifier for the card.
 - `UserID`: Card owner's identifier.

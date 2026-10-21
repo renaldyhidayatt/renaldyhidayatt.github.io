@@ -1,6 +1,6 @@
 ---
 title: "Microservice Superapp — Unified Vert.x Ecosystem (Java 21)"
-excerpt: "Superapp multi-platform di JVM: E-Commerce (20 modul), POS (11), Payment Gateway (11), dan ERP Quarkus (17) di bawah satu Unified API Gateway dan Kafka KRaft. Non-blocking I/O, CQRS, transactional outbox, sagas pembayaran lintas platform, serta keamanan kernel eBPF (XDP + Sigma) tanpa instrumentasi aplikasi."
+excerpt: "Multi-platform superapp on the JVM: E-Commerce (20 modules), POS (11), Payment Gateway (11), and Quarkus ERP (17) behind a single Unified API Gateway and Kafka KRaft. Non-blocking I/O, CQRS, transactional outbox, cross-platform payment sagas, and eBPF kernel security (XDP + Sigma) without application instrumentation."
 date: "2026-08-22"
 created_at: "2026-08-22"
 updated_at: "2026-10-21"
@@ -1225,7 +1225,7 @@ flowchart TB
 
 **Business Metrics** — request rate per platform (E-Commerce, POS, Payment, ERP), traffic distribution, Redis cache hit rate, and the OTLP telemetry pipeline.
 
-<img src="/portofolio/microservice_superapp_java/grafana-business-metrics.png" alt="Grafana Business Metrics: request rate per platform, traffic distribution by service, Redis cache hit rate, dan telemetry pipeline" width="100%" />
+<img src="/portofolio/microservice_superapp_java/grafana-business-metrics.png" alt="Grafana Business Metrics: request rate per platform, traffic distribution by service, Redis cache hit rate, and telemetry pipeline" width="100%" />
 
 **Infrastructure Health** — JVM heap and non-heap usage per service, CPU utilisation, thread counts, and garbage-collection behaviour across the Vert.x and Quarkus modules.
 
@@ -1262,11 +1262,11 @@ Verified at runtime on 9 August 2026: miner (`/tmp/xmrig`), reverse shell (`/tmp
 
 **eBPF TCP Observability** (`uid: ebpf-observability`) — total and established connection rates, top destination ports, and the connect-to-established latency heatmap with p50/p95/p99 percentiles.
 
-<img src="/portofolio/microservice_superapp_java/grafana-ebpf-tcp-observability.png" alt="Grafana eBPF TCP Observability: total connections, connection rate, top destination ports, dan connect latency heatmap" width="100%" />
+<img src="/portofolio/microservice_superapp_java/grafana-ebpf-tcp-observability.png" alt="Grafana eBPF TCP Observability: total connections, connection rate, top destination ports, and connect latency heatmap" width="100%" />
 
 **Security Observability** (`uid: security-observability`) — Sigma rule hits per `rule_id`, process exec rate by class, escape primitive rate, and honeypot port hits.
 
-<img src="/portofolio/microservice_superapp_java/grafana-security-observability.png" alt="Grafana Security Observability: Sigma rule hits per rule ID, process exec rate by class, escape primitive rate, dan honeypot port hits" width="100%" />
+<img src="/portofolio/microservice_superapp_java/grafana-security-observability.png" alt="Grafana Security Observability: Sigma rule hits per rule ID, process exec rate by class, escape primitive rate, and honeypot port hits" width="100%" />
 
 #### `ebpf-firewall` — XDP enforcement and control plane (`:9096`, `:9097`)
 
@@ -1285,7 +1285,7 @@ Enforcement was verified on 9 August 2026 with the compose stack: `EBPF_FW_PORT_
 
 **eBPF Firewall — Endpoint Protection** (`uid: ebpf-firewall`) — XDP drop rate by reason, drop ratio, enforce mode, port policy and blocklist entries, plus the L7 endpoint-access signal and the DET-SEC-010/DET-SEC-011 detection panels. The `FAIL-OPEN` badge on the filter status is the honest state of the compose stack, described in the limitation below.
 
-<img src="/portofolio/microservice_superapp_java/grafana-ebpf-firewall.png" alt="Grafana eBPF Firewall: drop rate by reason, drop ratio, enforce mode, L7 endpoint access signal, dan status filter kprobe global fail-open" width="100%" />
+<img src="/portofolio/microservice_superapp_java/grafana-ebpf-firewall.png" alt="Grafana eBPF Firewall: drop rate by reason, drop ratio, enforce mode, L7 endpoint access signal, and global kprobe fail-open status filter" width="100%" />
 
 > **Honest limitation.** On the compose stack the global kprobe filter is in **fail-open** mode because it observes every workload node and cannot be anchored to a pod namespace. In Kubernetes the filter is anchored per pod (`EBPF_FW_CGROUP_FILTER=on`, `ebpf_fw_filter_anchor_netns=1`). The eBPF layer provides runtime detection and L3/L4 enforcement; it is **not** a full EDR — there is no memory integrity checking and no exhaustive syscall coverage. Capability matrix, evidence, and roadmap: `docs/security/security-observability.md`.
 

@@ -1,6 +1,6 @@
 ---
 title: "Distributed Microservices — Point of Sale Platform (Spring Boot + MongoDB)"
-excerpt: "Backend point-of-sale microservices di Java 21 / Spring Boot 3.5.6 dengan MongoDB per-bounded-context: tiap domain jadi JVM process sendiri dengan gRPC server dan Mongock migrations. Clean Architecture + CQRS, Kafka transactional outbox, ClickHouse analytics, chaos engineering, dan Kubernetes + ArgoCD GitOps."
+excerpt: "Point-of-sale microservices backend in Java 21 / Spring Boot 3.5.6 with MongoDB per bounded context: each domain becomes its own JVM process with its own gRPC server and Mongock migrations. Clean Architecture + CQRS, Kafka transactional outbox, ClickHouse analytics, chaos engineering, and Kubernetes + ArgoCD GitOps."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -386,16 +386,16 @@ sequenceDiagram
 
 ## Design Decisions & Known Limitations
 
-Keputusan desain yang disengaja (bukan bug) — didokumentasikan agar tim tidak
-"memperbaiki" perilaku berikut tanpa sadar:
+Deliberate design decisions (not bugs) — documented so the team does not
+accidentally "fix" the following behaviors:
 
-| ID | Keputusan | Perilaku | Alasan |
+| ID | Decision | Behavior | Reason |
 |---|---|---|---|
-| OT-2 | `amount` transaksi **dihitung ulang server-side** | Nilai `amount` dari client tidak dipercaya; dihitung ulang dari order items + PPN 11% (`totalAmountWithTax`). Klaim yang kurang → `"Insufficient payment amount"` | Mencegah manipulasi nilai transaksi oleh client |
-| OT-3 | Status transaksi **tidak terkunci** | `updateTransaction` dapat mengubah `payment_status` kapan pun (dari pending → success/failed dan sebaliknya) tanpa state machine transisi | Audit status tidak dianggap kritikal untuk POS skala ini; mengubahnya menjadi state machine menambah kompleksitas tanpa kebutuhan bisnis eksplisit |
-| OT-4 | Edge-case stok saat **trash item eksplisit** setelah trash order | Bila item di-trash eksplisit setelah order di-trash, stok item tersebut **tidak di-decrement** saat order di-restore (hanya item yang masih aktif yang ikut restore) | Perilaku disengaja: restore hanya memproses item aktif; item trash eksplisit adalah keputusan terpisah dari siklus hidup order. Konsekuensi: stok bisa bergeser dari "aktif = stok terpakai" pada skenario ini |
+| OT-2 | Transaction `amount` is **recomputed server-side** | The `amount` value from the client is not trusted; it is recomputed from order items + 11% VAT (`totalAmountWithTax`). A lower claim → `"Insufficient payment amount"` | Prevents the client from manipulating the transaction value |
+| OT-3 | Transaction status is **not locked** | `updateTransaction` can change `payment_status` at any time (from pending → success/failed and vice versa) without a transition state machine | Status audit is not considered critical for a POS of this scale; turning it into a state machine adds complexity without an explicit business need |
+| OT-4 | Stock edge case with **explicit item trash** after order trash | If an item is explicitly trashed after the order is trashed, that item's stock is **not decremented** when the order is restored (only items that are still active are restored) | Deliberate behavior: restore only processes active items; explicit item trash is a decision separate from the order lifecycle. Consequence: stock can drift from "active = stock used" in this scenario |
 
-**Catatan Fase 11–15 (2026-08-14):** lihat `SUPER_PLANNING_MASTER.md` untuk
+**Phase 11–15 Notes (2026-08-14):** see `SUPER_PLANNING_MASTER.md` for
 checklist lengkap — transactional outbox + retry/DLQ (F11), idempotency key
 transaksi (F12), chaos & tracing Kafka (F13), SASL/TLS + acks=all + idempotent
 producer (F14), serta order stats by-id & OTP REST (F15).

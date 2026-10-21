@@ -1,6 +1,6 @@
 ---
 title: "Grafana — Cheat Sheet"
-description: "Cheat sheet Grafana 11: struktur dashboard JSON, panel & query, variabel template bertingkat, transformation, provisioning (file & folder), alerting, contact point & notification policy, performa query, API automation, plus jebakan dashboard yang tidak muncul."
+description: "Grafana 11 cheat sheet: dashboard JSON structure, panels & queries, nested template variables, transformations, provisioning (files & folders), alerting, contact points & notification policies, query performance, API automation, plus pitfalls with dashboards that don't show up."
 date: "2026-10-22"
 created_at: "2026-10-22"
 updated_at: "2026-10-22"
@@ -16,25 +16,25 @@ tags:
 
 # Grafana — Cheat Sheet
 
-> Target: **Grafana 11.x** dengan datasource **Prometheus** (metrik), **Loki** (log), dan
-> **Jaeger** (trace), dipakai visualizing semua platform (E-Commerce, POS, Payment Gateway).
-> Dashboard dikelola sebagai file JSON di repo dan di-*provision* ke cluster. Semua snippet
-> di bawah dipakai di repo dan **diverifikasi**.
+> Target: **Grafana 11.x** with datasources **Prometheus** (metrics), **Loki** (logs), and
+> **Jaeger** (traces), used for visualizing all platforms (E-Commerce, POS, Payment Gateway).
+> Dashboards are managed as JSON files in the repo and *provisioned* into the cluster. All snippets
+> below are used in the repo and **verified**.
 
-**Isi sheet ini**
+**What's in this sheet**
 
 - Mental model
-- Struktur dashboard JSON
-- Panel & target query
-- Variabel template
-- Transformation
-- Datasource & provisioning
-- Provisioning dashboard & folder
-- Alerting di Grafana
-- Explore & integrasi antar-tool
-- Performa query & dashboard
-- API & otomatisasi
-- Jebakan (wajib dibaca)
+- Dashboard JSON structure
+- Panels & query targets
+- Template variables
+- Transformations
+- Datasources & provisioning
+- Dashboard & folder provisioning
+- Alerting in Grafana
+- Explore & cross-tool integration
+- Query & dashboard performance
+- API & automation
+- Pitfalls (must-read)
 
 ---
 
@@ -43,34 +43,34 @@ tags:
 ```
 Datasource ──query──▶ Panel ──render──▶ Dashboard ──browse──▶ Viewer
      ▲                   │
-     └── dashboard JSON ─┘ (disimpan di Git, di-provision ke cluster)
+     └── dashboard JSON ─┘ (stored in Git, provisioned into the cluster)
 ```
 
-| Konsep | Arti |
+| Concept | Meaning |
 | :--- | :--- |
-| Datasource | koneksi ke sumber data (Prometheus, Loki, Jaeger, SQL) |
-| Dashboard | kumpulan panel + variabel + layout, disimpan sebagai JSON |
-| Panel | satu visualisasi (timeseries, stat, table, …) |
-| Target | query di dalam panel (bisa banyak) |
-| Variable | parameter yang dipakai di query (namespace, pod, service) |
-| Transformation | ubah data hasil query sebelum dirender |
-| Folder | pengelompokan dashboard |
-| Provisioning | Grafana memuat dashboard/datasource dari file saat start |
-| Alert rule | dievaluasi Grafana (atau Prometheus) → contact point |
+| Datasource | connection to a data source (Prometheus, Loki, Jaeger, SQL) |
+| Dashboard | a set of panels + variables + layout, stored as JSON |
+| Panel | a single visualization (timeseries, stat, table, …) |
+| Target | a query inside a panel (can be many) |
+| Variable | a parameter used in queries (namespace, pod, service) |
+| Transformation | transforms query results before rendering |
+| Folder | a grouping of dashboards |
+| Provisioning | Grafana loads dashboards/datasources from files on start |
+| Alert rule | evaluated by Grafana (or Prometheus) → contact point |
 
-> Kenapa dashboard **file JSON di Git** dan bukan disimpan lewat UI? Karena yang tersimpan
-> di UI bisa berubah tanpa review dan hilang saat reinstall. File di Git = ter-versioning,
-> ter-review, dan bisa di-rollback.
+> Why dashboards as **JSON files in Git** instead of saved via the UI? Because what's saved
+> in the UI can change without review and is lost on reinstall. Files in Git = versioned,
+> reviewed, and rollback-able.
 
 ---
 
-## Struktur dashboard JSON
+## Dashboard JSON structure
 
 ```json
 {
   "uid": "order-service",
   "title": "Super App — Order Service",
-  "description": "Request rate, latensi, error, dan dependency",
+  "description": "Request rate, latency, errors, and dependencies",
   "tags": ["superapp", "backend", "order"],
   "timezone": "utc",
   "editable": true,
@@ -84,16 +84,16 @@ Datasource ──query──▶ Panel ──render──▶ Dashboard ──brow
 }
 ```
 
-| Field | Arti | Jebakan |
+| Field | Meaning | Pitfall |
 | :--- | :--- | :--- |
-| `uid` | ID unik, dipakai URL & API | **wajib** unik & stabil (dipakai link + annotation) |
-| `schemaVersion` | versi format | naikkan kalau di-import dari UI |
-| `version` | revisi | incremented tiap save, dipakai optimistic locking saat provisioning |
-| `refresh` | auto-refresh | `""` = mati |
-| `time.from` | rentang awal default | `now-6h` = 6 jam terakhir |
-| `editable` | boleh diubah dari UI | `false` kalau mau pure GitOps |
-| `tags` | label dashboard | dipakai filter & organizing |
-| `links` | link ke dashboard lain | `type: dashboard` |
+| `uid` | unique ID, used in URLs & API | **must be** unique & stable (used by links + annotations) |
+| `schemaVersion` | format version | bump if imported from the UI |
+| `version` | revision | incremented on every save, used for optimistic locking during provisioning |
+| `refresh` | auto-refresh | `""` = off |
+| `time.from` | default initial range | `now-6h` = last 6 hours |
+| `editable` | can be changed from the UI | `false` if you want pure GitOps |
+| `tags` | dashboard labels | used for filtering & organizing |
+| `links` | links to other dashboards | `type: dashboard` |
 
 ```json
 {
@@ -130,27 +130,27 @@ Datasource ──query──▶ Panel ──render──▶ Dashboard ──brow
 
 ---
 
-## Panel & target query
+## Panels & query targets
 
-| Panel type | Untuk |
+| Panel type | For |
 | :--- | --- |
-| `timeseries` | garis waktu (default untuk metrik) |
-| `stat` | angka besar (single value) |
-| `gauge` | nilai terhadap rentang (persentase) |
-| `bar` / `barchart` | perbandingan kategori |
-| `table` | data tabular (format kolom) |
-| `heatmap` | korelasi 2 dimensi (latensi × status) |
-| `logs` | panel log (Loki) |
-| `traces` | panel trace (Jaeger/Tempo) |
+| `timeseries` | timeline (default for metrics) |
+| `stat` | big number (single value) |
+| `gauge` | value against a range (percentage) |
+| `bar` / `barchart` | category comparison |
+| `table` | tabular data (column formatting) |
+| `heatmap` | 2-dimensional correlation (latency × status) |
+| `logs` | log panel (Loki) |
+| `traces` | trace panel (Jaeger/Tempo) |
 | `candlestick` | OHLC |
-| `text` | markdown/catatan |
-| `alertlist` | daftar alert aktif |
-| `row` | pengelompokan panel (collapse) |
+| `text` | markdown/notes |
+| `alertlist` | list of active alerts |
+| `row` | panel grouping (collapse) |
 
 ```json
 {
   "type": "table",
-  "title": "Top 10 Endpoint Terlambat",
+  "title": "Top 10 Slowest Endpoints",
   "transformations": [
     { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true } } }
   ],
@@ -170,22 +170,22 @@ Datasource ──query──▶ Panel ──render──▶ Dashboard ──brow
 }
 ```
 
-| Elemen target | Arti |
+| Target element | Meaning |
 | :--- | :--- |
-| `refId` | "A", "B" — nyConnecting antar target di panel yang sama |
+| `refId` | "A", "B" — connects targets within the same panel |
 | `expr` | query (Prometheus) |
-| `legendFormat` | pola label (`{{status}}`, `{{pod}}`) |
-| `instant` | `true` = query "sekarang" (bukan rentang) — wajib untuk table |
-| `range` | query rentang waktu |
+| `legendFormat` | label pattern (`{{status}}`, `{{pod}}`) |
+| `instant` | `true` = query "now" (not a range) — required for tables |
+| `range` | time-range query |
 | `format` | `time_series`, `table`, `heatmap` |
-| `datasource.uid` | **UID**, bukan nama (Grafana 9+) |
+| `datasource.uid` | **UID**, not the name (Grafana 9+) |
 
-> **Jebakan:** `datasource` wrote `{"type": "prometheus", "uid": "..."}` — kalau pakai
-> **nama** ("Prometheus"), provisioning gagal diam-diam saat nama berubah.
+> **Pitfall:** `datasource` is written as `{"type": "prometheus", "uid": "..."}` — if you use
+> the **name** ("Prometheus"), provisioning fails silently when the name changes.
 
 ---
 
-## Variabel template
+## Template variables
 
 ```json
 {
@@ -240,37 +240,37 @@ Datasource ──query──▶ Panel ──render──▶ Dashboard ──brow
 }
 ```
 
-| Tipe | Fungsi |
+| Type | Function |
 | :--- | --- |
-| `query` | dari datasource (label_values, query metric, atau query Loki) |
-| `custom` | daftar manual (comma separated) |
-| `interval` | rentang waktu (`$__interval`, `$__rate_interval`) |
-| `datasource` | pilih datasource (untuk dashboard multi-sumber) |
-| `constant` | nilai tetap, disembunyikan |
-| `textbox` | input bebas dari user |
-| `adhoc` | filter bebas (key + operator + value) |
+| `query` | from a datasource (label_values, metric query, or Loki query) |
+| `custom` | manual list (comma separated) |
+| `interval` | time range (`$__interval`, `$__rate_interval`) |
+| `datasource` | pick a datasource (for multi-source dashboards) |
+| `constant` | fixed value, hidden |
+| `textbox` | free-form input from the user |
+| `adhoc` | free-form filter (key + operator + value) |
 
-| Opsi penting | Arti |
+| Important option | Meaning |
 | :--- | :--- |
-| `includeAll` | tampilkan opsi "All" |
-| `allValue` | nilai yang dipakai saat All dipilih (`.*`) |
-| `multi` | boleh pilih beberapa |
-| `refresh` | `1` = saat dashboard dibuka, `2` = saat variabel berubah |
-| `hide` | `0` tampil, `1` = hide label, `2` = hide total |
-| `definition` | teks query (untuk display), `query` = query sebenarnya |
+| `includeAll` | show the "All" option |
+| `allValue` | value used when All is selected (`.*`) |
+| `multi` | allows selecting several |
+| `refresh` | `1` = when the dashboard opens, `2` = when the variable changes |
+| `hide` | `0` visible, `1` = hide label, `2` = hide entirely |
+| `definition` | query text (for display), `query` = the actual query |
 
 ```promql
-# pakai variabel di query
+# use variables in queries
 sum by (pod) (rate(http_server_requests_total{namespace=~"$namespace", pod=~"$pod"}[$__rate_interval]))
 ```
 
-> **Jebakan:** variabel bertingkat harus pakai regex, bukan `=`:
-> `namespace=~"$namespace"` (bukan `namespace="$namespace"`), karena nilainya bisa
+> **Pitfall:** nested variables must use regex, not `=`:
+> `namespace=~"$namespace"` (not `namespace="$namespace"`), because the value can be
 > `prod|staging`.
 
 ---
 
-## Transformation
+## Transformations
 
 ```json
 {
@@ -288,22 +288,22 @@ sum by (pod) (rate(http_server_requests_total{namespace=~"$namespace", pod=~"$po
 }
 ```
 
-| Transformasi | Gunanya |
-| :--- | --- |
-| `filter` | saring baris (mis. hanya status 5xx) |
-| `groupBy` | kelompokkan baris |
-| `calculateField` | hitung kolom baru (rasio) |
-| `renameByRegex` / `renameByName` | rapikan nama kolom |
-| `organize` | sembunyikan/urutkan kolom |
-| `joinByField` | join dua query (mis. metric + log) |
-| `labelsToFields` | ubah label Prometheus jadi kolom |
-| `reduce` | gabung baris jadi satu nilai |
-| `sortBy` | urutkan |
-| `limit` | ambil N teratas |
+| Transformation | Use |
+| :--- | :--- |
+| `filter` | filter rows (e.g. only 5xx status) |
+| `groupBy` | group rows |
+| `calculateField` | compute a new column (ratio) |
+| `renameByRegex` / `renameByName` | clean up column names |
+| `organize` | hide/reorder columns |
+| `joinByField` | join two queries (e.g. metrics + logs) |
+| `labelsToFields` | turn Prometheus labels into columns |
+| `reduce` | collapse rows into a single value |
+| `sortBy` | sort |
+| `limit` | take the top N |
 
 ---
 
-## Datasource & provisioning
+## Datasources & provisioning
 
 ```yaml
 # observability/grafana/provisioning/datasources/datasources.yaml
@@ -355,27 +355,27 @@ providers:
     folderUid: superapp
     type: file
     disableDeletion: false
-    allowUiUpdates: false          # dashboard diubah di Git, bukan di UI
+    allowUiUpdates: false          # dashboards are changed in Git, not in the UI
     updateIntervalSeconds: 30
     options:
       path: /etc/grafana/provisioning/dashboards
       foldersFromFilesStructure: true
 ```
 
-| Opsi | Arti |
-| :--- | --- |
-| `uid` | **wajib** unik — dipakai panel & API |
-| `allowUiUpdates` | `false` = UI read-only (dashboard di Git = sumber kebenaran) |
-| `disableDeletion` | `true` = dashboard tak terhapus walau file hilang |
-| `updateIntervalSeconds` | Poll file dari disk (default 10s) |
-| `foldersFromFilesStructure` | folder ikut struktur folder di disk |
+| Option | Meaning |
+| :--- | :--- |
+| `uid` | **must be** unique — used by panels & the API |
+| `allowUiUpdates` | `false` = UI is read-only (dashboards in Git = source of truth) |
+| `disableDeletion` | `true` = dashboard isn't deleted even if the file disappears |
+| `updateIntervalSeconds` | Poll files from disk (default 10s) |
+| `foldersFromFilesStructure` | folders follow the folder structure on disk |
 
-> **Jebakan:** kalau `allowUiUpdates: true`, orang bisa ubah dashboard di UI dan
-> perubahan itu **hilang** saat provisioning berikutnya menimpa file.
+> **Pitfall:** with `allowUiUpdates: true`, people can change dashboards in the UI and
+> those changes are **lost** when the next provisioning pass overwrites the file.
 
 ---
 
-## Provisioning dashboard & folder
+## Dashboard & folder provisioning
 
 ```text
 observability/grafana/
@@ -390,7 +390,7 @@ observability/grafana/
 ```
 
 ```yaml
-# banyak dashboard → pakai satu provider + struktur folder
+# many dashboards → use one provider + folder structure
 apiVersion: 1
 providers:
   - name: superapp
@@ -402,21 +402,21 @@ providers:
 ```
 
 ```bash
-# validasi JSON dashboard sebelum commit
+# validate dashboard JSON before committing
 jq empty dashboards/order-service.json
 
-# cek UID unik antar file
-jq -r '.uid' dashboards/*.json | sort | uniq -d     # harus kosong
+# check UIDs are unique across files
+jq -r '.uid' dashboards/*.json | sort | uniq -d     # must be empty
 ```
 
-> **Jebakan (pengalaman nyata):** folder Grafana **tidak boleh** dibuat lewat *key* ConfigMap
-> karena key tidak boleh mengandung garis miring (`/`). solved dengan `items[].path` +
-> `initContainer` yang me-*resolve* symlink, atau `foldersFromFilesStructure: true`.
-> Tanpa itu, provider melihat **0 dashboard** padahal file-nya ada di volume.
+> **Pitfall (real-world experience):** Grafana folders **cannot** be created via ConfigMap
+> *keys* because keys can't contain a slash (`/`). Solved it with `items[].path` +
+> an `initContainer` that *resolves* the symlink, or `foldersFromFilesStructure: true`.
+> Without that, the provider sees **0 dashboards** even though the files are in the volume.
 
 ---
 
-## Alerting di Grafana
+## Alerting in Grafana
 
 ```yaml
 # provisioning/alerting/contact-points.yaml
@@ -452,14 +452,14 @@ policies:
         object_matchers: ["severity=warning"]
 ```
 
-| Konsep | Arti |
+| Concept | Meaning |
 | :--- | :--- |
-| Contact point | tujuan notifikasi (Slack, PagerDuty, email, webhook) |
-| Notification policy | routing: mana yang dapat mana |
-| `group_by` | alert mana yang digabung ke satu notifikasi |
-| `group_wait` | tunggu sebelum notifikasi pertama |
-| `repeat_interval` | berapa sering kirim ulang selama masih firing |
-| Silence | matikan alert sementara (maintenance) |
+| Contact point | notification destination (Slack, PagerDuty, email, webhook) |
+| Notification policy | routing: which alerts go where |
+| `group_by` | which alerts get batched into one notification |
+| `group_wait` | wait before the first notification |
+| `repeat_interval` | how often to resend while still firing |
+| Silence | temporarily mute alerts (maintenance) |
 
 ```promql
 # alert rule (Grafana-managed, unified alerting)
@@ -467,26 +467,26 @@ sum(rate(http_server_requests_total{job="order-service",status=~"5.."}[5m]))
   / sum(rate(http_server_requests_total{job="order-service"}[5m])) > 0.05
 ```
 
-> **Jebakan:** `repeat_interval` terlalu kecil (mis. 1m) → spam notifikasi saat alert
-> berdenyut. `group_wait` + `group_interval` + `repeat_interval` harus naik secara berlapis.
+> **Pitfall:** `repeat_interval` too small (e.g. 1m) → notification spam when an alert
+> flaps. `group_wait` + `group_interval` + `repeat_interval` must increase in tiers.
 
 ---
 
-## Explore & integrasi antar-tool
+## Explore & cross-tool integration
 
 ```
-Explore ── query Loki ──► log lines ──► klik trace_id ──► Jaeger trace
+Explore ── query Loki ──► log lines ──► click trace_id ──► Jaeger trace
    │
-   └─── Trace to metrics ──► dari span Jaeger ──► query Prometheus
+   └─── Trace to metrics ──► from a Jaeger span ──► query Prometheus
 ```
 
 | Integrasi | Cara |
 | :--- | --- |
-| Loki → Jaeger | `derivedFields` dengan `matcherRegex` trace_id + `datasourceUid` |
+| Loki → Jaeger | `derivedFields` with `matcherRegex` trace_id + `datasourceUid` |
 | Jaeger → Prometheus | Trace view → "Trace to metrics" |
-| Metrics → Logs | Panel time series → "Explore" → Loki pada rentang yang sama |
-| Dashboard → Dashboard | `links` dengan `type: dashboard` + variabel diteruskan |
-| Logs → Metrics | Dari log line, buka Explore Prometheus di timestamp yang sama |
+| Metrics → Logs | Time series panel → "Explore" → Loki over the same range |
+| Dashboard → Dashboard | `links` with `type: dashboard` + variables passed through |
+| Logs → Metrics | From a log line, open Explore Prometheus at the same timestamp |
 
 ```json
 {
@@ -503,29 +503,29 @@ Explore ── query Loki ──► log lines ──► klik trace_id ──► 
 
 ---
 
-## Performa query & dashboard
+## Query & dashboard performance
 
-| Variable | Arti |
+| Variable | Meaning |
 | :--- | --- |
-| `$__interval` | interval dihitung dari lebar panel (untuk `$__rate_interval`) |
-| `$__rate_interval` | `max($__interval + scrape_interval, 4 × scrape_interval)` — **wajib** untuk `rate()` |
-| `$__from` / `$__to` | timestamp awal/akhir panel (ms) |
+| `$__interval` | interval computed from panel width (for `$__rate_interval`) |
+| `$__rate_interval` | `max($__interval + scrape_interval, 4 × scrape_interval)` — **required** for `rate()` |
+| `$__from` / `$__to` | panel start/end timestamps (ms) |
 
 ```promql
-# JANGAN: interval tetap, tidak ikut zoom
+# DO NOT: fixed interval, doesn't follow zoom
 rate(http_server_requests_total[5m])
 
-# LAKUK: ikut ukuran panel
+# DO: follow the panel size
 rate(http_server_requests_total[$__rate_interval])
 ```
 
-| Gejala | Penyebab | Fix |
+| Symptom | Cause | Fix |
 | :--- | :--- | --- |
-| Dashboard lambat | query berat (bukan `$__rate_interval`) | pakai variabel interval |
-| Panel "No data" saat zoom | window rate kekecilan | `$__rate_interval` |
-| Render server berat | `maxDataPoints` terlalu besar | turunkan `maxDataPoints` |
-| Many series | label tak diringkas | `sum by (...)` di query |
-| Dashboard load > 3 detik | terlalu banyak panel | pecah dashboard, pakai `row` collapse |
+| Slow dashboard | heavy query (not using `$__rate_interval`) | use the interval variable |
+| "No data" panel when zooming | rate window too small | `$__rate_interval` |
+| Heavy server render | `maxDataPoints` too large | lower `maxDataPoints` |
+| Many series | labels not aggregated | `sum by (...)` in the query |
+| Dashboard load > 3 seconds | too many panels | split the dashboard, use `row` collapse |
 
 ```json
 { "maxDataPoints": 500, "interval": "30s" }
@@ -544,24 +544,24 @@ default_theme = dark
 
 ---
 
-## API & otomatisasi
+## API & automation
 
 ```bash
-# list dashboard
+# list dashboards
 curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
   http://localhost:3000/api/search?type=dash-db | jq '.[] | {title, uid}'
 
-# export dashboard sebagai JSON
+# export a dashboard as JSON
 curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
   http://localhost:3000/api/dashboards/uid/order-service | jq '.dashboard' > order-service.json
 
-# import / update dashboard
+# import / update a dashboard
 curl -s -X POST -H "Authorization: Bearer $GRAFANA_TOKEN" \
   -H "Content-Type: application/json" \
   -d @order-service.json \
   http://localhost:3000/api/dashboards/db
 
-# provisioned dashboards → endpoint ini READ-ONLY
+# provisioned dashboards → this endpoint is READ-ONLY
 curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
   http://localhost:3000/api/dashboards/uid/order-service
 
@@ -574,28 +574,28 @@ curl -s http://localhost:3000/api/health
 | `GET /api/search` | cari dashboard/data source/folder |
 | `GET /api/dashboards/uid/:uid` | ambil dashboard |
 | `POST /api/dashboards/db` | simpan dashboard |
-| `GET /api/datasources` | daftar datasource |
-| `GET /api/folders` | daftar folder |
+| `GET /api/datasources` | list datasources |
+| `GET /api/folders` | list folders |
 | `GET /api/annotations` | annotation (event deploy) |
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must-read)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Solution |
 | :--- | :--- | :--- |
-| Datasource pakai **nama** bukan UID | Provisioning gagal diam-diam | Pakai `uid` |
-| `allowUiUpdates: true` | Perubahan UI hilang | `false` + dashboard di Git |
-| Folder dibuat sebagai key ConfigMap | 0 dashboard terlihat | `items[].path` + symlink resolve, atau `foldersFromFilesStructure` |
-| `rate()` dengan window tetap | Lambat di panel kecil | `$__rate_interval` |
-| Variabel pakai `=` untuk multi-select | Tidak match | Pakai `=~` |
-| `allValue` lupa diisi | "All" tidak match apa pun | `allValue: ".*"` |
-| `instant: true` lupa di table | Table kosong | Set `instant` + `format: table` |
-| `legendFormat` pakai label yang tidak ada | Label kosong di legend | Cek nama label asli |
-| UID duplikat | Dashboard saling timpa | `jq -r '.uid' *.json \| sort \| uniq -d` |
-| Dashboard tanpa `version` | Konflik saat provisioning | Naikkan `version` tiap perubahan |
-| `refresh` terlalu cepat (5s) | Beban Grafana & Prometheus | 30s–1m |
-| Alert `repeat_interval` kecil | Notifikasi spam | ≥ 1 jam untuk non-critical |
-| Panel `maxDataPoints` besar | Render lambat | Turunkan ke 200–500 |
-| Impor JSON dari UI tanpa `uid` | Dashboard tak stabil | Set `uid` manual |
-| Dashbord "No data" padahal metric ada | Filter namespace/servis salah | Cek variabel & label |
+| Datasource uses the **name** instead of UID | Provisioning fails silently | Use `uid` |
+| `allowUiUpdates: true` | UI changes are lost | `false` + dashboards in Git |
+| Folder created as a ConfigMap key | 0 dashboards visible | `items[].path` + symlink resolve, or `foldersFromFilesStructure` |
+| `rate()` with a fixed window | Slow on small panels | `$__rate_interval` |
+| Variable uses `=` for multi-select | Doesn't match | Use `=~` |
+| `allValue` left empty | "All" matches nothing | `allValue: ".*"` |
+| `instant: true` forgotten in a table | Empty table | Set `instant` + `format: table` |
+| `legendFormat` uses a label that doesn't exist | Empty labels in the legend | Check the real label names |
+| Duplicate UID | Dashboards overwrite each other | `jq -r '.uid' *.json \| sort \| uniq -d` |
+| Dashboard without `version` | Conflict during provisioning | Bump `version` on every change |
+| `refresh` too fast (5s) | Load on Grafana & Prometheus | 30s–1m |
+| Alert `repeat_interval` too small | Notification spam | ≥ 1 hour for non-critical |
+| Panel `maxDataPoints` too large | Slow render | Lower it to 200–500 |
+| JSON imported from the UI without `uid` | Dashboard is unstable | Set `uid` manually |
+| Dashboard shows "No data" though the metric exists | Wrong namespace/service filter | Check variables & labels |

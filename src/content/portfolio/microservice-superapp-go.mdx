@@ -1,6 +1,6 @@
 ---
 title: "Microservice Super App — Federated Go Domains with Kernel-Level Security"
-excerpt: "Backend super-app terfederasi: ERP, E-Commerce, Point of Sale, dan Payment Gateway sebagai domain otonom yang diikat satu edge gateway, satu Keycloak, event backbone Kafka dengan outbox/inbox, saga checkout lintas platform, layer AI polyglot, dan enforcement keamanan di level kernel lewat eBPF XDP."
+excerpt: "A federated super-app backend: ERP, E-Commerce, Point of Sale, and Payment Gateway as autonomous domains bound together by a single edge gateway, a single Keycloak, a Kafka event backbone with outbox/inbox, cross-platform checkout sagas, a polyglot AI layer, and kernel-level security enforcement via eBPF XDP."
 date: "2026-08-01"
 created_at: "2026-08-01"
 updated_at: "2026-08-23"
@@ -15,50 +15,50 @@ image: "/portofolio/microservice_superapp_go/microservice-super-app-go.png"
 
 # Microservice Super App — Federated Go Domains with Kernel-Level Security
 
-Backend **super-app** yang dibangun sebagai **federasi domain yang bisa dideploy sendiri-sendiri** — ERP, E-Commerce, Point of Sale (POS), Payment Gateway, Central Identity, AI/ML otonom, dan enforcement keamanan di level kernel.
+Backend **super-app** built as **a federation of independently deployable domains** — ERP, E-Commerce, Point of Sale (POS), Payment Gateway, Central Identity, AI/ML autonomous, and kernel-level security enforcement.
 
-Ini proyek belajar, bukan sistem produksi. Saya membangunnya untuk memahami bagaimana platform-platform yang masing-masing berdiri sendiri bisa disambungkan menjadi satu produk — tanpa menyatukan kodenya — dan untuk mempraktikkan pola yang biasanya cuma saya baca di dokumen: outbox/inbox, saga lintas platform, serta enforcement di level kernel lewat eBPF. Tulisan ini fokus pada **keputusan arsitektur dan harga yang dibayar**, bukan pada daftar fitur.
+This is a learning project, not a production system. I built it to understand how platforms that each stand on their own can be wired together into a single product — without merging their code — and to practice patterns I had only read about in docs: outbox/inbox, cross-platform sagas, and kernel-level enforcement via eBPF. This write-up focuses on **architectural decisions and the price paid for them**, not on a feature list.
 
-<img src="/portofolio/microservice_superapp_go/microservice-super-app-go.png" alt="Diagram Microservice Super App: Unified Edge Gateway, Keycloak 26, kernel security eBPF/XDP, empat platform bisnis, Kafka event backbone, dan AI/ML layer" width="100%" />
+<img src="/portofolio/microservice_superapp_go/microservice-super-app-go.png" alt="Microservice Super App diagram: Unified Edge Gateway, Keycloak 26, kernel security eBPF/XDP, four business platforms, Kafka event backbone, and AI/ML layer" width="100%" />
 
 ---
 
 ## Key Features
 
-| Domain | Kapabilitas |
+| Domain | Capabilities |
 | :--- | :--- |
-| **Unified Edge Gateway** | Satu pintu masuk publik (`:8080`): terminasi TLS, verifikasi JWT **sekali**, rate limit token-bucket per IP, stamping header identitas, reverse proxy + REST→gRPC façade |
-| **Central Identity** | `identity-service` (`:8085`, REST/chi) + **Keycloak 26.0** (realm `superapp`, RS256). Dua jalur: registrasi/verifikasi lokal, penerbitan token lewat Keycloak. Dual-write dengan kompensasi |
-| **ERP Platform** | 16 engine: finance, accounting, costing, inventory, sales, purchasing, CRM, HRIS, manufacturing, reporting, approval, subcontract, master-data |
-| **E-Commerce Platform** | 25 modul: katalog, cart, order, order_item, merchant + 5 konteks satelit, review, banner, slider, shipping, transaksi |
-| **Point of Sale** | 16 modul: cashier, order, product, category, merchant, transaksi, settlement |
-| **Payment Gateway** | 15 modul: card/VCC, saldo, topup, withdraw, transfer, merchant, ledger + **payment bridge** (orkestrasi + fraud gate) |
-| **Event Backbone** | Kafka dengan **Transactional Outbox** di producer dan **Inbox dedup** di consumer, envelope kanonik camelCase, trace context di header, DLQ `outbox.dead` |
-| **Saga Checkout** | Stok lintas platform via gRPC (`CheckStock`/`DeductStock`/`ReleaseStock`), kompensasi saat `payment.failed`, TTL worker, order state machine compare-and-swap |
-| **AI/ML Polyglot** | Go untuk transaksi, Python untuk inferensi: `fraud-detector`, `embedder`, `forecaster`, `journal-anomaly`, `ebpf-anomaly` — **remote-first, fail-open** |
-| **Agent Runtime** | `aiagent` (Go, siklus Observe→Understand→Plan→Act→Verify) + `agentweb` (console React embed, REST/SSE read-only) |
-| **Kernel Security** | `ebpf-firewall` (XDP L3/L4 drop + kprobe L7 signal) dan `ebpf-observability` (DaemonSet, ring buffer, 11 Sigma rule runtime) |
-| **OLAP Analytics** | ClickHouse di setiap platform, diisi `stats-writer` (consumer Kafka + backfill) dan dilayani `stats-reader` (gRPC agregasi) |
-| **Persistensi** | **database-per-bounded-context**: 5 cluster PostgreSQL di ERP, 6 di E-Commerce, 5 di POS, 3 di Payment Gateway — masing-masing di depan PgBouncer sendiri |
-| **Observability** | Satu stack **shared** di namespace `monitoring`: OTel Collector (sink OTLP tunggal), Prometheus, Grafana, Loki, Jaeger, Alertmanager, node-exporter |
-| **Deployment** | Docker Compose lokal, Kustomize + overlay ala-produksi, **Argo CD** (app-of-apps) per platform, HPA + PDB + NetworkPolicy |
+| **Unified Edge Gateway** | Single public entry point (`:8080`): TLS termination, JWT verification **once**, per-IP token-bucket rate limiting, identity header stamping, reverse proxy + REST→gRPC façade |
+| **Central Identity** | `identity-service` (`:8085`, REST/chi) + **Keycloak 26.0** (realm `superapp`, RS256). Two paths: local registration/verification, token issuance via Keycloak. Dual-write with compensation |
+| **ERP Platform** | 16 engines: finance, accounting, costing, inventory, sales, purchasing, CRM, HRIS, manufacturing, reporting, approval, subcontract, master-data |
+| **E-Commerce Platform** | 25 modules: catalog, cart, order, order_item, merchant + 5 satellite contexts, review, banner, slider, shipping, transactions |
+| **Point of Sale** | 16 modules: cashier, order, product, category, merchant, transactions, settlement |
+| **Payment Gateway** | 15 modules: card/VCC, balance, topup, withdraw, transfer, merchant, ledger + **payment bridge** (orchestration + fraud gate) |
+| **Event Backbone** | Kafka with a **Transactional Outbox** on the producer and **Inbox dedup** on the consumer, canonical camelCase envelope, trace context in headers, DLQ `outbox.dead` |
+| **Saga Checkout** | Cross-platform stock via gRPC (`CheckStock`/`DeductStock`/`ReleaseStock`), compensation on `payment.failed`, TTL worker, order state machine compare-and-swap |
+| **AI/ML Polyglot** | Go for transactions, Python for inference: `fraud-detector`, `embedder`, `forecaster`, `journal-anomaly`, `ebpf-anomaly` — **remote-first, fail-open** |
+| **Agent Runtime** | `aiagent` (Go, Observe→Understand→Plan→Act→Verify loop) + `agentweb` (embedded React console, read-only REST/SSE) |
+| **Kernel Security** | `ebpf-firewall` (XDP L3/L4 drop + kprobe L7 signal) and `ebpf-observability` (DaemonSet, ring buffer, 11 runtime Sigma rules) |
+| **OLAP Analytics** | ClickHouse on every platform, fed by `stats-writer` (Kafka consumer + backfill) and served by `stats-reader` (aggregation gRPC) |
+| **Persistence** | **database-per-bounded-context**: 5 PostgreSQL clusters in ERP, 6 in E-Commerce, 5 in POS, 3 in Payment Gateway — each behind its own PgBouncer |
+| **Observability** | One **shared** stack in the `monitoring` namespace: OTel Collector (sink OTLP tunggal), Prometheus, Grafana, Loki, Jaeger, Alertmanager, node-exporter |
+| **Deployment** | Local Docker Compose, Kustomize + production-style overlays, **Argo CD** (app-of-apps) per platform, HPA + PDB + NetworkPolicy |
 
 ---
 
-## Prinsip Arsitektur
+## Architecture Principles
 
-Enam aturan ini yang membuat federasi tetap koheren:
+These six rules keep the federation coherent:
 
-1. **Domain otonom.** Setiap platform berdaulat penuh: database, pool koneksi, cache, dan pipeline migrasi terisolasi. Tidak ada join lintas database, tidak ada skema fisik bersama, tidak ada akses DB langsung dari domain lain.
-2. **Contract coupling di atas code sharing.** Duplikasi kode di batas platform lebih dipilih daripada coupling ketat. Integrasi hanya lewat kontrak Protobuf (gRPC), envelope event Kafka, header identitas kanonik, dan peta rute edge.
-3. **Fail-open.** Enforcement kernel (XDP) dan inferensi AI dirancang **lolos-rusak**: kalau BPF map kosong atau service scoring mati, transaksi bisnis jalan dengan aturan fallback deterministik.
-4. **Bilang apa adanya.** Kemampuan tiap bagian dicek terus-menerus, bukan diasumsikan. Telemetri membedakan sinyal kernel yang benar-benar terverifikasi (`KERNEL_EBPF`), simulasi lokal (`SIMULATOR`), dan fallback terbatas (`UNAVAILABLE`).
-5. **Zero-trust edge stamping.** Verifikasi identitas berhenti di edge. Header request yang masuk disanitasi dan ditulis ulang dengan claim kriptografis terverifikasi — pemalsuan `x-user-id` dari klien menjadi mustahil.
-6. **Build terisolasi.** 94 modul Go dengan `replace` relatif tidak bisa hidup dalam satu workspace; build per-modul (`GOWORK=off`) adalah keputusan final, bukan keterbatasan yang belum diselesaikan.
+1. **Autonomous domains.** Every platform is fully sovereign: database, connection pools, cache, and migration pipelines are isolated. No cross-database joins, no shared physical schema, no direct DB access from other domains.
+2. **Contract coupling over code sharing.** Code duplication at platform boundaries is preferred over tight coupling. Integration happens only through Protobuf contracts (gRPC), Kafka event envelopes, canonical identity headers, and the edge route map.
+3. **Fail-open.** Kernel enforcement (XDP) and AI inference are designed to **fail open**: if a BPF map is empty or a scoring service is down, business transactions proceed with deterministic fallback rules.
+4. **Say it as it is.** Each part's capabilities are continuously checked, not assumed. Telemetry distinguishes genuinely verified kernel signals (`KERNEL_EBPF`), local simulation (`SIMULATOR`), and limited fallback (`UNAVAILABLE`).
+5. **Zero-trust edge stamping.** Identity verification stops at the edge. Incoming request headers are sanitized and rewritten with verified cryptographic claims — client-side spoofing of `x-user-id` becomes impossible.
+6. **Isolated builds.** 94 Go modules with relative `replace` directives cannot coexist in one workspace; per-module builds (`GOWORK=off`) are a final decision, not an unresolved limitation.
 
 ---
 
-## Arsitektur Overview
+## Architecture Overview
 
 ```mermaid
 graph TB
@@ -99,59 +99,59 @@ graph TB
     AI --> OBS
 ```
 
-### Inventaris Platform
+### Platform Inventory
 
-| Platform | Stack | Modul Aktif | Storage | Namespace |
+| Platform | Stack | Active Modules | Storage | Namespace |
 | :--- | :--- | :--- | :--- | :--- |
-| **identity-service** | Go 1.26 (chi) | 1 engine inti | PostgreSQL 17 + Keycloak 26 | `auth` |
+| **identity-service** | Go 1.26 (chi) | 1 core engine | PostgreSQL 17 + Keycloak 26 | `auth` |
 | **unified-api-gateway** | Go 1.26 (chi) | 1 edge proxy | Redis 7 (rate limit) | `edge` |
 | **erp** | Go 1.26 (chi/gRPC) | 16 engine | 5× PostgreSQL 17 + PgBouncer | `erp` |
-| **ecommerce** | Go 1.26 (chi/gRPC) | 25 modul | PostgreSQL 17 + ClickHouse | `ecommerce` |
-| **pointofsale** | Go 1.26 (chi/gRPC) | 16 modul | PostgreSQL 17 + ClickHouse | `point-of-sale` |
-| **payment-gateway** | Go 1.26 (chi/gRPC) | 15 modul | PostgreSQL 17 + ClickHouse | `payment-gateway` |
-| **ai** | Python 3.12 + Go | 7 service (5 py, 2 go) | Model on-disk + SQLite + vector | `ai` |
+| **ecommerce** | Go 1.26 (chi/gRPC) | 25 modules | PostgreSQL 17 + ClickHouse | `ecommerce` |
+| **pointofsale** | Go 1.26 (chi/gRPC) | 16 modules | PostgreSQL 17 + ClickHouse | `point-of-sale` |
+| **payment-gateway** | Go 1.26 (chi/gRPC) | 15 modules | PostgreSQL 17 + ClickHouse | `payment-gateway` |
+| **ai** | Python 3.12 + Go | 7 services (5 py, 2 go) | Model on-disk + SQLite + vector | `ai` |
 | **ebpf-firewall** | Go + C (eBPF CO-RE) | 1 daemon + sidecar | BPF maps (L3/L4/L7) | `superapp` |
 | **ebpf-observability** | Go + C (eBPF CO-RE) | 1 DaemonSet | Kernel ring buffer + /proc | `superapp` |
-| **observability** | Config / PromQL | Stack bersama | TSDB + Loki + Jaeger | `monitoring` |
+| **observability** | Config / PromQL | Shared stack | TSDB + Loki + Jaeger | `monitoring` |
 
 ---
 
 ## Data Architecture
 
-Semua platform memakai pola yang sama — dan pola itulah yang membuat batas domain bisa ditegakkan compiler, bukan sekadar konvensi.
+Every platform uses the same pattern — and that pattern is what lets the compiler enforce domain boundaries instead of relying on convention.
 
 ### Database per Bounded Context
 
-Ini keputusan yang paling banyak menghemat waktu debugging. Bukannya satu database besar dengan tabel ber-prefix, setiap konteks punya **cluster PostgreSQL 17 sendiri** dengan pooler PgBouncer sendiri:
+This is the decision that saved the most debugging time. Instead of one big database with prefixed tables, each context has **its own PostgreSQL 17 cluster** with its own PgBouncer pooler:
 
-| Platform | Cluster PostgreSQL | Pooler |
+| Platform | PostgreSQL Clusters | Pooler |
 | :--- | :--- | :--- |
-| **erp** | `erp_finance`, `erp_supply`, `erp_sales`, `erp_hr`, `erp_platform` | 1 PgBouncer per konteks |
-| **ecommerce** | identity, merchant, catalog, sales, experience, email | PgBouncer per konteks + NetworkPolicy |
-| **pointofsale** | `pos_identity`, `pos_merchant`, `pos_catalog`, `pos_sales`, `pos_email` | PgBouncer per konteks |
-| **payment-gateway** | `pg_identity`, `pg_payment`, `pg_financial` | PgBouncer per konteks |
+| **erp** | `erp_finance`, `erp_supply`, `erp_sales`, `erp_hr`, `erp_platform` | 1 PgBouncer per context |
+| **ecommerce** | identity, merchant, catalog, sales, experience, email | PgBouncer per context + NetworkPolicy |
+| **pointofsale** | `pos_identity`, `pos_merchant`, `pos_catalog`, `pos_sales`, `pos_email` | PgBouncer per context |
+| **payment-gateway** | `pg_identity`, `pg_payment`, `pg_financial` | PgBouncer per context |
 
-Yang penting di sini: **tidak ada `DB_HOST` generik**. Setiap service mendeklarasikan konteksnya sekali, dan `pkg/database` me-resolve prefix env per konteks. Service hanya bisa menjangkau cluster milik konteksnya. **Cross-context schema coupling bukan cuma didorong untuk tidak dilakukan — ia tidak bisa direpresentasikan.** Prefix cluster yang salah membuat startup gagal, bukan diam-diam tersambung ke database yang salah.
+The important part: **there is no generic `DB_HOST`**. Each service declares its context once, and `pkg/database` resolves the env prefix per context. A service can only reach the cluster belonging to its context. **Cross-context schema coupling is not merely discouraged — it cannot be represented.** A wrong cluster prefix makes startup fail instead of silently connecting to the wrong database.
 
-### Migrasi Tanpa Tabrakan
+### Migration Without Collisions
 
-Migrasi dijalankan **goose saat boot**, tapi tiap platform punya riwayat migrasi terpisah sehingga modul tidak pernah saling menimpa versi. Ada juga `migrate-job` di Kubernetes dengan NetworkPolicy sendiri, jadi urutan Postgres → PgBouncer → migrate → workload bisa diatur lewat sync-wave Argo CD.
+Migrations run **via goose at boot**, but each platform has its own migration history so modules never overwrite each other's versions. There is also a `migrate-job` in Kubernetes with its own NetworkPolicy, so the Postgres → PgBouncer → migrate → workload ordering can be controlled via Argo CD sync-waves.
 
-### OLAP Tanpa Menyentuh Tier Transaksional
+### OLAP Without Touching the Transactional Tier
 
-Query analitik tidak pernah membebani database transaksional. Setiap platform punya **ClickHouse** yang diisi oleh `stats_writer` (consumer Kafka dengan backfill bootstrap) dan dilayani `stats_reader` — service gRPC agregasi yang mengembalikan volume bulanan/tahunan, breakdown metode pembayaran, tingkat keberhasilan transaksi, produk terlaris, sampai performa kasir.
+Analytical queries never load the transactional database. Each platform has **ClickHouse** fed by `stats_writer` (a Kafka consumer with bootstrap backfill) and served by `stats_reader` — an aggregation gRPC service that returns monthly/yearly volume, payment method breakdowns, transaction success rates, best-selling products, and even cashier performance.
 
 ### Redis
 
-Cluster Redis 7 dipakai untuk blacklist token, session, read-through cache, distributed lock, dan counter rate limit di edge. Tiap service punya telemetri cache-nya sendiri, jadi hit ratio per domain bisa dibaca langsung di Grafana.
+A Redis 7 cluster is used for token blacklists, sessions, read-through cache, distributed locks, and edge rate-limit counters. Each service has its own cache telemetry, so per-domain hit ratios can be read directly in Grafana.
 
 ---
 
-## Event Backbone, Outbox, dan Deduplication
+## Event Backbone, Outbox, and Deduplication
 
-Integrasi asinkron lintas platform lewat Kafka, dengan kontrak yang sama di semua platform.
+Cross-platform asynchronous integration goes through Kafka, with the same contract on every platform.
 
-### Envelope Kanonik
+### Canonical Envelope
 
 ```json
 {
@@ -164,23 +164,23 @@ Integrasi asinkron lintas platform lewat Kafka, dengan kontrak yang sama di semu
 }
 ```
 
-Konstanta tipe event disamakan di semua platform (`pkg/events`): `ORDER_PAYMENT_REQUESTED`, `PAYMENT_COMPLETED`, `PAYMENT_FAILED`, `USER_REGISTERED`, `INVENTORY_STOCK_SYNCED`, `ORDER_STATUS_UPDATED`, `JOURNAL_ENTRY_CREATED`, `JOURNAL_ENTRY_REQUESTED`, `ERP_DATA_SYNCED`, `ORDER_BASKET_UPDATED`. Nama topik memakai bentuk dotted: `order.payment.requested`, `payment.completed`, `payment.failed`, `user.registered`, `accounting.journal.posted`, `accounting.journal.finding`, `ebpf.netflow`.
+Event type constants are shared across all platforms (`pkg/events`): `ORDER_PAYMENT_REQUESTED`, `PAYMENT_COMPLETED`, `PAYMENT_FAILED`, `USER_REGISTERED`, `INVENTORY_STOCK_SYNCED`, `ORDER_STATUS_UPDATED`, `JOURNAL_ENTRY_CREATED`, `JOURNAL_ENTRY_REQUESTED`, `ERP_DATA_SYNCED`, `ORDER_BASKET_UPDATED`. Topic names use the dotted form: `order.payment.requested`, `payment.completed`, `payment.failed`, `user.registered`, `accounting.journal.posted`, `accounting.journal.finding`, `ebpf.netflow`.
 
 ### Outbox → Kafka → Inbox
 
-Producer **tidak pernah dual-write**. Perubahan state dan event ditulis dalam **satu transaksi** ke tabel `outbox_events`; relay terpisah mempublikasikannya ke Kafka. Consumer men-dedup lewat tabel `consumer_inbox` (`pkg/outbox.PostgresInbox`), sehingga pengiriman *at-least-once* tidak pernah menjadi efek ganda.
+Producers **never dual-write**. State changes and events are written in **a single transaction** to the `outbox_events` table; a separate relay publishes them to Kafka. Consumers deduplicate via the `consumer_inbox` table (`pkg/outbox.PostgresInbox`), so *at-least-once* delivery never turns into duplicate effects.
 
-Trace context ikut di header Kafka (`traceparent`/`tracestate`) lewat `SendMessageWithHeaders`, dan consumer jalur saga mengekstrak trace itu untuk memulai span `consume <topic>` — jadi satu trace bisa ditelusuri dari HTTP request di edge sampai baris di ledger.
+Trace context travels in Kafka headers (`traceparent`/`tracestate`) via `SendMessageWithHeaders`, and saga-path consumers extract that trace to start a `consume <topic>` span — so a single trace can be followed from the edge HTTP request all the way to a ledger row.
 
-Kegagalan relay tidak hilang diam-diam: DLQ `outbox.dead` dengan metrik `outbox_dead_events_total` (erp/identity/gateway) atau padanan OTLP-native `outbox_events_dead` (ecommerce/pointofsale).
+Relay failures never vanish silently: DLQ `outbox.dead` with the `outbox_dead_events_total` metric (erp/identity/gateway) or its OTLP-native equivalent `outbox_events_dead` (ecommerce/pointofsale).
 
-### Jalur Event yang Terverifikasi
+### Verified Event Paths
 
-Ini bukan diagram aspirasional — jalur berikut sudah diverifikasi end-to-end:
+This is not an aspirational diagram — the following paths are verified end-to-end:
 
 - `user.registered` → identity-service publish → `erp/crm` consume
 - `order.payment.requested` → ecommerce/order publish → payment bridge consume
-- `payment.completed` / `payment.failed` → bridge publish → ecommerce/order **dan** erp/accounting consume
+- `payment.completed` / `payment.failed` → bridge publish → ecommerce/order **and** erp/accounting consume
 - `accounting.journal.entry` → erp/accounting publish → bridge consume
 - `accounting.journal.posted` → erp/accounting publish → `ai/journal-anomaly` score → emit `accounting.journal.finding`
 - `ebpf.netflow` → ebpf-observability publish → `ai/ebpf-anomaly` consume (shadow mode)
@@ -189,7 +189,7 @@ Ini bukan diagram aspirasional — jalur berikut sudah diverifikasi end-to-end:
 
 ## Cross-Domain Transaction: Saga Checkout
 
-Checkout menyentuh cart, shipping, order, stok ERP, dan payment gateway sebagai panggilan terpisah. Tidak ada yang membungkusnya dalam satu transaksi atomik — dan itu memang pilihan sadar.
+Checkout touches the cart, shipping, order, ERP stock, and payment gateway as separate calls. Nothing wraps them in a single atomic transaction — and that is a deliberate choice.
 
 ```mermaid
 sequenceDiagram
@@ -210,11 +210,11 @@ sequenceDiagram
     ORD->>K: order.payment.requested (via outbox)
     K-->>BR: consume
     BR->>BR: fraud scoring (fail-open)
-    alt pembayaran sukses
+    alt payment succeeds
         BR->>K: payment.completed (via outbox)
         K-->>ORD: consume → order PAID
         K-->>ACCT: consume → double-entry journal
-    else pembayaran gagal
+    else payment fails
         BR->>K: payment.failed
         K-->>ORD: consume → ReleaseStock (kompensasi)
     end
@@ -222,70 +222,70 @@ sequenceDiagram
     GW-->>C: 201 Created orderId
 ```
 
-Yang membuat ini aman:
+What makes this safe:
 
-- **Order state machine compare-and-swap.** Transisi dari `pending` ke `PAID`/`FAILED` bersifat CAS, jadi dua consumer yang balapan tidak pernah menghasilkan dua kebenaran. `CANCELLED` diterima di schema untuk kompatibilitas, tapi status terminal kegagalan disamakan ke `FAILED` supaya konvergen dengan consumer pembayaran.
-- **TTL worker.** Order yang `pending` melebihi `PAYMENT_TTL` di-fail-kan otomatis dan stoknya di-release — mencegah stok menggantung kalau event pembayaran hilang.
-- **Reinstatement pembayaran telat.** Pembayaran yang datang setelah TTL tidak membuang uang: order di-reinstate dengan guard "PAID tidak pernah di-release".
-- **Kompensasi eksplisit.** `payment.failed` memicu `ReleaseStock` ke ERP; konsistensi dipulihkan lewat aksi, bukan lewat rollback distributed transaction.
+- **Order state machine compare-and-swap.** Transitions from `pending` to `PAID`/`FAILED` are CAS, so two racing consumers never produce two truths. `CANCELLED` is accepted in the schema for compatibility, but the failure terminal status is normalized to `FAILED` so it converges with payment consumers.
+- **TTL worker.** Orders left `pending` beyond `PAYMENT_TTL` are automatically failed and their stock released — preventing stranded stock if a payment event is lost.
+- **Late payment reinstatement.** A payment arriving after the TTL does not waste money: the order is reinstated with the guard "a PAID order is never released".
+- **Explicit compensation.** `payment.failed` triggers `ReleaseStock` against ERP; consistency is restored through action, not through a distributed transaction rollback.
 
 ---
 
 ## AI/ML: Shadow by Default
 
-Layer AI sengaja dipisah menurut tanggung jawab, karena mudah sekali tercampur:
+The AI layer is deliberately split by responsibility, because it is very easy for those concerns to blur:
 
-| Tanggung jawab | Service | Bahasa | State |
+| Responsibility | Service | Language | State |
 | :--- | :--- | :--- | :--- |
-| Reasoning & orkestrasi task | `aiagent` | Go | In-memory |
-| Console operator / gateway | `agentweb` | Go + React | Stateless |
-| Prediksi & scoring | `embedder`, `forecaster`, `fraud-detector` | Python | Model on-disk |
+| Reasoning & task orchestration | `aiagent` | Go | In-memory |
+| Operator console / gateway | `agentweb` | Go + React | Stateless |
+| Prediction & scoring | `embedder`, `forecaster`, `fraud-detector` | Python | Model on-disk |
 | Shadow anomaly detection | `journal-anomaly`, `ebpf-anomaly` | Python | SQLite |
 
-<img src="/portofolio/microservice_superapp_go/agent-console-chat.png" alt="Console agent Super App: obrolan agen pencarian semantik e-commerce dengan tool catalog.read dan profil agen planner" width="100%" />
+<img src="/portofolio/microservice_superapp_go/agent-console-chat.png" alt="Super App agent console: e-commerce semantic search agent conversation with the catalog.read tool and planner agent profile" width="100%" />
 
-Keputusan terpentingnya adalah **shadow by default**. Detektor anomali *mengamati* — consume dari Kafka, menulis temuan, mengemit metrik — tapi tidak pernah mengirim perintah finansial dan tidak pernah memblokir pembayaran.
+The most important decision is **shadow by default**. Anomaly detectors *observe* — consume from Kafka, write findings, emit metrics — but never issue financial commands and never block payments.
 
-Integrasinya **remote-first, fail-open**:
+The integration is **remote-first, fail-open**:
 
-- **Fraud** — satu sumber skor. Bridge di payment-gateway memanggil `ai/fraud-detector` via gRPC `ScoreTransaction`, dengan rules lokal + Redis velocity sebagai fallback. Adapter fraud lama di dalam payment-gateway dihapus supaya tidak ada dua model yang bisa berbeda pendapat.
-- **Semantic search** — ecommerce memakai pgvector + indeks HNSW + hybrid search (RRF) dengan `embedder` composite: embedding remote kalau tersedia, hashed deterministik lokal kalau tidak.
-- **Demand forecasting** — `erp/purchasing` menjalankan planner yang **default OFF**; saat dinyalakan, hasil forecast menjadi draf purchase request (dengan dedup supaya tidak menumpuk).
-- **Journal anomaly** — `ai/journal-anomaly` mengonsumsi `accounting.journal.posted` dan mengemit finding; sisi ERP mengonsumsi finding itu hanya bila `JOURNAL_FINDINGS_ENABLED` diset. Default OFF.
-- **Netflow anomaly** — publisher netflow di ebpf-observability off kalau brokers kosong; jadi ia benar-benar *zero-risk* sampai dinyalakan.
+- **Fraud** — one source of scores. The bridge in payment-gateway calls `ai/fraud-detector` via the `ScoreTransaction` gRPC, with local rules + Redis velocity as fallback. The old fraud adapter inside payment-gateway was removed so that two models can never disagree.
+- **Semantic search** — ecommerce uses pgvector + HNSW index + hybrid search (RRF) with a composite `embedder`: remote embeddings when available, deterministic local hashed embeddings when not.
+- **Demand forecasting** — `erp/purchasing` runs a planner that is **OFF by default**; when enabled, forecast results become draft purchase requests (with dedup so they don't pile up).
+- **Journal anomaly** — `ai/journal-anomaly` consumes `accounting.journal.posted` and emits findings; the ERP side consumes those findings only when `JOURNAL_FINDINGS_ENABLED` is set. OFF by default.
+- **Netflow anomaly** — the netflow publisher in ebpf-observability is off when brokers are empty; so it is genuinely *zero-risk* until enabled.
 
-Kontribusi metrik dari bridge (`fraud.scores` → `golang_app_fraud_scores_total`, `payments.processed`, durasi check) diwire ke jalur fraud secara nil-safe, jadi grafik fraud tetap kosong dengan jujur kalau bridge tidak berjalan — bukan terlihat "sudah dicek" padahal tidak.
+The bridge's metric contributions (`fraud.scores` → `golang_app_fraud_scores_total`, `payments.processed`, check duration) are wired into the fraud path nil-safely, so fraud charts stay honestly empty when the bridge is not running — rather than looking "already checked" when it isn't.
 
 ---
 
 ## Kernel-Level Security
 
-Ini bagian yang biasanya tidak ada di backend super-app: enforcement dan telemetri **di dalam kernel**, tanpa mengubah kode aplikasi dan tanpa SDK.
+This is the part usually missing from a super-app backend: enforcement and telemetry **inside the kernel**, without changing application code and without an SDK.
 
 ### ebpf-firewall — XDP Enforcement
 
-Policy ditegakkan di titik paling awal network stack — **hook XDP**, sebelum kernel mengalokasikan socket buffer. Program eBPF kedua mengawasi percobaan koneksi keluar lewat **kprobe** (`tcp_v4_connect`/`tcp_v6_connect`) dan mengemit sinyal kanonik `runtime.endpoint.access`.
+Policy is enforced at the earliest point in the network stack — the **XDP hook**, before the kernel allocates a socket buffer. A second eBPF program watches outbound connection attempts via **kprobes** (`tcp_v4_connect`/`tcp_v6_connect`) and emits the canonical `runtime.endpoint.access` signal.
 
-Dua hal yang membuatnya lebih dari firewall mainan:
+Two things make it more than a toy firewall:
 
-- **Fail-open secara konstruksi.** Setiap tahap enforcement default-nya *meloloskan* trafik. Config salah, map kosong, atau program yang baru ter-load sebagian akan menurun menjadi *allow* — tidak pernah menjadi blackhole.
-- **Dua control plane, satu data plane.** Intent administratif yang ditulis di **nftables** atau **iptables** direkonsiliasi ke BPF map oleh daemon. Tim tetap memakai tool yang sudah dikenal, sementara enforcement-nya tetap di XDP.
+- **Fail-open by construction.** Every enforcement stage defaults to *passing* traffic. A bad config, an empty map, or a partially loaded program degrades to *allow* — never to a blackhole.
+- **Two control planes, one data plane.** Administrative intent written in **nftables** or **iptables** is reconciled into BPF maps by the daemon. Teams keep using familiar tools, while enforcement stays in XDP.
 
-### ebpf-observability — Telemetri & Deteksi Sigma
+### ebpf-observability — Telemetry & Sigma Detection
 
-Agen CO-RE berbasis `cilium/ebpf` melacak koneksi TCP (connect/established/close) dan mengirim event ke userspace lewat **ring buffer**. Metriknya antara lain `ebpf_tcp_connections_total{dport,family}`, `ebpf_tcp_connections_by_state_total`, dan histogram `ebpf_tcp_connect_latency_seconds`.
+A CO-RE agent based on `cilium/ebpf` tracks TCP connections (connect/established/close) and sends events to userspace via a **ring buffer**. Its metrics include `ebpf_tcp_connections_total{dport,family}`, `ebpf_tcp_connections_by_state_total`, and the `ebpf_tcp_connect_latency_seconds` histogram.
 
-Yang menarik: agent ini juga menjalankan **engine rules Sigma-subset**. Ruleset kanonik berisi **11 rule** di `detections/sigma/` — egress tak terklasifikasi, eksfiltrasi namespace host, reverse shell, crypto miner, container escape (`setns`/`unshare`), probe honeypot, dan akses endpoint dengan protokol tak terduga. Ruleset dimuat via ConfigMap, dan setiap hit mengemit `ebpf_rule_hits_total{rule_id}`.
+What's interesting: this agent also runs a **Sigma-subset rule engine**. The canonical ruleset contains **11 rules** in `detections/sigma/` — unclassified egress, host namespace exfiltration, reverse shell, crypto miner, container escape (`setns`/`unshare`), honeypot probing, and endpoint access with unexpected protocols. The ruleset is loaded via ConfigMap, and every hit emits `ebpf_rule_hits_total{rule_id}`.
 
-Dua batasan yang diakui terbuka: sampling memakai **duty cycle** (default 10 detik on / 10 detik off), jadi metriknya *sample-based* dan blind spot-nya terukur lewat `ebpf_sampling_gated_total`; dan ini **bukan IDS/EDR** — labelnya sengaja dibatasi ke `rule_id`.
+Two limitations are openly acknowledged: sampling uses a **duty cycle** (default 10 seconds on / 10 seconds off), so its metrics are *sample-based* and its blind spots are measurable via `ebpf_sampling_gated_total`; and this is **not an IDS/EDR** — its labels are deliberately limited to `rule_id`.
 
-Firewall dan observability akhirnya menyatu di **satu pipeline deteksi**: sinyal dari firewall di-POST ke `/ingest` milik ebpf-observability, dievaluasi engine Sigma yang sama, lalu di-emit ulang dengan `rule_ids`. Satu pipeline, bukan dua detektor yang bisa berbeda kesimpulan.
+Firewall and observability ultimately merge into **one detection pipeline**: firewall signals are POSTed to ebpf-observability's `/ingest`, evaluated by the same Sigma engine, then re-emitted with `rule_ids`. One pipeline, not two detectors that could reach different conclusions.
 
 ---
 
 ## Unified Observability
 
-Semua platform berbagi **satu stack** di namespace `monitoring`. Sebelum konsolidasi, tiap platform punya stack sendiri (atau tidak punya sama sekali), sehingga metrik dan trace platform yang tidak punya stack menjadi *orphan*.
+All platforms share **one stack** in the `monitoring` namespace. Before consolidation, each platform had its own stack (or none at all), so metrics and traces from platforms without a stack became *orphans*.
 
 ```mermaid
 graph TB
@@ -294,12 +294,12 @@ graph TB
     classDef store fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px;
     classDef viz fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:2px;
 
-    SVCS["Semua platform<br/>ecommerce · pos · payment · erp · identity · edge"]:::svc
+    SVCS["All platforms<br/>ecommerce · pos · payment · erp · identity · edge"]:::svc
     KERNEL["ebpf-observability :9095<br/>ebpf-firewall :9096"]:::svc
     AI["ai/ebpf-anomaly :50123<br/>ai/journal-anomaly :50124"]:::svc
 
     OTEL["OTel Collector<br/>:4317 gRPC / :4318 HTTP"]:::coll
-    PROM["Prometheus<br/>kubernetes_sd lintas namespace"]:::coll
+    PROM["Prometheus<br/>kubernetes_sd across namespaces"]:::coll
     PROMTAIL["Promtail"]:::coll
 
     JAEGER["Jaeger (traces)"]:::store
@@ -326,96 +326,96 @@ graph TB
     TSDB --> ALERT
 ```
 
-| Pilar | Tool | Peran |
+| Pillar | Tool | Role |
 | :--- | :--- | :--- |
-| **Metrics** | OpenTelemetry → Prometheus + Grafana | Metrik aplikasi (`golang_app_*`) dan infra (`node-exporter`) |
-| **Logging** | Zap JSON → Loki | Log terstruktur, dikueri via LogQL |
-| **Tracing** | OTel → Jaeger | Trace dari edge sampai query database |
-| **Alerting** | Alertmanager | Receiver default `null` — diisi saat integrasi on-call |
+| **Metrics** | OpenTelemetry → Prometheus + Grafana | Application metrics (`golang_app_*`) and infra metrics (`node-exporter`) |
+| **Logging** | Zap JSON → Loki | Structured logs, queried via LogQL |
+| **Tracing** | OTel → Jaeger | Traces from the edge down to database queries |
+| **Alerting** | Alertmanager | Default receiver `null` — populated when on-call integration is added |
 
-Dua mekanisme koneksi yang dipakai platform: **OTLP push** ke `otel-collector-service.monitoring:4317` (arahkan exporter ke sana), atau **scrape langsung** ke `/metrics` dengan anotasi `prometheus.io/scrape="true"` pada Service. Yang kedua ini yang dipakai metrik keamanan dan AI supaya tidak jadi orphan, lengkap dengan NetworkPolicy aditif `allow-shared-observability` per namespace untuk membuka ingress scrape dari `monitoring` dan egress OTLP ke `monitoring:4317`.
+Two connection mechanisms are used by platforms: **OTLP push** to `otel-collector-service.monitoring:4317` (point the exporter there), or **direct scrape** of `/metrics` with the `prometheus.io/scrape="true"` annotation on the Service. The latter is used by security and AI metrics so they don't become orphans, together with an additive `allow-shared-observability` NetworkPolicy per namespace to open ingress scraping from `monitoring` and OTLP egress to `monitoring:4317`.
 
-Dashboard dikelompokkan dalam folder di Grafana. Detail yang mudah terlewat: folder Grafana harus diletakkan di `items[].path` pada Deployment, bukan sebagai key ConfigMap — karena key tidak boleh mengandung garis miring; tanpa initContainer yang men-dereference symlink, provider Grafana akan melihat **0 dashboard** meski file-nya ada.
+Dashboards are grouped into folders in Grafana. An easy-to-miss detail: the Grafana folder must go in `items[].path` on the Deployment, not as a ConfigMap key — because keys may not contain slashes; without an initContainer that dereferences symlinks, the Grafana provider sees **0 dashboards** even though the files exist.
 
-### Dashboard yang Dipakai Sehari-hari
+### Dashboards Used Daily
 
-**Super App — Overview:** request rate, total request, p95/p99 latency, dan status code per service dari satu layar.
+**Super App — Overview:** request rate, total requests, p95/p99 latency, and status codes per service on a single screen.
 
-<img src="/portofolio/microservice_superapp_go/grafana-super-app-overview.png" alt="Grafana Super App Overview: total requests, request rate, p95/p99 latency, dan requests by status code" width="100%" />
+<img src="/portofolio/microservice_superapp_go/grafana-super-app-overview.png" alt="Grafana Super App Overview: total requests, request rate, p95/p99 latency, and requests by status code" width="100%" />
 
-**Cluster & Nodes:** CPU, memori, load average, filesystem, dan network per node dari `node-exporter` lintas namespace.
+**Cluster & Nodes:** CPU, memory, load average, filesystem, and network per node from `node-exporter` across namespaces.
 
-<img src="/portofolio/microservice_superapp_go/grafana-cluster-nodes.png" alt="Grafana Cluster and Nodes: CPU usage, memory used, load average, filesystem free, dan network throughput per node" width="100%" />
+<img src="/portofolio/microservice_superapp_go/grafana-cluster-nodes.png" alt="Grafana Cluster and Nodes: CPU usage, memory used, load average, filesystem free, and network throughput per node" width="100%" />
 
-**Databases — PostgreSQL:** instance hidup, backends aktif per `datname`, ukuran database, cache hit ratio, dan lock.
+**Databases — PostgreSQL:** instances up, active backends per `datname`, database size, cache hit ratio, and locks.
 
-<img src="/portofolio/microservice_superapp_go/grafana-databases-postgresql.png" alt="Grafana Databases PostgreSQL: instances up, active backends per database, DB size, cache hit ratio, dan locks" width="100%" />
+<img src="/portofolio/microservice_superapp_go/grafana-databases-postgresql.png" alt="Grafana Databases PostgreSQL: instances up, active backends per database, DB size, cache hit ratio, and locks" width="100%" />
 
-**AI Platform:** proses Python `ebpf-anomaly` dan `journal-anomaly` — CPU, RSS, GC, open FDs, dan health check service.
+**AI Platform:** the `ebpf-anomaly` and `journal-anomaly` Python processes — CPU, RSS, GC, open FDs, and service health checks.
 
-<img src="/portofolio/microservice_superapp_go/grafana-ai-platform.png" alt="Grafana AI Platform: process CPU dan RSS per service AI, Python GC, open file descriptors, dan AI service health" width="100%" />
+<img src="/portofolio/microservice_superapp_go/grafana-ai-platform.png" alt="Grafana AI Platform: process CPU and RSS per AI service, Python GC, open file descriptors, and AI service health" width="100%" />
 
 ---
 
 ## Identity & Trust Model
 
-`identity-service` adalah satu-satunya service yang boleh menjadi *token issuer*, karena hanya ia yang mengkombinasikan `identity_db` lokal dengan Admin REST API realm Keycloak.
+`identity-service` is the only service allowed to be the *token issuer*, because it alone combines the local `identity_db` with the Keycloak realm's Admin REST API.
 
-- **Dua jalur auth.** Registrasi dan verifikasi email lewat identity-service (bcrypt + kode verifikasi); penerbitan token lewat Keycloak OIDC (RS256). Token yang dikeluarkan adalah JWT RS256 yang ditandatangani Keycloak.
-- **Verifikasi stateless.** Setiap service lain memvalidasi token terhadap **JWKS** realm — tanpa shared secret, tanpa session, tanpa callback ke identity-service di hot path. Gateway menyimpan cache JWKS per `kid`.
-- **Dual-write dengan kompensasi.** User dibuat di Keycloak *lebih dulu*, lalu dicerminkan ke lokal; kalau insert lokal gagal, user Keycloak dihapus sebagai kompensasi.
-- **Stamping di edge.** Gateway menulis ulang `x-user-id`, `x-roles`, `x-tenant-id`, `x-merchant-id` dengan claim yang sudah diverifikasi. Service di belakang gateway tidak perlu menurunkan ulang *siapa yang memanggil*.
+- **Two auth paths.** Registration and email verification go through identity-service (bcrypt + verification codes); token issuance goes through Keycloak OIDC (RS256). The issued tokens are RS256 JWTs signed by Keycloak.
+- **Stateless verification.** Every other service validates tokens against the realm's **JWKS** — no shared secret, no session, no callback to identity-service on the hot path. The gateway caches JWKS per `kid`.
+- **Dual-write with compensation.** The user is created in Keycloak *first*, then mirrored locally; if the local insert fails, the Keycloak user is deleted as compensation.
+- **Edge stamping.** The gateway rewrites `x-user-id`, `x-roles`, `x-tenant-id`, `x-merchant-id` with verified claims. Services behind the gateway don't need to re-derive *who is calling*.
 
-Ada satu kompromi keamanan yang dikarantina dengan sengaja: mode `hs256` tersedia untuk lokal saja dan **dikunci keras oleh `APP_ENV`**. Produksi memakai `jwks`, tidak ada jalur lain.
+One security compromise is deliberately quarantined: `hs256` mode is available locally only and **hard-locked by `APP_ENV`**. Production uses `jwks`, no other path exists.
 
 ---
 
 ## Technical Decisions & Trade-offs
 
-**Domain otonom dengan database masing-masing, bukan satu cluster bersama**
-Empat platform dipecah menjadi puluhan modul, tiap konteks punya cluster PostgreSQL dan PgBouncer-nya sendiri. Efeknya cross-context coupling jadi tidak bisa dituliskan, dan satu konteks yang berubah skema tidak pernah mengejutkan konteks lain. Harganya nyata: puluhan pooler untuk dioperasikan, migrasi harus dijaga per konteks, dan query yang "sekali join saja" harus diselesaikan lewat gRPC atau event. Di skala ini, isolasi itu yang menjaga sistem tetap bisa dinalar.
+**Autonomous domains with their own databases, not one shared cluster**
+Four platforms are split into dozens of modules, each context with its own PostgreSQL cluster and PgBouncer. The effect is that cross-context coupling becomes unwritable, and a context changing its schema never surprises another context. The price is real: dozens of poolers to operate, migrations maintained per context, and queries that are "just one join" must be solved via gRPC or events. At this scale, that isolation is what keeps the system reason-able.
 
-**Kafka plus outbox/inbox, bukan panggilan sinkron lintas platform**
-Alur seperti permintaan pembayaran, penyelesaian pembayaran, dan jurnal akuntansi berjalan sebagai event di satu bus, jadi consumer yang lambat tidak pernah memblokir checkout. Imbalannya *eventual consistency* di mana-mana: consumer wajib idempoten, dan debugging berarti mengkorelasikan event alih-alih membaca satu stack trace. Untuk uang yang bergerak lintas platform, log yang tahan lama lebih baik daripada coupling sinkron yang ketat.
+**Kafka plus outbox/inbox, not cross-platform synchronous calls**
+Flows such as payment requests, payment settlement, and accounting journals run as events on one bus, so a slow consumer never blocks checkout. The trade-off is *eventual consistency* everywhere: consumers must be idempotent, and debugging means correlating events instead of reading a single stack trace. For money moving across platforms, a durable log beats tight synchronous coupling.
 
-**Saga dengan kompensasi eksplisit, bukan transaksi terdistribusi**
-Checkout menyentuh cart, shipping, order, stok, dan pembayaran tanpa satu pun transaksi atomik yang membungkusnya. Order state machine CAS plus TTL worker plus `ReleaseStock` membuat checkout yang setengah jalan jadi *terlihat dan bisa dipulihkan*, bukan hilang diam-diam. Lebih sederhana dioperasikan daripada saga engine penuh — tapi tanggung jawab rekonsiliasi berpindah ke model data, jadi kualitasnya bergantung pada disiplin state machine.
+**Saga with explicit compensation, not distributed transactions**
+Checkout touches the cart, shipping, order, stock, and payment without a single atomic transaction wrapping them. The order state machine CAS plus TTL worker plus `ReleaseStock` make a half-finished checkout *visible and recoverable* rather than silently lost. It is simpler to operate than a full saga engine — but the reconciliation burden shifts to the data model, so quality depends on state machine discipline.
 
-**AI fail-open dan shadow by default**
-Model tidak pernah berada di jalur kritis. Fraud scorer dipanggil remote-first dengan fallback rules lokal; kalau service AI mati, pembayaran tetap berjalan dengan aturan deterministik. Detektor anomali hanya mengamati. Konsekuensinya: skor yang gagal tidak terlihat sebagai "aman", melainkan sebagai `UNAVAILABLE` — dan itu disengaja, karena panel kosong yang terlihat seperti "sudah dicek" jauh lebih berbahaya daripada kegagalan yang jujur.
+**Fail-open AI and shadow by default**
+Models are never on the critical path. The fraud scorer is called remote-first with local rule fallback; if the AI service is down, payments still proceed under deterministic rules. Anomaly detectors only observe. The consequence: a failed score is not shown as "safe" but as `UNAVAILABLE` — deliberately so, because an empty panel that looks "already checked" is far more dangerous than an honest failure.
 
-**Console agent read-only**
-`agentweb` mengekspos grafik operasional (Prometheus, dengan whitelist PromQL **di sisi server** — klien tidak pernah mengirim query) dan grafik bisnis (POS/payment dari ClickHouse, di belakang JWT memakai token service Keycloak dengan client-credentials). Semuanya GET dan read-only; tidak ada mutasi yang bisa dipicu dari console. Batas kemampuan dilaporkan apa adanya — sumber yang mati menghasilkan `error` + `UNAVAILABLE`, bukan panel kosong.
+**Read-only agent console**
+`agentweb` exposes operational charts (Prometheus, with a PromQL whitelist **on the server side** — the client never sends queries) and business charts (POS/payment from ClickHouse, behind a JWT using a Keycloak service token via client-credentials). Everything is GET and read-only; no mutation can be triggered from the console. Capability limits are reported as-is — a dead source yields `error` + `UNAVAILABLE`, not an empty panel.
 
-**Enforcement keamanan di kernel, fail-open**
-XDP memberi penolakan paket di titik paling murah dan kprobe memberi visibilitas koneksi yang tidak bisa diberikan agent userspace. Pilihannya sengaja fail-open: config salah atau map kosong menurun ke *allow*, tidak pernah ke blackhole, karena firewall yang salah bisa mematikan seluruh sistem lebih efektif daripada serangan. Batasannya juga dinyatakan: sampling duty-cycle berarti metrik bersifat sample-based, dan ini bukan IDS/EDR — labelnya dibatasi ke `rule_id`.
+**Kernel-level security enforcement, fail-open**
+XDP gives packet rejection at the cheapest point and kprobes give connection visibility that a userspace agent cannot provide. The choice is deliberately fail-open: a bad config or empty map degrades to *allow*, never to a blackhole, because a misconfigured firewall can take down the whole system more effectively than an attack. Its limits are stated too: duty-cycle sampling means metrics are sample-based, and this is not an IDS/EDR — labels are limited to `rule_id`.
 
-**Workspace build per-modul, bukan satu workspace raksasa**
-94 modul Go dengan `replace` relatif yang bertabrakan bila dimuat serentak. `go.work` root dibiarkan kosong dan setiap modul dibuild dengan `GOWORK=off` — sama seperti yang dilakukan CI. Ini menambah langkah kecil di setiap perintah build, ditukar dengan build yang deterministik dan tidak saling mengganggu antar platform.
+**Per-module workspace builds, not one giant workspace**
+94 Go modules with relative `replace` directives that collide when loaded simultaneously. The root `go.work` is left empty and each module is built with `GOWORK=off` — the same as CI does. This adds a small step to every build command, traded for deterministic builds that don't interfere across platforms.
 
 ---
 
 ## Deployment
 
-### Lokal
+### Local
 
 ```sh
-# Infrastruktur pendukung (PostgreSQL, PgBouncer, Redis, Kafka)
+# Supporting infrastructure (PostgreSQL, PgBouncer, Redis, Kafka)
 cd service/erp
 docker compose -f deployments/local/docker-compose.infra.yml up -d
 
-# Identity + Keycloak (realm superapp diimpor otomatis saat boot)
+# Identity + Keycloak (superapp realm auto-imported at boot)
 cd service/identity-service
 docker compose -f deployments/local/docker-compose.yml up -d
 
-# Edge gateway + platform
+# Edge gateway + platforms
 cd service/unified-api-gateway && docker compose -f deployments/local/docker-compose.yml up -d
 cd service/ecommerce && docker compose -f deployments/local/docker-compose.yml up -d
 ```
 
 ### Kubernetes
 
-Manifest Kustomize (base + `overlays/production`) dengan alias jaringan lokal per platform dan sync-wave Argo CD; `default-deny-all` NetworkPolicy plus allow-list egress per service. Env untuk jalur lintas platform memakai FQDN in-cluster, misalnya `ERP_INVENTORY_ADDR`, `FRAUD_GRPC_ADDR=fraud-detector.ai.svc.cluster.local:50120`, dan `FORECAST_GRPC_ADDR=forecast.ai.svc.cluster.local:50122`.
+Kustomize manifests (base + `overlays/production`) with per-platform local network aliases and Argo CD sync-waves; `default-deny-all` NetworkPolicy plus per-service egress allow-lists. Env for cross-platform paths uses in-cluster FQDNs, for example `ERP_INVENTORY_ADDR`, `FRAUD_GRPC_ADDR=fraud-detector.ai.svc.cluster.local:50120`, and `FORECAST_GRPC_ADDR=forecast.ai.svc.cluster.local:50122`.
 
 ### Smoke Test
 
@@ -424,13 +424,13 @@ BASE_URL=http://127.0.0.1:8080 ./tests/run.sh
 BASE_URL=http://127.0.0.1:8080 ./tests/run.sh journey
 ```
 
-Suite tingkat edge ada di `tests/hurl/` (health, auth-reject) dan `tests/journey/` (register lalu login), dengan fixture event schema-v1 di `tests/fixtures/`.
+The edge-level suites live in `tests/hurl/` (health, auth-reject) and `tests/journey/` (register then login), with schema-v1 event fixtures in `tests/fixtures/`.
 
 ---
 
 ## Port Map Registry
 
-| Kategori | Komponen | Host Port | Protokol |
+| Category | Component | Host Port | Protocol |
 | :--- | :--- | :--- | :--- |
 | **Edge & Identity** | unified-api-gateway | `8080` | HTTP / REST |
 | | identity-service | `8085` | HTTP / REST |
@@ -440,7 +440,7 @@ Suite tingkat edge ada di `tests/hurl/` (health, auth-reject) dan `tests/journey
 | | pos apigateway | `5000` | HTTP / REST |
 | | payment apigateway | `8005` | HTTP / REST |
 | **Databases** | PostgreSQL (internal) | — | TCP |
-| | PgBouncer konteks | `6432`–`6436` | TCP pool |
+| | Context PgBouncer | `6432`–`6436` | TCP pool |
 | | ClickHouse OLAP | `9000` / `8123` | Native / HTTP |
 | | Redis | `6379`–`6389` | RESP |
 | **Messaging** | Kafka broker | `29092` | TCP |
@@ -454,81 +454,81 @@ Suite tingkat edge ada di `tests/hurl/` (health, auth-reject) dan `tests/journey
 
 ---
 
-## Verifikasi
+## Verification
 
-Klaim di atas bisa diperiksa ulang — inilah bentuk buktinya:
+The claims above can be re-checked — this is what the evidence looks like:
 
-| Pemeriksaan | Hasil |
+| Check | Result |
 | :--- | :--- |
-| Modul Go (dengan `go.work` per platform) | 94 modul, build per-modul `GOWORK=off` |
-| Unit test | 333 file `_test.go` + 13 test Python AI |
-| Sigma rule | 11 rule kanonik di `detections/sigma/` |
-| Integration test saga | order saga + TTL worker (testcontainers), bridge E2E (Kafka + inbox Postgres nyata + fake card/merchant/transaction) |
+| Go modules (with `go.work` per platform) | 94 modules, per-module build with `GOWORK=off` |
+| Unit tests | 333 `_test.go` files + 13 AI Python tests |
+| Sigma rules | 11 canonical rules in `detections/sigma/` |
+| Saga integration tests | order saga + TTL worker (testcontainers), bridge E2E (Kafka + real Postgres inbox + fake card/merchant/transaction) |
 | Hurl edge suite | `tests/hurl/` + `tests/journey/` |
-| Deployment | Kustomize base + overlay produksi, NetworkPolicy lintas namespace |
+| Deployment | Kustomize base + production overlay, cross-namespace NetworkPolicy |
 
-Beberapa hal masih tertinggal, dan saya tulis apa adanya di sini:
+A few things are still outstanding, and I'm writing them plainly here:
 
-- Deployments untuk payment bridge sempat ketinggalan dari kodenya.
-- Sebagian platform belum punya GitOps Argo CD yang sejajar dengan yang lain.
-- Jalur `inventory.stock.synced` belum diuji end-to-end seperti jalur pembayaran.
-- Netflow ke AI anomaly sudah tersambung, tapi sengaja masih opt-in (brokers kosong berarti off).
+- Deployments for the payment bridge once fell behind the code.
+- Some platforms don't yet have Argo CD GitOps on par with the others.
+- The `inventory.stock.synced` path is not yet tested end-to-end like the payment path.
+- Netflow to AI anomaly is wired up, but deliberately still opt-in (empty brokers means off).
 
 ---
 
 ## Technology Stack
 
-| Kategori | Teknologi | Peran |
+| Category | Technology | Role |
 | :--- | :--- | :--- |
-| **Bahasa** | Go 1.26.x, Python 3.12, C (Clang 18) | Service inti, inferensi AI/ML, probe eBPF |
-| **RPC & Kontrak** | gRPC, Protobuf (buf CLI) | Kontrak lintas service yang strongly-typed |
-| **HTTP Edge** | go-chi/chi v5, Echo | Gateway REST dan routing ingress |
-| **Identity & IAM** | Keycloak 26.0, RS256 JWT, JWKS | Autentikasi OIDC, penerbitan token, RBAC |
-| **Database** | PostgreSQL 17, ClickHouse 24.x | Persistensi OLTP, analitik OLAP |
-| **Connection Pool** | PgBouncer 1.23+ | Pooling per konteks |
-| **Cache** | Redis 7.4 | Session, lock, rate limit, read-through |
-| **Event Streaming** | Apache Kafka 3.8+ (IBM Sarama) | Outbox event bus, pipeline asinkron |
-| **Migrasi** | goose | Migrasi per platform saat boot |
-| **Kernel Security** | eBPF (cilium/ebpf), XDP | Filtering paket in-kernel, deteksi eksekusi proses |
-| **Detection Engine** | Sigma-subset AST compiler | 11 rule deteksi berbasis YAML |
-| **Observability** | OpenTelemetry, Prometheus, Grafana, Loki, Jaeger | Trace, metrik, log, alerting |
-| **Orchestrasi** | Docker Compose, Kubernetes, Argo CD, Kustomize | Lokal sampai GitOps produksi |
+| **Languages** | Go 1.26.x, Python 3.12, C (Clang 18) | Core services, AI/ML inference, eBPF probes |
+| **RPC & Contracts** | gRPC, Protobuf (buf CLI) | Strongly-typed cross-service contracts |
+| **HTTP Edge** | go-chi/chi v5, Echo | REST gateway and ingress routing |
+| **Identity & IAM** | Keycloak 26.0, RS256 JWT, JWKS | OIDC authentication, token issuance, RBAC |
+| **Database** | PostgreSQL 17, ClickHouse 24.x | OLTP persistence, OLAP analytics |
+| **Connection Pool** | PgBouncer 1.23+ | Per-context pooling |
+| **Cache** | Redis 7.4 | Session, locks, rate limit, read-through |
+| **Event Streaming** | Apache Kafka 3.8+ (IBM Sarama) | Outbox event bus, asynchronous pipelines |
+| **Migrations** | goose | Per-platform migrations at boot |
+| **Kernel Security** | eBPF (cilium/ebpf), XDP | In-kernel packet filtering, process execution detection |
+| **Detection Engine** | Sigma-subset AST compiler | 11 YAML-based detection rules |
+| **Observability** | OpenTelemetry, Prometheus, Grafana, Loki, Jaeger | Traces, metrics, logs, alerting |
+| **Orchestration** | Docker Compose, Kubernetes, Argo CD, Kustomize | Local through production GitOps |
 
 ---
 
-## Struktur Workspace
+## Workspace Structure
 
 ```
 microservice-super-app-baru/
-├── go.work                        # Sengaja kosong — build per modul
-├── .golangci.yml                  # Konfigurasi linter terpadu
-├── tests/                         # Suite E2E tingkat edge
-│   ├── hurl/                      # Assertion batas gateway
-│   └── journey/                   # Perjalanan integrasi lintas domain
+├── go.work                        # Deliberately empty — per-module build
+├── .golangci.yml                  # Unified linter configuration
+├── tests/                         # Edge-level E2E suite
+│   ├── hurl/                      # Gateway boundary assertions
+│   └── journey/                   # Cross-domain integration journey
 └── service/
-    ├── identity-service/          # Otoritas identitas (Go/chi + Keycloak)
-    ├── unified-api-gateway/       # Gateway ingress tunggal (Go/chi)
-    ├── erp/                       # Platform ERP (16 modul, 5 konteks DB)
-    ├── ecommerce/                 # Platform E-Commerce (25 modul + ClickHouse)
-    ├── pointofsale/               # Platform POS (16 modul + ClickHouse)
-    ├── payment-gateway/           # Platform payment (15 modul + bridge)
-    ├── ai/                        # Subsystem AI (agent Go + 5 service Python)
+    ├── identity-service/          # Identity authority (Go/chi + Keycloak)
+    ├── unified-api-gateway/       # Single ingress gateway (Go/chi)
+    ├── erp/                       # ERP platform (16 modules, 5 DB contexts)
+    ├── ecommerce/                 # E-Commerce platform (25 modules + ClickHouse)
+    ├── pointofsale/               # POS platform (16 modules + ClickHouse)
+    ├── payment-gateway/           # Payment platform (15 modules + bridge)
+    ├── ai/                        # AI subsystem (Go agent + 5 Python services)
     ├── ebpf-firewall/             # XDP firewall + kprobe connection signal
-    ├── ebpf-observability/        # Telemetri kernel + Sigma detection engine
-    ├── detections/sigma/          # 11 rule deteksi
-    └── observability/             # Stack monitoring bersama (ns: monitoring)
+    ├── ebpf-observability/        # Kernel telemetry + Sigma detection engine
+    ├── detections/sigma/          # 11 detection rules
+    └── observability/             # Shared monitoring stack (ns: monitoring)
 ```
 
 ---
 
-## Catatan Penutup
+## Closing Notes
 
-Yang paling menentukan kualitas sistem ini bukan jumlah modulnya, melainkan **apa yang ditulis terang-terangan**: batas domain yang tidak bisa dilanggar compiler, kontrak event yang sama di semua platform, mode kegagalan yang fail-open dan terdokumentasi, serta hal-hal yang belum selesai yang ditulis terbuka di README platform.
+What most determines the quality of this system is not the number of modules, but **what is stated plainly**: domain boundaries the compiler won't let you violate, identical event contracts on every platform, fail-open and documented failure modes, and unfinished items written openly in the platform READMEs.
 
-Di federasi domain seperti ini, jujur soal apa yang bisa dan tidak bisa dilakukan bukan pelengkap dokumentasi — ia bagian dari arsitekturnya sendiri.
+In a federation of domains like this, honesty about what can and cannot be done is not a documentation nicety — it is part of the architecture itself.
 
 ---
 
 <p align="center">
-  <b>Domain Berdaulat · Contract-Coupled · Fail-Open Resilience · Kernel-Enforced Security</b>
+  <b>Sovereign Domains · Contract-Coupled · Fail-Open Resilience · Kernel-Enforced Security</b>
 </p>

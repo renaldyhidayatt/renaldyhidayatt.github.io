@@ -164,9 +164,9 @@ const Cheatsheet = () => {
                             The <span className="text-primary italic">Cheatsheet</span>
                         </h1>
                         <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl">
-                            Catatan referensi backend yang dikunci versinya — potongan kode siap salin, tabel lookup,
-                            dan jebakan yang sudah pernah saya coba. Ditulis ulang tiap kali saya lupa, bukan tiap
-                            kali saya publish artikel.
+                            Version-pinned backend reference notes — copy-ready snippets, lookup tables,
+                            and pitfalls I've already hit. Rewritten whenever I forget, not every
+                            time I publish an article.
                         </p>
                     </div>
 
@@ -280,13 +280,13 @@ const Cheatsheet = () => {
                                     Cara kerja
                                 </div>
                                 <h2 className="text-xl font-black text-foreground">
-                                    Blog menjelaskan <em className="text-primary">kenapa</em>, cheatsheet mengingat{" "}
-                                    <em className="text-primary">bagaimana</em>.
+                                    Blog explains <em className="text-primary">why</em>, cheatsheets remember{" "}
+                                    <em className="text-primary">how</em>.
                                 </h2>
                                 <p className="text-xs md:text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                                    Setiap sheet punya versi yang dikunci di bagian atas. Kalau versinya sudah tidak
-                                    cocok dengan yang saya pakai, sheet-nya ditandai usang — bukan saya diam-diam
-                                    menulis ulang.
+                                    Every sheet pins its version at the top. If that version no longer
+                                    matches what I run, the sheet is marked stale — rather than quietly
+                                    rewritten.
                                 </p>
                             </div>
                             <Link

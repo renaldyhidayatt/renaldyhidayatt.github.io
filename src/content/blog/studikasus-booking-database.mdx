@@ -182,10 +182,10 @@ VALUES
 
 ```
 
-## Langkah-langkah untuk Easy, Medium, dan Hard Case
+## Steps for the Easy, Medium, and Hard Cases
 
-### Easy Case 1: Menampilkan Semua Ruang
-Deskripsi: Sistem perlu menampilkan semua ruang yang tersedia dalam database.
+### Easy Case 1: Displaying All Rooms
+Description: The system needs to display all rooms available in the database.
 
 ```sql
 SELECT * FROM rooms;
@@ -437,7 +437,7 @@ FROM
 JOIN 
     rooms r ON b.room_id = r.id
 WHERE 
-    b.user_id = ?; -- Ganti dengan ID pengguna yang sesuai
+    b.user_id = ?; -- Replace with the appropriate user ID
 ```
 
 3. **Query Explanation**:
@@ -462,8 +462,8 @@ After executing the query to calculate the space utilization rate, the results c
 
 | Booking ID | Room Name | Check-In Time       | Check-Out Time      | Booking Time         |
 |------------|-----------|---------------------|---------------------|-----------------------|
-| 1          | Ruang A   | 2024-10-01 14:00:00 | 2024-10-01 16:00:00 | 2024-09-28 10:00:00   |
-| 2          | Ruang B   | 2024-10-05 09:00:00 | 2024-10-05 11:00:00 | 2024-09-30 11:00:00   |
+| 1          | Room A    | 2024-10-01 14:00:00 | 2024-10-01 16:00:00 | 2024-09-28 10:00:00   |
+| 2          | Room B    | 2024-10-05 09:00:00 | 2024-10-05 11:00:00 | 2024-09-30 11:00:00   |
 
 
 ## Conclusion

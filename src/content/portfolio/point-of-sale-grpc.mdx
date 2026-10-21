@@ -5,72 +5,72 @@ date: "2025-05-31"
 created_at: "2025-05-31"
 updated_at: "2025-05-31"
 tags: ["go", "docker", "sqlc", "postgres", "docker-compose"]
-status: "selesai"
+status: "finished"
 image: "/portofolio/pointofsale_grpc.png"
 ---
 
 
 
-# 💳 Proyek Point of Sale (POS) gRPC
+# 💳 Point of Sale (POS) gRPC Project
 
-Proyek ini merupakan **implementasi backend untuk sistem Point of Sale (POS)** yang dirancang dengan arsitektur **monolitik terstruktur**. Meskipun monolitik, proyek ini disusun dengan modul-modul yang jelas sehingga setiap domain (misalnya pengguna, merchant, inventaris, dan transaksi) tetap mudah dikelola serta memungkinkan pengembangan lebih lanjut tanpa kehilangan keteraturan.
+This project is a **backend implementation for a Point of Sale (POS) system** designed with a **structured monolithic** architecture. Although monolithic, the project is organized into clear modules so that each domain (users, merchants, inventory, and transactions, for example) remains easy to manage and can be extended further without losing order.
 
-Tujuan utama dari proyek ini adalah untuk menghadirkan **fondasi kuat, aman, dan skalabel** bagi aplikasi kasir modern yang digunakan oleh berbagai jenis bisnis ritel. Dengan desain yang terstruktur, sistem mampu menangani kebutuhan kasir sehari-hari mulai dari pengelolaan pengguna, inventaris, hingga pencatatan transaksi penjualan, sambil tetap mudah di-deploy di berbagai lingkungan.
+The main goal of this project is to provide a **solid, secure, and scalable foundation** for modern cashier applications used by many kinds of retail businesses. With its structured design, the system can handle day-to-day cashier needs ranging from user and inventory management to recording sales transactions, while staying easy to deploy in various environments.
 
-Komunikasi antara klien dengan server dilakukan melalui **REST API**, sementara komunikasi internal antara API Gateway dan layanan utama menggunakan **gRPC** dengan **Protobuf**. Hal ini memastikan sistem memiliki **latensi rendah dan throughput tinggi**, sehingga tetap responsif meskipun menangani transaksi dalam jumlah besar. Data transaksi dan manajemen entitas disimpan dengan aman di dalam **PostgreSQL**, yang dikenal stabil dan handal untuk kebutuhan finansial serta operasional.
+Communication between client and server happens over a **REST API**, while internal communication between the API Gateway and the core service uses **gRPC** with **Protobuf**. This ensures the system has **low latency and high throughput**, so it stays responsive even when handling large numbers of transactions. Transaction data and entity management are stored securely in **PostgreSQL**, which is known to be stable and reliable for financial and operational needs.
 
-### Lingkup dan Fungsi Utama
+### Scope and Key Features
 
-* **🔐 Manajemen Pengguna & Peran**
-  Sistem mendukung otentikasi dan otorisasi dengan level akses berbeda (admin, pemilik merchant, kasir). Hal ini memastikan hanya pihak berwenang yang dapat melakukan aksi tertentu sesuai tanggung jawabnya.
+* **🔐 User & Role Management**
+  The system supports authentication and authorization with different access levels (admin, merchant owner, cashier). This ensures that only authorized parties can perform certain actions according to their responsibilities.
 
-* **🏬 Manajemen Merchant**
-  Pemilik bisnis dapat mendaftarkan toko/merchant, mengatur informasi penting seperti nama toko, API key, hingga struktur operasional yang mereka miliki.
+* **🏬 Merchant Management**
+  Business owners can register a store/merchant, configure important information such as store name and API key, and set up their operational structure.
 
-* **👨‍💼 Manajemen Kasir**
-  Merchant dapat menambahkan akun kasir, memberikan akses sesuai kebutuhan, serta memantau aktivitas kasir mereka secara langsung.
+* **👨‍💼 Cashier Management**
+  Merchants can add cashier accounts, grant access as needed, and monitor their cashiers' activity in real time.
 
-* **📦 Manajemen Inventaris**
-  Mendukung CRUD penuh terhadap produk dan kategori, mencakup detail stok, harga, deskripsi, hingga kategori produk. Dengan sistem ini, stok selalu up-to-date dan bisa dikontrol secara efisien.
+* **📦 Inventory Management**
+  Supports full CRUD for products and categories, covering stock details, price, description, and product category. With this system, stock is always up to date and can be controlled efficiently.
 
-* **💳 Proses Transaksi**
-  Sistem menyediakan alur lengkap untuk membuat pesanan, menambahkan item ke keranjang, menghitung total pembayaran, hingga mencatat transaksi secara permanen di database.
+* **💳 Transaction Processing**
+  The system provides a complete flow for creating orders, adding items to the cart, calculating the payment total, and recording transactions permanently in the database.
 
-* **⚡ Komunikasi gRPC Internal**
-  API Gateway berkomunikasi dengan server utama melalui gRPC, yang memberikan performa tinggi serta mempermudah scaling di masa depan jika sistem ingin dipecah menjadi microservices.
+* **⚡ Internal gRPC Communication**
+  The API Gateway communicates with the core server over gRPC, which delivers high performance and makes future scaling easier if the system is later split into microservices.
 
-* **📖 Dokumentasi API Otomatis**
-  REST API secara otomatis terdokumentasi dengan Swagger (**Swago**), sehingga memudahkan developer maupun tim integrasi untuk memahami dan menguji endpoint yang tersedia.
+* **📖 Automatic API Documentation**
+  The REST API is automatically documented with Swagger (**Swago**), making it easier for developers and integration teams to understand and test the available endpoints.
 
-* **🐳 Kontainerisasi dengan Docker**
-  Sistem siap dijalankan pada lingkungan terisolasi dengan Docker & Docker Compose, membuat proses setup menjadi cepat, konsisten, dan mudah di-deploy di berbagai platform.
-
----
-
-## 🧰 Tech Teknologi
-
-- 🐹 **Go (Golang)** — Bahasa implementasi.
-- 🌐 **Echo** — Kerangka kerja web minimalis untuk membangun REST API.
-- 🪵 **Zap Logger** — Pencatatan terstruktur untuk aplikasi berkinerja tinggi.
-- 📦 **SQLC** — Menghasilkan kode Go yang aman dari tipe dari kueri SQL.
-- 🚀 **gRPC** — RPC berkinerja tinggi untuk komunikasi layanan internal.
-- 🧳 **Goose** — Alat migrasi untuk mengelola perubahan skema database.
-- 🐳 **Docker** — Platform kontainerisasi untuk lingkungan pengembangan yang konsisten.
-- 📄 **Swago** — Menghasilkan dokumentasi Swagger 2.0 untuk rute Echo.
-- 🔗 **Docker Compose** — Mengelola aplikasi Docker multi-kontainer.
+* **🐳 Containerization with Docker**
+  The system is ready to run in an isolated environment with Docker & Docker Compose, making setup fast, consistent, and easy to deploy across platforms.
 
 ---
 
+## 🧰 Tech Stack
 
-## Arsitektur
-Aplikasi ini dirancang dengan arsitektur berorientasi layanan monolith (monolith). REST API yang menghadap klien bertindak sebagai gateway, menerjemahkan permintaan HTTP menjadi panggilan gRPC ke server backend. Server ini berisi logika bisnis inti dan berkomunikasi dengan database PostgreSQL.
+- 🐹 **Go (Golang)** — Implementation language.
+- 🌐 **Echo** — Minimalist web framework for building REST APIs.
+- 🪵 **Zap Logger** — Structured logging for high-performance applications.
+- 📦 **SQLC** — Generates type-safe Go code from SQL queries.
+- 🚀 **gRPC** — High-performance RPC for internal service communication.
+- 🧳 **Goose** — Migration tool for managing database schema changes.
+- 🐳 **Docker** — Containerization platform for a consistent development environment.
+- 📄 **Swago** — Generates Swagger 2.0 documentation for Echo routes.
+- 🔗 **Docker Compose** — Manages multi-container Docker applications.
+
+---
+
+
+## Architecture
+The application is designed with a service-oriented monolith architecture. The client-facing REST API acts as a gateway, translating HTTP requests into gRPC calls to the backend server. That server holds the core business logic and communicates with the PostgreSQL database.
 
 [![](https://mermaid.ink/img/pako:eNqdUl1vmzAU_SuWI02pRNIAgRg_TKqaaevWrazJ00IeLuGGoICNjGmbRfnvMx9ZO1WbtNqS4R7fe865to90IxOknKYKyh1ZziNBzKjquAMieiM0KthXGQlRpGktIKJdUjPOGBmNTO6n5TK8vP-wWJLh58Xdt4uIGvw9-ZJnKFbtenkV3pCPoPERDuuOBkUSiVeyt3AAAYJclXm2hyp7KdoydYrpfXhNhqGSWsb19iy4QPWAatV9SJOzfq7u0bZ88f22L5mDhhgqXA1DWelUodm6-KfDpnUsYhCpsfmO3JXmmP70-TVLG2hl7FVYncP136Rfi-lDjn232yzP-SBxmR_EVqWV3CMfuBuXuX4fjh6zRO-4Uz5ZG5lLxQcOa-ZLrr73joy54AXs7WRn3z1dzOLY8d9O1x9Pz7ZFNrGD_2OjlnnGWUL5FvIKLVqgKqCJ6bERiqjeYYER5eY3AbVv7upkikoQP6QsKNeqNmVK1unuN0ldJua5zjMw7p5TzC2hupa10JTbbktB-ZE-UT5yg7E3c6aOzYKJHzSbB4NOp2PPm_oe8yc2Y57r-ieL_mxV7bHD7AmbzTzf9vzAsaenX5TJG5I?type=png)](https://mermaid.live/edit#pako:eNqdUl1vmzAU_SuWI02pRNIAgRg_TKqaaevWrazJ00IeLuGGoICNjGmbRfnvMx9ZO1WbtNqS4R7fe865to90IxOknKYKyh1ZziNBzKjquAMieiM0KthXGQlRpGktIKJdUjPOGBmNTO6n5TK8vP-wWJLh58Xdt4uIGvw9-ZJnKFbtenkV3pCPoPERDuuOBkUSiVeyt3AAAYJclXm2hyp7KdoydYrpfXhNhqGSWsb19iy4QPWAatV9SJOzfq7u0bZ88f22L5mDhhgqXA1DWelUodm6-KfDpnUsYhCpsfmO3JXmmP70-TVLG2hl7FVYncP136Rfi-lDjn232yzP-SBxmR_EVqWV3CMfuBuXuX4fjh6zRO-4Uz5ZG5lLxQcOa-ZLrr73joy54AXs7WRn3z1dzOLY8d9O1x9Pz7ZFNrGD_2OjlnnGWUL5FvIKLVqgKqCJ6bERiqjeYYER5eY3AbVv7upkikoQP6QsKNeqNmVK1unuN0ldJua5zjMw7p5TzC2hupa10JTbbktB-ZE-UT5yg7E3c6aOzYKJHzSbB4NOp2PPm_oe8yc2Y57r-ieL_mxV7bHD7AmbzTzf9vzAsaenX5TJG5I)
 
 
-## 🗃️ Diagram ERD (Entity-Relationship Diagram)
+## 🗃️ ERD (Entity-Relationship Diagram)
 
-Diagram ini menunjukkan struktur dan hubungan antar tabel dalam database.
+This diagram shows the structure and relationships between tables in the database.
 
 [![](https://mermaid.ink/img/pako:eNqlVlFvmzAQ_ivIz2lVkpAmvHVdu1VVp6qLpmmKhCxzCVbBZrZZm6X577UJAQNGWzae4L7v7r4722d2iPAYUIhAfKR4I3C2Yp5-CglCervDh3nuvixLY0Rj7_G-sX-7err-fPXkramQiuEM-lCKhxDIME375hxL-cJF3CDLu4ebr8urh0ePCMAK4ggrF1rkcQvdr9jhRfAUevUY41A9JdZW_d8iyv45ldRIV47d9tt7t_yjvSkW1gJkEin-DKxftY3-bb5jW0onV9HwmlOBFeWsIyYDQRLMVE_HEThVQmdRbr4vvRgkETRvstt8qbAqZEcVwTKhji1e2V2abL23_6TXyq5gwwUFR_4S2Q5ty5OLT4tNdAzaUZELHhekvzCV_dQe2NL_vG6HRJR0TIQXJjqLpOLkuSNYjwTHkpXW08XW62xDH-4-GVRxhdPIkteWEFEF2ZAODbnE1Cq7Sqxud6GfhVZP1Xawa7UsJTCTmJg90NNlYScJG2pfM6W3GWg4A5XwuO2LM7OOwz7OM3m4c97ezs74zp6VobdCCZYrZI9yN40ykhYxxB5lR3oramcydiK3qM3cMiz-wty0epCU6WtO4-3iQZanfDtMrk-mIUtI05pqTQ4Xl3CmMGXDkasjZLgCCNBfYIWuFPaph_uuZlaIzauORKehtbYBKpV6Rwjl8bU7dGtbd2L3SuuRdXYCUhrdaIQ2gsYoXONUwghpZ_3rob9ReVhWSCWgpxMybjEWzybJXjvlmP3gPEOhEoV2E7zYJHWQwz1f_TbVFGC6gmuz_VG4KCOgcIdeUXg2WZwHl-Pp2J8vLmYLfzJCW22dTs-DYDoL5rMLfz4PJpPZfoR-l0n98_Hcv5hfXgYzP5gtxv50_w4ii-0P?type=png)](https://mermaid.live/edit#pako:eNqlVlFvmzAQ_ivIz2lVkpAmvHVdu1VVp6qLpmmKhCxzCVbBZrZZm6X577UJAQNGWzae4L7v7r4722d2iPAYUIhAfKR4I3C2Yp5-CglCervDh3nuvixLY0Rj7_G-sX-7err-fPXkramQiuEM-lCKhxDIME375hxL-cJF3CDLu4ebr8urh0ePCMAK4ggrF1rkcQvdr9jhRfAUevUY41A9JdZW_d8iyv45ldRIV47d9tt7t_yjvSkW1gJkEin-DKxftY3-bb5jW0onV9HwmlOBFeWsIyYDQRLMVE_HEThVQmdRbr4vvRgkETRvstt8qbAqZEcVwTKhji1e2V2abL23_6TXyq5gwwUFR_4S2Q5ty5OLT4tNdAzaUZELHhekvzCV_dQe2NL_vG6HRJR0TIQXJjqLpOLkuSNYjwTHkpXW08XW62xDH-4-GVRxhdPIkteWEFEF2ZAODbnE1Cq7Sqxud6GfhVZP1Xawa7UsJTCTmJg90NNlYScJG2pfM6W3GWg4A5XwuO2LM7OOwz7OM3m4c97ezs74zp6VobdCCZYrZI9yN40ykhYxxB5lR3oramcydiK3qM3cMiz-wty0epCU6WtO4-3iQZanfDtMrk-mIUtI05pqTQ4Xl3CmMGXDkasjZLgCCNBfYIWuFPaph_uuZlaIzauORKehtbYBKpV6Rwjl8bU7dGtbd2L3SuuRdXYCUhrdaIQ2gsYoXONUwghpZ_3rob9ReVhWSCWgpxMybjEWzybJXjvlmP3gPEOhEoV2E7zYJHWQwz1f_TbVFGC6gmuz_VG4KCOgcIdeUXg2WZwHl-Pp2J8vLmYLfzJCW22dTs-DYDoL5rMLfz4PJpPZfoR-l0n98_Hcv5hfXgYzP5gtxv50_w4ii-0P)
 
@@ -98,90 +98,90 @@ One make target builds the server, client, and migrate images, boots PostgreSQL,
 
 ---
 
-## 🚀 Panduan Menjalankan Proyek
+## 🚀 How to Run the Project
 
-Ikuti langkah-langkah ini untuk menjalankan proyek di lingkungan lokal Anda.
+Follow these steps to run the project in your local environment.
 
-### 1. Prasyarat
+### 1. Prerequisites
 
 - [Go](https://golang.org/doc/install) (versi 1.20+)
-- [Docker](https://www.docker.com/get-started) dan [Docker Compose](https://docs.docker.com/compose/install/)
+- [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/install/)
 - [Make](https://www.gnu.org/software/make/)
 - [Git](https://git-scm.com/downloads)
 
-### 2. Klon Repositori
+### 2. Clone the Repository
 
 ```bash
 git clone https://github.com/your-username/point-of-sale-grpc.git
 cd point-of-sale-grpc
 ```
 
-### 3. Konfigurasi Lingkungan
+### 3. Environment Configuration
 
-Salin file `.env.example` menjadi `.env` untuk konfigurasi lokal dan `docker.env.example` menjadi `docker.env` untuk konfigurasi Docker.
+Copy `.env.example` to `.env` for local configuration and `docker.env.example` to `docker.env` for Docker configuration.
 
 ```bash
 cp .env.example .env
 cp docker.env.example docker.env
 ```
 
-Sesuaikan variabel di dalam file `.env` dan `docker.env` sesuai dengan pengaturan lokal Anda (misalnya, kredensial database).
+Adjust the variables in the `.env` and `docker.env` files to match your local setup (for example, database credentials).
 
-### 4. Menjalankan dengan Docker (Direkomendasikan)
+### 4. Running with Docker (Recommended)
 
-Ini adalah cara termudah untuk memulai.
+This is the easiest way to get started.
 
 ```bash
 make docker-up
 ```
 
-Perintah ini akan:
-1. Membangun image Docker untuk `server`, `client`, dan `migrate`.
-2. Menjalankan database PostgreSQL.
-3. Menjalankan migrasi database secara otomatis.
-4. Menjalankan `server` gRPC dan `client` REST API.
+This command will:
+1. Build Docker images for `server`, `client`, and `migrate`.
+2. Start the PostgreSQL database.
+3. Run database migrations automatically.
+4. Start the gRPC `server` and the REST API `client`.
 
-Untuk menghentikan semua layanan, jalankan:
+To stop all services, run:
 ```bash
 make docker-down
 ```
 
-### 5. Menjalankan Secara Lokal
+### 5. Running Locally
 
-Jika Anda tidak ingin menggunakan Docker, ikuti langkah-langkah berikut:
+If you do not want to use Docker, follow these steps:
 
-**a. Jalankan Database**
-Pastikan Anda memiliki instance PostgreSQL yang berjalan secara lokal dan konfigurasikan koneksi di file `.env`.
+**a. Start the Database**
+Make sure you have a PostgreSQL instance running locally and configure the connection in the `.env` file.
 
-**b. Lakukan Migrasi Database**
+**b. Run the Database Migrations**
 ```bash
 make migrate
 ```
 
-**c. Hasilkan Kode Protobuf**
-Jika Anda mengubah file `.proto`, jalankan perintah ini:
+**c. Generate Protobuf Code**
+If you change a `.proto` file, run this command:
 ```bash
 make generate-proto
 ```
 
-**d. Jalankan Server gRPC**
+**d. Start the gRPC Server**
 ```bash
 make run-server
 ```
-Server akan berjalan di port yang ditentukan di `.env` (default: `50051`).
+The server will run on the port specified in `.env` (default: `50051`).
 
-**e. Jalankan Client (REST API)**
-Buka terminal baru dan jalankan:
+**e. Start the Client (REST API)**
+Open a new terminal and run:
 ```bash
 make run-client
 ```
-Client REST API akan berjalan di port yang ditentukan di `.env` (default: `5000`).
+The REST API client will run on the port specified in `.env` (default: `5000`).
 
 ---
 
-## 📚 Dokumentasi API
+## 📚 API Documentation
 
-Setelah menjalankan `client`, dokumentasi API Swagger akan tersedia di:
+After starting the `client`, the Swagger API documentation will be available at:
 
 [http://localhost:5000/swagger/index.html](http://localhost:5000/swagger/index.html)
 

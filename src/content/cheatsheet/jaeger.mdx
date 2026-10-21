@@ -1,6 +1,6 @@
 ---
 title: "Jaeger & OpenTelemetry Tracing — Cheat Sheet"
-description: "Cheat sheet Jaeger 2.x + OpenTelemetry: auto-instrumentation Java/Go, span semantics & atribut, W3C trace context, sampling head & tail, arsitektur Jaeger, query API, korelasi log↔trace, sampai jebakan tracing yang bikin span meledak."
+description: "Jaeger 2.x + OpenTelemetry cheat sheet: Java/Go auto-instrumentation, span semantics & attributes, W3C trace context, head & tail sampling, Jaeger architecture, query API, log↔trace correlation, plus tracing pitfalls that make spans explode."
 date: "2026-10-22"
 created_at: "2026-10-22"
 updated_at: "2026-10-22"
@@ -17,53 +17,53 @@ tags:
 
 # Jaeger & OpenTelemetry Tracing — Cheat Sheet
 
-> Target: **Jaeger 2.x** (arsitektur berbasis OTel Collector) menerima span via **OTLP**,
-> di-instrumentasi otomatis di service **Java 21** (Spring Boot) dan **Go**, dengan
-> `trace_id` diteruskan ke log supaya bisa korelasi di **Loki**. Semua snippet di bawah
-> dipakai di repo dan **diverifikasi**.
+> Target: **Jaeger 2.x** (OTel Collector-based architecture) receiving spans via **OTLP**,
+> auto-instrumented in **Java 21** (Spring Boot) and **Go** services, with
+> `trace_id` forwarded to logs so they can be correlated in **Loki**. All snippets below
+> are used in the repo and **verified**.
 
-**Isi sheet ini**
+**What's in this sheet**
 
-- Mental model: trace & span
+- Mental model: traces & spans
 - OpenTelemetry: auto-instrumentation
-- OpenTelemetry: manual span (Java & Go)
-- Semantik span & atribut
+- OpenTelemetry: manual spans (Java & Go)
+- Span semantics & attributes
 - W3C trace context & propagation
 - Sampling: head, tail, parent-based
-- Arsitektur Jaeger
+- Jaeger architecture
 - Deployment
 - Query API & UI
-- Korelasi log ↔ trace ↔ metric
-- Biaya & kapasitas
-- Jebakan (wajib dibaca)
+- Log ↔ trace ↔ metric correlation
+- Cost & capacity
+- Pitfalls (must-read)
 
 ---
 
-## Mental model: trace & span
+## Mental model: traces & spans
 
 ```
 Trace (1 request end-to-end)
 ├── Span  gateway        (7.2ms)  root
 │   ├── Span  auth       (1.1ms)
-│   ├── Span  order-db  (12.4ms)   ← di sini masalahnya
+│   ├── Span  order-db  (12.4ms)   ← this is where the problem is
 │   └── Span  kafka-pub (0.8ms)
 └── Span  payment        (35.0ms)
 ```
 
-| Konsep | Arti |
+| Concept | Meaning |
 | :--- | :--- |
-| Trace | satu operasi logis lintas service, dibungkus **trace id** (32 hex) |
-| Span | satu unit kerja di dalam trace, punya **span id** (16 hex) + parent |
-| Parent/child | hubungan hierarki dari context propagation |
-| Attributes | key-value di span (id, jumlah, status) |
-| Events | titik waktu di dalam span (timestamp relatif) |
-| Status | `Unset` / `Error` — penanda span gagal |
-| Baggage | key-value yang **terpropagasi** ke seluruh trace (pakai hemat) |
+| Trace | one logical operation across services, wrapped in a **trace id** (32 hex) |
+| Span | one unit of work within a trace, with a **span id** (16 hex) + parent |
+| Parent/child | the hierarchy established by context propagation |
+| Attributes | key-values on a span (id, count, status) |
+| Events | points in time within a span (relative timestamp) |
+| Status | `Unset` / `Error` — marks a failed span |
+| Baggage | key-values **propagated** across the whole trace (use sparingly) |
 | Span kind | `SERVER`, `CLIENT`, `PRODUCER`, `CONSUMER`, `INTERNAL` |
 
-> **Jebakan:** span `CLIENT` (panggilan keluar) dan span `SERVER` (masuk) adalah **dua
-> span berbeda**. Kalau service A memanggil service B, ada 2 span: `A:CLIENT` dan
-> `B:SERVER`. Itu normal — janganaggregation jadi satu.
+> **Pitfall:** a `CLIENT` span (outgoing call) and a `SERVER` span (incoming) are **two
+> different spans**. If service A calls service B, there are 2 spans: `A:CLIENT` and
+> `B:SERVER`. That's normal — don't merge them into one.
 
 ---
 
@@ -72,11 +72,11 @@ Trace (1 request end-to-end)
 ### Java (Spring Boot)
 
 ```bash
-# download agent
+# download the agent
 curl -L -o opentelemetry-javaagent.jar \
   https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar
 
-# jalankan dengan agent
+# run with the agent
 java -javaagent:/otel/opentelemetry-javaagent.jar \
   -jar app.jar
 ```
@@ -86,14 +86,14 @@ export OTEL_SERVICE_NAME=order-service
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
 export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 export OTEL_TRACES_SAMPLER=parentbased_traceidratio
-export OTEL_TRACES_SAMPLER_ARG=0.1          # 10% di produksi, 1.0 di dev
+export OTEL_TRACES_SAMPLER_ARG=0.1          # 10% in production, 1.0 in dev
 export OTEL_PROPAGATORS=tracecontext,baggage
 export OTEL_RESOURCE_ATTRIBUTES=service.namespace=pos,deployment.environment=prod
 export OTEL_LOGS_EXPORTER=none
 ```
 
 ```yaml
-# spring boot — properties yang setara
+# spring boot — equivalent properties
 management:
   tracing:
     sampling:
@@ -104,19 +104,19 @@ management:
       transport: grpc
 ```
 
-| Env var | Arti |
+| Env var | Meaning |
 | :--- | :--- |
-| `OTEL_SERVICE_NAME` | nama service → jadi label `service.name` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | tujuan span (collector) |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` atau `http/protobuf` |
+| `OTEL_SERVICE_NAME` | service name → becomes the `service.name` label |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | span destination (collector) |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` or `http/protobuf` |
 | `OTEL_TRACES_SAMPLER` | `always_on`, `always_off`, `traceidratio`, `parentbased_*` |
-| `OTEL_TRACES_SAMPLER_ARG` | rasio sampling (0.1 = 10%) |
+| `OTEL_TRACES_SAMPLER_ARG` | sampling ratio (0.1 = 10%) |
 | `OTEL_PROPAGATORS` | `tracecontext,baggage` (W3C) |
-| `OTEL_RESOURCE_ATTRIBUTES` | atribut resource tambahan |
-| `OTEL_JAVAAGENT_LOGGING` | `none`/`simple`/`debug` — cek agent jalan |
+| `OTEL_RESOURCE_ATTRIBUTES` | additional resource attributes |
+| `OTEL_JAVAAGENT_LOGGING` | `none`/`simple`/`debug` — check that the agent is running |
 
-> **Jebakan:** agent tidak meng-instrumentasi library yang **di-shadown** (mis. shaded
-> JAR). Kalau span service internal tidak muncul, cek apakah artifact-nya shaded.
+> **Pitfall:** the agent does not instrument libraries that are **shaded** (e.g. shaded
+> JARs). If internal service spans don't show up, check whether the artifact is shaded.
 
 ### Go
 
@@ -150,7 +150,7 @@ func initTracer(ctx context.Context) (func(context.Context) error, error) {
     return tp.Shutdown, nil
 }
 
-// client: bungkus http.Transport
+// client: wrap http.Transport
 client := &http.Client{
     Transport: otelhttp.NewTransport(http.DefaultTransport),
 }
@@ -168,10 +168,10 @@ conn, err := grpc.NewClient(target,
 
 ---
 
-## OpenTelemetry: manual span
+## OpenTelemetry: manual spans
 
 ```java
-// Java — span untuk operasi penting
+// Java — span for an important operation
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -184,7 +184,7 @@ public class PaymentService {
                 .setAttribute("card.id", req.cardId())
                 .setAttribute("amount.cents", req.amountCents())
                 .startSpan();
-        try (Scope scope = span.makeCurrent()) {          // WAJIB: context aktif
+        try (Scope scope = span.makeCurrent()) {          // REQUIRED: active context
             PaymentResponse res = gateway.charge(req);
             span.setAttribute("provider", res.provider());
             return res;
@@ -193,7 +193,7 @@ public class PaymentService {
             span.setStatus(StatusCode.ERROR, e.getMessage());
             throw e;
         } finally {
-            span.end();                                   // WAJIB: selalu dipanggil
+            span.end();                                   // REQUIRED: always called
         }
     }
 }
@@ -217,45 +217,45 @@ if err := pay(ctx, cardID, amount); err != nil {
 }
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
-| `span.end()` selalu dipanggil | span yang tidak ditutup = tidak terkirim |
-| `makeCurrent()` / `ctx` diteruskan | child span & context propagation |
-| `recordError` + `SetStatus(ERROR)` | error harus **terlihat** di UI |
-| `SetAttribute` low-cardinality | atribut jadi index di storage |
-| Jangan buat span di loop per item | ribuan span per request |
+| Always call `span.end()` | an unclosed span = never sent |
+| Pass `makeCurrent()` / `ctx` through | child spans & context propagation |
+| `recordError` + `SetStatus(ERROR)` | errors must be **visible** in the UI |
+| Low-cardinality `SetAttribute` | attributes become indexes in storage |
+| Don't create a span per item in a loop | thousands of spans per request |
 
 ---
 
-## Semantik span & atribut
+## Span semantics & attributes
 
 ```java
 // span kinds
-span.setSpanKind(SpanKind.SERVER);     // menerima request
-span.setSpanKind(SpanKind.CLIENT);     // memanggil service lain
-span.setSpanKind(SpanKind.PRODUCER);   // publish message
-span.setSpanKind(SpanKind.CONSUMER);   // consume message
+span.setSpanKind(SpanKind.SERVER);     // receives a request
+span.setSpanKind(SpanKind.CLIENT);     // calls another service
+span.setSpanKind(SpanKind.PRODUCER);   // publishes a message
+span.setSpanKind(SpanKind.CONSUMER);   // consumes a message
 ```
 
-| Atribut semantik | Isi |
+| Semantic attribute | Content |
 | :--- | :--- |
 | `http.request.method` | `GET` |
 | `http.response.status_code` | `200` |
-| `url.path` | `/api/orders/8821` (**template**, bukan nilai sebenarnya) |
+| `url.path` | `/api/orders/8821` (**template**, not the actual value) |
 | `server.address` | `order-service` |
 | `db.system.name` | `postgresql` |
-| `db.query.text` | query (hati-hati: bisa berisi data sensitif) |
+| `db.query.text` | query (careful: may contain sensitive data) |
 | `messaging.system` | `kafka` |
 | `messaging.destination.name` | topic |
 | `rpc.service` / `rpc.method` | `OrderService` / `CreateOrder` |
 
-| Aturan | Alasan |
+| Rule | Reason |
 | :--- | :--- |
-| Maks ~15 atribut per span | storage & biaya |
-| **Jangan** masukkan PII / token / password | span dikirim ke storage |
-| ID (order/user) sebagai atribut | boleh, tapi jangan sebagai label metrik |
-| `db.statement` tanpa nilai parameter | jangan bocorkan data |
-| `exception.message` | boleh, tapi potong bila panjang |
+| Max ~15 attributes per span | storage & cost |
+| **Do not** include PII / tokens / passwords | spans are sent to storage |
+| IDs (order/user) as attributes | allowed, but not as metric labels |
+| `db.statement` without parameter values | don't leak data |
+| `exception.message` | allowed, but truncate if long |
 
 ---
 
@@ -268,39 +268,39 @@ traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
 ```
 
 ```bash
-# header yang dikirim service
+# the header sent by the service
 curl -H "traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" \
      http://localhost:8080/api/orders
 ```
 
-| Header | Arti |
+| Header | Meaning |
 | :--- | :--- |
-| `traceparent` | W3C trace context (standar sekarang) |
-| `tracestate` | vendor-specific state, ikut diteruskan |
-| `baggage` | key-valuearbitrary, ikut ke semua span |
-| `b3` | B3 lama (JAEGER) — jangan pakai untuk sistem baru |
+| `traceparent` | W3C trace context (today's standard) |
+| `tracestate` | vendor-specific state, forwarded along |
+| `baggage` | arbitrary key-values, carried into every span |
+| `b3` | legacy B3 (JAEGER) — don't use it for new systems |
 
 ```java
-// propagasi otomatis via agent / Micrometer
-// context dari HTTP header → span baru jadi child
+// automatic propagation via the agent / Micrometer
+// context from the HTTP header → the new span becomes a child
 ```
 
-| Aturan | Alasan |
+| Rule | Reason |
 | :--- | :--- |
-| Trace context **harus** lewat network | tanpa ini, trace putus di batas service |
-| B3 hanya untuk kompatibilitas lama | W3C = standard |
-| Baggage **kecil** | ikut di semua request, menambah ukuran header |
-| Header tidak boleh dipercaya begitu saja | hop di tengah bisa memalsukan trace id |
+| Trace context **must** travel over the network | without it, traces break at service boundaries |
+| B3 is only for legacy compatibility | W3C is the standard |
+| Keep baggage **small** | it rides on every request, increasing header size |
+| Headers can't be trusted blindly | an intermediate hop can forge the trace id |
 
 ---
 
 ## Sampling: head, tail, parent-based
 
 ```yaml
-# OTel Collector — tail sampling (keputusan setelah span selesai)
+# OTel Collector — tail sampling (decision made after spans finish)
 processors:
   tail_sampling:
-    decision_wait: 10s            # tunggu span selesai
+    decision_wait: 10s            # wait for spans to finish
     policies:
       - name: errors
         type: status_code
@@ -311,53 +311,53 @@ processors:
       - name: baseline
         type: probabilistic
         probabilistic: { sampling_percentage: 5 }
-    # composisi: keep kalau salah satu policy match
+    # composition: keep if any policy matches
 ```
 
-| Strategi | Cara | Kapan |
+| Strategy | How | When |
 | :--- | :--- | :--- |
-| Head (SDK) | `OTEL_TRACES_SAMPLER_ARG=0.1` | murah, tapi error bisa terlewat |
-| Head parent-based | `parentbased_traceidratio` | **default terbaik** — anak ikut induk |
-| Tail (collector) | collector memutuskan setelah span selesai | tepat untuk "simpan semua error + 1% sukses" |
+| Head (SDK) | `OTEL_TRACES_SAMPLER_ARG=0.1` | cheap, but errors can be missed |
+| Head parent-based | `parentbased_traceidratio` | **best default** — children follow the parent |
+| Tail (collector) | the collector decides after spans finish | ideal for "keep all errors + 1% of successes" |
 
 | Trade-off | Head | Tail |
 | :--- | :--- | :--- |
-| Biaya | minimal | span tetap dikirim ke collector |
-| Error_rate | bisa 0 | **terlihat** (semua error disimpan) |
-| Trace lengkap | mungkin bolong | utuh untuk yang disimpan |
+| Cost | minimal | spans are still sent to the collector |
+| Error_rate | can be 0 | **visible** (all errors are kept) |
+| Complete trace | may have gaps | intact for what's kept |
 
-> **Jebakan:** memakai head sampling `always_on` di produksi = **seluruh traffic** masuk
-> storage → biaya meledak. Minimal: `parentbased_traceidratio` 0.01–0.1, atau tail
-> sampling di collector.
+> **Pitfall:** using head sampling `always_on` in production = **all traffic** lands in
+> storage → costs explode. Minimum: `parentbased_traceidratio` 0.01–0.1, or tail
+> sampling in the collector.
 
 ---
 
-## Arsitektur Jaeger
+## Jaeger architecture
 
 ```
 App ──OTLP──▶ OTel Collector ──▶ Jaeger Collector ──▶ Ingester ──▶ Storage
                     │                                            (badger/ES/Cassandra/ClickHouse)
-                    └── tail sampling (bisa di collector)
-App ──jaeger-agent──▶ Jaeger Collector (untuk trace lama via UDP/thrift)
+                    └── tail sampling (can be done in the collector)
+App ──jaeger-agent──▶ Jaeger Collector (for legacy traces via UDP/thrift)
 ```
 
-| Komponen | Tugas | Catatan |
+| Component | Role | Notes |
 | :--- | :--- | :--- |
-| Jaeger Collector | terima span, sampling, batch | bisa digantikan OTel Collector |
-| Jaeger Query | serving UI + API | baca dari storage |
-| Jaeger Ingester | batch span ke storage | streaming |
-| Agent | sidecar, kirim via UDP | hanya untuk SDK lama (jaeger-client) |
-| All-in-One | collector+query+ingester dalam 1 pod | untuk dev & cluster kecil |
+| Jaeger Collector | receives spans, sampling, batching | can be replaced by the OTel Collector |
+| Jaeger Query | serves the UI + API | reads from storage |
+| Jaeger Ingester | batches spans into storage | streaming |
+| Agent | sidecar, sends via UDP | only for legacy SDKs (jaeger-client) |
+| All-in-One | collector+query+ingester in one pod | for dev & small clusters |
 
-**Jaeger v2** (2024+) dibangun di atas **OTel Collector**: pipeline/distribution lewat
-collector OTel, storage lewat driver (`badger`, `elasticsearch`, `clickhouse`).
+**Jaeger v2** (2024+) is built on top of the **OTel Collector**: the pipeline/distribution goes
+through the OTel collector, storage through drivers (`badger`, `elasticsearch`, `clickhouse`).
 
 ---
 
 ## Deployment
 
 ```yaml
-# jaeger-all-in-one (dev / cluster kecil)
+# jaeger-all-in-one (dev / small clusters)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -402,7 +402,7 @@ spec:
 ```
 
 ```yaml
-# OTel Collector — ekspor ke Jaeger
+# OTel Collector — export to Jaeger
 exporters:
   otlp/jaeger:
     endpoint: jaeger-collector:4317
@@ -417,15 +417,15 @@ service:
       exporters: [otlp/jaeger]
 ```
 
-> **Jebakan:** Jaeger All-in-One dengan storage `memory` → **semua trace hilang saat
-> restart**. Untuk produksi pakai `badger` (dengan PVC) atau `elasticsearch`/`clickhouse`.
+> **Pitfall:** Jaeger All-in-One with `memory` storage → **all traces are lost on
+> restart**. For production use `badger` (with a PVC) or `elasticsearch`/`clickhouse`.
 
 ---
 
 ## Query API & UI
 
 ```bash
-# cari trace by service
+# find traces by service
 curl -s "http://localhost:16686/api/traces?service=order-service&limit=20" \
   | jq '.data[] | {traceID, spans: (.spans|length), duration: .duration}'
 
@@ -433,47 +433,47 @@ curl -s "http://localhost:16686/api/traces?service=order-service&limit=20" \
 curl -s "http://localhost:16686/api/traces/4bf92f3577b34da6a3ce929d0e0e4736" \
   | jq '.data[0].spans | sort_by(.duration) | reverse | .[0:5] | .[] | {operationName, duration}'
 
-# span paling lambat
+# slowest spans
 curl -s "http://localhost:16686/api/traces?service=order-service&lookback=1h&limit=20" \
   | jq '[.data[].spans[] | {op: .operationName, ms: (.duration/1000)}] | sort_by(-.ms) | .[0:10]'
 
-# service & dependency
+# services & dependencies
 curl -s http://localhost:16686/api/services | jq -r '.data[]'
 curl -s http://localhost:16686/api/dependencies | jq '.data[0].dependencies'
 
-# span dengan error
+# spans with errors
 curl -s "http://localhost:16686/api/traces?service=order-service&tags=%7B%22error%22%3Atrue%7D&limit=20" \
   | jq '.data | length'
 ```
 
-| Param API | Arti |
+| API param | Meaning |
 | :--- | :--- |
-| `service` | filter nama service |
-| `operation` | filter nama operation (span) |
-| `tags` | filter `key=value` (JSON-encoded) |
+| `service` | filter by service name |
+| `operation` | filter by operation (span) name |
+| `tags` | `key=value` filter (JSON-encoded) |
 | `lookback` | `1h`, `24h` |
-| `minDuration` / `maxDuration` | filter durasi (ms) |
-| `limit` | jumlah trace |
-| `start` / `end` | rentang epoch (mikrodetik) |
+| `minDuration` / `maxDuration` | duration filter (ms) |
+| `limit` | number of traces |
+| `start` / `end` | epoch range (microseconds) |
 
-**UI Jaeger:**
-- **Search** → filter service + operation + tags (error=true) + lookback + min-duration.
-- **Trace detail** → flame chart; klik span → attributes, events, logs.
-- **Find traces** → urutkan by duration untuk cari yang lambat.
-- **Dependencies** → peta antar service.
-- **Metrics** → RED metrics dari span metrics (v1).
+**Jaeger UI:**
+- **Search** → filter by service + operation + tags (error=true) + lookback + min-duration.
+- **Trace detail** → flame chart; click a span → attributes, events, logs.
+- **Find traces** → sort by duration to find the slow ones.
+- **Dependencies** → map between services.
+- **Metrics** → RED metrics from span metrics (v1).
 
 ---
 
-## Korelasi log ↔ trace ↔ metric
+## Log ↔ trace ↔ metric correlation
 
 ```logql
-# log → trace: cari di Loki lalu loncat ke Jaeger
+# log → trace: search in Loki then jump to Jaeger
 {app="order-service"} | json | trace_id="4bf92f3577b34da6a3ce929d0e0e4736"
 ```
 
 ```yaml
-# Grafana: derived field dari Loki → link ke Jaeger
+# Grafana: derived field from Loki → link to Jaeger
 derivedFields:
   - name: TraceID
     matcherRegex: "trace_id=(\\w+)"
@@ -482,33 +482,33 @@ derivedFields:
 ```
 
 ```promql
-# trace → metric: dari detail trace, "Trace to metrics"
-# atau pakai exemplar: dari histogram bucket, klik exemplar → trace
+# trace → metric: from trace detail, "Trace to metrics"
+# or use exemplars: from a histogram bucket, click the exemplar → trace
 ```
 
 ```java
-// pastikan trace_id masuk ke MDC (span saat ini)
+// make sure trace_id lands in the MDC (current span)
 Span span = Span.current();
 if (span.getSpanContext().isValid()) {
     MDC.put("trace_id", span.getSpanContext().getTraceId());
 }
 ```
 
-> **Jebakan:** `trace_id` hanya ada di log kalau **span sedang aktif** saat log dicetak.
-> Log di luar request (scheduler, startup) tidak punya trace → isi `-` atau UUID sendiri.
+> **Pitfall:** `trace_id` is only in the log if **a span is active** when the log is written.
+> Logs outside a request (scheduler, startup) have no trace → fill in `-` or your own UUID.
 
 ---
 
-## Biaya & kapasitas
+## Cost & capacity
 
-| Komponen | Batas default / catatan |
+| Component | Default limit / notes |
 | :--- | --- |
-| `MEMORY_MAX_TRACES` | 50.000 trace di memory (all-in-one) |
-| `max_traces` (collector) | queue span sebelum flush |
-| Storage | badger (ringan), ES/Cassandra/ClickHouse (skala) |
-| Span per trace | 10–30 normal; > 100 = instrumentation berlebihan |
-| Atribut per span | ~15; lebih dari itu = noise |
-| Sampling | 1–10% head, atau tail sampling |
+| `MEMORY_MAX_TRACES` | 50,000 traces in memory (all-in-one) |
+| `max_traces` (collector) | span queue before flush |
+| Storage | badger (lightweight), ES/Cassandra/ClickHouse (at scale) |
+| Span per trace | 10–30 normal; > 100 = excessive instrumentation |
+| Attributes per span | ~15; more than that = noise |
+| Sampling | 1–10% head, or tail sampling |
 
 ```yaml
 # collector: batasi memory & batch
@@ -530,27 +530,27 @@ extensions:
           max_traces: 100000
 ```
 
-> **Jebakan:** queue span penuh (`max_traces`) = span **dibuang** diam-diam. Cek metrik
+> **Pitfall:** a full span queue (`max_traces`) = spans are **dropped** silently. Check the
 > `jaeger_collector_queue_size` & `jaeger_receiver_accepted_spans` vs
-> `jaeger_receiver_refused_spans`.
+> `jaeger_receiver_refused_spans` metrics.
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must-read)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Solution |
 | :--- | :--- | :--- |
-| `span.end()` lupa | Span tidak terkirim | `defer span.end()` / try-finally |
-| `makeCurrent()` lupa | Child span tidak terhubung | Scope selalu di-close |
-| Lupa teruskan `ctx` (Go) | Trace putus antar service | Selalu pass `ctx` |
-| `head sampling always_on` | Biaya storage meledak | `parentbased_traceidratio` 0.01–0.1 |
-| Span per item dalam loop | Ribuan span per request | Span per operasi |
-| Atribut berisi PII/token | Data sensitif tersimpan | Sanitasi sebelum `SetAttribute` |
-| `url.path` berisi ID asli | Cardinality & PII | Template path |
-| Storage `memory` di produksi | Trace hilang saat restart | badger + PVC, atau ES/ClickHouse |
-| B3 dipakai di sistem baru | Tidak kompatibel | W3C `traceparent` |
-| Trace context tidak lewat HTTP | Trace putus di batas | Middleware/propagator |
-| Queue span penuh | Span dibuang diam-diam | Monitor refused_spans, naikkan max_traces |
-| Trace ID tidak masuk log | Tidak bisa korelasi | MDC + filter |
-| Satu span untuk semua operasi | Tidak ada granularity | Pecah per boundary |
-| `db.statement` mentah | Bocor data | Parameterize |
+| Forgot `span.end()` | Span never sent | `defer span.end()` / try-finally |
+| Forgot `makeCurrent()` | Child span isn't linked | Always close the scope |
+| Forgot to pass `ctx` (Go) | Trace breaks between services | Always pass `ctx` |
+| `head sampling always_on` | Storage costs explode | `parentbased_traceidratio` 0.01–0.1 |
+| Span per item in a loop | Thousands of spans per request | One span per operation |
+| Attributes contain PII/tokens | Sensitive data stored | Sanitize before `SetAttribute` |
+| `url.path` contains raw IDs | Cardinality & PII | Templated path |
+| `memory` storage in production | Traces lost on restart | badger + PVC, or ES/ClickHouse |
+| B3 used in new systems | Not compatible | W3C `traceparent` |
+| Trace context doesn't travel over HTTP | Trace breaks at the boundary | Middleware/propagator |
+| Full span queue | Spans dropped silently | Monitor refused_spans, raise max_traces |
+| Trace ID doesn't reach the logs | Can't correlate | MDC + filter |
+| One span for all operations | No granularity | Split at each boundary |
+| Raw `db.statement` | Data leak | Parameterize |

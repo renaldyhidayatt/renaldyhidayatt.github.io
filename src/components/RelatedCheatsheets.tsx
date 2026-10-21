@@ -9,8 +9,8 @@ interface Props {
 }
 
 /**
- * Blok "Related Cheatsheets" — dipakai di halaman detail Blog & Portfolio.
- * Skor relevansi = jumlah tag yang sama antara konten dan cheatsheet.
+ * "Related Cheatsheets" block — used on Blog & Portfolio detail pages.
+ * Relevance score = number of shared tags between the content and the cheatsheet.
  */
 const RelatedCheatsheets = ({ tags = [], title = "Related Cheatsheets", limit = 3 }: Props) => {
     const sheets = relatedCheatsheets(tags, limit);

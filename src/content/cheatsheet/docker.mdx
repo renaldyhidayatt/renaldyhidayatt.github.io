@@ -1,6 +1,6 @@
 ---
 title: "Docker — Cheat Sheet"
-description: "Cheat sheet Docker: Dockerfile multi-stage (Java & Go), layer cache & build context, Compose untuk stack lokal, image & registry, buildx multi-arch, CLI harian, debug container, plus jebakan image yang mahal di produksi."
+description: "Docker cheat sheet: multi-stage Dockerfile (Java & Go), layer cache & build context, Compose for local stacks, images & registries, buildx multi-arch, daily CLI, container debugging, plus the image pitfalls that are expensive in production."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -17,64 +17,64 @@ tags:
 
 # Docker — Cheat Sheet
 
-> Target: **Docker 24+** dengan **Compose v2** (`docker compose`, bukan `docker-compose`).
-> Dipakai untuk build image semua microservice (Java, Go) dan menjalankan stack lokal
-> (PostgreSQL, Kafka, RabbitMQ, Redis, ClickHouse + observability). Semua snippet di bawah
-> dipakai di repo dan **diverifikasi**.
+> Target: **Docker 24+** with **Compose v2** (`docker compose`, not `docker-compose`).
+> Used to build images for all microservices (Java, Go) and run the local stack
+> (PostgreSQL, Kafka, RabbitMQ, Redis, ClickHouse + observability). All snippets below
+> are used in the repos and **verified**.
 
-**Isi sheet ini**
+**Contents of this sheet**
 
-- Mental model 5 menit
+- 5-minute mental model
 - Dockerfile: multi-stage
 - Dockerfile: Java (Spring Boot)
 - Dockerfile: Go
 - Layer cache & build context
 - Image: build, tag, push
 - Registry & multi-arch
-- Compose untuk stack lokal
-- Compose: fitur lanjutan
-- CLI harian
+- Compose for local stack
+- Compose: advanced features
+- Daily CLI
 - Debug & troubleshoot
 - Image hygiene
-- Jebakan (wajib dibaca)
+- Pitfalls (must read)
 
 ---
 
 ## Mental model 5 menit
 
-| Konsep | Ringkasan |
+| Concept | Summary |
 | :--- | :--- |
-| Image | template read-only (layer bertumpuk) |
-| Container | instance berjalan dari image (thin writable layer di atas) |
-| Layer | setiap instruksi Dockerfile = 1 layer; cache per instruksi |
-| Context | folder yang dikirim ke daemon saat `build` (perhatikan `.dockerignore`) |
-| Volume | storage di luar container, bertahan setelah container dihapus |
-| Bind mount | folder host di-mount ke container (development) |
-| Network | bridge default; container saling Comunicação via nama service |
-| Registry | tempat image disimpan (Docker Hub, GHCR, ECR, GCR) |
-| Multi-stage | beberapa `FROM` dalam satu Dockerfile; hanya stage terakhir yang jadi image |
-| Entrypoint vs CMD | `ENTRYPOINT` = executable, `CMD` = argumen default (bisa di-override) |
+| Image | read-only template (stacked layers) |
+| Container | running instance of an image (thin writable layer on top) |
+| Layer | each Dockerfile instruction = 1 layer; cache per instruction |
+| Context | folder sent to the daemon during `build` (mind `.dockerignore`) |
+| Volume | storage outside the container, persists after the container is deleted |
+| Bind mount | host folder mounted into the container (development) |
+| Network | default bridge; containers reach each other by service name |
+| Registry | where images are stored (Docker Hub, GHCR, ECR, GCR) |
+| Multi-stage | several `FROM` in one Dockerfile; only the last stage becomes the image |
+| Entrypoint vs CMD | `ENTRYPOINT` = executable, `CMD` = default arguments (can be overridden) |
 
 ---
 
 ## Dockerfile: multi-stage
 
 ```dockerfile
-# ---- stage build: toolchain berat, TIDAK ikut ke image akhir ----
+# ---- build stage: heavy toolchain, does NOT end up in the final image ----
 FROM golang:1.26-alpine AS build
 WORKDIR /src
 
-# cache dependency terpisah dari source
+# dependency cache separate from source
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-# CGO_ENABLED=0 → binary statis, bisa jalan di scratch/distroless
+# CGO_ENABLED=0 → static binary, runs on scratch/distroless
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -trimpath -ldflags="-s -w" -o /out/app ./cmd/api
 
-# ---- stage runtime: kecil, non-root ----
+# ---- runtime stage: small, non-root ----
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=build /out/app /app
@@ -83,14 +83,14 @@ EXPOSE 8080
 ENTRYPOINT ["/app"]
 ```
 
-| Praktik | Kenapa |
+| Practice | Why |
 | :--- | :--- |
-| Multi-stage | Image akhir tanpa compiler, shell, atau package manager |
-| Copy manifest dulu (`go.mod`, `pom.xml`) | Layer cache tidak hilang tiap source berubah |
-| `USER` non-root | Blocker container escape |
-| Exec form `ENTRYPOINT` | PID 1 = aplikasi → SIGTERM sampai ke JVM → graceful shutdown |
-| `COPY --from=build` | Ambil hanya yang perlu, bukan seluruh stage |
-| Urutan instruksi | Yang sering berubah (source) **paling bawah** |
+| Multi-stage | Final image without a compiler, shell, or package manager |
+| Copy manifests first (`go.mod`, `pom.xml`) | Layer cache is not lost every time source changes |
+| `USER` non-root | Blocks container escape |
+| Exec form `ENTRYPOINT` | PID 1 = the app → SIGTERM reaches the JVM → graceful shutdown |
+| `COPY --from=build` | Take only what is needed, not the whole stage |
+| Instruction order | The thing that changes often (source) goes **last** |
 
 ---
 
@@ -101,7 +101,7 @@ ENTRYPOINT ["/app"]
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 
-# dependency layer di-cache terpisah
+# dependency layer cached separately
 COPY pom.xml .
 RUN mvn -B dependency:go-offline
 
@@ -126,16 +126,16 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
 ```dockerfile
-# kalau butuh shell untuk healthcheck, pakai alpine (bukan distroless)
+# if you need a shell for the healthcheck, use alpine (not distroless)
 FROM eclipse-temurin:21-jre-alpine
 RUN apk add --no-cache curl
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD curl -fsS http://localhost:8080/actuator/health/readiness || exit 1
 ```
 
-> **Catatan:** `distroless`/`scratch` tidak punya shell maupun `curl` → `HEALTHCHECK` berbasis
-> shell tidak bisa jalan. Pilih salah satu: distroless (aman, tanpa shell) **atau** Alpine
-> (punya shell, lebih besar ~70 MB).
+> **Note:** `distroless`/`scratch` has no shell and no `curl` → a shell-based
+> `HEALTHCHECK` cannot run. Pick one: distroless (safe, no shell) **or** Alpine
+> (has a shell, ~70 MB larger).
 
 ---
 
@@ -156,11 +156,11 @@ tests/
 ```
 
 ```dockerfile
-# ❌ SALAH: satu layer besar, cache hilang tiap source berubah
+# ❌ WRONG: one big layer, cache lost every time source changes
 COPY . .
 RUN mvn package
 
-# ✅ BENAR: pisahkan dependency & source
+# ✅ RIGHT: separate dependency & source
 COPY pom.xml .
 RUN mvn -B dependency:go-offline
 COPY src ./src
@@ -168,10 +168,10 @@ RUN mvn -B package -DskipTests
 ```
 
 ```bash
-docker build --no-cache .            # paksa build ulang ( troubleshoot)
-docker build --progress=plain .     # log lengkap tanpa progress bar
-docker build --target build -t app:build .   # build stage saja
-DOCKER_BUILDKIT=1 docker build .    # BuildKit (default di Docker 23+)
+docker build --no-cache .            # force a rebuild (troubleshooting)
+docker build --progress=plain .     # full logs without the progress bar
+docker build --target build -t app:build .   # build the stage only
+DOCKER_BUILDKIT=1 docker build .    # BuildKit (default in Docker 23+)
 ```
 
 ---
@@ -182,50 +182,50 @@ DOCKER_BUILDKIT=1 docker build .    # BuildKit (default di Docker 23+)
 # build + tag
 docker build -t superapp/order-service:v1.4.2 .
 
-# tag lain untuk image yang sama (tanpa build ulang)
+# another tag for the same image (no rebuild)
 docker tag superapp/order-service:v1.4.2 superapp/order-service:latest
 
 # login & push
 docker login ghcr.io
 docker push ghcr.io/sanedge/order-service:v1.4.2
 
-# daftar image lokal
+# list local images
 docker images
-docker images --filter "dangling=true"      # image tanpa tag (buang)
-docker image prune -a                        # hapus yang tidak terpakai
+docker images --filter "dangling=true"      # untagged images (to throw away)
+docker image prune -a                        # remove unused images
 
-# hapus
+# remove
 docker rmi superapp/order-service:v1.4.2
-docker system df                            # cek pemakaian disk
-docker system prune -a --volumes             # bersihkantotal (hati-hati)
+docker system df                            # check disk usage
+docker system prune -a --volumes             # clean everything (careful)
 ```
 
-| Konvensi tag | Arti |
+| Tag convention | Meaning |
 | :--- | :--- |
-| `v1.4.2` | versi eksak, bisa direproduksi |
-| `v1.4` | major.minor (mengambang) |
-| `latest` | **jangan** dipakai di produksi — bisa menunjuk apa saja |
-| `sha-abc123` | commit hash — paling deterministik |
-| `main-<timestamp>` | build tanpa version, unik per build |
+| `v1.4.2` | exact, reproducible version |
+| `v1.4` | major.minor (floating) |
+| `latest` | **do not** use in production — it can point to anything |
+| `sha-abc123` | commit hash — the most deterministic |
+| `main-<timestamp>` | unversioned build, unique per build |
 
 ---
 
 ## Registry & multi-arch
 
 ```bash
-# build multi-arch (amd64 + arm64) & push langsung ke registry
+# multi-arch build (amd64 + arm64) & push straight to the registry
 docker buildx create --use --name multiarch
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   -t ghcr.io/sanedge/order-service:v1.4.2 \
   --push .
 
-# inspect multi-arch manifest
+# inspect the multi-arch manifest
 docker buildx imagetools inspect ghcr.io/sanedge/order-service:v1.4.2
 ```
 
 ```dockerfile
-# atau pakai QEMU untuk emulasi (lebih lambat)
+# or use QEMU for emulation (slower)
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
 ARG TARGETOS TARGETARCH
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /out/app ./cmd/api
@@ -233,7 +233,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /out/app ./cmd/a
 
 ---
 
-## Compose untuk stack lokal
+## Compose for local stacks
 
 ```yaml
 services:
@@ -259,7 +259,7 @@ services:
     image: apache/kafka:3.8.0
     environment:
       KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller          # KRaft, tanpa ZooKeeper
+      KAFKA_PROCESS_ROLES: broker,controller          # KRaft, no ZooKeeper
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
@@ -279,10 +279,10 @@ services:
   order-service:
     build: ./order-service
     depends_on:
-      postgres: { condition: service_healthy }   # WAJIB untuk yang butuh DB
+      postgres: { condition: service_healthy }   # REQUIRED for anything that needs the DB
       kafka:   { condition: service_healthy }
     environment:
-      DB_HOST: postgres           # NAMA SERVICE, bukan localhost
+      DB_HOST: postgres           # SERVICE NAME, not localhost
       KAFKA_BROKERS: kafka:9092
       SPRING_PROFILES_ACTIVE: local
     ports: ["8083:8083"]
@@ -298,30 +298,30 @@ networks:
 ```
 
 ```bash
-docker compose up -d --build        # start semua + build
+docker compose up -d --build        # start everything + build
 docker compose ps                   # status + health
 docker compose logs -f order-service
-docker compose up -d postgres       # start satu service
+docker compose up -d postgres       # start a single service
 docker compose exec postgres psql -U DRAGON -d pos_sales
 docker compose restart order-service
-docker compose down                 # stop, volume tetap
-docker compose down -v              # stop + HAPUS volume
-docker compose config               # render konfigurasi final (debug)
+docker compose down                 # stop, volumes kept
+docker compose down -v              # stop + DELETE volumes
+docker compose config               # render the final configuration (debug)
 ```
 
 ---
 
-## Compose: fitur lanjutan
+## Compose: advanced features
 
 ```yaml
 services:
-  # profile: service hanya jalan kalau profile diaktifkan
+  # profile: the service only runs when the profile is enabled
   mailhog:
     image: mailhog/mailhog
     profiles: ["dev"]
     ports: ["8025:8025"]
 
-  # override per environment
+  # per-environment override
   order-service:
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-local}
@@ -330,7 +330,7 @@ services:
     secrets:
       - db_password
     volumes:
-      - ./logs:/app/logs          # bind mount untuk log
+      - ./logs:/app/logs          # bind mount for logs
     deploy:
       resources:
         limits: { cpus: "1.0", memory: 1G }
@@ -341,38 +341,38 @@ secrets:
 ```
 
 ```bash
-docker compose --profile dev up -d      # aktifkan profile
+docker compose --profile dev up -d      # enable the profile
 docker compose run --rm order-service mvn test   # one-off command
 docker compose --profile dev up -d --no-deps order-service
 ```
 
-| Fitur | Kapan |
+| Feature | When |
 | :--- | :--- |
-| `profiles` | service tambahan (mailhog, profiler) yang tak perlu di prod |
-| `env_file` | konfigurasi per environment |
-| `secrets` | file rahasia mount ( Swarm; di Compose = file mount ) |
-| `depends_on.condition` | tunggu service lain **sehat**, bukan sekadar start |
-| `deploy.resources` | batas CPU/memory lokal (l imit-supported) |
-| `!reset` / `!override` | Compose 2.24+: reset/override key dari file lain |
+| `profiles` | extra services (mailhog, profiler) that are not needed in prod |
+| `env_file` | per-environment configuration |
+| `secrets` | secret file mount (Swarm; in Compose = file mount) |
+| `depends_on.condition` | wait for another service to be **healthy**, not just started |
+| `deploy.resources` | local CPU/memory limits (limit-supported) |
+| `!reset` / `!override` | Compose 2.24+: reset/override a key from another file |
 
 ---
 
-## CLI harian
+## Daily CLI
 
 ```bash
 # container
-docker ps                       # yang jalan
-docker ps -a                    # termasuk yang stop
+docker ps                       # running
+docker ps -a                    # including stopped ones
 docker stop <nama> && docker start <nama>
 docker rm -f <nama>
 docker exec -it <nama> sh
 docker logs -f --tail=100 <nama>
-docker inspect <nama>           # JSON lengkap
+docker inspect <nama>           # full JSON
 docker stats                    # realtime CPU/RAM/net
 
 # image
 docker images
-docker history <image>          # layer per layer
+docker history <image>          # layer by layer
 docker inspect --format '{{.Config.Env}}' <image>
 docker inspect --format '{{.Size}}' <image>
 
@@ -388,14 +388,14 @@ docker network ls
 ## Debug & troubleshoot
 
 ```bash
-# container tidak mau start
+# the container will not start
 docker logs <nama> --tail=200
 docker inspect <nama> --format '{{.State.ExitCode}} {{.State.Error}}'
 
-# masuk ke container yang sudah mati (untuk debug startup)
+# get into a dead container (to debug startup)
 docker run --rm -it --entrypoint sh <image>
 
-# cek koneksi antar service
+# check connectivity between services
 docker compose exec order-service sh -c "nc -zv postgres 5432"
 
 # resource real-time
@@ -406,12 +406,12 @@ docker system df -v
 du -sh /var/lib/docker/*
 
 # registry
-docker manifest inspect <image>      # cek multi-arch
+docker manifest inspect <image>      # check multi-arch
 docker buildx imagetools inspect <image>
 ```
 
 ```bash
-# bersihkan Everything (hati-hati: volume ikut hilang)
+# clean everything (careful: volumes go too)
 docker system prune -a --volumes
 ```
 
@@ -419,15 +419,15 @@ docker system prune -a --volumes
 
 ## Image hygiene
 
-| Praktik | Perintah |
+| Practice | Command |
 | :--- | :--- |
-| Scan image | `docker scout cves <image>` / `trivy image <image>` |
+| Scan the image | `docker scout cves <image>` / `trivy image <image>` |
 | Label metadata | `LABEL org.opencontainers.image.source="https://github.com/..."` |
-| Pin base image by digest | `FROM eclipse-temurin:21-jre-alpine@sha256:...` |
+| Pin the base image by digest | `FROM eclipse-temurin:21-jre-alpine@sha256:...` |
 | Non-root | `USER app` / `USER 10001` |
-| Healthcheck | `HEALTHCHECK CMD ...` (perlu shell) |
-| Kurangi image | multi-stage, `apt-get purge`, `--no-install-recommends` |
-| Signal handling | exec form + aplikasi handle SIGTERM |
+| Healthcheck | `HEALTHCHECK CMD ...` (needs a shell) |
+| Shrink the image | multi-stage, `apt-get purge`, `--no-install-recommends` |
+| Signal handling | exec form + app handles SIGTERM |
 
 ```dockerfile
 LABEL org.opencontainers.image.title="order-service" \
@@ -437,22 +437,22 @@ LABEL org.opencontainers.image.title="order-service" \
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must read)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Solution |
 | :--- | :--- | :--- |
-| `COPY . .` di awal | Cache hilang tiap build | Copy manifest dulu, source belakangan |
-| Tidak ada `.dockerignore` | Build lambat, `target/` & `.env` ikut ke image | Buat `.dockerignore` |
-| `latest` sebagai tag | Deploy tidak deterministik | Tag versi atau commit SHA |
-| Shell form `ENTRYPOINT` | SIGTERM tidak sampai ke JVM | Exec form `["java","-jar","app.jar"]` |
-| Root sebagai default | Container escape lebih mudah | `USER` non-root |
-| Image besar (alpine + build tool) | Pull lambat, attack surface besar | Multi-stage, distroless |
-| `depends_on` tanpa `condition: service_healthy` | App start sebelum DB siap → crash loop | Tambah `condition: service_healthy` |
-| `localhost` untuk host DB dari container | "connection refused" | Pakai **nama service** |
-| Secret di `environment` | Bocor di `docker inspect` | Pakai Docker/Swarm secret atau mount file |
-| Volume di-backup? | Data hilang saat `down -v` | Backup volume, jangan `prune -a --volumes` sembarangan |
-| `HEALTHCHECK` di distroless | Command tidak ditemukan | Healthcheck di luar image (compose/probe) |
-| Build di host = tidak reproducible | "kai belum jalan di laptop lain" | Build di dalam container / CI |
-| Layer banyak dari `RUN` terpisah | Image besar | Gabung `RUN` berurutan yang related |
-| Image punya `CMD` yang ketimpa | Argumen hilang | Paham urutan: `ENTRYPOINT` + `CMD` = `ENTRYPOINT CMD` |
-| Port mapping bentrok | "port is already allocated" | Cek `docker ps`, ganti host port |
+| `COPY . .` up front | Cache lost on every build | Copy manifests first, source later |
+| No `.dockerignore` | Slow builds, `target/` & `.env` end up in the image | Create `.dockerignore` |
+| `latest` as the tag | Non-deterministic deploys | Tag a version or commit SHA |
+| Shell form `ENTRYPOINT` | SIGTERM never reaches the JVM | Exec form `["java","-jar","app.jar"]` |
+| Root by default | Container escape is easier | Non-root `USER` |
+| Big image (alpine + build tools) | Slow pulls, large attack surface | Multi-stage, distroless |
+| `depends_on` without `condition: service_healthy` | App starts before the DB is ready → crash loop | Add `condition: service_healthy` |
+| `localhost` to reach a DB host from the container | "connection refused" | Use the **service name** |
+| Secret in `environment` | Leaks via `docker inspect` | Use Docker/Swarm secrets or file mounts |
+| Is the volume backed up? | Data lost on `down -v` | Back up volumes, do not run `prune -a --volumes` carelessly |
+| `HEALTHCHECK` in distroless | Command not found | Healthcheck outside the image (compose/probe) |
+| Building on the host = not reproducible | "it doesn't run on my other laptop" | Build inside a container / CI |
+| Many layers from separate `RUN`s | Big image | Combine related consecutive `RUN`s |
+| The image has a `CMD` that gets overridden | Arguments are lost | Understand the order: `ENTRYPOINT` + `CMD` = `ENTRYPOINT CMD` |
+| Port mapping conflicts | "port is already allocated" | Check `docker ps`, change the host port |

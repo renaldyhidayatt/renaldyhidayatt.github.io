@@ -1,46 +1,46 @@
 ---
 title: "Roasting CoverLetter OR CV"
-excerpt: "Aplikasi AI untuk memberikan kritik sarkastik terhadap Cover Letter dengan model DeepSeek melalui Ollama."
+excerpt: "An AI application that delivers sarcastic criticism of your Cover Letter using the DeepSeek model through Ollama."
 date: "2025-03-02"
 created_at: "2025-03-02"
 updated_at: "2025-03-02"
 tags: ["ai", "ollama", "deepSeek", "streamlit"]
-status: "selesai"
+status: "completed"
 image: "/portofolio/roasting_.png"
 ---
 
-## 🚀 Fitur Utama
+## 🚀 Key Features
 
-### 1️⃣ Mode Cover letter
-- **Cover Letter Mode** → Memberikan kritik tajam dan sarkastik terhadap surat lamaran kerja.
-- **Setiap roasting dilengkapi dengan saran perbaikan yang membangun.**
+### 1️⃣ Cover Letter Mode
+- **Cover Letter Mode** → Delivers sharp and sarcastic criticism of job application letters.
+- **Every roast comes with constructive suggestions for improvement.**
 
-### 2️⃣ Teknologi AI dengan DeepSeek & Ollama
-- Menggunakan **DeepSeek (deepseek-r1:1.5b)** untuk menghasilkan kritik yang tajam & cerdas.
-- Dapat diperluas dengan model lain melalui **Ollama** untuk analisis lebih mendalam.
+### 2️⃣ AI Technology with DeepSeek & Ollama
+- Uses **DeepSeek (deepseek-r1:1.5b)** to produce sharp & intelligent criticism.
+- Can be extended with other models through **Ollama** for deeper analysis.
 
-### 3️⃣ Dukungan Berbagai Format File
-✅ **.txt** – File teks sederhana.
-✅ **.docx** – File Microsoft Word.
-✅ **Mudah diunggah langsung melalui UI Streamlit.**
+### 3️⃣ Support for Multiple File Formats
+✅ **.txt** – Plain text files.
+✅ **.docx** – Microsoft Word files.
+✅ **Easily uploaded directly through the Streamlit UI.**
 
-### 4️⃣ Roasting dalam Bahasa Indonesia
-- Hasil roasting **sepenuhnya dalam Bahasa Indonesia**.
-- Menggunakan bahasa yang **tajam tetapi tetap relevan dan membangun**.
+### 4️⃣ Roasting in Indonesian
+- Roasting output is **entirely in Indonesian**.
+- Uses language that is **sharp but still relevant and constructive**.
 
-### 5️⃣ Antarmuka Pengguna yang Simpel & Intuitif
-- **Dibangun dengan Streamlit** untuk pengalaman pengguna yang ringan & responsif.
-- **Desain interaktif** → Pilih mode, unggah file, dan terima roasting secara instan!
+### 5️⃣ Simple & Intuitive User Interface
+- **Built with Streamlit** for a lightweight & responsive user experience.
+- **Interactive design** → Select a mode, upload a file, and receive a roasting instantly!
 
-### 6️⃣ Kritik Tajam tapi Bermanfaat
-- **Roasting AI dibuat dengan metafora kreatif dan sarkasme cerdas.**
-- Kritik disertai dengan **solusi konkret** untuk meningkatkan kualitas tulisan.
+### 6️⃣ Sharp but Useful Criticism
+- **The AI roast is crafted with creative metaphors and clever sarcasm.**
+- Criticism comes with **concrete solutions** to improve the quality of the writing.
 
-## 🎯 Manfaat Aplikasi
-✅ **Membantu pencari kerja memperbaiki Cover Letter sebelum melamar.**
-✅ **Meningkatkan kualitas artikel dengan kritik berbasis AI.**
-✅ **Memberikan sudut pandang objektif tanpa bias manusia.**
-✅ **Bisa digunakan sebagai alat belajar untuk menulis lebih baik.**
+## 🎯 Benefits of the Application
+✅ **Helps job seekers improve their Cover Letter before applying.**
+✅ **Improves article quality with AI-based criticism.**
+✅ **Provides an objective point of view without human bias.**
+✅ **Can be used as a learning tool to write better.**
 
 ## Technical Decisions & Trade-offs
 
@@ -56,9 +56,9 @@ Streamlit turns the idea into an upload-and-submit application with minimal code
 **Only .txt and .docx**
 Supporting plain text and Word documents covers where cover letters actually live while keeping parsing scope small. The cost is a document-parsing dependency and the format edge cases that .docx brings, and no PDF support, which is the obvious next request for a tool like this.
 
-## 📌 Cara Menggunakan
-1. **Pilih mode** → Cover Letter atau Artikel.
-2. **Upload file** → Format `.txt` atau `.docx`.
-3. **Klik Submit** → AI akan langsung menganalisis dan memberikan roasting.
-4. **Terima hasil roasting** → Baca kritik dan perbaiki tulisan kamu!
+## 📌 How to Use
+1. **Select a mode** → Cover Letter or Article.
+2. **Upload a file** → `.txt` or `.docx` format.
+3. **Click Submit** → The AI will immediately analyze and deliver a roasting.
+4. **Receive the roast** → Read the criticism and improve your writing!
 ---

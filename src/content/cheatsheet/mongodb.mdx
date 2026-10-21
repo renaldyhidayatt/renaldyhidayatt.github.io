@@ -1,6 +1,6 @@
 ---
 title: "MongoDB 9.0 Cheat Sheet"
-description: "Cheat sheet MongoDB 9.0: modelling dokumen, embed vs reference, schema validation, index (compound, multikey, TTL, wildcard), aggregation pipeline, transaksi, read/write concern, change streams, connection pooling, plus jebakan dokumen & schema."
+description: "MongoDB 9.0 cheat sheet: document modelling, embed vs reference, schema validation, indexes (compound, multikey, TTL, wildcard), aggregation pipeline, transactions, read/write concern, change streams, connection pooling, plus document & schema pitfalls."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -16,43 +16,43 @@ tags:
 
 # MongoDB 9.0 Cheat Sheet
 
-> Target: **MongoDB 9.0** (rilis 28 September 2026, patch 9.0.4 per 13 Oktober 2026).
-> Rilisan ini menambah **batas memori per operasi**, **validation level `constraint`**,
-> **`$queryStats` aktif secara default**, dan **`queryKnobs`**. Semua snippet di bawah
-> dipakai di service MongoDB (E-Commerce, POS, Payment Gateway) dan **diverifikasi**.
+> Target: **MongoDB 9.0** (released September 28, 2026; patch 9.0.4 as of October 13, 2026).
+> This release adds **per-operation memory limits**, **validation level `constraint`**,
+> **`$queryStats` enabled by default**, and **`queryKnobs`**. All snippets below
+> are used in MongoDB services (E-Commerce, POS, Payment Gateway) and **verified**.
 
-**Isi sheet ini**
+**What this sheet covers**
 
-- CLI & diagnosa
-- Yang baru di 9.0
-- Mental model 5 menit
+- CLI & diagnostics
+- What's new in 9.0
+- 5-minute mental model
 - Modelling: embed vs reference
 - Schema validation
-- CRUD & query
-- Index
+- CRUD & queries
+- Indexes
 - Aggregation pipeline
-- Transaksi
+- Transactions
 - Read concern, write concern, read preference
 - Change streams
-- Connection & pooling
-- Driver Go & Java
-- Migrasi & Mongock
-- Jebakan (wajib dibaca)
+- Connections & pooling
+- Go & Java drivers
+- Migrations & Mongock
+- Pitfalls (required reading)
 
 ---
 
-## CLI & diagnosa
+## CLI & diagnostics
 
 ```sh
 mongosh "mongodb://localhost:27017/pos_sales" --eval 'db.orders.countDocuments()'
 
-# server status & slow query
+# server status & slow queries
 mongosh --eval 'db.serverStatus().connections'
 mongosh --eval 'db.currentOp({active: true})'
-mongosh --eval 'db.setProfilingLevel(1, {slowms: 200})'   # log query > 200ms
+mongosh --eval 'db.setProfilingLevel(1, {slowms: 200})'   # log queries > 200ms
 mongosh --eval 'db.system.profile.find().sort({ts:-1}).limit(5).pretty()'
 
-# index
+# indexes
 mongosh --eval 'db.orders.getIndexes()'
 mongosh --eval 'db.orders.createIndex({ merchantId: 1, createdAt: -1 })'
 mongosh --eval 'db.orders.dropIndex("merchantId_1_createdAt_-1")'
@@ -65,29 +65,29 @@ mongosh --eval 'db.getCollectionNames()'
 mongosh --eval 'db.getSiblingDB("pos_merchant").stats()'
 ```
 
-| Perintah | Arti |
+| Command | Meaning |
 | :--- | :--- |
-| `db.currentOp()` | operasi yang sedang jalan |
-| `db.serverStatus()` | metrics server ( koneksi, op counter, WiredTiger cache ) |
-| `db.setProfilingLevel()` | nyalakan logger query lambat |
-| `db.collection.explain()` | rencana eksekusi + index yang dipakai |
-| `db.collection.getIndexes()` | index yang ada |
-| `db.collection.stats()` | ukuran data & index, avgObjSize |
-| `db.collection.collStats()` | detail storage |
+| `db.currentOp()` | operations currently running |
+| `db.serverStatus()` | server metrics (connections, op counters, WiredTiger cache) |
+| `db.setProfilingLevel()` | turn on slow query logging |
+| `db.collection.explain()` | execution plan + indexes used |
+| `db.collection.getIndexes()` | existing indexes |
+| `db.collection.stats()` | data & index size, avgObjSize |
+| `db.collection.collStats()` | storage details |
 
 ---
 
-## Yang baru di 9.0
+## What's new in 9.0
 
 ```js
-// batas memori per operasi (default: 1 GB atau 20% memory server, mana yang lebih besar)
-// query yang melebihi → ExceededMemoryLimit (146) / QueryExceededMemoryLimitNoDiskUseAllowed (292)
+// per-operation memory limit (default: 1 GB or 20% of server memory, whichever is larger)
+// queries that exceed it → ExceededMemoryLimit (146) / QueryExceededMemoryLimitNoDiskUseAllowed (292)
 db.adminCommand({
   setParameter: 1,
   internalQueryMaxMemoryUsageBytesPerOperation: 512 * 1024 * 1024
 });
 
-// batas memori per ekspresi single (default 100 MB)
+// per-single-expression memory limit (default 100 MB)
 db.adminCommand({
   setParameter: 1,
   internalQueryMaxSingleExpressionMemoryUsageBytes: 64 * 1024 * 1024
@@ -95,8 +95,8 @@ db.adminCommand({
 ```
 
 ```js
-// $queryStats sekarang aktif default, sampling 1% operasi
-// (internalQueryStatsSampleRate & internalQueryStatsWriteCmdSampleRate default 0.01)
+// $queryStats is now enabled by default, sampling 1% of operations
+// (internalQueryStatsSampleRate & internalQueryStatsWriteCmdSampleRate default to 0.01)
 db.aggregate([
   { $queryStats: {} },
   { $group: { _id: "$queryShape", count: { $sum: 1 }, totalTime: { $sum: "$metrics.queryExec.time" } } },
@@ -106,7 +106,7 @@ db.aggregate([
 ```
 
 ```js
-// validation level baru: "constraint" — menjamin SEMUA dokumen memenuhi aturan
+// new validation level: "constraint" — guarantees ALL documents satisfy the rules
 db.createCollection("orders", {
   validator: {
     $jsonSchema: {
@@ -119,99 +119,99 @@ db.createCollection("orders", {
       }
     }
   },
-  validationLevel: "constraint",     // baru di 9.0
+  validationLevel: "constraint",     // new in 9.0
   validationAction: "error"
 });
 ```
 
-| Fitur 9.0 | Arti |
+| 9.0 feature | Meaning |
 | :--- | :--- |
-| Batas memori per operasi | Query berat gagal **daripada** menabrak RAM server |
-| `internalQueryMaxSingleExpressionMemoryUsageBytes` | Batas per ekspresi (default 100 MB) |
-| `maxConcurrentMultiDocumentTransactions` | Default 10000 transaksi terbuka → error `TooManyOpenTransactions` |
-| Validation level `constraint` | Jaminan semua dokumen (bukan hanya yang baru) valid |
-| `$queryStats` default aktif | Statistik query tanpa harus dinyalakan manual (sampling 1%) |
-| `querySettings` sebagai field command | `find`/`distinct`/`aggregate` bisa menerima `querySettings` |
-| `queryKnobs` | Override parameter internal per *query shape* (FCV 9.0+) |
-| `maxTimeMS` per query shape | Batas waktu per shape via `setQuerySettings` (FCV 9.0+) |
-| Server-side JS aktif lagi | `$accumulator`, `$function`, `$where` — engine berbasis WASM, sandbox lebih ketat |
-| Time series diubah | Disimpan sebagai satu namespace berisi bucket terkompresi |
-| `mongocryptd` deprecated | Ganti dengan Automatic Encryption Shared Library |
-| QEC prefix/suffix/substring | String terenkripsi bisa dicari sebagian (GA) |
+| Per-operation memory limit | Heavy queries fail **rather than** crashing the server's RAM |
+| `internalQueryMaxSingleExpressionMemoryUsageBytes` | Limit per expression (default 100 MB) |
+| `maxConcurrentMultiDocumentTransactions` | Default 10000 open transactions → `TooManyOpenTransactions` error |
+| Validation level `constraint` | Guarantees all documents (not just new ones) are valid |
+| `$queryStats` enabled by default | Query statistics without manual enabling (1% sampling) |
+| `querySettings` as a command field | `find`/`distinct`/`aggregate` can accept `querySettings` |
+| `queryKnobs` | Override internal parameters per *query shape* (FCV 9.0+) |
+| `maxTimeMS` per query shape | Time limit per shape via `setQuerySettings` (FCV 9.0+) |
+| Server-side JS is back | `$accumulator`, `$function`, `$where` — WASM-based engine, stricter sandbox |
+| Time series reworked | Stored as a single namespace containing compressed buckets |
+| `mongocryptd` deprecated | Replaced by the Automatic Encryption Shared Library |
+| QEC prefix/suffix/substring | Encrypted strings can be partially searched (GA) |
 
-> Peringatan upgrade 9.0: cluster dengan **lebih dari 5.000 time series collection** per
-> database akan lebih lambat naik versi — hapus yang tidak terpakai dulu.
+> 9.0 upgrade warning: clusters with **more than 5,000 time series collections** per
+> database will upgrade more slowly — remove the unused ones first.
 
 ---
 
-## Mental model 5 menit
+## 5-minute mental model
 
-| Konsep | Ringkasan |
+| Concept | Summary |
 | :--- | :--- |
-| Document | unit data BSON, self-contained, max 16 MB |
-| Collection | sekumpulan document; tidak butuh schema tetap |
-| `_id` | primary key otomatis (ObjectId: 12 byte) |
-| Embedded vs reference | embed = data di dalam document; reference = `_id` ke document lain |
-| Replica set | ≥3 node untuk HA + transaksi + change stream |
-| Sharding | horizontal scale lewat **shard key** |
-| WiredTiger | storage engine default; cache + checkpoint |
-| MVCC | snapshot read; tidak ada lock saat baca |
-| Write concern | seberapa "dalam" penulisan harus sampai (majority, w:majority, j) |
-| Read concern | seberapa "baru" data yang boleh dibaca |
-| Read preference | node mana yang dibaca (primary, secondary, nearest) |
-| Aggregation pipeline | framework query: array of stage, hasil jadi document baru |
-| BSON | binary JSON: mendukung Date, Decimal128, ObjectId, Array |
+| Document | BSON data unit, self-contained, max 16 MB |
+| Collection | a set of documents; no fixed schema required |
+| `_id` | automatic primary key (ObjectId: 12 bytes) |
+| Embedded vs reference | embed = data inside the document; reference = `_id` to another document |
+| Replica set | ≥3 nodes for HA + transactions + change streams |
+| Sharding | horizontal scale via a **shard key** |
+| WiredTiger | default storage engine; cache + checkpoints |
+| MVCC | snapshot reads; no locks while reading |
+| Write concern | how "deep" a write must land (majority, w:majority, j) |
+| Read concern | how "fresh" the data being read may be |
+| Read preference | which node is read (primary, secondary, nearest) |
+| Aggregation pipeline | query framework: array of stages, output becomes new documents |
+| BSON | binary JSON: supports Date, Decimal128, ObjectId, Array |
 
 ---
 
 ## Modelling: embed vs reference
 
 ```js
-// EMBED — data yang selalu dibaca bersama & rasio 1:1 atau 1: kecil
+// EMBED — data always read together & with a 1:1 or 1:small ratio
 {
   _id: ObjectId("..."),
   orderId: "ORD-2026-0001",
   status: "PENDING",
   total: NumberDecimal("450000.00"),
-  items: [                                // array embedded
+  items: [                                // embedded array
     { productId: "P-1", qty: 2, price: NumberDecimal("125000.00") },
     { productId: "P-2", qty: 1, price: NumberDecimal("200000.00") }
   ],
   createdAt: ISODate("2026-10-21T10:00:00Z")
 }
 
-// REFERENCE — data besar, dipakai bersama, atau rasio many-to-many
+// REFERENCE — large data, shared, or many-to-many relationships
 {
   _id: ObjectId("..."),
-  merchantId: ObjectId("..."),   // bukan embed merchant
+  merchantId: ObjectId("..."),   // do not embed the merchant
   customerId: ObjectId("...")
 }
 ```
 
-| Pertanyaan | Embed | Reference |
+| Question | Embed | Reference |
 | :--- | :--- | :--- |
-| Dibaca selalu bersama? | ya | tidak |
-| Rasio | 1:1 atau 1:sedikit | 1:N / N:N |
-| Ukuran data | < 1–2 MB | besar / tanpa batas |
-| Perubahan satu bagian | menulis ulang seluruh document | hanya document itu |
-| Pertumbuhan array | **berbahaya** (16 MB limit) | aman |
+| Always read together? | yes | no |
+| Ratio | 1:1 or 1:few | 1:N / N:N |
+| Data size | < 1–2 MB | large / unbounded |
+| Changing one part | rewrite the whole document | only that document |
+| Array growth | **dangerous** (16 MB limit) | safe |
 
-> **Jebakan:** array embedded yang tumbuh tanpa batas (mis. histori pesanan) = document
-> tumbuh, `$push` jadi mahal, dan cepat kena limit 16 MB. Pindahkan ke collection terpisah
-> begitu rasio 1:N-nya berubah.
+> **Pitfall:** an embedded array that grows without bound (e.g. order history) = the document
+> grows, `$push` becomes expensive, and it quickly hits the 16 MB limit. Move it to a separate collection
+> once the 1:N ratio changes.
 
-**Panduan praktis:**
-- Batas embed: array < 100 elemen idealnya, < 1000 masih wajar.
-- Hanya embed data yang **tidak** tumbuh sendiri (transaksi, item, snapshot).
-- Referensi yang sering dibaca bersama → denormalisasi field ringkas (mis. `merchantName`
-  disimpan di order) dan sinkronkan lewat change stream/outbox.
+**Practical guidance:**
+- Embed limit: ideally an array of < 100 elements, < 1000 is still reasonable.
+- Only embed data that does **not** grow on its own (transactions, items, snapshots).
+- References that are often read together → denormalize a compact field (e.g. keep `merchantName`
+  on the order) and sync it via change streams/outbox.
 
 ---
 
 ## Schema validation
 
 ```js
-// validator per collection
+// per-collection validator
 db.createCollection("payments", {
   validator: {
     $jsonSchema: {
@@ -228,14 +228,14 @@ db.createCollection("payments", {
       }
     }
   },
-  validationLevel: "strict",      // "moderate" = hanya dokumen baru yang dicek
-  validationAction: "error"      // atau "warn" (log saja)
+  validationLevel: "strict",      // "moderate" = only new documents are checked
+  validationAction: "error"      // or "warn" (log only)
 });
 
-// validasi level 9.0: "constraint" — semua dokumen dijamin memenuhi aturan
+// 9.0 validation level: "constraint" — all documents are guaranteed to satisfy the rules
 db.runCommand({ collMod: "payments", validator: { $jsonSchema: { ... } }, validationLevel: "constraint" });
 
-// validator dengan $expr (perhitungan antar field)
+// validator with $expr (cross-field computation)
 db.runCommand({
   collMod: "orders",
   validator: {
@@ -246,25 +246,25 @@ db.runCommand({
 });
 ```
 
-| `validationLevel` | Arti |
+| `validationLevel` | Meaning |
 | :--- | :--- |
-| `strict` | semua insert & update divalidasi (default) |
-| `moderate` | hanya dokumen yang **berubah** yang divalidasi; dokumen lama boleh tidak valid |
-| `constraint` | (9.0) jaminan seluruh koleksi memenuhi aturan |
+| `strict` | every insert & update is validated (default) |
+| `moderate` | only **changed** documents are validated; old documents may be invalid |
+| `constraint` | (9.0) guarantees the entire collection satisfies the rules |
 
-> **Jebakan:** `moderate` = dokumen lama yang tidak valid **tidak** akan dibersihkan otomatis.
-> Pakai `constraint` kalau butuh jaminan penuh, tapi throttle saat koleksi besar.
+> **Pitfall:** `moderate` = old invalid documents are **not** cleaned up automatically.
+> Use `constraint` if you need a full guarantee, but throttle it on large collections.
 
 ---
 
-## CRUD & query
+## CRUD & queries
 
 ```js
 // insert
 db.orders.insertOne({ orderId: "ORD-1", total: NumberDecimal("1000.00"), createdAt: new Date() });
 db.orders.insertMany([{ orderId: "ORD-2" }, { orderId: "ORD-3" }], { ordered: false });
 
-// upsert — idempotent, WAJIB pakai unique index
+// upsert — idempotent, MUST use a unique index
 db.orders.updateOne(
   { orderId: "ORD-1" },
   { $set: { status: "PAID", updatedAt: new Date() },
@@ -285,7 +285,7 @@ db.orders.find({ status: "PAID", "total": { $gte: 100000 } })
         .skip(0)
         .project({ orderId: 1, total: 1, _id: 0 });
 
-// operator
+// operators
 db.orders.find({
   createdAt: { $gte: ISODate("2026-10-01"), $lt: ISODate("2026-11-01") },
   status: { $in: ["PENDING", "PAID"] },
@@ -294,10 +294,10 @@ db.orders.find({
 
 // distinct & count
 db.orders.distinct("merchantId");
-db.orders.countDocuments({ status: "PAID" });      // accurate, boleh lambat
-db.orders.estimatedDocumentCount();               // cepat, estimasi
+db.orders.countDocuments({ status: "PAID" });      // accurate, may be slow
+db.orders.estimatedDocumentCount();               // fast, estimate
 
-// update dengan operator array
+// update with array operators
 db.orders.updateOne({ orderId: "ORD-1" }, { $inc: { revision: 1 } });
 db.orders.updateOne({ orderId: "ORD-1" }, { $push: { history: { at: new Date(), event: "PAID" } } });
 db.orders.updateOne({ orderId: "ORD-1" }, { $set: { "items.0.qty": 3 } });
@@ -308,80 +308,80 @@ db.orders.deleteOne({ orderId: "ORD-1" });
 db.orders.deleteMany({ createdAt: { $lt: ISODate("2020-01-01") } });
 ```
 
-| Operator | Arti |
+| Operator | Meaning |
 | :--- | :--- |
-| `$eq` `$ne` `$gt` `$gte` `$lt` `$lte` | perbandingan |
-| `$in` `$nin` | himpunan |
-| `$exists` | field ada/tidak |
-| `$regex` | pola (piringkan, pakai index text kalau cocok) |
-| `$and` `$or` `$nor` | logika |
-| `$not` | negasi |
-| `$elemMatch` | Cocokkan beberapa field dalam satu elemen array |
-| `$all` | array berisi semua nilai |
-| `$type` | cek tipe BSON |
+| `$eq` `$ne` `$gt` `$gte` `$lt` `$lte` | comparison |
+| `$in` `$nin` | set membership |
+| `$exists` | whether the field exists |
+| `$regex` | pattern (slow; use a text index if it fits) |
+| `$and` `$or` `$nor` | logic |
+| `$not` | negation |
+| `$elemMatch` | match several fields within a single array element |
+| `$all` | array contains all values |
+| `$type` | check BSON type |
 
 ---
 
-## Index
+## Indexes
 
 ```js
 // single field
 db.orders.createIndex({ merchantId: 1 });
 
-// compound — urutan kolom menentukan
+// compound — column order matters
 db.orders.createIndex({ merchantId: 1, status: 1, createdAt: -1 });
 
-// unique (upsert butuh ini)
+// unique (upsert requires this)
 db.orders.createIndex({ orderId: 1 }, { unique: true });
 
-// partial — hanya dokumen yang memenuhi filter
+// partial — only documents matching the filter
 db.orders.createIndex(
   { merchantId: 1, createdAt: -1 },
   { partialFilterExpression: { status: "PENDING" } }
 );
 
-// TTL — hapus otomatis setelah waktu
+// TTL — automatic deletion after a time
 db.sessions.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 });
 
-// multikey — index atas array
+// multikey — index over an array
 db.orders.createIndex({ "items.productId": 1 });      // multikey
 
-// wildcard — index semua field
+// wildcard — index every field
 db.products.createIndex({ "attributes.$**": 1 });
 
-// text index — pencarian full text
+// text index — full-text search
 db.products.createIndex({ name: "text", description: "text" }, { weights: { name: 10 } });
 db.products.find({ $text: { $search: "sepatu sport" } });
 
-// sparse — hanya dokumen yang punya field
+// sparse — only documents that have the field
 db.users.createIndex({ phone: 1 }, { sparse: true });
 
 // collation — case-insensitive
 db.users.createIndex({ email: 1 }, { collation: { locale: "en", strength: 2 } });
 
-// hidden — jangan dipakai optimizer, tapi ada untuk sorting
+// hidden — ignored by the optimizer, but present for sorting
 db.orders.createIndex({ internalCode: 1 }, { hidden: true });
 ```
 
-| Jenis | Untuk | Catatan |
+| Type | For | Note |
 | :--- | :--- | :--- |
 | Single field | equality, sort | default |
-| Compound | multi-field query | **urutan penting** |
-| Multikey | array | satu index multikey per collection |
-| Text | full text | satu text index per collection |
-| Wildcard | schema bebas (document store) | termasuk semua subfield |
-| TTL | data kedaluwarsa | bukan presisi, dibersihkan ~60 detik |
-| Unique | jaminan | duplikat ditolak |
-| Partial | subset kecil | paling hemat untuk status terminal |
-| Sparse | field sering hilang | tidak meng-index dokumen tanpa field |
-| Hidden | internal sorting | diabaikan optimizer |
+| Compound | multi-field queries | **order matters** |
+| Multikey | arrays | one multikey index per collection |
+| Text | full text | one text index per collection |
+| Wildcard | schemaless (document store) | includes every subfield |
+| TTL | expiring data | not precise, cleaned up after ~60 seconds |
+| Unique | guarantees | duplicates rejected |
+| Partial | small subsets | most efficient for terminal states |
+| Sparse | fields often missing | does not index documents without the field |
+| Hidden | internal sorting | ignored by the optimizer |
 
 ```js
-// index prefix: index {a:1, b:1} bisa melayani query {a}, {a,b}
+// index prefix: index {a:1, b:1} can serve queries {a}, {a,b}
 db.orders.find({ merchantId: "M1", status: "PAID" }).explain("executionStats")
-// cek: IXSCAN + winning plan
+// check: IXSCAN + winning plan
 
-// index yang tidak terpakai → hapus
+// unused indexes → drop them
 db.orders.getIndexes();
 db.orders.dropIndex("merchantId_1_status_1_createdAt_-1");
 ```
@@ -391,9 +391,9 @@ db.orders.dropIndex("merchantId_1_status_1_createdAt_-1");
 ## Aggregation pipeline
 
 ```js
-// lookup: join antar collection
+// lookup: join across collections
 db.orders.aggregate([
-  { $match: { status: "PAID", createdAt: { $gte: ISODate("2026-10-01") } } },  // 1. filter dulu!
+  { $match: { status: "PAID", createdAt: { $gte: ISODate("2026-10-01") } } },  // 1. filter first!
   { $lookup: {
       from: "merchants",
       localField: "merchantId",
@@ -412,7 +412,7 @@ db.orders.aggregate([
   { $limit: 20 }
 ]);
 
-// facet: banyak hasil dari satu pipeline
+// facet: multiple results from one pipeline
 db.orders.aggregate([
   { $facet: {
       byStatus: [{ $group: { _id: "$status", count: { $sum: 1 } } }],
@@ -420,7 +420,7 @@ db.orders.aggregate([
   } }
 ]);
 
-// $unwind + $group untuk top product
+// $unwind + $group for top products
 db.orders.aggregate([
   { $unwind: "$items" },
   { $group: { _id: "$items.productId", qty: { $sum: "$items.qty" } } },
@@ -434,7 +434,7 @@ db.orders.aggregate([
 // $bucket — histogram
 { $bucket: { groupBy: "$total", boundaries: [0, 100000, 500000, 1000000], default: "other" } }
 
-// $graphLookup — recursive (kategori berjenjang)
+// $graphLookup — recursive (nested categories)
 { $graphLookup: {
     from: "categories",
     startWith: "$parentId",
@@ -444,33 +444,33 @@ db.orders.aggregate([
 } }
 ```
 
-| Stage | Arti |
+| Stage | Meaning |
 | :--- | :--- |
-| `$match` | filter — **selalu di awal** |
-| `$project` | pilih/rename field |
-| `$addFields` / `$set` | tambah field |
-| `$unset` | hapus field |
-| `$group` | agregasi + `$sum` `$avg` `$min` `$max` `$push` `$addToSet` |
-| `$sort` | urutkan |
-| `$limit` / `$skip` | potong |
-| `$unwind` | pecah array jadi dokumen |
+| `$match` | filter — **always first** |
+| `$project` | select/rename fields |
+| `$addFields` / `$set` | add fields |
+| `$unset` | remove fields |
+| `$group` | aggregation + `$sum` `$avg` `$min` `$max` `$push` `$addToSet` |
+| `$sort` | sort |
+| `$limit` / `$skip` | trim the result set |
+| `$unwind` | split an array into documents |
 | `$lookup` | join (equi-join) |
-| `$facet` | beberapa pipeline sekaligus |
-| `$replaceRoot` | ganti root document |
-| `$merge` / `$out` | tulis hasil ke collection |
-| `$graphLookup` | lookup rekursif |
-| `$bucketAuto` | histogram otomatis |
+| `$facet` | several pipelines at once |
+| `$replaceRoot` | replace the root document |
+| `$merge` / `$out` | write results to a collection |
+| `$graphLookup` | recursive lookup |
+| `$bucketAuto` | automatic histogram |
 
-> **Jebakan:** `$lookup` **tidak** bisa memakai index di `foreignField` kalau tidak di-field
-> yang sama dengan `localField` dan ada pipeline. `allowDiskUse: true` untuk pipeline besar,
-> tapi di 9.0 ada batas memori per operasi yang lebih ketat.
+> **Pitfall:** `$lookup` **cannot** use an index on `foreignField` unless it is the same field
+> as `localField` and there is a pipeline. Use `allowDiskUse: true` for large pipelines,
+> but 9.0 enforces stricter per-operation memory limits.
 
 ---
 
-## Transaksi
+## Transactions
 
 ```js
-// transaksi multi-document — butuh replica set
+// multi-document transaction — requires a replica set
 const session = db.getMongo().startSession();
 session.startTransaction();
 try {
@@ -493,7 +493,7 @@ try {
 ```
 
 ```js
-// transaksi dengan retry (write conflict / transient error)
+// transaction with retry (write conflict / transient error)
 function withTransaction(fn, maxRetry = 3) {
   const session = db.getMongo().startSession();
   session.startTransaction();
@@ -516,18 +516,18 @@ function withTransaction(fn, maxRetry = 3) {
 }
 ```
 
-| Aturan | Detail |
+| Rule | Detail |
 | :--- | :--- |
-| Butuh | replica set (bukan standalone) |
-| Batas | `maxConcurrentMultiDocumentTransactions` default **10000** (9.0) |
-| Error | `TooManyOpenTransactions` saat lewat batas |
-| Ukuran | transaksi besar (>16 MB) gagal |
-| Umur | transaksi ouverte menahan oplog — jangan menahan lama |
-| Retriable | error dengan label `TransientTransactionError` → retry |
-| Commit unknown | label `UnknownTransactionCommitResult` → retry **commit**, bukan seluruh transaksi |
+| Requires | a replica set (not standalone) |
+| Limit | `maxConcurrentMultiDocumentTransactions` defaults to **10000** (9.0) |
+| Error | `TooManyOpenTransactions` when the limit is exceeded |
+| Size | large transactions (>16 MB) fail |
+| Lifetime | open transactions hold the oplog — do not hold them for long |
+| Retriable | errors labeled `TransientTransactionError` → retry |
+| Unknown commit | label `UnknownTransactionCommitResult` → retry the **commit**, not the whole transaction |
 
-> **Jebakan:** transaksi **tidak** cocok untuk lintas-lintas request yang panjang (misal
-> menunggu approval user). Transaksi menahan lock & oplog — untuk itu pakai **saga** +
+> **Pitfall:** transactions are **not** suited to long cross-request flows (e.g.
+> waiting for user approval). Transactions hold locks & the oplog — for those use a **saga** +
 > idempotency key.
 
 ---
@@ -535,14 +535,14 @@ function withTransaction(fn, maxRetry = 3) {
 ## Read concern, write concern, read preference
 
 ```js
-// write concern — seberapa dalam harus sampai
+// write concern — how deep a write must land
 db.orders.insertOne(doc, { writeConcern: { w: "majority", j: true, wtimeout: 5000 } });
-// w:"majority" = sudah di majority node, j:true = sudah di journal
-// wtimeout = jangan menunggu lebih dari 5 detik
+// w:"majority" = written to a majority of nodes, j:true = written to the journal
+// wtimeout = do not wait more than 5 seconds
 
 // read concern
-db.orders.find({}).readConcern("majority");    // data yang sudah di majority
-db.orders.find({}).readConcern("linearizable"); // baca paling fresh (mahal)
+db.orders.find({}).readConcern("majority");    // data already on a majority
+db.orders.find({}).readConcern("linearizable"); // freshest read (expensive)
 
 // read preference
 db.orders.find({}).readPreference("primaryPreferred");
@@ -551,35 +551,35 @@ db.orders.find({}).readPreference("secondaryPreferred", { maxStalenessSeconds: 9
 
 | Write concern | Trade-off |
 | :--- | :--- |
-| `w: 1` | hanya primary (default) — bisa hilang saat failover |
-| `w: "majority"` | aman, tapi lebih lambat |
-| `j: true` | sudah di journal (durable) |
-| `wtimeoutMS` | batas tunggu, lalu error — **jangan** tanpa batas |
+| `w: 1` | primary only (default) — can be lost on failover |
+| `w: "majority"` | safe, but slower |
+| `j: true` | written to the journal (durable) |
+| `wtimeoutMS` | wait limit, then error — **never** leave it unbounded |
 
 | Read concern | Trade-off |
 | :--- | :--- |
-| `local` | data terbaru di node itu (default) |
-| `available` | node manapun yang punya data |
-| `majority` | data yang sudah di majority |
-| `linearizable` | paling fresh, mahal, hanya pada primary |
+| `local` | latest data on that node (default) |
+| `available` | whichever node has the data |
+| `majority` | data already on a majority |
+| `linearizable` | freshest, expensive, primary only |
 
-| Read preference | Baca dari |
+| Read preference | Read from |
 | :--- | :--- |
-| `primary` | primary saja (default, paling fresh) |
-| `primaryPreferred` | primary, fallback secondary |
-| `secondary` | secondary saja (bisa data lama) |
-| `secondaryPreferred` | secondary, fallback primary |
-| `nearest` | node terdekat (latency rendah) |
+| `primary` | primary only (default, freshest) |
+| `primaryPreferred` | primary, fallback to secondary |
+| `secondary` | secondary only (may be stale) |
+| `secondaryPreferred` | secondary, fallback to primary |
+| `nearest` | nearest node (low latency) |
 
-> **Jebakan:** `w:1` + pod yang mati = data hilang permanen. Untuk data financially
-> critical, `w:"majority"` bukan opsional.
+> **Pitfall:** `w:1` + a dead pod = permanently lost data. For financially
+> critical data, `w:"majority"` is not optional.
 
 ---
 
 ## Change streams
 
 ```js
-// watch perubahan pada collection
+// watch changes on a collection
 const stream = db.orders.watch([
   { $match: { operationType: { $in: ["insert", "update", "delete"] } } }
 ], { fullDocument: "updateLookup", maxAwaitTimeMS: 1000 });
@@ -592,31 +592,31 @@ while (const change of stream) {
 ```
 
 ```js
-// resume dari posisi terakhir (wajib simpan resume token!)
-const token = lastChange._id;      // simpan persistent
+// resume from the last position (you MUST persist the resume token!)
+const token = lastChange._id;      // persist it
 const stream2 = db.orders.watch([], { resumeAfter: token });
 
-// pre-image (9.0: metrics pre-image berubah, tapi fitur tetap ada)
+// pre-image (9.0: pre-image metrics changed, but the feature remains)
 db.createCollection("audit", { changeStreamPreImages: { enabled: true } });
 ```
 
-| Opsi | Arti |
+| Option | Meaning |
 | :--- | :--- |
-| `fullDocument: "updateLookup"` | dokumen penuh saat update (tambah query) |
-| `fullDocument: "whenAvailable"` | hanya jika ada |
-| `resumeAfter` | lanjut dari token |
-| `startAfter` | mulai setelah event (untuk invalidate) |
-| `startAtOperationTime` | mulai dari timestamp |
-| `maxAwaitTimeMS` | batas tunggu heartbeat |
+| `fullDocument: "updateLookup"` | full document on update (extra query) |
+| `fullDocument: "whenAvailable"` | only when available |
+| `resumeAfter` | continue from a token |
+| `startAfter` | start after an event (for invalidate) |
+| `startAtOperationTime` | start from a timestamp |
+| `maxAwaitTimeMS` | heartbeat wait limit |
 
-> **Jebakan:** change stream **tidak** tahan restart. Simpan `resume token` (atau
-> `startAtOperationTime`) di penyimpanan persisten, kalau tidak event saat downtime
-> akan hilang. Oplog juga punya batas window — stream yang terlalu lama idle **tidak** bisa
-> di-resume.
+> **Pitfall:** change streams do **not** survive a restart. Persist the `resume token` (or
+> `startAtOperationTime`) in durable storage, otherwise events during downtime
+> are lost. The oplog also has a window limit — a stream idle for too long **cannot**
+> be resumed.
 
 ---
 
-## Connection & pooling
+## Connections & pooling
 
 ```
 App (driver pool) ──▶ mongod (replica set)
@@ -652,23 +652,23 @@ MongoClientSettings settings = MongoClientSettings.builder()
 MongoClient client = MongoClients.create(settings);
 ```
 
-| Parameter | Arti |
+| Parameter | Meaning |
 | :--- | :--- |
-| `maxPoolSize` | koneksi maksimum per app |
-| `minPoolSize` | koneksi yang di-prewarm |
-| `waitQueueTimeoutMS` | batas antre (WAJIB) |
-| `connectTimeoutMS` | batas koneksi |
-| `socketTimeoutMS` | batas socket |
-| `retryWrites` | retry write yang bisa di-retry |
-| `appName` | identifikasi app di log server |
-| `serverSelectionTimeoutMS` | batas cari node yang cocok |
+| `maxPoolSize` | maximum connections per app |
+| `minPoolSize` | connections kept prewarmed |
+| `waitQueueTimeoutMS` | queue wait limit (REQUIRED) |
+| `connectTimeoutMS` | connection timeout |
+| `socketTimeoutMS` | socket timeout |
+| `retryWrites` | retry writes that can be retried |
+| `appName` | identifies the app in server logs |
+| `serverSelectionTimeoutMS` | time limit for finding a suitable node |
 
-> **Jebakan:** driver modern **sudah** manages pool. Menambah pool sendiri di atasnya
-> (mis. `maxPoolSize=0`_artinya unlimited) = ribuan koneksi → server kewalahan.
+> **Pitfall:** modern drivers **already** manage the pool. Adding your own pool on top
+> (e.g. `maxPoolSize=0`, _meaning unlimited) = thousands of connections → the server is overwhelmed.
 
 ---
 
-## Driver Go & Java
+## Go & Java drivers
 
 ```go
 // Go — CRUD + context
@@ -718,19 +718,19 @@ public interface OrderRepository extends MongoRepository<Order, String> {
 }
 ```
 
-| Bahasa | Driver | Catatan |
+| Language | Driver | Note |
 | :--- | :--- | :--- |
-| Go | `go.mongodb.org/mongo-driver/v2` | API by-value, `bson.M`/`bson.D` |
-| Java | Spring Data MongoDB | Mapping POJO, `@Aggregation` untuk pipeline |
+| Go | `go.mongodb.org/mongo-driver/v2` | by-value API, `bson.M`/`bson.D` |
+| Java | Spring Data MongoDB | POJO mapping, `@Aggregation` for pipelines |
 | Java raw | `mongodb-driver-sync` | BSON `Document` |
 | Python | `pymongo` | `collection.aggregate()` |
 
 ---
 
-## Migrasi & Mongock
+## Migrations & Mongock
 
 ```java
-// Mongock — migrasi berbasis Java (Spring Boot)
+// Mongock — Java-based migrations (Spring Boot)
 // src/test/resources/mongo/...
 @When("now")
 @Then("there are ${count} documents in the '${collection}' collection")
@@ -744,47 +744,47 @@ public void collectionIsEmpty(String collection) { ... }
 ```
 
 ```js
-// migrasi manual — versioning collection
+// manual migration — collection versioning
 db.createCollection("schema_migrations");
 db.schema_migrations.insertOne({ version: 1, appliedAt: new Date(), script: "init" });
 
-// apply idempotent
+// apply idempotently
 db.runCommand({ collMod: "orders", validator: { ... } });
 ```
 
-| Pendekatan | Cocok |
+| Approach | Fits |
 | :--- | :--- |
-| Mongock | Spring Boot, test + migrasi berbasis Java |
-| Mongock Standalone | CLI untuk migrasi di luar Spring |
-| Script JS manual | Koleksi kecil, migrasi sederhana |
-| Flyway/Liquibase | Hanya untuk relasi (bukan MongoDB) |
+| Mongock | Spring Boot, tests + Java-based migrations |
+| Mongock Standalone | CLI for migrations outside Spring |
+| Manual JS script | Small collections, simple migrations |
+| Flyway/Liquibase | Relational only (not MongoDB) |
 
-> **Jebakan:** migrasi MongoDB **tidak** punya transaksi lintas collection secara default
-> (walang bisa multi-collection di 4.2+ dalam transaksi, tapi tidak semua operasi didukung).
-> Tulis migrasi yang **idempotent** — kalau jalan dua kali, hasilnya tetap sama.
+> **Pitfall:** MongoDB migrations do **not** have cross-collection transactions by default
+> (multi-collection transactions are possible in 4.2+, but not every operation is supported).
+> Write **idempotent** migrations — running twice must yield the same result.
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (required reading)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Solution |
 | :--- | :--- | :--- |
-| Embed array tumbuh tanpa batas | Doc nearing 16 MB, `$push` lambat | Pisah ke collection lain |
-| `_id` custom string acak | Tidak iterable, besar | Biarkan ObjectId, atau UUIDv7 |
-| ObjectId sebagai URL param | Index berubah karakter | ObjectId hex string aman, tapi tetap urut waktu |
-| `find()` tanpa filter | Scan seluruh koleksi | Selalu filter + index |
-| `$lookup` di dalam `$match` | Full scan | Filter dulu di stage awal |
-| Pipeline besar tanpa `allowDiskUse` | Query gagal | `allowDiskUse: true` + batas memori 9.0 |
-| `w:1` di data penting | Data hilang saat failover | `w: "majority"` + `j: true` |
-| Field `Number` (double) untuk uang | Selisih pembulatan | `NumberDecimal` / `Decimal128` |
-| Skema berubah tanpa validator | Documentheterogen | `$jsonSchema` + validation level |
-| `countDocuments` di halaman | Lambat | `estimatedDocumentCount` atau hitung via `$group` |
-| Regex tanpa index | Scan penuh | `$text` index atau prefix anchor `^` |
-| Index terlalu banyak | Write lambat | Hapus index yang `idx_scan = 0` |
-| Transaction panjang | Lock & oplog tertahan | Short transaction, atau saga |
-| Change stream tanpa resume token | Event hilang saat restart | Simpan token persisten |
-| `unique: true` tanpa `upsert` | Duplikat tetap masuk | Upsert + filter unik |
-| Sharding tanpa shard key yang tepat | Scatter-gather lambat | Shard key sesuai access pattern |
-| `ObjectId` Sorting | Timestamp-based, ok | Kalau perlu ordering lain pakai field terpisah |
-| Validation `moderate` | Dokumen lama tidak valid | Pakai `constraint` (9.0) atau bersihkan manual |
-| Connection string tanpa `retryWrites` | Write gagal saat failover | `retryWrites=true` |
+| Embedded array grows unbounded | Doc nearing 16 MB, `$push` slow | Split into another collection |
+| Custom `_id` random strings | Not iterable, large | Leave ObjectId, or use UUIDv7 |
+| ObjectId as a URL param | Index changes characters | ObjectId hex strings are safe, but still time-ordered |
+| `find()` without a filter | Scans the whole collection | Always filter + index |
+| `$lookup` inside `$match` | Full scan | Filter first in an early stage |
+| Large pipeline without `allowDiskUse` | Query fails | `allowDiskUse: true` + 9.0 memory limit |
+| `w:1` on important data | Data lost on failover | `w: "majority"` + `j: true` |
+| `Number` (double) fields for money | Rounding errors | `NumberDecimal` / `Decimal128` |
+| Schema changes without a validator | Heterogeneous documents | `$jsonSchema` + validation level |
+| `countDocuments` in paging | Slow | `estimatedDocumentCount` or count via `$group` |
+| Regex without an index | Full scan | `$text` index or prefix anchor `^` |
+| Too many indexes | Slow writes | Drop indexes with `idx_scan = 0` |
+| Long transactions | Locks & oplog held | Short transactions, or a saga |
+| Change streams without a resume token | Events lost on restart | Persist the token |
+| `unique: true` without `upsert` | Duplicates still get in | Upsert + unique filter |
+| Sharding without a proper shard key | Slow scatter-gather | Shard key matching the access pattern |
+| `ObjectId` sorting | Timestamp-based, fine | If you need other ordering, use a separate field |
+| `moderate` validation | Old documents invalid | Use `constraint` (9.0) or clean up manually |
+| Connection string without `retryWrites` | Writes fail on failover | `retryWrites=true` |

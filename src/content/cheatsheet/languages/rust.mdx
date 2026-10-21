@@ -1,6 +1,6 @@
 ---
 title: "Rust 1.99 Cheat Sheet"
-description: "Cheat sheet Rust 1.99 (edition 2024): ownership & borrow, trait & generic, error handling tanpa panic, async/await, collection, unsafe, Cargo, testing, plus jebakan borrow checker yang paling sering saya temui."
+description: "Rust 1.99 cheat sheet (edition 2024): ownership & borrowing, traits & generics, error handling without panicking, async/await, collections, unsafe, Cargo, testing, plus the borrow checker pitfalls I run into most often."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -16,14 +16,14 @@ tags:
 
 # Rust 1.99 Cheat Sheet
 
-> Target: **Rust 1.99** (stabil Oktober 2026) dengan **edition 2024**. Rilisan 1.85 membawa
-> `async fn` di trait, 1.88 membawa *let chains* (edisi 2024), dan 1.99 adalah rilis
-> stabil terbaru. Semua snippet di bawah **diverifikasi compile** dengan 1.99 + edition 2024.
+> Target: **Rust 1.99** (stable October 2026) with **edition 2024**. Release 1.85 brought
+> `async fn` in traits, 1.88 brought *let chains* (edition 2024), and 1.99 is the latest
+> stable release. All snippets below are **compile-verified** with 1.99 + edition 2024.
 
-**Isi sheet ini**
+**What's in this sheet**
 
 - CLI & toolchain
-- Mental model 5 menit
+- 5-minute mental model
 - Ownership, borrow, lifetime
 - Trait, generic, enum
 - Error handling
@@ -34,13 +34,13 @@ tags:
 - Unsafe
 - Cargo, crate, features
 - Testing
-- std: collections lanjutan
+- std: advanced collections
 - std: string, format, regex & parsing
 - std: file, path, process & env
 - std: thread, channel, Mutex, time
-- std: testing lanjutan & atribut
-- std: Display dan trait yang sering di-derive
-- Jebakan (wajib dibaca)
+- std: advanced testing & attributes
+- std: Display and commonly derived traits
+- Pitfalls (must read)
 
 ---
 
@@ -52,53 +52,53 @@ cargo new --lib lib           # scaffold library
 cargo build                   # debug build
 cargo build --release         # optimized build
 cargo run                     # build + run
-cargo run --release -- --arg  # argumen ke program
-cargo test                    # jalankan test
-cargo test -- --nocapture     # tampilkan println saat test
-cargo test name_filter        # filter test
-cargo nextest run             # lebih cepat (cargo-nextest)
+cargo run --release -- --arg  # arguments to the program
+cargo test                    # run tests
+cargo test -- --nocapture     # show println output during tests
+cargo test name_filter        # filter tests
+cargo nextest run             # faster (cargo-nextest)
 cargo clippy -- -D warnings   # linter
 cargo fmt                     # format (rustfmt)
-cargo fmt -- --check          # cek format di CI
-cargo doc --open              # dokumentasi
-cargo tree                    # lihat dependency tree
+cargo fmt -- --check          # check formatting in CI
+cargo doc --open              # documentation
+cargo tree                    # inspect the dependency tree
 cargo add serde --features derive
-cargo outdated                # cek versi usang
-cargo audit                   # cek CVE dependency (cargo-audit)
-cargo bloat                   # apa yang bikin binary gemuk
+cargo outdated                # check for outdated versions
+cargo audit                   # check dependencies for CVEs (cargo-audit)
+cargo bloat                   # what makes the binary bloated
 ```
 
-| Perintah | Arti |
+| Command | Meaning |
 | :--- | :--- |
-| `cargo build` | kompilasi cepat, debug info penuh |
-| `cargo build --release` | optimasi + LTO, debug info dikurangi |
-| `cargo clippy` | linter resmi, berjalan dengan ratusan warning |
-| `cargo fmt` | format standar, tanpa debat gaya |
-| `cargo test` | unit + integration + doc test |
+| `cargo build` | fast compile, full debug info |
+| `cargo build --release` | optimizations + LTO, reduced debug info |
+| `cargo clippy` | official linter, runs with hundreds of lints |
+| `cargo fmt` | standard formatting, no style debates |
+| `cargo test` | unit + integration + doc tests |
 | `cargo bench` | benchmark (criterion) |
-| `cargo miri` | cek UB (malam hari, lambat) |
-| `cargo audit` | kerentanan dependency |
+| `cargo miri` | check for UB (nightly, slow) |
+| `cargo audit` | dependency vulnerabilities |
 
 ---
 
-## Mental model 5 menit
+## 5-minute mental model
 
-| Konsep | Ringkasan |
+| Concept | Summary |
 | :--- | :--- |
-| Ownership | setiap nilai punya **satu** pemilik; di-drop, nilainya hilang |
-| Borrowing | `&T` ( baca) atau `&mut T` (tulis) — **tidak boleh dua mutable** |
-| `move` | transfer kepemilikan; nilai lama tidak bisa dipakai |
-| Copy trait | `i32`, `bool`, `f64` = disalin; `String`, `Vec` = dipindah |
-| Drop | nilai dibuang otomatis di akhir scope; `Drop` trait untuk logika custom |
-| Trait | kontrak perilaku; implisit satisfaction (bukan `implements`) |
-| Generic | monomorphization — nol overhead runtime |
-| `Option<T>` | nilai mungkin ada |
-| `Result<T, E>` | hasil mungkin gagal |
-| `?` | propagasi error cepat |
-| `panic!` | bug program, **bukan** flow control |
-| `unsafe` | escaping compiler checks; Anda yang pegang responsibilities |
-| `Send`/`Sync` | marker untuk transfer antar thread |
-| Lifetime `'a` | scope validitas reference, bukan durasi |
+| Ownership | every value has **one** owner; when it is dropped, the value is gone |
+| Borrowing | `&T` (read) or `&mut T` (write) — **never two mutable at once** |
+| `move` | transfers ownership; the old value can no longer be used |
+| Copy trait | `i32`, `bool`, `f64` = copied; `String`, `Vec` = moved |
+| Drop | values are discarded automatically at the end of scope; the `Drop` trait for custom logic |
+| Trait | a behavior contract; satisfied implicitly (no `implements`) |
+| Generic | monomorphization — zero runtime overhead |
+| `Option<T>` | a value that may be present |
+| `Result<T, E>` | a result that may fail |
+| `?` | quick error propagation |
+| `panic!` | a program bug, **not** flow control |
+| `unsafe` | escapes compiler checks; you hold the responsibilities |
+| `Send`/`Sync` | markers for transferring across threads |
+| Lifetime `'a` | the validity scope of a reference, not a duration |
 
 ---
 
@@ -106,26 +106,26 @@ cargo bloat                   # apa yang bikin binary gemuk
 
 ```rust
 // move vs copy
-let s1 = String::from("halo");
-let s2 = s1;                 // move: s1 tidak bisa dipakai lagi
+let s1 = String::from("hello");
+let s2 = s1;                 // move: s1 can no longer be used
 // println!("{}", s1);       // error: value borrowed after move
 
 let n1 = 5;
 let n2 = n1;                 // copy (i32 = Copy)
-println!("{} {}", n1, n2);  // aman
+println!("{} {}", n1, n2);  // safe
 
-// borrow (pinjaman) — bukan pindah
+// borrow — not a move
 fn len(s: &String) -> usize { s.len() }
-let s = String::from("halo");
+let s = String::from("hello");
 let l = len(&s);
-println!("{} {}", s, l);     // s masih dipakai
+println!("{} {}", s, l);     // s is still usable
 
-// &mut — pinjam yang bisa diubah, TIDAK boleh ada borrower lain saat itu
+// &mut — a mutable borrow, no other borrower may exist at that time
 fn append_bang(s: &mut String) { s.push('!'); }
-let mut s = String::from("halo");
+let mut s = String::from("hello");
 append_bang(&mut s);
 
-// slice: view ke bagian dari slice/array/String
+// slice: a view into part of a slice/array/String
 fn first_word(s: &str) -> &str {
     s.split_whitespace().next().unwrap_or("")
 }
@@ -133,7 +133,7 @@ fn first_word(s: &str) -> &str {
 // implicit lifetime elision
 fn longest<'a>(a: &'a str, b: &'a str) -> &'a str { ... }
 
-// explicit lifetime saat compiler butuh
+// explicit lifetime when the compiler needs it
 struct Parser<'a> {
     input: &'a str,
     pos: usize,
@@ -144,15 +144,15 @@ impl<'a> Parser<'a> {
 }
 ```
 
-| Aturan | Arti |
+| Rule | Meaning |
 | :--- | :--- |
-| N borrow `&T` | boleh banyak **sekaligus** |
-| N borrow `&mut T` | **maksimal satu** pada satu waktu |
-| Borrow selalu lebih pendek dari owner | owner harus hidup selama pinjam |
-| `&mut` ke struct = borrow **semua field** | field-level borrow butuh `split_at_mut` |
+| N borrows `&T` | many allowed **at the same time** |
+| N borrows `&mut T` | **at most one** at a time |
+| A borrow is always shorter than its owner | the owner must outlive the borrow |
+| `&mut` to a struct = borrows **all fields** | field-level borrowing needs `split_at_mut` |
 
-> **Jebakan:** `&mut` pada field struktural memblokir borrow field lain di struct yang sama.
-> Solusi: `let [a, b] = slice.split_at_mut(i);` atau `std::mem::take` / `Option::take`.
+> **Pitfall:** `&mut` on a structural field blocks borrowing other fields of the same struct.
+> Fix: `let [a, b] = slice.split_at_mut(i);` or `std::mem::take` / `Option::take`.
 
 ---
 
@@ -176,18 +176,18 @@ impl Repository for PgRepo {
     fn find(&self, id: u64) -> Result<Option<User>, sqlx::Error> { ... }
 }
 
-// generic dengan trait bound
+// generic with a trait bound
 fn longest<T: AsRef<str>>(items: &[T]) -> &str {
     items.iter().map(|s| s.as_ref()).max().unwrap_or("")
 }
 
-// generic dengan where clause
+// generic with a where clause
 fn show<T>(v: &T) -> String
 where
     T: std::fmt::Display + Clone,
 { v.to_string() }
 
-// enum dengan data — pengganti tagged union
+// enum with data — the replacement for a tagged union
 enum Message {
     Ping,
     Text(String),
@@ -195,7 +195,7 @@ enum Message {
     Data(Vec<u8>),
 }
 
-// impl trait pada argumen & return
+// impl trait in argument & return position
 fn print_it(item: &impl ToString) { println!("{}", item); }
 fn make_iter() -> impl Iterator<Item = u32> { (0..10).map(|x| x * 2) }
 
@@ -203,24 +203,24 @@ fn make_iter() -> impl Iterator<Item = u32> { (0..10).map(|x| x * 2) }
 trait Version { const MAJOR: u32; fn name() -> String; }
 ```
 
-| Bentuk | Kapan |
+| Form | When |
 | :--- | :--- |
-| Generic `fn f<T: Trait>` | когда dipanggil monomorphisasi (paling umum) |
-| `impl Trait` di argumen | sugar untuk generic anonymous |
-| `impl Trait` di return | sugar untuk `-> impl Trait` |
+| Generic `fn f<T: Trait>` | monomorphized at the call site (most common) |
+| `impl Trait` in arguments | sugar for an anonymous generic |
+| `impl Trait` in return | sugar for `-> impl Trait` |
 | `dyn Trait` | dynamic dispatch (vtable) |
-| Associated type | 1 tipe konkret per impl |
-| Generic associated type (GAT) | tipe yang bergantung pada `Self` |
+| Associated type | 1 concrete type per impl |
+| Generic associated type (GAT) | a type that depends on `Self` |
 
-> `impl Trait` di argumen = generic; `dyn Trait` = dynamic dispatch. Kalau trait-nya
-> banyak diimplementasikan → pakai `dyn` (atau enum).
+> `impl Trait` in arguments = generic; `dyn Trait` = dynamic dispatch. If the trait is
+> implemented by many types → use `dyn` (or an enum).
 
 ---
 
 ## Error handling
 
 ```rust
-// enum error eksplisit
+// explicit error enum
 #[derive(Debug)]
 enum AppError {
     NotFound(String),
@@ -247,12 +247,12 @@ impl std::error::Error for AppError {
     }
 }
 
-// From — konversi error otomatis
+// From — automatic error conversion
 impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self { AppError::Db(e) }
 }
 
-// ? — propagasi + konversi via From
+// ? — propagate + convert via From
 fn load(id: u64) -> Result<User, AppError> {
     let row = sqlx::query!("SELECT * FROM users WHERE id = $1", id as i64)
         .fetch_optional(&pool)
@@ -260,41 +260,41 @@ fn load(id: u64) -> Result<User, AppError> {
     Ok(row.map(User::from).unwrap_or_default())
 }
 
-// anyhow untuk error dinamis (app, bukan library)
+// anyhow for dynamic errors (an app, not a library)
 use anyhow::{Context, Result, anyhow, bail};
 
 fn process() -> Result<()> {
     let cfg = std::fs::read_to_string("config.json")
-        .context("gagal baca config.json")?;
+        .context("failed to read config.json")?;
     if cfg.is_empty() {
-        bail!("config kosong");
+        bail!("config is empty");
     }
     Ok(())
 }
 
-// thiserror untuk derive Display/Error pada enum
+// thiserror to derive Display/Error on an enum
 #[derive(Debug, thiserror::Error)]
 enum ParseError {
-    #[error("nomor tidak valid: {0}")]
+    #[error("invalid number: {0}")]
     InvalidNumber(String),
-    #[error("kebanyakan: {0}")]
+    #[error("io failure: {0}")]
     Io(#[from] std::io::Error),
 }
 ```
 
-| Pendekatan | Kapan |
+| Approach | When |
 | :--- | :--- |
-| `Result<T, E>` + enum error | **Library**: caller perlu tahu semua varian |
-| `anyhow::Result` | **Aplikasi**: error tidak perlu dipilah caller |
-| `thiserror` | derive `Display` + `Error` untuk enum |
-| `?` | propagasi error (butuh `From`) |
-| `panic!` | bug / invariant violated — **jangan** untuk error runtime |
-| `unwrap()` / `expect()` | test atau invariant yang benar-benar pasti |
-| `.unwrap_or()` / `.unwrap_or_else()` | fallback nilai |
-| `.ok()` | buang error jadi `Option` |
+| `Result<T, E>` + error enum | **Library**: the caller needs to know every variant |
+| `anyhow::Result` | **Application**: the caller does not need to tell errors apart |
+| `thiserror` | derive `Display` + `Error` for an enum |
+| `?` | propagate errors (needs `From`) |
+| `panic!` | bug / violated invariant — **never** for runtime errors |
+| `unwrap()` / `expect()` | tests or invariants that are truly guaranteed |
+| `.unwrap_or()` / `.unwrap_or_else()` | fallback value |
+| `.ok()` | discard the error into an `Option` |
 
-> **Jebakan:** `unwrap()` di jalur yang bisa gagal = panic = proses mati. Kalau tidak pasti,
-> pakai `?`, `unwrap_or`, atau `expect("alasan invariant")` supaya maksudnya jelas.
+> **Pitfall:** `unwrap()` on a path that can fail = panic = dead process. If you are not certain,
+> use `?`, `unwrap_or`, or `expect("invariant reason")` so the intent is clear.
 
 ---
 
@@ -304,9 +304,9 @@ enum ParseError {
 // Option
 let opt: Option<i32> = Some(5);
 match opt {
-    Some(v) if v > 3 => println!("besar: {v}"),
-    Some(v) => println!("kecil: {v}"),
-    None => println!("tidak ada"),
+    Some(v) if v > 3 => println!("big: {v}"),
+    Some(v) => println!("small: {v}"),
+    None => println!("nothing"),
 }
 
 opt.map(|v| v * 2)
@@ -315,7 +315,7 @@ opt.map(|v| v * 2)
 
 opt.as_ref().map(|v| &v.to_string());
 opt.as_deref();                       // Option<&T> → Option<&U>
-opt.take();                           // ambil nilainya, sisanya None (untuk &mut field)
+opt.take();                           // take the value, leaving None (for &mut fields)
 
 // let-else (1.65)
 let Some(user) = find_user(id) else {
@@ -326,7 +326,7 @@ let Some(user) = find_user(id) else {
 if let Some(user) = find_user(id)
     && user.is_active()
 {
-    println!("aktif");
+    println!("active");
 }
 
 // Result
@@ -344,24 +344,24 @@ match result {
 }
 ```
 
-| Method | Arti |
+| Method | Meaning |
 | :--- | :--- |
-| `map` | transform jika `Some` |
-| `and_then` | transform ke `Option`/`Result` lain (**bukan** nested Option) |
-| `filter` | saring kalau predicate false |
-| `unwrap_or` | default (eager, dihitung walau tidak dipakai) |
+| `map` | transform if `Some` |
+| `and_then` | transform into another `Option`/`Result` (**not** a nested Option) |
+| `filter` | filter out when the predicate is false |
+| `unwrap_or` | default (eager, computed even if unused) |
 | `unwrap_or_else` | default (lazy) |
 | `ok_or` | `Option` → `Result` |
-| `ok_or_else` | sama, lazy |
-| `expect` | panic dengan pesan jelas |
-| `is_some` / `is_none` | cek tanpa ambil |
+| `ok_or_else` | same, lazy |
+| `expect` | panic with a clear message |
+| `is_some` / `is_none` | check without taking |
 
-> **Jebakan:** `Option<Option<T>>` — pakai `and_then`, bukan `map`, supaya tidak jadi
-> `Option<Option<T>>` yang membingungkan.
+> **Pitfall:** `Option<Option<T>>` — use `and_then`, not `map`, so you don't end up with
+> a confusing `Option<Option<T>>`.
 
 ---
 
-## Collection
+## Collections
 
 ```rust
 use std::collections::{HashMap, HashSet, BTreeMap, VecDeque};
@@ -372,8 +372,8 @@ v.push(1);
 v.extend([2, 3]);
 let popped: Option<i32> = v.pop();
 let first = v.first();
-let slice = &v[0..2];                    // bisa panic kalau out of range
-let slice = v.get(0..2);                  // Option, aman
+let slice = &v[0..2];                    // may panic if out of range
+let slice = v.get(0..2);                  // Option, safe
 
 // HashMap
 let mut m: HashMap<String, i32> = HashMap::new();
@@ -388,15 +388,15 @@ let mut s: HashSet<u32> = HashSet::new();
 s.insert(1);
 s.contains(&1);
 
-// BTreeMap — terurut (O(log n))
+// BTreeMap — sorted (O(log n))
 let mut b: BTreeMap<String, i32> = BTreeMap::new();
 
-// iterasi
+// iteration
 for (k, v) in &m { ... }
 for v in m.values() { ... }
 for k in m.keys() { ... }
 let mut keys: Vec<_> = m.keys().cloned().collect();
-keys.sort();                              // output HashMap tidak urut!
+keys.sort();                              // HashMap output is unordered!
 
 // filter + collect
 let big: Vec<_> = m.iter().filter(|(_, v)| **v > 10).map(|(k, v)| (k.clone(), *v)).collect();
@@ -412,31 +412,31 @@ dq.push_front(0);
 dq.pop_front();
 ```
 
-| Struktur | Urutan | Kompleksitas lookup |
+| Structure | Ordered | Lookup complexity |
 | :--- | :--- | :--- |
-| `Vec<T>` | ya (insert) | O(n) linear search |
-| `HashMap<K,V>` | **tidak** | O(1) rata-rata |
-| `BTreeMap<K,V>` | ya | O(log n) |
-| `HashSet<T>` | tidak | O(1) rata-rata |
-| `BTreeSet<T>` | ya | O(log n) |
-| `VecDeque<T>` | ya (FIFO) | O(1) di kedua ujung |
+| `Vec<T>` | yes (by insert) | O(n) linear search |
+| `HashMap<K,V>` | **no** | O(1) on average |
+| `BTreeMap<K,V>` | yes | O(log n) |
+| `HashSet<T>` | no | O(1) on average |
+| `BTreeSet<T>` | yes | O(log n) |
+| `VecDeque<T>` | yes (FIFO) | O(1) at both ends |
 
-> **Jebakan:** output `HashMap` **urutan random** antar-run. Kalau butuh deterministik
-> (test, output CLI, diff), sort dulu.
+> **Pitfall:** `HashMap` output order is **random** between runs. If you need determinism
+> (tests, CLI output, diffs), sort first.
 
 ---
 
 ## String & formatting
 
 ```rust
-let s = String::from("halo");
-let t = "dunia";                    // &str, literal
-let u = s.clone();                  // duplikat
-let v = s + t;                      // konsume s
+let s = String::from("hello");
+let t = "world";                    // &str, literal
+let u = s.clone();                  // duplicate
+let v = s + t;                      // consumes s
 let w = format!("{s} {t}");         // interpolation (1.58+)
 
 s.push_str("!");
-s.len(); s.chars().count();          // len = byte, chars = karakter unicode
+s.len(); s.chars().count();          // len = bytes, chars = unicode characters
 s.contains("ha");
 s.split_whitespace().collect::<Vec<_>>();
 
@@ -444,33 +444,33 @@ s.split_whitespace().collect::<Vec<_>>();
 let owned: String = t.to_owned();
 let owned2: String = String::from(t);
 
-// String → &str (pinjaman, tanpa alokasi)
+// String → &str (a borrow, no allocation)
 let view: &str = &owned;
 
-// format dengan specifier
-format!("{:<10}|", "left");     // rata kiri
-format!("{:>10}|", "right");     // rata kanan
-format!("{:^10}|", "center");    // tengah
-format!("{:.2}", 3.14159);       // presisi
+// format with specifiers
+format!("{:<10}|", "left");     // left-aligned
+format!("{:>10}|", "right");     // right-aligned
+format!("{:^10}|", "center");    // centered
+format!("{:.2}", 3.14159);       // precision
 format!("{:#x}", 255);            // 0xff
-format!("{:08.3}", 3.14159);      // zero-pad + presisi
+format!("{:08.3}", 3.14159);      // zero-pad + precision
 format!("{name} {age}", name = "budi", age = 30);   // named arg
 
-// write! ke buffer tanpa alokasi
+// write! into a buffer without allocating
 use std::fmt::Write;
 let mut out = String::new();
 write!(out, "{}-{}", 1, 2).unwrap();
 ```
 
-| Jenis | Arti |
+| Type | Meaning |
 | :--- | :--- |
-| `&str` | slice string, **tanpa alokasi** |
-| `String` | string yang dimiliki, bisa tumbuh |
-| `char` | satu scalar value Unicode (bukan byte) |
-| `Vec<u8>` | byte mentah |
+| `&str` | a string slice, **no allocation** |
+| `String` | an owned string, it can grow |
+| `char` | one Unicode scalar value (not a byte) |
+| `Vec<u8>` | raw bytes |
 
-> **Jebakan:** `s.len()` menghitung **byte**, bukan karakter. `"é".len() == 2`. Pakai
-> `s.chars().count()` untuk jumlah karakter.
+> **Pitfall:** `s.len()` counts **bytes**, not characters. `"é".len() == 2`. Use
+> `s.chars().count()` for the character count.
 
 ---
 
@@ -486,9 +486,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let handle = tokio::spawn(async move {
         fetch("https://example.com").await
     });
-    let body = handle.await??;          // JoinError lalu AppError
+    let body = handle.await??;          // JoinError then AppError
 
-    // JoinSet — kelompok task
+    // JoinSet — a group of tasks
     let mut set = JoinSet::new();
     for id in ids {
         set.spawn(async move { fetch(id).await });
@@ -504,7 +504,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ = tokio::time::sleep(Duration::from_secs(2)) => timeout(),
     }
 
-    // semaphore — batasi konkurensi
+    // semaphore — limit concurrency
     let sem = Semaphore::new(10);
     let permit = sem.acquire().await?;
 
@@ -516,43 +516,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// select! dengan timeout & cancel
+// select! with timeout & cancel
 let result = tokio::time::timeout(Duration::from_secs(5), slow_call()).await;
 ```
 
-| Primitif | Untuk |
+| Primitive | For |
 | :--- | :--- |
-| `tokio::spawn` | task latar belakang |
-| `JoinSet` | banyak task, ambil hasil satu per satu |
-| `select!` | pilih operasi pertama yang selesai |
-| `Semaphore` | batasi jumlah operasi bersamaan |
+| `tokio::spawn` | background task |
+| `JoinSet` | many tasks, collect results one by one |
+| `select!` | pick the first operation to finish |
+| `Semaphore` | limit concurrent operations |
 | `mpsc` | channel multi-producer single-consumer |
-| `broadcast` | multi-consumer, tiap consumer dapat semua |
-| `watch` | state terakhir (config/feature flag) |
-| `Mutex` | critical section tulis |
-| `RwLock` | banyak reader, satu writer |
-| `Notify` | bangunkan task yang menunggu |
-| `CancellationToken` | batalkan sekelompok task |
+| `broadcast` | multi-consumer, every consumer gets all messages |
+| `watch` | the latest state (config/feature flag) |
+| `Mutex` | write critical section |
+| `RwLock` | many readers, one writer |
+| `Notify` | wake up a waiting task |
+| `CancellationToken` | cancel a group of tasks |
 
-> **Jebakan:** `std::sync::Mutex` **tidak boleh** di-hold lintas `.await` — bisa deadlock
-> (task holding lock ditunda, lock ditahan selamanya). Pakai `tokio::sync::Mutex`.
+> **Pitfall:** `std::sync::Mutex` **must not** be held across `.await` — it can deadlock
+> (the task holding the lock is suspended, the lock is held forever). Use `tokio::sync::Mutex`.
 
 ---
 
 ## Unsafe
 
 ```rust
-// unsafe block — Anda pegang responsibilities
+// unsafe block — you hold the responsibilities
 unsafe {
-    let p = raw_ptr::read(ptr);       // baca tanpa check
+    let p = raw_ptr::read(ptr);       // read without checks
     raw_ptr::write(ptr, new_value);
 }
 
-// safety contract WAJIB didokumentasikan
+// the safety contract MUST be documented
 /// # Safety
 ///
-/// `ptr` harus menunjuk ke nilai valid yang `T` dan caller memastikan tidak ada
-/// alias yang melanggar aturan borrow.
+/// `ptr` must point to a valid `T` value and the caller must ensure there is no
+/// aliasing that violates the borrow rules.
 unsafe fn read_value<T>(ptr: *const T) -> T {
     unsafe { *ptr }
 }
@@ -562,24 +562,24 @@ extern "C" {
     fn strlen(s: *const c_char) -> usize;
 }
 
-let c = CString::new("halo")?;
+let c = CString::new("hello")?;
 let len = unsafe { strlen(c.as_ptr()) };
 
-// slice dari raw parts
+// slice from raw parts
 let arr: [i32; 3] = [1, 2, 3];
 let slice = unsafe { std::slice::from_raw_parts(arr.as_ptr(), arr.len()) };
 ```
 
-| Aturan | Detail |
+| Rule | Detail |
 | :--- | :--- |
-| `unsafe` | compiler tidak bisa pastikan; Anda yang jawab |
-| Aliasing | tidak boleh ada `&mut` dan `&` ke data yang sama bersamaan |
-| Pointer harus valid | aligned, initialized, dan hidup selama dipakai |
-| `# Safety` | wajib ditulis di doc comment setiap `unsafe fn` |
-| Miri | alat untuk mencari UB — jalankan di CI |
+| `unsafe` | the compiler cannot guarantee it; you are accountable |
+| Aliasing | no `&mut` and `&` to the same data at the same time |
+| Pointers must be valid | aligned, initialized, and alive while in use |
+| `# Safety` | mandatory in the doc comment of every `unsafe fn` |
+| Miri | a tool for finding UB — run it in CI |
 
-> **Jebakan:** `unsafe` bukan berarti "kode unchecked" — dia berarti "kode yang butuh
-> jaminan manual". Bug di sini = undefined behavior, bukan panic.
+> **Pitfall:** `unsafe` does not mean "unchecked code" — it means "code that needs
+> manual guarantees". A bug here = undefined behavior, not a panic.
 
 ---
 
@@ -590,7 +590,7 @@ let slice = unsafe { std::slice::from_raw_parts(arr.as_ptr(), arr.len()) };
 [package]
 name = "myapp"
 version = "0.1.0"
-edition = "2024"          # atau "2021"
+edition = "2024"          # or "2021"
 rust-version = "1.85"     # MSRV
 
 [dependencies]
@@ -612,7 +612,7 @@ json = ["dep:serde_json"]
 lto = "thin"              # link-time optimization
 codegen-units = 1
 strip = true
-panic = "abort"           # binary kecil, tapi panic = process mati
+panic = "abort"           # smaller binary, but panic = dead process
 opt-level = 3
 ```
 
@@ -624,15 +624,15 @@ cargo tree -e features
 cargo install cargo-nextest cargo-llvm-cov
 ```
 
-| Konsep | Arti |
+| Concept | Meaning |
 | :--- | :--- |
-| Crate | unit kompilasi (lib atau bin) |
-| Workspace | banyak crate dalam satu repo (`[workspace]`) |
-| Feature | flag kompilasi, opsional bisa saling bergantung |
-| `dep:` syntax | tandai dependency opsional secara eksplisit |
-| `dev-dependencies` | hanya untuk test/bench/contoh |
-| `MSRV` | versi Rust minimum yang didukung |
-| `lto` | optimasi lintas crate, build lambat, binary kecil |
+| Crate | a compilation unit (lib or bin) |
+| Workspace | many crates in one repo (`[workspace]`) |
+| Feature | compile-time flags, optionally interdependent |
+| `dep:` syntax | explicitly mark an optional dependency |
+| `dev-dependencies` | only for tests/benches/examples |
+| `MSRV` | minimum supported Rust version |
+| `lto` | cross-crate optimization, slower build, smaller binary |
 
 ---
 
@@ -680,7 +680,7 @@ mod tests {
 ```
 
 ```rust
-// mock trait tanpa mocking framework
+// mock a trait without a mocking framework
 trait Repo { fn get(&self, id: u64) -> Option<u8>; }
 struct Mock;
 impl Repo for Mock { fn get(&self, _: u64) -> Option<u8> { Some(7) } }
@@ -700,25 +700,25 @@ mod tests {
 }
 ```
 
-| Fitur | Tool |
+| Feature | Tool |
 | :--- | :--- |
-| Unit test | `#[test]` bawaan |
+| Unit test | built-in `#[test]` |
 | Async test | `#[tokio::test]` |
 | Property test | `proptest` / `quickcheck` |
-| Mock | `mockall`, atau trait + struct fake sendiri |
+| Mock | `mockall`, or a trait + your own fake struct |
 | Benchmark | `criterion` |
 | Coverage | `cargo llvm-cov` |
 | Miri (UB) | `cargo miri test` |
-| Doc test | otomatis dari `///` pada kode |
+| Doc test | automatic from `///` doc comments on code |
 
 ---
 
-## std: `std::collections` lanjutan
+## std: advanced `std::collections`
 
 ```rust
 use std::collections::{BTreeMap, HashMap, VecDeque, BinaryHeap};
 
-// HashMap: entry API & kapasitas awal
+// HashMap: entry API & initial capacity
 let mut counts: HashMap<&str, u32> = HashMap::with_capacity(64);
 for w in words {
     *counts.entry(w).or_insert(0) += 1;
@@ -728,14 +728,14 @@ counts.get("k");
 counts.retain(|_, v| *v > 1);
 for (k, v) in &counts { let _ = (k, v); }
 
-// BTreeMap: iterasi terurut, range query
+// BTreeMap: ordered iteration, range queries
 let mut b: BTreeMap<u64, &str> = BTreeMap::new();
 b.insert(3, "c");
 for (k, v) in b.range(2..=3) { let _ = (k, v); }
 b.first_key_value();
 b.last_key_value();
 
-// VecDeque: ring buffer FIFO/LIFO
+// VecDeque: FIFO/LIFO ring buffer
 let mut q: VecDeque<u32> = VecDeque::with_capacity(32);
 q.push_back(1); q.push_front(0);
 q.make_contiguous();
@@ -751,28 +751,28 @@ minheap.push(std::cmp::Reverse(5));      // min-heap
 // sort & dedup
 let mut v = vec![3, 1, 3, 2];
 v.sort();                       // stable
-v.dedup();                      // buang duplikat berurutan
-v.sort_unstable();              // lebih cepat, tidak stable
+v.dedup();                      // remove consecutive duplicates
+v.sort_unstable();              // faster, not stable
 v.sort_by_key(|x| -*x);         // descending
 v.sort_by(|a, b| b.cmp(a));     // full control
 
-// binary_search: slice harus sorted
+// binary_search: the slice must be sorted
 let idx = v.binary_search(&3);
 
-// akses aman
+// safe access
 let got = v.get(10).copied().unwrap_or_default();
 ```
 
-| Tipe | Karakteristik |
+| Type | Characteristics |
 | :--- | :--- |
-| `HashMap` | O(1) rata-rata, urutan acak |
-| `BTreeMap` | O(log n), terurut, mendukung `range` |
-| `VecDeque` | O(1) di kedua ujung, `as_slices` untuk akses kontigu |
-| `BinaryHeap` | max-heap; `Reverse` untuk min-heap |
-| `HashSet` / `BTreeSet` | set dari tipe di atas |
-| `SmallVec` (crate) | inline storage untuk koleksi kecil |
+| `HashMap` | O(1) on average, random order |
+| `BTreeMap` | O(log n), sorted, supports `range` |
+| `VecDeque` | O(1) at both ends, `as_slices` for contiguous access |
+| `BinaryHeap` | max-heap; `Reverse` for a min-heap |
+| `HashSet` / `BTreeSet` | sets of the types above |
+| `SmallVec` (crate) | inline storage for small collections |
 
-> **Jebakan:** `sort()` pada `f64` tidak bisa dipakai (bukan `Ord`) — pakai
+> **Pitfall:** `sort()` cannot be used on `f64` (not `Ord`) — use
 > `sort_by(|a, b| a.partial_cmp(b).unwrap())`.
 
 ---
@@ -781,10 +781,10 @@ let got = v.get(10).copied().unwrap_or_default();
 
 ```rust
 let s = String::from("héllo");
-let n_bytes = s.len();              // byte
-let n_chars = s.chars().count();    // karakter
+let n_bytes = s.len();              // bytes
+let n_chars = s.chars().count();    // characters
 let cap = s.capacity();
-s.get(0..2);                        // Option, aman terhadap UTF-8 boundary
+s.get(0..2);                        // Option, safe across UTF-8 boundaries
 s.is_char_boundary(2);
 
 // split & parse
@@ -801,29 +801,29 @@ out.push(';');
 
 // case & char
 'a'.is_uppercase();
-s.to_lowercase();                   // alokasi
+s.to_lowercase();                   // allocates
 s.chars().rev().collect::<String>();
 s.as_bytes();                       // &[u8]
 
-// format lanjutan
+// advanced formatting
 format!("{name:>8}|{id:04}", name = "budi", id = 7);
 format!("{:?} {:#?}", v, v);        // Debug, pretty Debug
 
-// parse ke tipe
+// parse into a type
 let n: i64 = "42".parse()?;
 let f: f64 = "3.14".parse().unwrap_or(0.0);
 ```
 
-| Paket | Catatan |
+| Package | Notes |
 | :--- | :--- |
 | `std::str` | `split`, `split_once`, `lines`, `trim`, `parse` |
-| `String` | `with_capacity` menghindari realloc |
-| `regex` (crate) | compile sekali, simpan di `static LazyLock` |
-| `serde` + `serde_json` | standar de-facto; `#[serde(rename)]` untuk kontrak API |
-| `std::fmt` | `{:?}`, `{:#?}`, `{:>8}`, `{:04}`, `Display` custom |
+| `String` | `with_capacity` avoids realloc |
+| `regex` (crate) | compile once, keep it in a `static LazyLock` |
+| `serde` + `serde_json` | de-facto standard; `#[serde(rename)]` for API contracts |
+| `std::fmt` | `{:?}`, `{:#?}`, `{:>8}`, `{:04}`, custom `Display` |
 
-> **Jebakan:** slicing `&s[..n]` pada indeks tengah karakter UTF-8 = panic. Pakai
-> `char_indices()` atau `s.get(..n)`.
+> **Pitfall:** slicing `&s[..n]` in the middle of a UTF-8 character = panic. Use
+> `char_indices()` or `s.get(..n)`.
 
 ---
 
@@ -835,7 +835,7 @@ use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-// baca & tulis
+// read & write
 let text = fs::read_to_string("config.toml")?;
 let bytes = fs::read("image.png")?;
 fs::write("out.txt", text.as_bytes())?;
@@ -845,14 +845,14 @@ for e in fs::read_dir(".")?.filter_map(Result::ok) {
     let _ = e.path();
 }
 
-// buffered I/O per baris
+// buffered line-by-line I/O
 let f = fs::File::open("access.log")?;
 for line in BufReader::new(f).lines() {
     let line = line?;
     let _ = line;
 }
 
-// tulis buffered (flush eksplisit)
+// buffered writes (explicit flush)
 let mut w = BufWriter::new(fs::File::create("out.csv")?);
 writeln!(w, "id,total")?;
 w.write_all(b"1,1500\n")?;
@@ -862,7 +862,7 @@ w.flush()?;
 let p = Path::new("/var/app/config.yaml");
 p.file_name(); p.parent(); p.extension();
 let joined = Path::new("/var").join("app").join("x.toml");
-let canonical = fs::canonicalize(p)?;     // resolve symlink
+let canonical = fs::canonicalize(p)?;     // resolve symlinks
 let mut pb = PathBuf::from(env::temp_dir());
 pb.push("x");
 
@@ -879,17 +879,17 @@ let port = env::var("PORT").unwrap_or_else(|_| "8080".into());
 let args: Vec<String> = std::env::args().skip(1).collect();
 ```
 
-| API | Catatan |
+| API | Notes |
 | :--- | :--- |
-| `fs::read_to_string` | file kecil; besar pakai `BufReader` |
-| `BufReader::lines()` | alokasi per baris; `read_line(&mut buf)` untuk reuse |
-| `BufWriter` | flush eksplisit untuk menangkap error tulis |
-| `canonicalize` | resolve symlink; gagal pada path yang belum ada |
-| `Command::output` | menangkap stdout/stderr |
-| `env::var_os` | untuk nilai non-UTF-8 |
+| `fs::read_to_string` | small files; use `BufReader` for large ones |
+| `BufReader::lines()` | allocates per line; `read_line(&mut buf)` to reuse |
+| `BufWriter` | explicit flush to catch write errors |
+| `canonicalize` | resolves symlinks; fails on paths that don't exist yet |
+| `Command::output` | captures stdout/stderr |
+| `env::var_os` | for non-UTF-8 values |
 
-> **Jebakan:** `BufWriter` yang di-drop tanpa `flush()` menelan error tulis. Selalu
-> `flush()?` sebelum keluar scope.
+> **Pitfall:** a `BufWriter` dropped without `flush()` swallows write errors. Always
+> `flush()?` before leaving the scope.
 
 ---
 
@@ -919,7 +919,7 @@ let handles: Vec<_> = (0..8).map(|_| {
 }).collect();
 for h in handles { h.join().unwrap(); }
 
-// RwLock: banyak pembaca
+// RwLock: many readers
 let rw = Arc::new(RwLock::new(vec![1, 2, 3]));
 { let guard = rw.read().unwrap(); assert_eq!(guard.len(), 3); }
 { let mut guard = rw.write().unwrap(); guard.push(4); }
@@ -934,13 +934,13 @@ for i in 0..3 {
     let tx = tx.clone();
     thread::spawn(move || tx.send(i).unwrap());
 }
-drop(tx);                                   // tutup pengirim asli
+drop(tx);                                   // close the original sender
 for msg in rx { println!("{msg}"); }
 
 // bounded channel = backpressure
 let (btx, brx) = mpsc::sync_channel::<u32>(8);
 
-// scoped thread (1.63+): boleh meminjam data stack
+// scoped thread (1.63+): may borrow stack data
 let data = vec![1, 2, 3];
 thread::scope(|s| {
     s.spawn(|| println!("{}", data.len()));
@@ -952,26 +952,26 @@ let elapsed = start.elapsed();
 let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 ```
 
-| Primitif | Kapan |
+| Primitive | When |
 | :--- | :--- |
-| `thread::scope` | thread yang butuh `&T` non-`'static` (tanpa `Arc`) |
-| `Arc<Mutex<T>>` | state bersama yang ditulis |
-| `Arc<RwLock<T>>` | read-heavy |
-| `Atomic*` | counter/flag tanpa lock |
+| `thread::scope` | threads that need a non-`'static` `&T` (no `Arc`) |
+| `Arc<Mutex<T>>` | shared state that gets written |
+| `Arc<RwLock<T>>` | read-heavy workloads |
+| `Atomic*` | counters/flags without locks |
 | `mpsc::channel` | unbounded, multi-producer |
 | `mpsc::sync_channel` | bounded (backpressure) |
-| `Instant` | mengukur durasi (monotonic) |
-| `SystemTime` | timestamp absolut (bisa mundur) |
+| `Instant` | measure durations (monotonic) |
+| `SystemTime` | absolute timestamps (can go backwards) |
 
-> **Jebakan:** `std::sync::Mutex` tidak boleh ditahan lintas `.await` (deadlock di async).
-> Pakai `tokio::sync::Mutex` di jalur async.
+> **Pitfall:** `std::sync::Mutex` must not be held across `.await` (deadlock in async).
+> Use `tokio::sync::Mutex` on async paths.
 
 ---
 
-## std: testing lanjutan & atribut
+## std: advanced testing & attributes
 
 ```rust
-// modul test terpisah + helper
+// separate test module + helper
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -985,7 +985,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "butuh database lokal"]
+    #[ignore = "needs a local database"]
     fn integration_db() { }
 
     #[test]
@@ -995,11 +995,11 @@ mod tests {
     }
 }
 
-// integration test: crate terpisah di tests/
+// integration test: a separate crate under tests/
 // tests/api.rs  ->  use myapp::parse;
 
-// doc test: contoh di doc comment ikut dijalankan
-/// Menjumlahkan dua angka.
+// doc test: examples in doc comments are executed too
+/// Adds two numbers.
 ///
 /// ```
 /// assert_eq!(myapp::add(2, 2), 4);
@@ -1007,23 +1007,23 @@ mod tests {
 pub fn add(a: i32, b: i32) -> i32 { a + b }
 ```
 
-| Atribut/alat | Fungsi |
+| Attribute/tool | Purpose |
 | :--- | :--- |
 | `#[test]` | unit/integration test |
-| `#[ignore]` | skip default (`cargo test -- --ignored`) |
-| `#[should_panic(expected = "...")]` | assert panic + pesan |
-| `tests/` | integration test sebagai crate terpisah |
-| doc test | contoh di doc comment otomatis dijalankan |
+| `#[ignore]` | skipped by default (`cargo test -- --ignored`) |
+| `#[should_panic(expected = "...")]` | assert panic + message |
+| `tests/` | integration tests as a separate crate |
+| doc test | examples in doc comments are run automatically |
 | `proptest` | property-based |
-| `criterion` | benchmark dengan statistik |
-| `cargo nextest` | runner lebih cepat & output jelas |
+| `criterion` | benchmarking with statistics |
+| `cargo nextest` | faster runner & clearer output |
 
-> **Jebakan:** test yang `#[ignore]` tetap **di-compile** — perubahan API tetap harus
-> diperbarui, kalau tidak seluruh suite gagal compile.
+> **Pitfall:** `#[ignore]`d tests are still **compiled** — API changes must still be
+> reflected there, otherwise the whole suite fails to compile.
 
 ---
 
-## std: Display dan trait yang sering di-derive
+## std: Display and commonly derived traits
 
 ```rust
 use std::fmt;
@@ -1041,7 +1041,7 @@ impl fmt::Display for User {
     }
 }
 
-// From -> Into otomatis
+// From -> Into automatically
 impl From<(u64, &str)> for User {
     fn from((id, name): (u64, &str)) -> Self {
         User { id, name: name.to_string() }
@@ -1060,47 +1060,47 @@ impl std::str::FromStr for User {
     }
 }
 
-// Ord untuk sorting
+// Ord for sorting
 #[derive(PartialOrd, Ord)]
 struct Priority(u8);
 ```
 
-| Trait | Derive? | Pakai untuk |
+| Trait | Derive? | Use for |
 | :--- | :--- | :--- |
-| `Debug` | ya | logging, test |
-| `Clone` / `Copy` | ya | duplikasi (Copy hanya tipe kecil tanpa Drop) |
-| `PartialEq` / `Eq` | ya | perbandingan |
-| `Hash` | ya | key `HashMap` |
-| `Default` | ya | `..Default::default()` |
-| `Display` | tidak | output untuk pengguna |
-| `From`/`Into` | tidak | konversi (`?` memakai `From`) |
-| `FromStr` | tidak | `"x".parse::<T>()` |
-| `AsRef` | tidak | parameter fleksibel (`&str`, `Path`) |
-| `Deref` | tidak | hanya smart pointer — bukan "inheritance" |
+| `Debug` | yes | logging, tests |
+| `Clone` / `Copy` | yes | duplication (Copy only for small types without Drop) |
+| `PartialEq` / `Eq` | yes | comparison |
+| `Hash` | yes | `HashMap` keys |
+| `Default` | yes | `..Default::default()` |
+| `Display` | no | user-facing output |
+| `From`/`Into` | no | conversion (`?` uses `From`) |
+| `FromStr` | no | `"x".parse::<T>()` |
+| `AsRef` | no | flexible parameters (`&str`, `Path`) |
+| `Deref` | no | smart pointers only — not "inheritance" |
 
-> **Jebakan:** `PartialEq` hasil derive membandingkan **semua** field — jangan sertakan
-> field cache/derived dalam perbandingan domain.
+> **Pitfall:** a derived `PartialEq` compares **all** fields — don't include
+> cache/derived fields in domain comparisons.
 
 ---
 
-## Jebakan (wajib dibaca)
+## Pitfalls (must read)
 
-| Jebakan | Gejalanya | Solusinya |
+| Pitfall | Symptom | Fix |
 | :--- | :--- | :--- |
-| `std::sync::Mutex` di `.await` | Deadlock | `tokio::sync::Mutex` |
-| `unwrap()` di jalur runtime | Proses mati | `?`, `unwrap_or`, `expect` |
-| `clone()` berlebihan | Alokasi melonjak | Pinjam `&T`, borrow field |
-| `String` vs `&str` camps | Alokasi tanpa perlu | `&str` untuk argumen |
-| `.iter()` lalu `collect::<Vec<_>>()` | Alokasi ekstra | `.iter()` sudah cukup untuk iterasi |
-| `format!` di loop | Alokasi per iterasi | `write!` ke `String` reuse |
-| Borrow checker gagal | "cannot borrow as mutable" | `split_at_mut`, `Option::take`, `mem::replace` |
-| `Arc<Mutex<T>>` untuk data read-heavy | Serialisasi total | `RwLock` atau channel (actor) |
-| `HashMap` tanpa `Default` | compile error | `#[derive(Default)]` |
-| Struktur besar disalin | Stack overflow / alokasi | Box, atau derive `Clone` hati-hati |
-| `Box<dyn Error>` di hot path | Alokasi tiap error | `anyhow` atau enum konkret |
-| Async fn tanpa batas waktu | Task menggantung | `tokio::time::timeout` |
-| `spawn` tanpa join | Task menggantung / panic hilang | `JoinSet` atau `JoinHandle` disimpan |
-| Blocking call di async context | Event loop macet | `spawn_blocking` |
-| `unsafe` tanpa `# Safety` | Bug sulit didiagnosis | Dokumentasikan kontraknya |
-| Edition lama (`2018`) |_fitur baru tidak tersedia | Migrasi: `cargo fix --edition` |
-| MSRV tidak diuji | Build gagal di CI lama | Set `rust-version` + cek CI |
+| `std::sync::Mutex` across `.await` | Deadlock | `tokio::sync::Mutex` |
+| `unwrap()` on a runtime path | Dead process | `?`, `unwrap_or`, `expect` |
+| Excessive `clone()` | Allocation spikes | Borrow `&T`, borrow fields |
+| Mixing `String` vs `&str` | Needless allocations | `&str` for arguments |
+| `.iter()` then `collect::<Vec<_>>()` | Extra allocation | `.iter()` alone is enough to iterate |
+| `format!` in a loop | Allocation per iteration | `write!` into a reused `String` |
+| Borrow checker failure | "cannot borrow as mutable" | `split_at_mut`, `Option::take`, `mem::replace` |
+| `Arc<Mutex<T>>` for read-heavy data | Total serialization | `RwLock` or a channel (actor) |
+| `HashMap` without `Default` | compile error | `#[derive(Default)]` |
+| Large structs copied | Stack overflow / allocation | Box, or derive `Clone` carefully |
+| `Box<dyn Error>` on a hot path | Allocation per error | `anyhow` or a concrete enum |
+| Async fn without a time limit | Task hangs | `tokio::time::timeout` |
+| `spawn` without join | Task hangs / panic swallowed | `JoinSet` or a stored `JoinHandle` |
+| Blocking call in an async context | Event loop stalls | `spawn_blocking` |
+| `unsafe` without `# Safety` | Hard-to-diagnose bugs | Document the contract |
+| Old edition (`2018`) | New features unavailable | Migrate: `cargo fix --edition` |
+| MSRV not tested | Builds fail on older CI | Set `rust-version` + check in CI |

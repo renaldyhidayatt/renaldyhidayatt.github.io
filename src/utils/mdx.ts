@@ -203,8 +203,8 @@ export async function getCheatsheet(slug: string): Promise<Cheatsheet | null> {
 }
 
 /**
- * Skor relevansi sederhana: jumlah tag yang sama antara sumber dan sheet.
- * Dipakai untuk blk "Related Cheatsheets" di halaman Blog & Portfolio.
+ * Simple relevance score: number of shared tags between the source and the sheet.
+ * Used for the "Related Cheatsheets" block on Blog & Portfolio pages.
  */
 export function relatedCheatsheets(sourceTags: string[] = [], limit = 3): Cheatsheet[] {
   const wanted = new Set(sourceTags.map((t) => t.toLowerCase()));

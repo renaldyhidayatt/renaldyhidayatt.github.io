@@ -10,7 +10,7 @@ import { useMemo } from "react";
 
 const CheatsheetDoc = () => {
     const params = useParams();
-    // "/cheatsheet/*" — wildcard, supaya sheet bersarang (mis. languages/zig) tetap ketemu
+    // "/cheatsheet/*" — wildcard so nested sheets (e.g. languages/zig) still resolve
     const slug = params["*"];
 
     const { data: sheet, isLoading, error } = useQuery({
@@ -64,7 +64,7 @@ const CheatsheetDoc = () => {
                             <div className="space-y-2">
                                 <h1 className="text-2xl font-bold text-foreground">Sheet Not Found</h1>
                                 <p className="text-muted-foreground text-sm">
-                                    Cheatsheet yang kamu cari tidak ada atau sudah dipindahkan.
+                                    The cheatsheet you're looking for doesn't exist or has moved.
                                 </p>
                             </div>
                             <Link

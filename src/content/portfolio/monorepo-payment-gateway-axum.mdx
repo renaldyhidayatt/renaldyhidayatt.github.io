@@ -15,90 +15,90 @@ image: "/portofolio/modular-monolith-payment-gateway-rust.png"
 
 ## Example Sea Query Tonic Payment Gateway
 
-Proyek ini adalah contoh implementasi **sistem payment gateway sederhana** yang dibangun dengan bahasa pemrograman **Rust**. Tujuan utama proyek ini adalah memberikan gambaran bagaimana merancang layanan finansial dengan pendekatan **service-oriented**, komunikasi efisien via **gRPC**, serta mendukung **observability** sejak awal.
+This project is an example implementation of a **simple payment gateway system** built with the **Rust** programming language. Its main goal is to illustrate how to design financial services with a **service-oriented** approach, efficient communication via **gRPC**, and **observability** support from day one.
 
 ---
 
-## ⚡ Fitur Utama
+## ⚡ Key Features
 
-### 🔐 1. Manajemen Pengguna
+### 🔐 1. User Management
 
-* Registrasi & login pengguna.
-* Penyimpanan data pengguna di PostgreSQL.
-* Tokenisasi session bisa dikombinasikan dengan Redis untuk performa.
+* User registration & login.
+* User data stored in PostgreSQL.
+* Session tokenization can be combined with Redis for performance.
 
-### 💰 2. Manajemen Saldo
+### 💰 2. Balance Management
 
-* Setiap pengguna memiliki akun saldo di database.
-* Mendukung operasi:
+* Every user has a balance account in the database.
+* Supports the following operations:
 
-  * **Top-up** (menambah saldo).
-  * **Withdraw** (menarik saldo).
-  * **Transfer** (antar pengguna, debit & kredit dalam 1 transaksi).
+  * **Top-up** (add balance).
+  * **Withdraw** (withdraw balance).
+  * **Transfer** (between users, debit & credit in a single transaction).
 
-### 📑 3. Transaksi
+### 📑 3. Transactions
 
-* Semua aktivitas finansial dicatat di **riwayat transaksi**.
-* Dukungan query transaksi per pengguna.
-* Konsistensi dijaga dengan transaksi database (SQLx).
+* All financial activity is recorded in the **transaction history**.
+* Supports querying transactions per user.
+* Consistency is maintained with database transactions (SQLx).
 
-### ⚡ 4. Kinerja & Komunikasi
+### ⚡ 4. Performance & Communication
 
-* **Client → Server** pakai gRPC (hemat bandwidth & cepat).
-* Query SQL dibangun dinamis dengan **SeaQuery**.
-* **sqlx** sebagai runtime query, mendukung migrasi & pooling connection.
+* **Client → Server** uses gRPC (bandwidth-efficient & fast).
+* SQL queries are built dynamically with **SeaQuery**.
+* **sqlx** as the query runtime, supporting migrations & connection pooling.
 
 ### 📊 5. Observability (Monitoring & Logging)
 
-* Metrik request, error, latency dikirim ke **Prometheus**.
-* Log request/response dikirim ke **Loki**.
-* Semua data divisualisasikan lewat **Grafana Dashboard**.
+* Request, error, and latency metrics are sent to **Prometheus**.
+* Request/response logs are sent to **Loki**.
+* All data is visualized through **Grafana Dashboards**.
 
 ---
 
-## 🎯 Keunggulan Proyek
+## 🎯 Project Strengths
 
-* **Ringan & Cepat** → Rust + gRPC untuk high-performance backend.
-* **Terukur** → bisa berkembang dari sederhana ke kompleks (misalnya menambahkan layanan fraud detection atau notifikasi).
-* **Modular** → pemisahan jelas antara service publik (Client) dan core bisnis (Server).
-* **Observability-ready** → bisa langsung dipantau performa & log-nya.
-* **Cocok untuk Belajar** → mengajarkan konsep dasar **payment system**, **event-driven design**, dan **observability** dalam Rust.
+* **Lightweight & Fast** → Rust + gRPC for a high-performance backend.
+* **Scalable** → can grow from simple to complex (for example, adding fraud detection or notification services).
+* **Modular** → clear separation between the public service (Client) and the business core (Server).
+* **Observability-ready** → performance and logs can be monitored right away.
+* **Great for Learning** → teaches the fundamental concepts of a **payment system**, **event-driven design**, and **observability** in Rust.
 
-## Arsitektur Sistem
+## System Architecture
 
-Proyek ini dibagi menjadi dua layanan utama:
+This project is split into two main services:
 
 1. **Client Service (Axum REST API)**
 
-   * Berfungsi sebagai **gerbang publik** untuk menerima request dari pengguna.
-   * Menyediakan endpoint REST (HTTPS) agar mudah diakses oleh aplikasi web/mobile.
-   * Melakukan validasi input sebelum meneruskan request ke layanan internal.
+   * Acts as the **public gateway** for receiving requests from users.
+   * Provides REST endpoints (HTTPS) so they are easily accessible by web/mobile applications.
+   * Performs input validation before forwarding requests to the internal service.
 
 2. **Server Service (Tonic gRPC)**
 
-   * Menangani seluruh **logika bisnis inti**: registrasi, top-up, transfer, withdraw, pengecekan saldo.
-   * Komunikasi antar service menggunakan **gRPC** untuk kecepatan dan efisiensi.
-   * Berinteraksi dengan **PostgreSQL** sebagai database persisten dan **Redis** sebagai cache.
+   * Handles all **core business logic**: registration, top-up, transfer, withdraw, and balance checks.
+   * Communication between services uses **gRPC** for speed and efficiency.
+   * Interacts with **PostgreSQL** as the persistent database and **Redis** as the cache.
 
 3. **Observability Stack**
 
-   * **Prometheus** untuk metrics (latency, error rate, request count).
-   * **Loki** untuk logging terpusat.
-   * **Grafana** sebagai dashboard untuk visualisasi metrik & log.
+   * **Prometheus** for metrics (latency, error rate, request count).
+   * **Loki** for centralized logging.
+   * **Grafana** as the dashboard for visualizing metrics & logs.
 
 --- 
 
-## Arsitektur Sistem
+## System Architecture
 
-Arsitektur proyek ini dirancang dengan pendekatan *microservices*, memisahkan antara bagian yang berhadapan dengan publik (Client) dan logika bisnis internal (Server).
+The project architecture follows a *microservices* approach, separating the publicly facing part (Client) from the internal business logic (Server).
 
 [![](https://mermaid.ink/img/pako:eNp9UsGO2jAQ_RXLp60ElAQSQlStREFqV6LaLLCXJj04yRAsEps6cbUs8O8dk2yJNm19iB3Pe2_G8-ZEE5kC9Wmm2GFHNotIEFyljuuLiD6IrWJlpfS-0iqiddysxefwLpBllSlYPy0__LhF5izZQXi3gpSXb_cg0kh0xJfsyAQTZHbI-Z6VvK0_zzmIKqw3sgb1iydAPpJAxzlPyCx4IJ9idU9mL7poJTdAUGG9tWhzqYAsZYbUK20jBR6zVTD_b4WPcYkSLOY5r47t8gIlC6h2oMvwdmzV8UWxLb4tbPZWZCn3PDSfbuJnTBYGILJMI4X0-_fnr5tNsCYr-KmhrM5NV2p00xqDMu_Avuf5uWlAjWi6YBDoEXnSoI5ndK4TvVpGHg_luXavBnTSfINK8QRBtyd3pP6JaemgDwgwPejQ34ea_l1jTf3vhf8CMXzaw6nmKfW3LC-hRwtQBTP_9GR4EUWJAiLq4zFlam_cvSDpwMR3KQvq49AjTUmd7f6I6EPKKlhwhgNyg6CFoOZSi4r6tu1cNah_oi_U74-mA2dij23Lmw7dqTXq0SPejscDxxm7jucOLc9zRiP30qOv17TWwPasoTeZOK7luFPbGl9-A1xgJ0c?type=png)](https://mermaid.live/edit#pako:eNp9UsGO2jAQ_RXLp60ElAQSQlStREFqV6LaLLCXJj04yRAsEps6cbUs8O8dk2yJNm19iB3Pe2_G8-ZEE5kC9Wmm2GFHNotIEFyljuuLiD6IrWJlpfS-0iqiddysxefwLpBllSlYPy0__LhF5izZQXi3gpSXb_cg0kh0xJfsyAQTZHbI-Z6VvK0_zzmIKqw3sgb1iydAPpJAxzlPyCx4IJ9idU9mL7poJTdAUGG9tWhzqYAsZYbUK20jBR6zVTD_b4WPcYkSLOY5r47t8gIlC6h2oMvwdmzV8UWxLb4tbPZWZCn3PDSfbuJnTBYGILJMI4X0-_fnr5tNsCYr-KmhrM5NV2p00xqDMu_Avuf5uWlAjWi6YBDoEXnSoI5ndK4TvVpGHg_luXavBnTSfINK8QRBtyd3pP6JaemgDwgwPejQ34ea_l1jTf3vhf8CMXzaw6nmKfW3LC-hRwtQBTP_9GR4EUWJAiLq4zFlam_cvSDpwMR3KQvq49AjTUmd7f6I6EPKKlhwhgNyg6CFoOZSi4r6tu1cNah_oi_U74-mA2dij23Lmw7dqTXq0SPejscDxxm7jucOLc9zRiP30qOv17TWwPasoTeZOK7luFPbGl9-A1xgJ0c)
 
--   **Pengguna**: Mengirim permintaan (misalnya, registrasi, transfer, top-up) melalui REST API ke `Client Service`.
--   **Client Service (Axum)**: Menerima permintaan HTTP, melakukan validasi awal, dan meneruskannya ke `Server Service` melalui panggilan gRPC.
--   **Server Service (Tonic)**: Menerima panggilan gRPC, memproses seluruh logika bisnis, berinteraksi dengan database (PostgreSQL) dan cache (Redis), lalu mengembalikan hasilnya.
--   **Database (PostgreSQL)**: Menyimpan data persisten seperti informasi pengguna, saldo, dan riwayat transaksi.
--   **Observability**: Metrik dari kedua layanan dikumpulkan oleh Prometheus, dan log dikumpulkan oleh Loki. Keduanya dapat divisualisasikan menggunakan Grafana.
+-   **User**: Sends requests (for example, registration, transfer, top-up) through the REST API to the `Client Service`.
+-   **Client Service (Axum)**: Receives HTTP requests, performs initial validation, and forwards them to the `Server Service` via gRPC calls.
+-   **Server Service (Tonic)**: Receives gRPC calls, processes all business logic, interacts with the database (PostgreSQL) and cache (Redis), then returns the result.
+-   **Database (PostgreSQL)**: Stores persistent data such as user information, balances, and transaction history.
+-   **Observability**: Metrics from both services are collected by Prometheus, and logs are collected by Loki. Both can be visualized using Grafana.
 
 ## Technical Decisions & Trade-offs
 
@@ -122,68 +122,68 @@ Transfers debit and credit inside one SQLx transaction against PostgreSQL, so a 
 
 ## Entity-Relationship Diagram (ERD)
 
-Diagram berikut menggambarkan hubungan antar tabel dalam database.
+The following diagram depicts the relationships between tables in the database.
 
 [![](https://mermaid.ink/img/pako:eNqlVGFvmzAQ_SvoPidRIEAI36Ku1aqpU9VlU1UhRdf4CGhgI9ss29L89xlCYAtE7VR_gnvvHe-ebfawEYwgBJIfUtxKzCNumVUqksraH1-qdft5VRfXKbPuP3X1b8uHq4_LBytOpdIcc-pDGV5CKMc0s74OtCtQqZ2QrI9wsVlriVzFJFvpIeLHB4UZE-e-6-K58b8Hujmra6ExWz9jhnxD_0K7VCdM4m6NuSi57sDV7d31l9Xy7r6j6PQ0dOtPi6IsesHW1bcaXF0_nhRcDPXpOesEOelEsCHTR3zIcZN133QDDPlusViKvB_vCdXiMnY5307ed3vKvue23ZT_OAbv3OvjHXp5GY_FvjmYoRVBgiqCAUZzNCpKQTIWMh_mdSO-Su32rqIq4uwtPEkbSn-QocIItjJlEMaYKRpBTtLcWPMOdboR6ITM2FCpGMrvVfODERXIn4TIIdSyNDIpym3SNikLhpqav01LMd5IXlUxQ-g4dt0Dwj38hHA8W0y8ueM6drCY-gt7NoJfpuq6E89zfS_wp3YQeLOZfxjB7_qz9sQJ7Gkwn3u-7fkLx3YPfwACOHtY?type=png)](https://mermaid.live/edit#pako:eNqlVGFvmzAQ_SvoPidRIEAI36Ku1aqpU9VlU1UhRdf4CGhgI9ss29L89xlCYAtE7VR_gnvvHe-ebfawEYwgBJIfUtxKzCNumVUqksraH1-qdft5VRfXKbPuP3X1b8uHq4_LBytOpdIcc-pDGV5CKMc0s74OtCtQqZ2QrI9wsVlriVzFJFvpIeLHB4UZE-e-6-K58b8Hujmra6ExWz9jhnxD_0K7VCdM4m6NuSi57sDV7d31l9Xy7r6j6PQ0dOtPi6IsesHW1bcaXF0_nhRcDPXpOesEOelEsCHTR3zIcZN133QDDPlusViKvB_vCdXiMnY5307ed3vKvue23ZT_OAbv3OvjHXp5GY_FvjmYoRVBgiqCAUZzNCpKQTIWMh_mdSO-Su32rqIq4uwtPEkbSn-QocIItjJlEMaYKRpBTtLcWPMOdboR6ITM2FCpGMrvVfODERXIn4TIIdSyNDIpym3SNikLhpqav01LMd5IXlUxQ-g4dt0Dwj38hHA8W0y8ueM6drCY-gt7NoJfpuq6E89zfS_wp3YQeLOZfxjB7_qz9sQJ7Gkwn3u-7fkLx3YPfwACOHtY)
 
-## Cara Penggunaan
+## Usage
 
-Proyek ini dapat dijalankan secara lokal maupun menggunakan Docker.
+This project can be run locally or with Docker.
 
-### Menjalankan dengan Docker (Rekomendasi)
+### Running with Docker (Recommended)
 
-Ini adalah cara termudah untuk menjalankan keseluruhan sistem, termasuk database dan layanan observability.
+This is the easiest way to run the entire system, including the database and observability services.
 
-1.  **Prasyarat**:
+1.  **Prerequisites**:
     *   [Docker](https://www.docker.com/get-started)
     *   [Docker Compose](https://docs.docker.com/compose/install/)
 
-2.  **Langkah-langkah**:
-    *   Clone repositori ini.
-    *   Salin file `.env.example` menjadi `.env` jika ada, atau pastikan konfigurasi di `docker-compose.yaml` sudah sesuai.
-    *   Buka terminal di root direktori proyek dan jalankan:
+2.  **Steps**:
+    *   Clone this repository.
+    *   Copy `.env.example` to `.env` if present, or make sure the configuration in `docker-compose.yaml` is correct.
+    *   Open a terminal at the project root directory and run:
         ```bash
         docker-compose up --build -d
         ```
-    *   Perintah ini akan membangun *image* untuk `client` dan `server`, lalu menjalankan semua layanan (termasuk PostgreSQL, Redis, Prometheus, dll.) di latar belakang.
-    *   Untuk menghentikan semua layanan, jalankan:
+    *   This command builds the *images* for `client` and `server`, then starts all services (including PostgreSQL, Redis, Prometheus, etc.) in the background.
+    *   To stop all services, run:
         ```bash
         docker-compose down
         ```
 
-### Menjalankan di Lingkungan Lokal
+### Running in a Local Environment
 
-Untuk menjalankan layanan secara manual di mesin lokal Anda.
+To run the services manually on your local machine.
 
-1.  **Prasyarat**:
-    *   Instalasi [Rust](https://www.rust-lang.org/tools/install).
-    *   Instalasi [PostgreSQL](https://www.postgresql.org/download/) dan [Redis](https://redis.io/docs/getting-started/installation/).
-    *   Install `sqlx-cli` untuk migrasi database:
+1.  **Prerequisites**:
+    *   Install [Rust](https://www.rust-lang.org/tools/install).
+    *   Install [PostgreSQL](https://www.postgresql.org/download/) and [Redis](https://redis.io/docs/getting-started/installation/).
+    *   Install `sqlx-cli` for database migrations:
         ```bash
         cargo install sqlx-cli --no-default-features --features rustls,postgres
         ```
 
-2.  **Langkah-langkah**:
-    *   Clone repositori ini.
-    *   Buat database baru di PostgreSQL untuk proyek ini.
-    *   Salin file `.env.example` menjadi `.env` dan isi variabel lingkungan, terutama `DATABASE_URL` dan `REDIS_URL`. Contoh:
+2.  **Steps**:
+    *   Clone this repository.
+    *   Create a new database in PostgreSQL for this project.
+    *   Copy `.env.example` to `.env` and fill in the environment variables, especially `DATABASE_URL` and `REDIS_URL`. Example:
         ```
         DATABASE_URL="postgresql://user:password@localhost:5432/payment_db"
         REDIS_URL="redis://127.0.0.1/"
         ```
-    *   Jalankan migrasi database untuk membuat tabel-tabel yang diperlukan:
+    *   Run the database migrations to create the required tables:
         ```bash
         sqlx migrate run
         ```
-    *   Buka terminal baru, jalankan **Server Service**:
+    *   Open a new terminal and run the **Server Service**:
         ```bash
         cargo run --bin server
         ```
-    *   Buka terminal lainnya, jalankan **Client Service**:
+    *   Open another terminal and run the **Client Service**:
         ```bash
         cargo run --bin client
         ```
-    *   Sekarang, `Client Service` akan berjalan di `http://127.0.0.1:8000` (atau sesuai konfigurasi) dan siap menerima permintaan.
+    *   Now the `Client Service` will run at `http://127.0.0.1:8000` (or according to your configuration) and is ready to accept requests.
 
 
 ## Demo

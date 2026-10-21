@@ -1,6 +1,6 @@
 ---
 title: "Distributed Microservices — Payment Gateway Platform (Spring Boot + MongoDB)"
-excerpt: "Backend payment gateway microservices di Java 21 / Spring Boot 3.5.6 dengan MongoDB: card/VCC, saldo, topup, transfer, withdraw, dan ledger transaksi sebagai gRPC service terpisah. Fraud scoring dua jalur, DLQ, ClickHouse analytics, chaos engineering, dan Kubernetes + ArgoCD GitOps."
+excerpt: "Payment gateway microservices backend in Java 21 / Spring Boot 3.5.6 with MongoDB: card/VCC, balance, top-up, transfer, withdraw, and transaction ledger as separate gRPC services. Two-path fraud scoring, DLQ, ClickHouse analytics, chaos engineering, and Kubernetes + ArgoCD GitOps."
 date: "2026-10-21"
 created_at: "2026-10-21"
 updated_at: "2026-10-21"
@@ -400,16 +400,16 @@ sequenceDiagram
 
 ## Design Decisions & Known Limitations
 
-Keputusan desain yang disengaja (bukan bug) — didokumentasikan agar tim tidak
-"memperbaiki" perilaku berikut tanpa sadar:
+Deliberate design decisions (not bugs) — documented so the team does not
+accidentally "fix" the following behaviors:
 
-| ID | Keputusan | Perilaku | Alasan |
+| ID | Decision | Behavior | Reason |
 |---|---|---|---|
-| PG-2 | Fraud scoring **dua jalur** (sync + async) | Jalur sinkron menghitung skor saat otorisasi card (melewati threshold → DECLINED + card BLOCKED); jalur async menilai ulang lewat Kafka dan bisa menaikkan skor belakangan | Jalur sinkron melindungi transaksi saat itu juga, jalur async menangkap pola yang baru terlihat dari histori — dua biaya yang tidak bisa digabung |
-| PG-3 | Ambang skor **statis**, bukan model | `> 70` → BLOCKED, `>= 30` → REVIEW, maks 90 (50 amount + 40 MCC) | Aturan deterministik lebih mudah diaudit dan direproduksi dibanding model pada platform ini |
-| PG-4 | Consumer email pakai **manual commit + DLQ** | Event baru di-commit setelah diproses; retry habis → publish ke `<topic>.dlq` | Notifikasi boleh gagal tanpa menggagalkan transaksi, tapi tidak boleh hilang diam-diam |
-| PG-5 | Backfill ClickHouse lewat **outbox** | Backfill menulis dokumen OLTP ke collection outbox dengan `event_id = backfill:<domain>:<id>` lalu di-relay ke Kafka | Idempotency dari constraint `event_id` — backfill bisa dijalankan ulang tanpa menghasilkan duplikat |
-| PG-6 | Statistik analitik **tidak** menyentuh MongoDB | Query agregat dilayani ClickHouse lewat stats-reader dengan cache Redis (TTL 300s) | Query analitik berat akan menguras pool transaksi yang dipakai path pembayaran |
+| PG-2 | **Two-path** fraud scoring (sync + async) | The synchronous path computes a score during card authorization (crossing the threshold → DECLINED + card BLOCKED); the async path re-evaluates via Kafka and can raise the score later | The synchronous path protects the transaction immediately, the async path catches patterns only visible from history — two costs that cannot be merged |
+| PG-3 | **Static** score thresholds, not a model | `> 70` → BLOCKED, `>= 30` → REVIEW, max 90 (50 amount + 40 MCC) | Deterministic rules are easier to audit and reproduce than a model on this platform |
+| PG-4 | Email consumer uses **manual commit + DLQ** | The event is committed only after processing; retries exhausted → publish to `<topic>.dlq` | Notifications may fail without failing the transaction, but must not be lost silently |
+| PG-5 | ClickHouse backfill via **outbox** | Backfill writes OLTP documents to the outbox collection with `event_id = backfill:<domain>:<id>` and then relays them to Kafka | Idempotency from the `event_id` constraint — backfill can be re-run without producing duplicates |
+| PG-6 | Analytics statistics do **not** touch MongoDB | Aggregate queries are served by ClickHouse via stats-reader with a Redis cache (TTL 300s) | Heavy analytical queries would drain the transaction pool used by the payment path |
 
 ---
 

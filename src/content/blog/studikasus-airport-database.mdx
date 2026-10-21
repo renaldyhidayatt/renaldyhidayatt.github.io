@@ -474,7 +474,7 @@ An airline wants to make sure that an aircraft with a specific code, such as a B
 SELECT a.aircraft_code, a.range, p1.coordinates <@> p2.coordinates AS distance_km
 FROM aircrafts a
 JOIN airports p1 ON p1.airport_code = 'JFK' -- Bandara keberangkatan
-JOIN airports p2 ON p2.airport_code = 'LAX' -- Bandara tujuan
+JOIN airports p2 ON p2.airport_code = 'LAX' -- destination airport
 WHERE a.aircraft_code = '737'
 AND p1.coordinates <@> p2.coordinates <= a.range;
 ```
@@ -616,7 +616,7 @@ For example, an airline wants to analyze an aircraft with the code 'ABC' to see 
 
 ### Steps for Hard case:
 
-1. **Identify Aircraft**: First, the system will filter all flights based on a specific aircraft code, for example aircraft with code 'ABC'.ter semua penerbangan berdasarkan kode pesawat tertentu, misalnya pesawat dengan kode 'ABC'.
+1. **Identify Aircraft**: First, the system will filter all flights based on a specific aircraft code, for example aircraft with code 'ABC'.
 
 ```sql
 SELECT flight_id, departure_airport, arrival_airport

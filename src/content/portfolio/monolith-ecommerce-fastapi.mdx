@@ -5,7 +5,7 @@ date: "2025-01-31"
 created_at: "2025-01-31"
 updated_at: "2025-01-31"
 tags: ["python", "fastapi", "postgresql", "kafka", "docker-compose", "keycloak", "prometheus", "grafana", "opentelemetry", "jaeger"]
-status: "selesai"
+status: "completed"
 image: "https://github.com/MamangRust/monolith-ecommerce-example/raw/main/images/jaeger.png?raw=true"
 ---
 
@@ -13,7 +13,7 @@ image: "https://github.com/MamangRust/monolith-ecommerce-example/raw/main/images
 
 This project is a monolithic e-commerce application that integrates multiple services using **FastAPI** and **SQLAlchemy**. It leverages **PostgreSQL** as the database, and the architecture is containerized with **Docker Compose** for seamless setup and scaling. The system includes key components such as authentication, order processing, and product management, with observability tools for monitoring and debugging.
 
-## Fitur Utama
+## Key Features
 - **Authentication**: Login and verify tokens using Keycloak.
 - **Product Management**: Get all products.
 - **Order Management**: Create orders and send emails to customers using Apache Kafka.
@@ -21,7 +21,7 @@ This project is a monolithic e-commerce application that integrates multiple ser
 - **API Gateway**: A centralized entry point for all services.
 - **Observability**: Integrated tools like Prometheus, Grafana, Jaeger, and OpenTelemetry.
 
-## Teknologi yang Digunakan
+## Technologies Used
 - **Backend Framework**: FastAPI
 - **Database**: PostgreSQL
 - **ORM**: SQLAlchemy
@@ -50,7 +50,7 @@ Each service runs as its own process, so the GIL is mostly a non-issue here: the
 **Docker Compose over Kubernetes**
 The whole stack — services, PostgreSQL, Kafka, Keycloak, and the observability set — comes up with one compose file, keeping the demo reproducible on a laptop. The cost: no self-healing, autoscaling, or rolling updates; fine for a reference monolith, not for real production traffic.
 
-## Instalasi
+## Installation
 ```bash
 # Clone the repository
 $ git clone https://github.com/MamangRust/monolith-ecommerce-example.git
@@ -60,14 +60,14 @@ $ cd monolith-ecommerce
 $ docker-compose up --build
 ```
 
-### Akses Layanan
+### Accessing the Services
 - **API Gateway**: [http://localhost:8084](http://localhost:8084)
 - **Keycloak**: [http://localhost:8080](http://localhost:8080)
 - **Grafana**: [http://localhost:3000](http://localhost:3000)
 - **Prometheus**: [http://localhost:9090](http://localhost:9090)
 - **Jaeger**: [http://localhost:16686](http://localhost:16686)
 
-## Layanan
+## Services
 ### Authentication Service
 - **Path**: `./auth-service`
 - **Deskripsi**: Manages user authentication and roles using Keycloak.
@@ -92,7 +92,7 @@ $ docker-compose up --build
 - **Dependencies**: Kafka for message queueing.
 - **Port**: `8083`
 
-## Observability dan Monitoring
+## Observability and Monitoring
 - **Prometheus**: Collects metrics from all services and Kafka.
 - **Grafana**: Displays collected metrics in interactive dashboards.
 - **Jaeger**: Traces requests across services for debugging.
