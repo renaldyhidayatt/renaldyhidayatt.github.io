@@ -2,6 +2,8 @@
 title: "Distributed Modular Microservice E-Commerce Platform"
 excerpt: "Backend e-commerce berskala produksi berbasis modular-microservice yang dibangun dengan Go, gRPC, PostgreSQL, Kafka, dan Kubernetes, dilengkapi tumpukan observabilitas penuh."
 date: "2026-02-14"
+created_at: "2026-02-14"
+updated_at: "2026-02-14"
 tags: [
   "golang", "grpc", "postgresql", "kafka", "kubernetes", "docker", "redis",
   "prometheus", "grafana", "opentelemetry", "jaeger", "loki", "sqlc", "goose"
@@ -653,6 +655,34 @@ flowchart TD
     PROM -.-> GRAFANA
     MIGRATE --> PG
 ```
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Fourteen microservices vs a modular monolith**
+Each domain (auth, user, role, card, saldo, topup, transfer, …) is a self-contained, micro-deployable Go binary with its own gRPC boundary, which buys fault containment, independent HPA scaling, and teams that can deploy without a global freeze window. The honest cost: 14 deployables plus 11 isolated Redis instances, a Kafka bus, PgBouncer, and a full observability suite is a lot of moving parts for a single local host to run — a modular monolith would give the same domain boundaries with none of the network hops and wiring. This architecture is a bet that scale and team size will justify the overhead.
+
+**Synchronous gRPC + asynchronous Kafka, mixed by interaction type**
+Request/response semantics (card lookup, balance check) stay synchronous gRPC: simple, immediate, and typed. Fire-and-forget side effects (email notifications, OLAP ingestion) go through Kafka: consumers can lag, retry, or be offline without blocking the transaction. The trade-off lives at the seams: the sync path has hard dependencies (a slow or dead downstream service stalls the caller unless circuit breakers trip), and the async path is at-least-once — every consumer (email worker, stats writer) must be idempotent, and ordering can only be guaranteed within a partition.
+
+**CQRS-style read path: ClickHouse instead of querying Postgres**
+Analytics (monthly/yearly volumes, payment-method breakdowns) hit a column-oriented ClickHouse fed by a stats-writer consuming Kafka, keeping heavy aggregations off the OLTP database. The costs: the analytics view is eventually consistent — a just-completed transfer isn't in the dashboard yet — and the pipeline adds real surface area (Kafka topic, writer service, a second database with its own ops). For near-real-time BI that lag is acceptable; for "show me the state of this order right now" it is not.
+
+**Eleven isolated Redis databases, one per service**
+Namespacing by dedicated database/instance means no cross-service key collisions and independent flush/scale. The price: eleven containers in compose, each carrying its own baseline memory footprint, and cache state that dies with its service unless persisted — isolation is bought with resource duplication.
+
+**PgBouncer between services and PostgreSQL**
+Many concurrent Go services opening raw Postgres sockets quickly exhausts the server's connection limit, so every service talks to a PgBouncer pooler instead. The trade-off: pooling at transaction mode is the safe default, but session-level features (prepared statements, server-side cursors, per-connection state) stop working across the pooler — the query style has to stay pooler-friendly.
+
+**Full observability suite (Prometheus + Loki + Jaeger + Pyroscope + Alertmanager)**
+All three pillars plus continuous profiling, wired through OpenTelemetry, means a slow transaction can be followed from the REST edge across gRPC boundaries down to SQL. The cost is a resident footprint of dashboards, exporters, and collectors — heavy for a local box, and the right call only if someone actually operates the dashboards; unmonitored telemetry is just overhead.
+
+**Docker Compose (local) + Kubernetes (production) as two first-class targets**
+Local parity with prod (same service split, HPA manifests, PVCs) keeps "works on my machine" closer to true, and rolling updates + autoscaling come from the orchestrator. The trade-off: two deployment artifacts to keep in sync, and a gap between them is where configuration drift lives — the compose stack and the K8s manifests must be reviewed together on every infra change.
+
+**sqlc + Goose for the data layer**
+Type-safe, compiler-checked SQL plus version-ordered migrations: predictable performance and no auto-migration surprises. The cost, repeated from the other Go projects: every query is hand-written and a code-generation step sits between the schema and the code.
 
 ---
 

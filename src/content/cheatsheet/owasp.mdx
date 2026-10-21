@@ -1,0 +1,604 @@
+---
+title: "OWASP Top 10 — Cheat Sheet"
+description: "Cheat sheet OWASP Top 10 (2021) untuk backend: A01 broken access control, A02 crypto failures, A03 injection, A04 insecure design, A05 misconfiguration, A06 vulnerable components, A07 auth failures, A08 integrity, A09 logging, A10 SSRF — plus ASVS, testing (SAST/DAST/SCA), hardening header, dan jebakan implementasi."
+date: "2026-10-22"
+created_at: "2026-10-22"
+updated_at: "2026-10-22"
+status: "verified"
+version: "OWASP Top 10:2021 · ASVS 4.0"
+order: 21
+tags:
+  - owasp
+  - security
+  - web
+  - backend
+  - appsec
+---
+
+# OWASP Top 10 — Cheat Sheet
+
+> Referensi: **OWASP Top 10:2021** + **ASVS 4.0.3**. Contoh memakai pola umum backend
+> (REST API, JWT/session, SQL, file upload, proxy). Ini panduan **pencegahan**, bukan
+> instruksi menyerang.
+
+**Isi sheet ini**
+
+- Cara membaca daftar & prioritas
+- A01 Broken Access Control
+- A02 Cryptographic Failures
+- A03 Injection
+- A04 Insecure Design
+- A05 Security Misconfiguration
+- A06 Vulnerable & Outdated Components
+- A07 Identification & Authentication Failures
+- A08 Software & Data Integrity Failures
+- A09 Security Logging & Monitoring Failures
+- A10 SSRF
+- Checklist header & cookie
+- Testing: SAST / DAST / SCA / threat model
+- Jebakan (wajib dibaca)
+
+---
+
+## Cara membaca daftar & prioritas
+
+```text
+A01 Broken Access Control          <- paling sering muncul di dataset
+A02 Cryptographic Failures
+A03 Injection                       <- XSS naik ke sini (2021)
+A04 Insecure Design                 <- baru: desain, bukan bug implementasi
+A05 Security Misconfiguration
+A06 Vulnerable & Outdated Components
+A07 Identification & Auth Failures
+A08 Software & Data Integrity Failures
+A09 Security Logging & Monitoring Failures
+A10 Server-Side Request Forgery     <- baru (2021)
+```
+
+| Prinsip | Arti praktis |
+| :--- | :--- |
+| Ukur dari **risiko**, bukan CVE | kontrol hilang lebih berbahaya dari bug tunggal |
+| Kontrol di **server**, bukan klien | validasi JS bisa dilewati |
+| Default-deny | allowlist, bukan blocklist |
+| Least privilege | setiap layer (user, DB, token, container) |
+| Fail securely | error jangan membuka info |
+| Log & alert | serangan tanpa log = serangan tak terdeteksi |
+
+| Versi | Catatan |
+| :--- | :--- |
+| 2021 | daftar saat ini (XSS masuk A03, SSRF masuk A10) |
+| 2017 | nama masih sering muncul di dokumen lama |
+| ASVS 4.0 | level verifikasi (L1/L2/L3) — acuan audit nyata |
+
+---
+
+## A01 Broken Access Control
+
+Gejala: user A bisa membaca/mengubah data user B, atau user biasa dapat aksi admin.
+
+```java
+// SALAH: IDOR — percaya id dari klien
+@GetMapping("/api/orders/{id}")
+public Order get(@PathVariable Long id) {
+    return repo.findById(id).orElseThrow();
+}
+
+// BENAR: scope ke principal
+@GetMapping("/api/orders/{id}")
+public Order get(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal user) {
+    return repo.findByIdAndOwnerId(id, user.id())
+               .orElseThrow(() -> new AccessDeniedException("not found"));  // 404, bukan 403
+}
+```
+
+```java
+// otorisasi terpusat, bukan if tersebar
+@Component
+public class OrderPolicy {
+    public boolean canRead(UserPrincipal p, Order o) {
+        return p.admin() || o.ownerId().equals(p.id());
+    }
+}
+```
+
+```yaml
+# DEFAULT-DENY di framework (Spring Security)
+security:
+  endpoints:
+    - path: "/api/public/**"     # allowlist eksplisit
+      permitAll: true
+    - path: "/api/admin/**"
+      roles: [ADMIN]
+    - path: "/**"
+      authenticated: true
+```
+
+| Kontrol | Implementasi |
+| :--- | :--- |
+| Object-level authz | cek kepemilikan di query, bukan setelah fetch |
+| Function-level authz | `@PreAuthorize`, middleware per route |
+| Jangan andalkan UI | endpoint admin tetap divalidasi |
+| 404 vs 403 | jangan bocorkan eksistensi resource |
+| `CORS` | origin allowlist, jangan `*` dengan credential |
+| Directory traversal | normalisasi path, tolak `..` (`/files?name=../../etc/passwd`) |
+| JWT claim | ambil role dari token terverifikasi, bukan dari header `X-Role` |
+
+```java
+// path traversal
+Path base = Path.of("/srv/files").toRealPath();
+Path target = base.resolve(name).normalize();
+if (!target.startsWith(base)) throw new IllegalArgumentException("invalid path");
+```
+
+> **Jebakan:** `@PreAuthorize` di controller sering dilewati karena ada endpoint lain
+> (internal, actuator, graphql) yang memetakan service sama tanpa anotasi. Uji semua route.
+
+---
+
+## A02 Cryptographic Failures
+
+| Yang gagal | Perbaikan |
+| :--- | :--- |
+| HTTP untuk data sensitif | HTTPS + HSTS, redirect permanen |
+| MD5/SHA1 untuk password | Argon2id / bcrypt / scrypt |
+| Enkripsi sendiri | pakai AES-GCM/ChaCha20-Poly1305 dari library standar |
+| IV/nonce dipakai ulang | nonce acak unik per pesan |
+| Kunci di repo/config | KMS / Vault / env + rotasi |
+| Data sensitif di log | redaksi, jangan log body/credential |
+| Data at rest tanpa enkripsi | enkripsi disk/kolom + key terpisah |
+
+```java
+// password hashing (Spring Security)
+PasswordEncoder encoder = new Argon2PasswordEncoder(16, 32, 1, 1 << 16, 3);
+String hash = encoder.encode(rawPassword);
+boolean ok = encoder.matches(rawPassword, hash);
+// bcrypt (alternatif): new BCryptPasswordEncoder(12)
+```
+
+```java
+// enkripsi simetris: AES-256-GCM, nonce 12 byte acak per pesan
+byte[] nonce = new byte[12];
+SecureRandom rnd = new SecureRandom();
+rnd.nextBytes(nonce);
+
+Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new GCMParameterSpec(128, nonce));
+byte[] ct = c.doFinal(plaintext);
+// simpan nonce bersama ciphertext; JANGAN pakai nonce sama dua kali
+```
+
+| Aturan | Detail |
+| :--- | :--- |
+| TLS | TLS 1.2+ (utamakan 1.3), HSTS `max-age` ≥ 6 bulan |
+| Random | `SecureRandom` / `crypto/rand` — bukan `Math.random`/`rand()` |
+| Hash | SHA-256+ untuk integritas; password pakai KDF ber-salt |
+| Perbandingan | constant-time (`MessageDigest.isEqual`, `hmac.Equal`) |
+| Key rotation | key id (`kid`) di ciphertext/JWT |
+| Sertifikat | `curl`/client verify — jangan `InsecureSkipVerify` |
+
+> **Jebakan:** enkripsi yang menerima `insecure=true`/`skipVerify` biasanya menyebar ke
+> produksi lewat satu flag debug. Blokir di level konfigurasi.
+
+---
+
+## A03 Injection
+
+Injection = data dari pengguna dijalankan sebagai **kode/query** (SQL, OS, LDAP, template, log).
+
+```java
+// SQL — SALAH
+String q = "SELECT * FROM users WHERE email = '" + email + "'";
+// SQL — BENAR: prepared statement
+jdbcTemplate.query("SELECT * FROM users WHERE email = ?", rs -> ..., email);
+
+// JPA: parameter binding, bukan concat
+@Query("select u from User u where u.email = :email")
+Optional<User> byEmail(@Param("email") String email);
+
+// JPQL dinamis: hindari string concat; pakai Criteria/Specification
+```
+
+```java
+// OS command injection
+// SALAH
+Runtime.getRuntime().exec("convert " + userFile + " out.png");
+// BENAR: argumen terpisah, tanpa shell
+new ProcessBuilder("convert", userFile, "out.png").start();
+```
+
+```javascript
+// NoSQL injection (MongoDB) — objek {$gt: ""} lolos dari string check
+// SALAH
+users.find({ email: req.body.email });
+// BENAR: paksa tipe
+const email = String(req.body.email);
+if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) throw new Error("invalid");
+users.find({ email: email });
+```
+
+```html
+<!-- XSS: escape output sesuai konteks -->
+<!-- framework template auto-escape; JANGAN bypass -->
+<div th:text="${comment}"></div>       <!-- aman -->
+<div th:utext="${comment}"></div>      <!-- SALAH: raw HTML -->
+```
+
+| Jenis | Kontrol utama |
+| :--- | :--- |
+| SQL/JPQL | parameter binding; ORM query parameterized; least privilege user DB |
+| NoSQL | validasi tipe; tolak operator di input; `$where` dilarang |
+| OS command | hindari shell; `ProcessBuilder` dengan argumen; allowlist |
+| Template (SSTI) | jangan render template dari input; sandbox |
+| XSS | escape by context, CSP, cookie `HttpOnly` |
+| Log injection | sanitasi newline di input sebelum log |
+| LDAP/XML | escape/parameterize, matikan external entities (XXE) |
+| Path/header | validasi allowlist, jangan teruskan header mentah |
+
+```http
+Content-Security-Policy: default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'
+```
+
+> **Jebakan:** `PreparedStatement` tidak melindungi nama tabel/kolom yang di-concat.
+> Untuk identifier dinamis pakai allowlist, bukan escaping.
+
+---
+
+## A04 Insecure Design
+
+Berbeda dari implementasi salah: **desain**-nya yang tidak aman.
+
+```text
+contoh desain tidak aman:
+  - reset password tanpa expiry & tanpa single-use token
+  - kuota/rate limit tidak ada → brute force & scraping
+  - alur checkout yang mempercayai harga dari klien
+  - "admin panel" tersembunyi di URL (security by obscurity)
+  - tidak ada batas jumlah percobaan OTP
+```
+
+| Domain | Kontrol desain |
+| :--- | :--- |
+| Auth | rate limit per akun + per IP, lockout progresif, MFA |
+| Reset password | token acak ≥128 bit, expiry 15–60 menit, single use, invalidate session |
+| Business flow | validasi harga/stok di server, idempotency key |
+| Multi-tenant | tenant id dari sesi, bukan dari request body |
+| File upload | batas ukuran, tipe allowlist, scan, simpan di luar webroot |
+| Anti-automation | CAPTCHA pada endpoint sensitif, deteksi pola |
+| Privacy | minimalkan data, retensi terbatas |
+
+```java
+// rate limit per akun+IP (contoh konsep)
+if (!limiter.tryAcquire("login:" + username + ":" + ip, 5, Duration.ofMinutes(5))) {
+    throw new TooManyRequestsException();
+}
+```
+
+> **Jebakan:** UI yang menyembunyikan tombol bukan kontrol akses. Semua batas harus
+> ditegakkan di server dan diuji dengan request langsung.
+
+---
+
+## A05 Security Misconfiguration
+
+```bash
+# container & host: jangan root, jangan privileged
+docker run --user 10001 --read-only --cap-drop ALL --security-opt no-new-privileges app
+```
+
+| Area | Salah | Benar |
+| :--- | :--- | :--- |
+| Default account | `admin/admin` aktif | wajib ganti + nonaktifkan |
+| Debug | `DEBUG=true`, stack trace ke klien | mati di produksi, error generik |
+| Actuator | `/actuator/env` terbuka | expose terbatas + auth |
+| CORS | `Access-Control-Allow-Origin: *` + credentials | allowlist origin |
+| Cloud storage | bucket public | private + pre-signed URL |
+| Header | tanpa CSP/HSTS | lihat tabel header |
+| Container | `privileged: true` | `CAP_DROP ALL`, read-only FS |
+| Port | DB terbuka ke internet | bind internal + firewall |
+| Error | `e.printStackTrace()` ke response | log server, pesan generik |
+
+```properties
+# Spring Boot: matikan exposure berbahaya
+management.endpoints.web.exposure.include=health,info,prometheus
+management.endpoint.env.enabled=false
+server.error.include-stacktrace=never
+server.error.include-message=never
+```
+
+```yaml
+# contoh header keamanan (nginx)
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "DENY" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Content-Security-Policy "default-src 'self'" always;
+```
+
+> **Jebakan:** `X-Frame-Options` tidak berlaku lintas subdomain dengan `SAMEORIGIN`
+> ambigu — pakai `frame-ancestors` pada CSP.
+
+---
+
+## A06 Vulnerable & Outdated Components
+
+```bash
+# Java
+./mvnw org.owasp:dependency-check-maven:check
+./mvnw versions:display-dependency-updates
+
+# Node
+npm audit --omit=dev
+npm outdated
+
+# Go
+go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+# Rust
+cargo audit
+
+# container & image
+trivy image app:latest --severity HIGH,CRITICAL
+trivy fs .
+grype dir:.
+
+# SBOM
+syft app:latest -o spdx-json > sbom.json
+```
+
+| Praktik | Kenapa |
+| :--- | :--- |
+| Pin versi + lockfile | build reproducible |
+| Renovate/Dependabot | patch cepat & terjadwal |
+| SCA di CI (gagal bila HIGH) | tidak menunggu audit manual |
+| SBOM tiap rilis | tahu apa yang terdampak saat CVE baru |
+| Base image minimal & di-update | serangan via komponen tak terpakai |
+| Hapus dependency tak terpakai | permukaan serangan berkurang |
+
+> **Jebakan:** `npm audit fix` otomatis bisa menarik versi major yang mengubah perilaku.
+> Review diff, dan pisahkan patch vs major upgrade.
+
+---
+
+## A07 Identification & Authentication Failures
+
+```java
+// JWT: verifikasi signature + claim yang WAJIB
+Jws<Claims> jws = Jwts.parser()
+    .verifyWith(publicKey)                 // kunci publik, bukan secret klien
+    .requireIssuer("https://issuer")
+    .requireAudience("order-api")
+    .build()
+    .parseSignedClaims(token);
+
+Claims c = jws.getPayload();
+if (c.getExpiration().before(new Date())) throw new ExpiredException();
+```
+
+| Kontrol | Detail |
+| :--- | :--- |
+| Password | panjang minimum (12+), cek terhadap daftar bocor, tidak dipotong 72 byte (bcrypt) |
+| Session | `Secure; HttpOnly; SameSite=Lax/Strict`, rotasi saat login |
+| Logout | invalidate server-side (bukan hanya hapus cookie) |
+| MFA | TOTP/WebAuthn; recovery code sekali pakai |
+| Brute force | rate limit, delay progresif, alert |
+| Credential stuffing | deteksi device/IP, cek password bocor |
+| JWT | `alg` di-pin (jangan `none`), `exp``+`nbf`, `aud``+`iss`, jangan simpan di `localStorage` jika XSS jadi concern |
+| Kredensial | tidak pernah di URL/query string |
+
+```java
+// set cookie dengan atribut aman
+ResponseCookie c = ResponseCookie.from("sid", id)
+    .httpOnly(true).secure(true).sameSite("Lax").path("/")
+    .maxAge(Duration.ofHours(8)).build();
+```
+
+> **Jebakan:** decode JWT tanpa verifikasi (`parseClaimsJwt` vs `parseSignedClaims`) adalah
+> bug auth paling sering ditemukan di review.
+
+---
+
+## A08 Software & Data Integrity Failures
+
+| Area | Kontrol |
+| :--- | :--- |
+| Dependency | lockfile + checksum, private registry, tidak `latest` |
+| CI/CD | artefak ditandatangani, provenance (SLSA), deploy key terbatas |
+| Update | signature (apt/dnf repo resmi), verifikasi checksum |
+| Deserialisasi | jangan `ObjectInputStream` untuk data eksternal; pakai JSON schema |
+| Webhook | verifikasi HMAC signature + timestamp |
+| Plugin/upload | allowlist, sandbox, jangan eksekusi dari direktori upload |
+| Backup | integritas (checksum) + restore diuji |
+
+```java
+// verifikasi webhook (HMAC-SHA256)
+String expected = HexFormat.of().formatHex(
+    hmac("HmacSHA256", secret, body.getBytes(StandardCharsets.UTF_8)));
+if (!MessageDigest.isEqual(expected.getBytes(), signature.getBytes())) {
+    throw new UnauthorizedException("bad signature");
+}
+// tolak timestamp terlalu lama (replay 5 menit)
+```
+
+```yaml
+# CI: pin action ke commit SHA, bukan tag
+- uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+```
+
+> **Jebakan:** `dependsOn`/tag mutable di pipeline memungkinkan supply-chain attack tanpa
+> menyentuh repo Anda. Pin ke digest/SHA.
+
+---
+
+## A09 Security Logging & Monitoring Failures
+
+```java
+// log yang berguna: kejadian authz/authn + identitas + hasil
+log.warn("authz.denied user={} resource={} action={} ip={}",
+         principal.id(), resource, action, clientIp);
+log.info("authn.success user={} mfa={} ip={}", user, mfaUsed, clientIp);
+log.warn("authn.fail user={} reason={} ip={}", user, "bad_password", clientIp);
+```
+
+| Harus dicatat | Harus dihindari |
+| :--- | :--- |
+| login sukses/gagal, logout | password, token, cookie |
+| perubahan hak akses & role | PII lengkap (NIK, kartu) |
+| akses ditolak (403) | body request berisi secret |
+| pembuatan/penghapusan data sensitif | header Authorization |
+| error 5xx + correlation id | stack trace ke klien |
+| event admin & konfigurasi | log tanpa user/tenant |
+
+| Kontrol | Detail |
+| :--- | :--- |
+| Structured log | JSON + `trace_id`, `user_id`, `tenant` |
+| Retensi | cukup untuk investigasi (30–90 hari) |
+| Tamper-proof | kirim ke sistem terpusat, read-only untuk app |
+| Alert | kegagalan login masif, 403 spike, privilege change |
+| Time sync | NTP — timestamp beda membuat forensik mustahil |
+| Deteksi | alert pada pola (credential stuffing, scraping) |
+
+> **Jebakan:** mencatat token atau password "untuk debug" membuat kredensial itu ikut ke
+> sistem log yang aksesnya jauh lebih luas daripada database.
+
+---
+
+## A10 SSRF
+
+Server diminta mengambil URL yang menyerang jaringan internal (metadata cloud, admin panel).
+
+```java
+// SALAH: forward URL mentah dari klien
+return restTemplate.getForObject(req.url(), String.class);
+
+// BENAR: allowlist + resolve + tolak IP internal + redirect off
+URI target = URI.create(url);
+if (!"https".equals(target.getScheme())) throw new BadRequest("scheme");
+if (!ALLOWED_HOSTS.contains(target.getHost())) throw new BadRequest("host");
+
+InetAddress addr = InetAddress.getByName(target.getHost());
+if (addr.isLoopbackAddress() || addr.isSiteLocalAddress()
+        || addr.isLinkLocalAddress() || addr.isAnyLocalAddress()) {
+    throw new BadRequest("blocked address");
+}
+// HttpClient dengan followRedirects(NEVER), timeout, ukuran respons dibatasi
+```
+
+| Target serangan | Contoh |
+| :--- | :--- |
+| Metadata cloud | `http://169.254.169.254/latest/meta-data/` |
+| Internal admin | `http://localhost:8080/admin` |
+| Service mesh internal | `http://service.namespace.svc` |
+| File protocol | `file:///etc/passwd` |
+| DNS rebinding | domain publik resolve ke IP internal |
+
+| Kontrol | Detail |
+| :--- | :--- |
+| Allowlist domain | bukan blocklist |
+| Resolve & cek IP | tolak private/loopback/link-local/multicast |
+| Redirect | matikan atau validasi setiap hop |
+| Timeout & size limit | cegah resource exhaustion |
+| Egress firewall | tolak keluar ke metadata & internal by default |
+| Alternative | jangan proxy URL klien; gunakan id objek |
+
+> **Jebakan:** validasi host **sebelum** DNS resolve tidak cukup — DNS rebinding bisa
+> mengembalikan IP internal. Validasi IP hasil resolve, dan pin koneksi ke IP itu.
+
+---
+
+## Checklist header & cookie
+
+| Header | Nilai |
+| :--- | :--- |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` |
+| `Content-Security-Policy` | allowlist sumber; `frame-ancestors 'none'` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | matikan fitur tak dipakai (camera, geolocation) |
+| `Cache-Control` | `no-store` untuk respons sensitif |
+| `Server` / `X-Powered-By` | hapus (informasi versi) |
+
+```http
+Set-Cookie: sid=...; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=28800
+```
+
+| Cookie | Kenapa |
+| :--- | :--- |
+| `Secure` | hanya via HTTPS |
+| `HttpOnly` | tidak terbaca JS (mitigasi XSS) |
+| `SameSite=Lax/Strict` | mitigasi CSRF; `None` wajib `Secure` |
+| `__Host-` prefix | kunci ke host & path `/` |
+
+---
+
+## Testing: SAST / DAST / SCA / threat model
+
+```bash
+# SAST (source)
+semgrep --config=p/owasp-top-ten .
+./mvnw spotbugs:check
+
+# SCA (dependency)
+trivy fs --scanners vuln,secret,misconfig .
+grype .
+
+# DAST (runtime) — hanya ke lingkungan yang diizinkan
+zap-baseline.py -t https://staging.example.com
+nuclei -u https://staging.example.com
+
+# secret scanning
+gitleaks detect --no-git -v
+```
+
+| Aktivitas | Kapan |
+| :--- | :--- |
+| Threat model | saat desain fitur (STRIDE/LINDDUN) |
+| SAST | setiap PR (gate untuk HIGH) |
+| SCA | setiap build + harian (CVE baru) |
+| DAST | nightly ke staging |
+| Pen test | sebelum rilis besar / tahunan |
+| Review kode keamanan | fitur auth, upload, payment, integrasi |
+
+| Resource OWASP | Isi |
+| :--- | :--- |
+| Top 10 | daftar risiko (sheet ini) |
+| ASVS | checklist verifikasi teknis (L1–L3) |
+| Cheat Sheet Series | panduan per topik (JWT, session, file upload) |
+| Dependency-Check / ZAP | tool SCA & DAST |
+| Juice Shop / WebGoat | latihan (hanya di lab sendiri) |
+
+> **Jebakan:** DAST ke lingkungan produksi tanpa izin adalah tindakan tidak sah, bahkan
+> untuk "pengecekan". Selalu pakai staging khusus dan izin tertulis.
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Dampak | Perbaikan |
+| :--- | :--- | :--- |
+| Otorisasi di UI saja | IDOR (A01) | cek kepemilikan di query server |
+| Role dari header/body | privilege escalation | ambil dari token terverifikasi |
+| `@PreAuthorize` tidak konsisten | endpoint bocor | uji semua route |
+| SQL tanpa binding | injeksi (A03) | prepared statement |
+| Identifier dinamis di-concat | injeksi tetap bisa | allowlist |
+| Escape HTML di konteks salah | XSS | escape per konteks + CSP |
+| MD5/SHA1 password | kredensial cepat dibongkar | Argon2id/bcrypt |
+| Nonce/IV dipakai ulang | kunci bocor | nonce acak per pesan |
+| `insecureSkipVerify` | MITM | verifikasi sertifikat |
+| JWT tanpa verifikasi signature | auth palsu | `parseSignedClaims` |
+| `alg: none` diterima | token palsu valid | pin algoritma |
+| Token di `localStorage` | XSS mencuri sesi | cookie HttpOnly |
+| Logout hanya hapus cookie | sesi tetap hidup | invalidate server-side |
+| Rate limit tidak ada | brute force/stuffing | limit per akun+IP |
+| Reset token tanpa expiry | akses permanen | single-use + expiry |
+| Actuator/debug terbuka | info & RCE | expose minimal + auth |
+| CORS `*` + credential | pencurian data | allowlist origin |
+| Bucket public | kebocoran data | private + signed URL |
+| `npm audit fix` buta | regresi produksi | review patch vs major |
+| Dependency tanpa lockfile | build tidak reproducible | commit lock + SBOM |
+| Deserialisasi objek eksternal | RCE | JSON schema |
+| Webhook tanpa HMAC | event palsu | verifikasi signature + timestamp |
+| SSRF tanpa allowlist | akses metadata internal | allowlist + cek IP hasil resolve |
+| Redirect diikuti bebas | SSRF via redirect | redirect manual/off |
+| Log berisi token/PII | kebocoran di sistem log | redaksi & structured log |
+| Tanpa alert login gagal | serangan tak terlihat | alert + retensi |
+| DAST ke produksi | ilegal & berisiko | staging + izin |

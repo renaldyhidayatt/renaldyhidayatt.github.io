@@ -2,6 +2,8 @@
 title: "PIERO Safety Controller"
 excerpt: "A distributed security authorization system powered by Byzantine Fault Tolerance (BFT), OpenRaft consensus, and cryptographic quorum validation for critical infrastructure protection."
 date: "2026-02-02"
+created_at: "2026-02-02"
+updated_at: "2026-02-02"
 tags:
   - rust
   - distributed-systems
@@ -81,6 +83,25 @@ Dynamically adjusts validation and enforcement prioritization based on host-leve
 - **Cryptography**: Ed25519 digital signature verification
 - **Concurrency Runtime**: Tokio asynchronous runtime
 - **Security Architecture**: Byzantine Fault Tolerant distributed authorization
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Byzantine quorum authorization vs single-node decisions**
+Requiring a 2f+1 signed quorum before any destructive action means one compromised or malfunctioning agent cannot quarantine workloads unilaterally, and equivocation detection blocks conflicting decisions for the same event identifier. The costs are structural: every authorization pays multi-round cryptographic consensus latency, the cluster needs surplus nodes to tolerate compromise at all, and most deployments will never meet a genuine Byzantine actor — the protection is insurance priced in milliseconds and hardware.
+
+**OpenRaft consensus on every enforcement action**
+Committing actions to a replicated log before releasing action tokens buys partition tolerance, strong consistency, and an immutable forensic journal in one mechanism. The trade-off is availability: when the cluster cannot form a quorum, safety-critical enforcement stops by design — fail-safe over fail-open, which is correct for quarantine authority and painful during exactly the network incidents that trigger it.
+
+**gRPC over HTTP/2 with mutual TLS**
+Binary protobuf and bidirectional TLS streaming keep inter-node authorization exchange in the milliseconds range, and mutual TLS makes every peer cryptographically known. The cost is certificate lifecycle management across the cluster — the rotation and revocation burden any mTLS deployment carries, concentrated on the most security-critical path in the system.
+
+**Three-stage deterministic pre-filtering before consensus**
+Cheap local checks — invariant hard-blocks on critical kernel processes, linear quorum verification, load-aware degradation — reject hopeless requests before they spend cluster consensus capacity. The trade-off is duplicated logic: the invariant rules must stay identical on every node or the cluster defends different truths, and graceful degradation deliberately re-prioritizes validation under resource pressure, a relaxation window worth monitoring.
+
+**Ed25519 for decision signing**
+Ed25519 delivers fast verification at the volume a per-decision signature scheme demands, making cryptographic accountability affordable on every action rather than reserved for rare events. The trade-off is standard key-management reality: signatures prove authorship only as long as private keys stay private, so rotation and compromise procedures matter as much as the algorithm choice.
 
 ---
 

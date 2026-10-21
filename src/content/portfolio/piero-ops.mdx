@@ -2,6 +2,8 @@
 title: "PIERO Ops Control Plane"
 excerpt: "A centralized control tower infrastructure coordinating global incident management, SPIFFE-based operator risk analytics, and human approval workflows for high-trust security operations."
 date: "2026-02-05"
+created_at: "2026-02-05"
+updated_at: "2026-02-05"
 tags:
   - rust
   - axum
@@ -72,6 +74,25 @@ Ensures integrity and consistency of distributed detection and enforcement rules
 - **Identity System**: SPIFFE SVID (SPIFFE Verifiable Identity Document)
 - **Observability**: OpenTelemetry distributed tracing and telemetry pipeline
 - **Cryptography**: Ed25519 digital signatures for audit integrity
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Embedded SQLite vs a client-server database**
+SQLite keeps the control plane a single deployable with zero database operations, which suits a coordination tier that should not need its own runbook. The trade-off is a write-concurrency ceiling and no built-in replication — ironic for a component coordinating fleet-wide resilience, so meaningful horizontal scaling would force a storage rewrite.
+
+**Ed25519-signed non-repudiation ledger**
+Signing every operator action makes the audit trail tamper-evident and forensically useful after a compromise, not merely present. The cost is key lifecycle management, and the ledger only proves who acted, not whether the key holder was legitimate at that moment — a stolen operator key is fully trusted until revoked.
+
+**Human-in-the-loop gating of destructive operations**
+Queueing high-impact actions behind explicit operator approval prevents an autonomous or compromised agent from escalating system-wide on its own. The cost is measured in incident minutes: containment mode is one click, but every destructive step still waits for a human — which is the point, and also the delay.
+
+**SPIFFE identity plus behavioral anomaly detection**
+Tying every control-plane interaction to a verifiable SVID and profiling operator behavior catches credential misuse that static authentication misses. The trade-off is false positives at the worst time — an operator behaving unusually mid-incident is exactly who gets flagged — so anomaly signals should inform review rather than hard-block until corroborated.
+
+**Axum and Tokio for the control plane**
+Async Rust gives the control plane high concurrent connection handling with a small footprint, and Axum's typed request handling keeps the API surface honest. The price is development speed: borrow checking plus async semantics slow iteration compared to a Go or Node control plane, a cost justified only because this tier changes rarely and must not fail.
 
 ---
 

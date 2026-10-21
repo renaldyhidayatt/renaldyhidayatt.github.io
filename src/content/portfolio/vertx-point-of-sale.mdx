@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Point of Sale API"
 excerpt: "A reactive Point of Sale (POS) REST API built with Java 17, Vert.x, PostgreSQL, Redis, and a full observability stack."
 date: "2026-05-21"
+created_at: "2026-05-21"
+updated_at: "2026-05-21"
 tags: ["java", "vertx", "postgresql", "redis", "docker", "prometheus", "grafana", "loki", "flyway", "maven", "hurl"]
 status: "completed"
 image: "/portofolio/Vert.xPointOfSale/VertxPointOfSale.png"
@@ -529,6 +531,28 @@ flowchart TD
 | **Continuous Profiler** | Pyroscope | Real-time memory allocation tracker to identify hot paths. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Vert.x verticles on an event loop, not thread pools per request**
+Each domain runs as a verticle sharing a small set of event-loop threads, so a rush of register activity does not spawn hundreds of blocked threads. The trade-off is a codebase where nothing may block: one synchronous wait hidden in a handler degrades every other request on that loop. For a POS API whose work is mostly short database round trips, the model fits.
+
+**A synchronous gRPC chain for checkout**
+Cart, order, order-item, and transaction each own a gRPC boundary, so a checkout walks several typed hops before it confirms. The benefit is explicit contracts and per-domain logic; the cost is that latency adds up across hops and a failure mid-chain leaves partial state to reason about. Decomposing the order into separate services buys auditability, but it is more moving parts than one big insert.
+
+**Caching RBAC decisions in Redis**
+Permission checks resolve from the Redis Cluster in sub-second time, which matters when a cashier works through many guarded actions per minute. The cost is a staleness window: a revoked permission can keep working until its cache entry expires. For storefront roles that change rarely, the speed is worth the window.
+
+**Kafka to keep receipts off the hot path**
+Completed orders publish events that the Email worker turns into invoices and alerts over SMTP. The register confirms the sale without waiting on mail delivery, but that also means a customer's receipt can lag and a dead SMTP host only surfaces in the consumer. That is acceptable for mail and wrong for the transaction ledger, which stays synchronous.
+
+**One deployable, 22 modules**
+Every POS domain is an isolated Maven module with its own gRPC server, yet everything ships as a single unit. You give up per-domain scaling and independent releases, and in exchange the whole platform runs from one Docker Compose file or one Kubernetes manifest. For a system this size, that is the simpler end of the bargain.
+
+**PostgreSQL for stock and sales integrity**
+Checkout must decrement stock, write order items, and record the transaction atomically, or the till oversells inventory it no longer has. PostgreSQL with ACID transactions and a Flyway-managed schema is the conservative, correct choice; the price is migration ceremony on every model change, which a sales ledger should have anyway.
 
 ---
 

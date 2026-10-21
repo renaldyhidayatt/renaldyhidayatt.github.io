@@ -1,0 +1,578 @@
+---
+title: "eBPF — Cheat Sheet"
+description: "Cheat sheet eBPF: arsitektur verifier/JIT/maps, program type & attach point (kprobe, tracepoint, XDP, TC, cgroup), map & BTF/CO-RE, bcc/libbpf/bpftrace, tooling (bpftool, perf, ss, tc), observability & security, tracing produksi, dan jebakan verifier."
+date: "2026-10-22"
+created_at: "2026-10-22"
+updated_at: "2026-10-22"
+status: "verified"
+version: "Kernel 6.x · libbpf 1.x · bpftrace 0.20+"
+order: 19
+tags:
+  - ebpf
+  - linux
+  - kernel
+  - observability
+  - networking
+---
+
+# eBPF — Cheat Sheet
+
+> Target: **Linux kernel 6.x**, **libbpf 1.x**, **bpftrace 0.20+**, clang 16+.
+> eBPF = program kecil yang dijalankan **di dalam kernel** tanpa modul kernel: untuk tracing,
+> networking, keamanan, dan observability. Semua contoh butuh `CAP_BPF`/`CAP_SYS_ADMIN`
+> (atau `root`, atau `CAP_PERFMON` untuk tracing).
+
+**Isi sheet ini**
+
+- Arsitektur & siklus hidup program
+- Verifier, JIT, helper
+- Program type & attach point
+- Maps
+- BTF & CO-RE
+- bcc / libbpf / bpftrace
+- Tooling bawaan (bpftool, perf, ss, tc)
+- Observability & tracing produksi
+- Networking (XDP, TC, socket)
+- Security (LSM, seccomp, audit)
+- Performance & overhead
+- Jebakan (wajib dibaca)
+
+---
+
+## Arsitektur & siklus hidup program
+
+```text
+  C source ──clang -target bpf──▶ .bpf.o (ELF, BTF) ──loader──▶ kernel
+                                                      │
+                                       verifier  ◀────┤ (static analysis + bounds check)
+                                       JIT       ◀────┤ (bytecode → native)
+                                       attach    ◀────┘ (kprobe, XDP, cgroup, ...)
+                                                       │
+                                       maps  ◀─────────┴──▶ user space (baca/tulis)
+```
+
+| Tahap | Apa yang terjadi | Gagal karena |
+| :--- | :--- | :--- |
+| Load | `bpf(BPF_PROG_LOAD)` dipanggil loader | privilege kurang |
+| Verify | verifier menelusuri **semua path**, cek bounds, loop, akses map | "invalid mem access", "loop not bounded" |
+| JIT | bytecode → instruksi native | jarang; `/proc/sys/net/core/bpf_jit_enable` |
+| Attach | program diikat ke hook | hook tidak ada / tipe program salah |
+| Detach | saat fd ditutup / link di-destroy | — |
+
+| Konsep | Arti |
+| :--- | :--- |
+| **Program** | kode yang diverifikasi; banyak instance bisa attach ke hook sama |
+| **Map** | storage kernel↔user space (hash, array, ringbuf, ...) |
+| **Helper** | fungsi kernel yang boleh dipanggil dari BPF (`bpf_probe_read_user`, `bpf_get_current_pid_tgid`, ...) |
+| **BTF** | metadata tipe di kernel & program (`vmlinux.h`) |
+| **CO-RE** | compile once, run everywhere — relokasi field berbasis BTF |
+| **Link** | handle attach (libbpf 1.x: `bpf_link`), lebih aman dari fd attach |
+| **Pin** | simpan objek di bpffs agar hidup melewati proses loader |
+
+```bash
+# cek dukungan kernel
+uname -r                                  # 6.x ideal
+ls /sys/fs/bpf/                           # bpffs (mount -t bpf)
+cat /proc/sys/kernel/unprivileged_bpf_disabled   # 2 = hanya root (disarankan)
+bpftool feature probe | head -40          # program type & helper yang didukung
+```
+
+---
+
+## Verifier, JIT, helper
+
+```text
+verifier rules yang paling sering dilanggar:
+  - pointer harus di-bounds-check sebelum dereference
+  - semua loop harus terbukti berhingga (bounded loop, kernel 5.3+)
+  - stack BPF hanya 512 byte
+  - tidak boleh akses user-space memory langsung (pakai bpf_probe_read_user)
+  - map value harus di-lookup & dicek NULL
+  - jumlah instruksi terbatas (1 juta di default untuk kompleksitas)
+```
+
+```c
+/* urutan validasi yang benar */
+struct event *e = bpf_map_lookup_elem(&events, &key);
+if (!e) return 0;                 /* WAJIB cek NULL */
+
+if (ctx->len < sizeof(*ctx)) return 0;    /* bounds check */
+bpf_probe_read_kernel(&e->data, sizeof(e->data), ptr);   /* baca via helper */
+```
+
+| Helper populer | Kegunaan |
+| :--- | :--- |
+| `bpf_probe_read_user` / `_kernel` | baca memori user/kernel dengan aman |
+| `bpf_get_current_pid_tgid` | pid/tgid proses |
+| `bpf_get_current_comm` | nama proses (16 byte) |
+| `bpf_ktime_get_ns` | waktu monotonic ns |
+| `bpf_map_lookup_elem` / `update` / `delete` | akses map |
+| `bpf_ringbuf_output` / `bpf_ringbuf_reserve` | kirim event ke user space |
+| `bpf_trace_printk` | debug cepat (**hindari di produksi**, lambat & terbatas) |
+| `bpf_get_stackid` | stack trace ke map |
+| `bpf_get_current_task` | task struct |
+| `bpf_send_signal` | kirim signal (security) |
+| `bpf_redirect` / `bpf_clone_redirect` | networking |
+
+```bash
+# lihat log verifier (sumber kebenaran saat load gagal)
+sudo bpftool prog load x.bpf.o /sys/fs/bpf/x type kprobe 2>&1 | head -50
+sudo cat /sys/kernel/debug/tracing/trace_pipe        # trace_printk
+sudo bpftool prog show
+sudo bpftool prog dump xlated id 42 | head -30       # bytecode setelah verifier
+sudo bpftool prog dump jited id 42 | head -30        # native code
+```
+
+> **Jebakan:** pesan verifier selalu menunjuk **instruksi** (`R1 invalid mem access 'map_value_or_null'`),
+> bukan baris C. Terjemahkan lewat `bpftool prog dump xlated` atau `llvm-objdump -S`.
+
+---
+
+## Program type & attach point
+
+| Tipe | Attach | Pakai untuk |
+| :--- | :--- | :--- |
+| `kprobe`/`kretprobe` | fungsi kernel | tracing fungsi apa pun (tidak stabil antar versi) |
+| `tracepoint` | tracepoint kernel | tracing stabil (nama & format di `/sys/kernel/tracing/events`) |
+| `raw_tracepoint` | tracepoint raw | performa lebih tinggi, tanpa format |
+| `fentry`/`fexit` | BTF + fungsi kernel | pengganti kprobe yang **stabil & cepat** |
+| `tp_btf` | BTF tracepoint | tracepoint via tipe |
+| `uprobe`/`uretprobe` | fungsi user space | tracing binary/aplikasi sendiri |
+| `usdt` | USDT probe | aplikasi dengan titik probe (node, python, ruby) |
+| `perf_event` | hardware/software perf | sampling CPU, cache miss |
+| `XDP` | driver NIC (ingress) | drop/filter paket paling awal, DDoS |
+| `tc` (clsact) | qdisc ingress/egress | shaping, L3/L4 filtering |
+| `socket_filter` | socket | packet capture per socket |
+| `cgroup/*` | cgroup hook | kontrol resource per cgroup |
+| `lsm` | LSM hook | security policy (butuh kernel dgn BPF-LSM) |
+| `struct_ops` | implementasi struct kernel | TCP congestion control custom |
+
+```bash
+# daftar tracepoint & kprobe yang tersedia
+ls /sys/kernel/tracing/events/syscalls/ | head
+sudo bpftrace -l 'tracepoint:syscalls:*' | head
+sudo bpftrace -l 'kprobe:tcp_*' | head
+```
+
+| Pilih | Kalau |
+| :--- | :--- |
+| `tracepoint` | butuh **stabil** lintas versi kernel |
+| `fentry`/`fexit` | butuh fungsi kernel + stabilitas + performa |
+| `kprobe` | cepat dieksplorasi, bersedia menanggung risiko versi |
+| `XDP` | perlu keputusan drop sebelum `sk_buff` dibuat |
+| `tc` | perlu modifikasi paket & forwarding L3 |
+
+---
+
+## Maps
+
+```c
+/* definisi map (libbpf) */
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1 << 24);          /* 16 MiB, WAJIB power of two */
+} events SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __type(key, __u32);
+    __type(value, __u64);
+    __uint(max_entries, 10240);
+} counters SEC(".maps");
+
+/* akses */
+__u64 *cnt = bpf_map_lookup_elem(&counters, &pid);
+if (cnt) __sync_fetch_and_add(cnt, 1);
+else { __u64 one = 1; bpf_map_update_elem(&counters, &pid, &one, BPF_ANY); }
+```
+
+| Map type | Kegunaan | Catatan |
+| :--- | :--- | :--- |
+| `HASH` | lookup key sembarang | alokasi per entry saat insert |
+| `ARRAY` | index 0..n | prealloc, cepat, key = index |
+| `PERCPU_HASH`/`PERCPU_ARRAY` | counter per CPU | tanpa lock, jumlahkan saat baca |
+| `LRU_HASH` | cache terbatas | entry lama otomatis dibuang |
+| `RINGBUF` | event streaming | **pengganti perf buffer**, konsumsi per-commit |
+| `PERF_EVENT_ARRAY` | perf buffer lama | lebih besar & boros per-CPU |
+| `STACK_TRACE` | stack trace | dipakai bersama `bpf_get_stackid` |
+| `PROG_ARRAY` | tail call | rantai program (batas 33 hop) |
+| `LPM_TRIE` | longest-prefix match | routing / allowlist CIDR |
+| `QUEUE`/`STACK` | FIFO/LIFO | jarang dipakai |
+| `BTF_MAP` | deklarasi map via BTF | map of maps |
+
+```bash
+sudo bpftool map list
+sudo bpftool map dump id 12 | head -20
+sudo bpftool map update id 12 key 0x01 0x00 0x00 0x00 value 0x0a 0x00 0x00 0x00
+```
+
+> **Jebakan:** `PERF_EVENT_ARRAY` membuat satu buffer per CPU → konsumsi memori naik dengan
+> jumlah core. Untuk event stream gunakan **ringbuf**.
+
+---
+
+## BTF & CO-RE
+
+```bash
+# header tunggal dari BTF kernel: portabel tanpa header distro
+bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+
+# compile: target bpf + BTF + CO-RE
+clang -O2 -g -target bpf -D__TARGET_ARCH_x86 \
+      -I/usr/include/x86_64-linux-gnu \
+      -c probe.bpf.c -o probe.bpf.o
+```
+
+```c
+#include "vmlinux.h"
+#include <bpf/bpf_helpers.h>
+#include <bpf/bpf_core_read.h>
+
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1 << 24);
+} rb SEC(".maps");
+
+SEC("fentry/do_sys_openat2")
+int BPF_PROG(on_open, int dfd, const char *filename, struct open_how *how)
+{
+    struct event *e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
+    if (!e) return 0;
+
+    e->pid = bpf_get_current_pid_tgid() >> 32;
+    bpf_get_current_comm(&e->comm, sizeof(e->comm));
+    bpf_probe_read_user_str(&e->path, sizeof(e->path), filename);
+
+    bpf_ringbuf_submit(e, 0);       /* submit atau discard, keduanya wajib */
+    return 0;
+}
+
+char LICENSE[] SEC("license") = "GPL";
+```
+
+| Makro CO-RE | Kegunaan |
+| :--- | :--- |
+| `BPF_CORE_READ(task, mm, exe_file, f_path.dentry)` | baca pointer berantai dengan aman |
+| `bpf_core_read(&dst, size, &src->field)` | baca satu field |
+| `bpf_core_field_exists(field)` | cek field ada di kernel ini |
+| `bpf_core_type_exists(struct x)` | cek tipe ada |
+| `bpf_core_field_size(field)` | ukuran field di kernel target |
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| Selalu pakai `vmlinux.h` + CO-RE | program tetap jalan di versi kernel berbeda |
+| Jangan include header kernel distro | konflik tipe |
+| `BPF_CORE_READ` untuk pointer berantai | verifier + relokasi field aman |
+| `bpf_core_field_exists` untuk field opsional | kompatibilitas ke bawah |
+
+> **Jebakan:** CO-RE butuh BTF di kernel target (`CONFIG_DEBUG_INFO_BTF=y`). Tanpa itu,
+> loader gagal di relokasi — cek `/sys/kernel/btf/vmlinux`.
+
+---
+
+## bcc / libbpf / bpftrace
+
+```text
+bpftrace  : one-liner & script, tracing cepat, bukan untuk daemon
+bcc       : python/lua + C inline, prototipe & tool siap pakai (execsnoop, biolatency)
+libbpf-rs : C/C++/Rust loader modern, cocok untuk agent produksi
+cilium/ebpf (Go) : loader Go populer
+```
+
+```bash
+# bpftrace: satu baris untuk 80% pertanyaan
+sudo bpftrace -e 'tracepoint:syscalls:sys_enter_openat { printf("%s %s\n", comm, str(args->filename)); }'
+sudo bpftrace -e 'kprobe:vfs_read { @[comm] = count(); }'
+sudo bpftrace -e 'kprobe:tcp_sendmsg { @bytes[comm] = hist(arg2); }'
+sudo bpftrace -e 'profile:hz:99 { @[comm, ustack] = count(); }'      # sampling CPU
+sudo bpftrace -e 'interval:s:5 { print(@); clear(@); }'
+```
+
+```c
+/* bcc: python + C inline */
+from bcc import BPF
+
+prog = """
+#include <uapi/linux/ptrace.h>
+int on_open(struct pt_regs *ctx) {
+    bpf_trace_printk("open called\n");
+    return 0;
+}
+"""
+b = BPF(text=prog)
+b.attach_kprobe(event="do_sys_openat2", fn_name="on_open")
+b.trace_print()
+```
+
+```c
+/* libbpf: loader user space */
+#include <bpf/libbpf.h>
+
+libbpf_set_print(NULL);
+struct bpf_object *obj = bpf_object__open_file("probe.bpf.o", NULL);
+if (!obj || libbpf_get_error(obj)) return 1;
+
+if (bpf_object__load(obj)) return 1;
+
+struct bpf_program *prog = bpf_object__find_program_by_name(obj, "on_open");
+struct bpf_link *link = bpf_program__attach(prog);     /* auto-detach saat close */
+```
+
+| Tool | Pakai untuk |
+| :--- | :--- |
+| `bpftrace` | investigasi ad-hoc, one-liner |
+| `bcc` | tool siap pakai (`execsnoop`, `biolatency`, `tcpconnect`) |
+| `libbpf` | agent produksi (C/C++/Rust binding) |
+| `cilium/ebpf` | agent produksi di Go |
+| `aya` (Rust) | alternatif tanpa libbpf |
+
+> **Jebakan:** `bpf_trace_printk` hanya punya 3 argumen dan menulis ke trace pipe global →
+> jangan pernah dipakai sebagai jalur event produksi.
+
+---
+
+## Tooling bawaan (bpftool, perf, ss, tc)
+
+```bash
+# bpftool: inspeksi & kelola
+bpftool prog list
+bpftool prog show id 42
+bpftool prog dump xlated name on_open
+bpftool map list
+bpftool map dump name counters
+bpftool net list                     # XDP/TC yang ter-attach
+bpftool cgroup tree
+bpftool feature probe kernel
+bpftool btf dump file /sys/kernel/btf/vmlinux format raw | head
+
+# pin ke bpffs (bertahan setelah loader mati)
+bpftool prog load probe.bpf.o /sys/fs/bpf/probe type fentry
+bpftool prog attach pinned /sys/fs/bpf/probe fentry do_sys_openat2
+bpftool prog detach pinned /sys/fs/bpf/probe fentry do_sys_openat2
+
+# perf: sampling & trace
+sudo perf stat -e cycles,instructions,cache-misses ./app
+sudo perf top
+sudo perf record -g -F 99 -- ./app && sudo perf report
+sudo perf trace -e openat,sendto -- ./app
+```
+
+| Perintah | Fungsi |
+| :--- | :--- |
+| `bpftool prog|map|link|net|cgroup` | inspeksi semua objek BPF |
+| `bpftool gen skeleton` | skeleton loader dari `.bpf.o` |
+| `perf stat`/`record`/`top` | counter & sampling tanpa BPF manual |
+| `ss -tiepm` | socket + info TCP detail |
+| `tc filter show dev eth0 ingress` | lihat program TC |
+| `ip link show dev eth0` | lihat XDP terpasang |
+| `/sys/kernel/debug/tracing/` | tracefs: tracepoint, kprobe, trace_pipe |
+
+```bash
+# generate skeleton loader (libbpf 1.x)
+bpftool gen skeleton probe.bpf.o > probe.skel.h
+```
+
+---
+
+## Observability & tracing produksi
+
+```c
+/* pola produksi: ringbuf + event struct + agregasi */
+struct event {
+    __u32 pid;
+    __u32 cpu;
+    __u64 ts;
+    __u64 latency_ns;
+    __u64 bytes;
+    char  comm[16];
+};
+
+SEC("fexit/tcp_rcv_established")
+int BPF_PROG(on_recv, struct sock *sk, struct sk_buff *skb)
+{
+    if (bpf_ktime_get_ns() - start_ts < THRESHOLD_NS) return 0;   /* sampling */
+    ...
+}
+```
+
+| Prinsip produksi | Kenapa |
+| :--- | :--- |
+| Sampling, bukan 100% event | overhead & volume tak terkendali |
+| Ringbuf + `bpf_ringbuf_reserve` + cek NULL | hindari drop saat consumer lambat |
+| Filter di kernel (`if (pid != target) return 0;`) | jangan kirim lalu buang di user space |
+| Agregasi di map per-CPU | kurangi event ke user space |
+| Track drop & kesalahan (ringbuf callback) | tanpa ini event hilang diam-diam |
+| Verifikasi beban sebelum/ sesudah | registri verifier & program berubah |
+
+```bash
+# jalur cepat diagnosa
+sudo bpftrace -e 'kprobe:do_sys_openat2 /pid == $1/ { printf("%s\n", str(args->filename)); }' -p 1234
+sudo bpftrace -e 'tracepoint:sched:sched_switch { @[comm] = count(); }'
+sudo bpftrace -e 'kfunc:tcp_retransmit_skb { @[args->sk->__sk_common.skc_daddr] = count(); }'
+```
+
+| Metrik | Sumber |
+| :--- | :--- |
+| Syscall latency (p50/p99) | `sys_enter`/`sys_exit` tracepoint |
+| Block I/O latency | `block:block_rq_issue`/`complete` |
+| TCP retransmit | `tcp:tcp_retransmit_skb` |
+| Scheduler delay | `sched_switch` + runqueue |
+| OOM & page fault | kprobe `oom_kill_process`, `handle_mm_fault` |
+| Process exec | `sched_process_exec` |
+
+> **Jebakan:** menghitung latency sebagai "exit − enter" tanpa menyimpan timestamp di map
+> per-tid membuat angka salah saat thread berganti CPU di antara dua event.
+
+---
+
+## Networking (XDP, TC, socket)
+
+```c
+/* XDP: drop paket paling awal */
+SEC("xdp")
+int xdp_drop_udp(struct xdp_md *ctx)
+{
+    void *data = (void *)(long)ctx->data;
+    void *data_end = (void *)(long)ctx->data_end;
+    struct ethhdr *eth = data;
+    if ((void *)(eth + 1) > data_end) return XDP_PASS;
+    if (eth->h_proto != bpf_htons(ETH_P_IP)) return XDP_PASS;
+
+    struct iphdr *ip = (void *)(eth + 1);
+    if ((void *)(ip + 1) > data_end) return XDP_PASS;
+    if (ip->protocol == IPPROTO_UDP && bpf_ntohs(ip->dest) == 53) {
+        return XDP_DROP;                     /* drop DNS inbound */
+    }
+    return XDP_PASS;
+}
+```
+
+| XDP return | Arti |
+| :--- | :--- |
+| `XDP_PASS` | teruskan ke stack |
+| `XDP_DROP` | buang (tercepat) |
+| `XDP_TX` | kirim balik lewat interface yang sama |
+| `XDP_REDIRECT` | lempar ke interface/CPU lain |
+| `XDP_ABORTED` | error, drop + trace |
+
+```bash
+# attach XDP
+sudo ip link set dev eth0 xdp obj xdp_drop.bpf.o sec xdp
+sudo ip link set dev eth0 xdpgeneric obj xdp_drop.bpf.o sec xdp   # mode generic
+sudo ip link set dev eth0 xdp off                                  # detach
+
+# TC clsact
+sudo tc qdisc add dev eth0 clsact
+sudo tc filter add dev eth0 ingress bpf da obj tc_filter.bpf.o sec ingress
+sudo tc filter show dev eth0 ingress
+```
+
+| Konsep | Catatan |
+| :--- | :--- |
+| Native XDP | butuh driver support (paling cepat) |
+| Generic XDP | fallback di stack, lebih lambat |
+| Offload XDP | NIC tertentu |
+| TC `clsact` | ingress + egress |
+| `bpf_redirect_map` | forwarding cepat berbasis map |
+| `sk_lookup`/`sockmap` | redirect koneksi (L4 load balancing) |
+
+> **Jebakan:** XDP hanya melihat paket **ingress**. Untuk egress/traffic keluar gunakan
+> TC di qdisc egress.
+
+---
+
+## Security (LSM, seccomp, audit)
+
+```c
+/* BPF-LSM: tolak exec dari path tertentu */
+SEC("lsm/bprm_check_security")
+int BPF_PROG(block_exec, struct linux_binprm *bprm)
+{
+    char path[64];
+    bpf_probe_read_kernel_str(path, sizeof(path), bprm->filename);
+    if (path_matches_blocklist(path))
+        return -EPERM;
+    return 0;
+}
+```
+
+| Mekanisme | Fungsi |
+| :--- | :--- |
+| BPF-LSM | kebijakan keamanan per hook (butuh `CONFIG_BPF_LSM`) |
+| seccomp-bpf | filter syscall per proses (BPF klasik, bukan eBPF penuh) |
+| `CAP_BPF`/`CAP_SYS_ADMIN` | syarat load program |
+| `kernel.unprivileged_bpf_disabled=2` | tolak load tanpa privilege |
+| `bpf_jit_harden` | hardening JIT (constant blinding) |
+| `bpf_stats_enabled` | ukur waktu eksekusi program |
+
+```bash
+# baseline keamanan host
+sysctl kernel.unprivileged_bpf_disabled kernel.kptr_restrict
+cat /proc/sys/net/core/bpf_jit_harden
+bpftool prog show | head
+```
+
+| Risiko | Mitigasi |
+| :--- | :--- |
+| Program berbahaya / verifier exploit | kernel terbaru + `unprivileged_bpf_disabled=2` |
+| Attach diam-diam (rootkit eBPF) | audit `bpftool prog list`, deteksi anomali, integritas |
+| Overhead tak terduga | `bpf_stats_enabled` + alert pada `run_time_ns` |
+| Data bocor lewat ringbuf | filter di kernel, jangan kirim path/credential mentah |
+| Seccomp berlebihan | uji dengan profile `SCMP_ACT_LOG` sebelum `ERRNO` |
+
+> **Jebakan:** seccomp adalah **BPF klasik** (tanpa map & helper) — jangan mengira bisa memakai
+> helper eBPF di profil seccomp.
+
+---
+
+## Performance & overhead
+
+```bash
+# ukur biaya program
+echo 1 | sudo tee /proc/sys/kernel/bpf_stats_enabled
+sudo bpftool prog show | grep -E 'name|run_time_ns|run_cnt'
+
+# overhead JIT log
+sudo bpftool prog dump jited id 42 | wc -l
+```
+
+| Sumber biaya | Mitigasi |
+| :--- | :--- |
+| Event per-syscall tanpa filter | filter early-return di kernel |
+| `bpf_probe_read_*` berlebihan | baca field minimum, pakai `BPF_CORE_READ` |
+| Stack trace (`bpf_get_stackid`) | sampling + batasi kedalaman |
+| Map hash besar per event | per-CPU map / agregasi |
+| Ringbuf terlalu kecil | `max_entries` power of two, pantau drop |
+| kprobe di fungsi panas | pindah ke fentry/fexit atau tracepoint |
+
+| Angka acuan (orde besaran) | Nilai |
+| :--- | :--- |
+| Overhead kprobe sederhana | ~100–500 ns per panggilan |
+| fentry/fexit | lebih rendah dari kprobe |
+| XDP drop | ~10–50 ns per paket |
+| Verifier (program besar) | ratusan ms saat load |
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| Map value tanpa cek NULL | verifier menolak | `if (!ptr) return 0;` |
+| Akses memori tanpa bounds check | "invalid mem access" | cek `data_end`/`len` |
+| Loop tak terbukti berhingga | "loop not bounded" | `#pragma unroll` atau batas eksplisit |
+| Stack > 512 byte | "stack limit exceeded" | pindah ke map/ringbuf |
+| `trace_printk` di produksi | lambat, hilang, global | ringbuf |
+| `PERF_EVENT_ARRAY` untuk event tinggi | memori per-CPU membengkak | `RINGBUF` |
+| Ringbuf reserve tanpa submit/discard | event macet | selalu submit/discard |
+| Program tanpa detach | tetap jalan setelah loader mati | `bpf_link` / pin sadar |
+| kprobe di fungsi inline | tidak pernah terpanggil | pakai fentry atau tracepoint |
+| Field struct berubah antar kernel | load gagal | CO-RE + `vmlinux.h` |
+| Tanpa BTF di target | relokasi gagal | cek `/sys/kernel/btf/vmlinux` |
+| `unprivileged_bpf_disabled=0` | vektor serangan | set 2 |
+| Sampling 100% trafik | CPU naik, event drop | threshold & agregasi |
+| Latency dihitung tanpa map per-tid | angka salah | simpan ts di map keyed tid |
+| XDP dipakai untuk egress | tidak jalan | TC egress |
+| Seccomp dianggap eBPF | helper tidak tersedia | seccomp = BPF klasik |
+| Attach ganda hook sama | event dobel | cek `bpftool net list` |
+| Program tidak GPPL-compatible helper | load ditolak untuk lisensi non-GPL | set `SEC("license")` sesuai |

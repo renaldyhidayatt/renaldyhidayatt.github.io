@@ -1,0 +1,592 @@
+---
+title: "Loki — Cheat Sheet"
+description: "Cheat sheet Loki 3.x: LogQL lengkap (parser, label filter, metrik, unwrap), desain label & batas cardinality, structured logging dengan trace_id, Alloy/Promtail pipeline, retention & schema, multi-tenancy, ruler, query debugging, plus jebakan log yang bikin Loki meledak."
+date: "2026-10-22"
+created_at: "2026-10-22"
+updated_at: "2026-10-22"
+status: "verified"
+version: "Loki 3.x · Grafana Alloy"
+order: 9.3
+tags:
+  - loki
+  - logql
+  - logging
+  - observability
+  - backend
+---
+
+# Loki — Cheat Sheet
+
+> Target: **Loki 3.x** (mode `tsdb`) dengan pipeline **Grafana Alloy** (pengganti Promtail),
+> menerima log JSON dari service Java/Go, dan contiene `trace_id` untuk korelasi dengan Jaeger.
+> Semua query & config di bawah dipakai di repo dan **diverifikasi**.
+
+**Isi sheet ini**
+
+- Mental model: Loki ≠ Prometheus
+- LogQL: stream selector & line filter
+- LogQL: parser
+- LogQL: metrik & agregasi
+- LogQL: unwrap & error rate
+- Desain label & batas cardinality
+- Structured logging (JSON, MDC, trace_id)
+- Alloy / Promtail pipeline
+- Arsitektur & retention
+- Multi-tenancy
+- Ruler: recording & alert rules
+- Query debugging
+- CLI
+- Jebakan (wajib dibaca)
+
+---
+
+## Mental model: Loki ≠ Prometheus
+
+| | Prometheus | Loki |
+| :--- | :--- | :--- |
+| Yang di-index | **nilai label** (semua) | **nama label** (value = isi stream) |
+| Isi | angka (sample) | baris log (teks) |
+| Query | `rate()` atas counter | `count_over_time()` atas rentang |
+| Biaya | series per kombinasi label | **stream per kombinasi label** |
+| Contoh mahal | 1.000.000 seri | 10.000 stream dengan label yang sama |
+
+```text
+{app="order-service", namespace="pos"}   ← ini SATU stream
+  +----------------+------------------+------------------+
+  | 2026-10-21 ... | 2026-10-21 ...  | 2026-10-21 ...  |  ← baris log di dalamnya
+```
+
+> Konsekuensi: di Loki, **label value** = pengelompokan. Every unique combination of
+> label values = satu stream. Dan stream tidak bisa di-merge → cardinality label adalah
+> batas utama, bukan sekadar "biaya".
+
+---
+
+## LogQL: stream selector & line filter
+
+```logql
+# stream selector — WAJIB ada label minimal satu
+{app="order-service"}
+{namespace="pos", app=~"order-.*"}
+{app="order-service", status=~"5.."}
+
+# line filter (isilah string, case-sensitive)
+{app="order-service"} |= "error"
+{app="order-service"} != "heartbeat"
+{app="order-service"} |~ "timeout|deadline"
+{app="order-service"} |~ "(?i)warn"            # (?i) = case-insensitive
+
+# chaining: filter lalu filter lagi
+{app="order-service"} |= "error" |~ "timeout"
+
+# label filter (setelah parsing)
+{app="order-service"} | json | level="error"
+{app="order-service"} | logfmt | status >= 500
+
+# offset & limit
+{app="order-service"} |= "error" | offset 5m
+{app="order-service"} |= "error" | limit 100
+
+# arah waktu
+{app="order-service"} |= "error" | order asc
+```
+
+| Filter | Arti |
+| :--- | :--- |
+| `|= "s"` | line **mengandung** string |
+| `!= "s"` | line **tidak mengandung** string |
+| `\|~ "re"` | regex (RE2, tidak mendukung backreference) |
+| `!~ "re"` | tidak cocok regex |
+| `\| label` | filter berdasarkan label |
+| `\| label != "v"` | negasi label |
+
+> **Jebakan:** `|= "Error"` **tidak** akan match `"error"` — Loki case-sensitive untuk
+> line filter. Pakai `|~ "(?i)error"` kalau tidak yakin formatnya.
+
+---
+
+## LogQL: parser
+
+```logql
+# json — field JSON jadi label
+{app="order-service"} | json
+{app="order-service"} | json | level="error" | orderId="8821"
+
+# json dengan filter error parse
+{app="order-service"} | json | __error__=""          # buang baris yang gagal parse
+{app="order-service"} | json | __error__!=""         # justru cari yang gagal parse
+
+# logfmt
+{app="order-service"} | logfmt | level="error"
+
+# pattern — untuk log non-JSON (nginx, apache)
+{app="nginx"} | pattern "<_> - - [<_>] \"<method> <uri> <_>\" <status> <_>"
+
+# unpack — JSON Lines (satu JSON per baris)
+{app="kafka"} | unpack
+
+# label_format — ubah nilai label
+{app="order-service"} | json | label_format level=uppercase
+
+# line_format — ubah isi baris
+{app="order-service"} | json | line_format "{{.level}}: {{.msg}}"
+
+# drop / keep — buang atau sisakan label
+{app="order-service"} | json | drop level, span_id
+{app="order-service"} | json | keep level, msg
+
+# set/rename
+{app="order-service"} | json | label_format service=order
+```
+
+| Parser | Untuk | Catatan |
+| :--- | :--- | :--- |
+| `json` | log JSON satu baris | **semua field jadi label** → cardinality |
+| `logfmt` | `key=value` | lebih aman dari json (field terbatas) |
+| `pattern` | format tetap (nginx) | placeholder `<_>` = wildcard |
+| `unpack` | JSON Lines | satu JSON per baris |
+| `regexp` | regex eksplisit | `| regexp "..."` |
+
+> **Jebakan (paling penting di Loki):** parser `json` **menjadikan semua field JSON
+> menjadi label**. Kalau logmu punya `userId`, `orderId`, `traceId` → tiap nilai
+> jadi stream baru → Loki meledak. Solusinya: pakai `| logfmt` untuk field yang
+> banyak, atau parse lalu `| drop` field yang tak perlu, atau **jangan** parse
+> field yang high-cardinality.
+
+---
+
+## LogQL: metrik & agregasi
+
+```logql
+# hitung per menit
+count_over_time({app="order-service"}[1m])
+
+# hitung per level
+sum by (level) (count_over_time({app="order-service"} | json | level="error" [5m]))
+
+# rate (Loki TIDAK punya rate() — pakai count_over_time)
+sum(rate({app="order-service"} |= "error" [5m]))       # ← tidak ada fungsi rate di LogQL
+# yang benar:
+sum(count_over_time({app="order-service"} |= "error" [5m])) / 300
+
+# top error message
+topk(10, sum by (msg) (count_over_time({app="order-service"} | json | level="error" [5m])))
+
+# bytes
+bytes_over_time({app="order-service"}[5m])
+bytes_rate({app="order-service"}[5m])
+
+# template variable di Grafana
+sum by (level) (count_over_time({app="order-service"} | json [5m]))
+```
+
+| Fungsi | Arti |
+| :--- | :--- |
+| `count_over_time(v[5m])` | jumlah baris dalam window |
+| `bytes_over_time(v[5m])` | jumlah byte |
+| `bytes_rate(v[5m])` | byte per detik |
+| `rate(v[5m])` | **tidak ada** di LogQL — turunkan ke `count_over_time` |
+| `rate_counter(v[5m])` | varian rate (terbatas) |
+| `quantile_over_time(0.99, v[5m])` | quantile dari nilai log (dengan `unwrap`) |
+| `avg_over_time`, `max_over_time`, `sum_over_time` | agregasi nilai (`unwrap` wajib) |
+
+---
+
+## LogQL: unwrap & error rate
+
+```logql
+# unwrap: ambil field numerik dari log → jadi sample
+sum by (status) (
+  rate({app="order-service"} | json | unwrap status [5m])
+)
+
+# p99 latensi dari field duration (dalam ms)
+quantile_over_time(0.99,
+  {app="order-service"} | json | unwrap duration | __error__="" [5m]) by (le)
+
+# bytes per second dari field size
+sum by (path) (
+  rate({app="order-service"} | json | unwrap bytes [5m])
+)
+```
+
+| Aturan `unwrap` | Detail |
+| :--- | --- |
+| Format | `unwrap field` atau `unwrap label_format` |
+| Field harus **numerik** | string → error parse, seri hilang |
+| Filter error | `| __error__=""` (buang yang gagal parse) |
+| `le` label | untuk `quantile_over_time` butuh bucket `le` |
+
+> **Jebakan:** `unwrap` tanpa `__error__=""` → baris yang field-nya bukan angka
+> **menghilangkan** sample dan bikin quantile menyesatkan. Selalu filter error-nya.
+
+---
+
+## Desain label & batas cardinality
+
+```yaml
+# Loki schema / limits
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # streams per tenant
+  max_global_streams_per_user: 10000
+  # label baru per hari (cardinality guard)
+  max_label_names_per_series: 15
+  # volume baca per tenant
+  ingestion_rate_mb: 16
+  ingestion_burst_size_mb: 32
+  max_query_series: 5000
+  max_query_lookback: 720h
+  retention_period: 720h            # 30 hari
+```
+
+| Label | Baik? | Alasan |
+| :--- | :--- | :--- |
+| `app` / `service` | ✅ | rendah cardinality |
+| `namespace` | ✅ | rendah |
+| `env` / `cluster` | ✅ | rendah |
+| `level` | ✅ | 4–6 nilai |
+| `status` | ✅ |_HTTP status_ handful |
+| `trace_id` | ⚠️ | **jangan jadi label** — simpan di body, parse saat perlu |
+| `user_id` | ❌ | satu stream per user |
+| `order_id` | ❌ | satu stream per order |
+| `path` | ⚠️ | template `{id}` saja |
+| `timestamp` | ❌ | tidak boleh jadi label sama sekali |
+
+```logql
+# cek stream count per label value
+sum by (app) (count_over_time({namespace="pos"}[1h]))
+```
+
+> **Jebakan:** Loki bisa mem-*drop* label yang tidak ada di config, tapi kalau label
+> value-nya varied (mis. `userId`), stream tetap meledak. **Cardinality guard ada di
+> Prometheus, tidak ada di Loki** — jadi-discipline label dimulai dari kode, bukan config.
+
+---
+
+## Structured logging (JSON, MDC, trace_id)
+
+```xml
+<!-- logback-spring.xml — JSON dengan trace_id -->
+<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <customFields>{"service":"${spring.application.name}"}</customFields>
+        <includeMdcKeyName>trace_id</includeMdcKeyName>
+        <includeMdcKeyName>span_id</includeMdcKeyName>
+        <includeMdcKeyName>user_id</includeMdcKeyName>
+    </encoder>
+</appender>
+```
+
+```json
+{
+  "timestamp": "2026-10-21T10:00:00.123Z",
+  "level": "ERROR",
+  "service": "order-service",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "thread": "http-nio-8083-exec-3",
+  "logger": "com.sanedge.order.OrderService",
+  "message": "payment failed for order 8821",
+  "orderId": "8821",
+  "status": 500
+}
+```
+
+```java
+// filter: TraceIdFilter → MDC
+@Component
+public class TraceIdFilter extends OncePerRequestFilter {
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) {
+        String traceId = Optional.ofNullable(req.getHeader("X-Trace-Id"))
+                .orElseGet(() -> UUID.randomUUID().toString());
+        try (MDC.MDCCloseable ignored = MDC.putCloseable("trace_id", traceId)) {
+            chain.doFilter(req, res);
+        }
+    }
+}
+```
+
+| Field | Wajib? | Kenapa |
+| :--- | :--- | :--- |
+| `timestamp` | ya | urutan kronologis (Loki juga pakai waktu ingest) |
+| `level` | ya | filter & agregasi per level |
+| `service` | ya | filter multi-service |
+| `trace_id` | **sangat disarankan** | korelasi log ↔ trace |
+| `span_id` | disarankan | korelasi per span |
+| `message` | ya | isi |
+| `user_id` | opsional | **body**, bukan label |
+
+> **Jebakan:** `user_id` di dalam JSON body **aman** (tidak jadi label sampai di-parse),
+> tapi kalau logmu `| json` di query → dia **menjadi label** → cardinality ledakan.
+> Pakai `| json | drop user_id` kalau perlu parse field lain.
+
+---
+
+## Alloy / Promtail pipeline
+
+```yaml
+# alloy/config.alloy — pipeline Loki
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+loki.source.docker "default" {
+  host       = "/var/run/docker.sock"
+  targets    = ["all"]
+  forward_to = [loki.process.default.receiver]
+}
+
+loki.process "default" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.json {
+    expressions = {
+      level   = "level",
+      service = "service",
+      trace_id = "trace_id",
+      span_id  = "span_id",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level   = "",
+      service = "",
+    }
+  }
+
+  // trace_id TIDAK jadi label — hanya di body
+  stage.template {
+    source = "message"
+    template = "{{ .trace_id }}"
+  }
+
+  stage.static_labels {
+    values = {
+      namespace = "pos",
+    }
+  }
+}
+```
+
+```yaml
+# kubernetes discovery
+discovery.kubernetes "pods" {
+  role = "pod"
+}
+
+discovery.relabel "pods" {
+  targets = discovery.kubernetes.pods.targets
+
+  rule {
+    source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+    regex         = "true"
+    action        = "keep"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label  = "namespace"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_app"]
+    target_label  = "app"
+  }
+}
+```
+
+| Stage | Untuk |
+| :--- | :--- |
+| `stage.json` | parse JSON → field |
+| `stage.logfmt` | parse key=value |
+| `stage.regex` | parse regex → field |
+| `stage.labels` | field → **label** (hati-hati cardinality) |
+| `stage.template` | field → isi body (aman untuk trace_id) |
+| `stage.drop` | buang field |
+| `stage.static_labels` | label konstanta |
+| `stage.timestamp` | atur timestamp dari field |
+| `stage.pack` | bungkus beberapa label jadi satu |
+| `stage.sampling` | ambil 1 dari N baris (hemat volume) |
+
+> **Jebakan:** `stage.labels` untuk `trace_id` = **stream per trace** → Loki mati.
+> Pakai `stage.template` (masuk body) atau `stage.pack`.
+
+---
+
+## Arsitektur & retention
+
+```
+App → (OTLP/push) → Loki Distributor → Ingester (chunks) → Object Storage
+                                    ↘ Querier  ↘ Ruler (alert/recording rules)
+```
+
+```yaml
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  delete_request_store: filesystem
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/tsdb-index
+    cache_location: /loki/tsdb-cache
+  filesystem:
+    directory: /loki/chunks
+
+limits_config:
+  retention_period: 720h
+  allow_structured_metadata: true
+```
+
+| Komponen | Tugas |
+| :--- | :--- |
+| Distributor | terima push, batch, kirim ke ingester |
+| Ingester | simpan chunk di memory, flush ke object storage |
+| Querier | jalankan LogQL (baca dari ingester + store) |
+| Ruler | evaluasi recording & alerting rules |
+| Compactor | compact & hapus chunk lama (retention) |
+
+| Istilah | Arti |
+| :--- | :--- |
+| Chunk | blok data log terkompresi (default 1,5 MB) |
+| Stream | sekumpulan chunk dengan label set sama |
+| Index | metadata stream → chunk |
+| `period` | interval index (24h default) |
+| `retention_period` | berapa lama log disimpan |
+
+> **Jebakan:** `retention_period` **tidak** langsung berlaku — chunk dihapus oleh
+> **compactor**, dan compactor harus punya `retention_enabled: true` +
+> `delete_request_store` yang sama dengan object storage. Kalau tidak, data tetap
+> ada padahal sudah "kedaluwarsa".
+
+---
+
+## Multi-tenancy
+
+```yaml
+auth_enabled: true
+```
+
+```bash
+# header tenant
+curl -H "X-Scope-OrgID: tenant-a" http://loki:3100/loki/api/v1/query_range \
+  --data-urlencode 'query={app="order-service"}'
+```
+
+```yaml
+# limits per tenant
+tenant_limits:
+  tenant-a:
+    ingestion_rate_mb: 10
+    max_global_streams_per_user: 5000
+    retention_period: 168h
+```
+
+| Aspek | Detail |
+| :--- | :--- |
+| `auth_enabled` | aktifkan multi-tenancy |
+| Header | `X-Scope-OrgID` |
+| `tenant_limits` | batas per tenant |
+| Chart | Loki menyimpan tenant di label `__tenant_id__` (internal) |
+
+---
+
+## Ruler: recording & alert rules
+
+```yaml
+# loki/rules/*.yaml
+groups:
+  - name: order-service-logs
+    interval: 1m
+    rules:
+      - record: order:log_errors:rate5m
+        expr: |
+          sum(count_over_time({app="order-service"} | json | level="error" [5m])) / 300
+
+      - alert: OrderServiceErrorLogSpike
+        expr: |
+          sum(count_over_time({app="order-service"} | json | level="error" [5m])) / 300 > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: order-service
+        annotations:
+          summary: "Error log rate > 1/s pada order-service"
+```
+
+```promql
+# pakai recording rule di dashboard
+order:log_errors:rate5m
+```
+
+---
+
+## Query debugging
+
+```logql
+# apakah stream ada?
+{app="order-service"}
+
+# apakah baris-nya masuk? (coba tanpa filter)
+{namespace="pos"} |= "order"
+
+# cek hasil parse JSON
+{app="order-service"} | json | __error__!=""
+
+# field apa saja yang terbaca?
+{app="order-service"} | json | label_format dummy="x" | line_format "{{.level}} {{.msg}}"
+
+# hitung per label
+sum by (app) (count_over_time({namespace="pos"}[1h]))
+```
+
+```bash
+# logcli
+logcli query '{app="order-service"}' --since=1h --limit=20
+logcli query --instant --query 'sum by (level) (count_over_time({app="order-service"} | json [5m]))'
+logcli labels
+logcli series '{app="order-service"}'
+logcli query-rate-limit
+```
+
+| Gejala | Cek | Fix |
+| :--- | :--- | :--- |
+| "no logs" | `curl /loki/api/v1/labels` | cek pipeline agent |
+| 429 Too Many Requests | `max_query_series` | naikkan limit / sederhanakan query |
+| Out of order | `unordered_writes` | set ke true |
+| Missing chunks | ingester belum flush | tunggu flush period |
+| Query lambat | banyak stream | kurangi label / tambah `by` |
+| Data lama hilang | retention | cek compactor & storage |
+| Duplikat entry | agent kirim dua kali | cek konfigurasi agent |
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| `\| json` menjadikan semua field label | Ribuan stream, Loki mati | `\| logfmt`, atau `\| json \| drop field` |
+| `trace_id`/`user_id` jadi label | Stream per trace/user | Simpan di body (`stage.template`) |
+| `rate()` dipakai di LogQL | Error | Pakai `count_over_time` |
+| `unwrap` tanpa `__error__=""` | Sample hilang, quantile salah | Filter error parse |
+| Line filter case-sensitive | Log tidak ketemu | Pakai `\|~ "(?i)..."` |
+| `retention_period` tanpa compactor | Data tidak terhapus | `retention_enabled: true` + `delete_request_store` |
+| Pipeline `stage.labels` untuk field dinamis | Stream meledak | `stage.template` atau `stage.pack` |
+| Ingestion rate exceeded | Log dibuang | Naikkan `ingestion_rate_mb` |
+| Query tanpa `by` | Ribuan series | `sum by (...)` |
+| Mengganti label pipeline tanpa restart | Stream lama tetap ada | Restart agent → stream lama expire |
+| Log multiline (stack trace) | Terpotong per baris | Alloy `stage.cri` (container log format) |
+| Timestamp dari log tak dipercaya | Urutan kacau | Set `stage.timestamp` atau pakai waktu ingest |
+| Tidak ada `service` label | Sulit filter multi-service | Wajib di setiap pipeline |

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { getPortfolioProjects } from "@/utils/mdx";
 import { useReveal } from "@/hooks/use-reveal";
+import CheatsheetBanner from "@/components/CheatsheetBanner";
 import {
     Search,
     Calendar,
@@ -70,8 +71,11 @@ const ProjectCard = ({ project, index }: { project: any; index: number }) => {
                         <div className="pt-3 mt-auto flex items-center justify-between border-t-2 border-ink">
                             <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
                                 <Calendar className="w-3.5 h-3.5" />
-                                <time dateTime={project.date}>
-                                    {new Date(project.date).toLocaleDateString("en-US", {
+                                {project.updated_at && project.updated_at !== project.created_at && (
+                                    <span className="px-1.5 py-0.5 bg-primary text-primary-foreground font-black uppercase tracking-wider">Updated</span>
+                                )}
+                                <time dateTime={project.updated_at ?? project.date} title={project.updated_reason}>
+                                    {new Date(project.updated_at ?? project.date).toLocaleDateString("en-US", {
                                         year: "numeric",
                                         month: "short",
                                     })}
@@ -95,16 +99,35 @@ const Portfolio = () => {
     });
 
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [page, setPage] = useState(1);
+
+    const allTags = useMemo(() => {
+        const counts = new Map<string, number>();
+        projects.forEach((p) => (p.tags || []).forEach((t) => counts.set(t, (counts.get(t) || 0) + 1)));
+        return Array.from(counts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 30)
+            .map((e) => e[0]);
+    }, [projects]);
+
+    const toggleTag = (tag: string) =>
+        setSelectedTags((prev) =>
+            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+        );
 
     const filteredProjects = useMemo(() => {
         const q = searchTerm.toLowerCase();
         return projects.filter((p) => {
             const title = p?.title?.toLowerCase() || "";
             const excerpt = p?.excerpt?.toLowerCase() || "";
-            return title.includes(q) || excerpt.includes(q);
+            const matchesSearch = !q || title.includes(q) || excerpt.includes(q);
+            const matchesTags =
+                selectedTags.length === 0 ||
+                (p.tags || []).some((t) => selectedTags.includes(t));
+            return matchesSearch && matchesTags;
         });
-    }, [projects, searchTerm]);
+    }, [projects, searchTerm, selectedTags]);
 
     const totalPages = Math.ceil(filteredProjects.length / ITEMS_PER_PAGE);
 
@@ -150,6 +173,9 @@ const Portfolio = () => {
                         <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl">
                             A curation of backend services, systems experiments, and independent projects I've built and studied.
                         </p>
+                        <div className="pt-2">
+                            <CheatsheetBanner />
+                        </div>
                     </div>
 
                     <div className="relative w-full max-w-xl animate-fade-in group" style={{ animationDelay: '0.2s' }}>
@@ -164,6 +190,30 @@ const Portfolio = () => {
                             }}
                             className="w-full pl-11 pr-4 py-2.5 border-2 border-ink bg-surface text-foreground placeholder:text-muted-foreground shadow-retro-sm focus:outline-none focus:shadow-retro font-mono text-xs md:text-sm transition-all"
                         />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 mt-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mr-1">Filter tag:</span>
+                        {allTags.map((tag) => {
+                            const active = selectedTags.includes(tag);
+                            return (
+                                <button
+                                    key={tag}
+                                    onClick={() => toggleTag(tag)}
+                                    className={`text-[10px] px-2.5 py-1 border-2 border-ink font-mono font-black uppercase tracking-wider transition-all ${active ? "bg-badge text-badge-ink shadow-retro -translate-y-0.5" : "bg-surface text-foreground shadow-retro-sm hover:bg-accent-light hover:shadow-retro hover:-translate-y-0.5"}`}
+                                >
+                                    {tag}
+                                </button>
+                            );
+                        })}
+                        {selectedTags.length > 0 && (
+                            <button
+                                onClick={() => setSelectedTags([])}
+                                className="text-[10px] px-2.5 py-1 border-2 border-ink bg-surface text-muted-foreground font-mono font-black uppercase tracking-wider hover:bg-accent-light"
+                            >
+                                Clear ✕
+                            </button>
+                        )}
                     </div>
                 </header>
 

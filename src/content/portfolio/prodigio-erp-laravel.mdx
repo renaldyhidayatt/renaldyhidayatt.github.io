@@ -2,6 +2,8 @@
 title: "Prodigio ERP"
 excerpt: "An innovative ERP system for the construction industry, built with Tauri, React, Ant Design, PHP, and Laravel."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["laravel", "php", "javascript", "react", "ant design", "tauri", "rust"]
 status: "selesai"
 image: "https://github.com/renaldyhidayatt/prodigio-erp-public-main/raw/main/images/dashboard.png?raw=true"
@@ -38,6 +40,20 @@ Prodigio ERP supports multiple themes:
 - 🌅 **Sunset Dark Theme**
 - 🔆 **Light Theme**
 - 🌑 **Dark Theme**
+
+## Technical Decisions & Trade-offs
+
+**Laravel as the ERP backbone**
+Laravel ships authentication, ORM and migrations, validation, and queueing out of the box, which matters in an ERP where the hard part is the domain — project planning, resource allocation, budgeting — not the plumbing. The cost is framework gravity: accepting its conventions and abstractions wholesale, and leaning on PHP for compute-heavy reporting. For a workflow-heavy construction product, buying the plumbing and spending the effort on the domain is the right trade.
+
+**One application for the whole ERP**
+All construction workflows live in a single Laravel backend rather than being decomposed into services, so cross-module concerns like a budget that touches planning and communication stay transactional and cheap to change. The cost is that everything deploys together and module boundaries depend on developer discipline. At this scale, a well-structured monolith beats premature decomposition.
+
+**Tauri desktop alongside web and PWA**
+The same React interface ships as a browser app, a PWA, and a Tauri desktop application, so field users get an installed, native-feeling client without a second frontend codebase. The cost: a Rust toolchain in the build pipeline and per-platform webview differences to test against. Three delivery surfaces from one UI is the payoff that justifies the extra packaging work.
+
+**Ant Design for data-dense ERP screens**
+Ant Design's tables, forms, and layout components fit an ERP's dense, form-driven interface far better than assembling primitives by hand, and its theming system backs the ten built-in light and dark themes. The trade-offs are bundle size, a recognizable default look, and friction when a screen needs something the library did not anticipate. For back-office software, consistency and speed beat visual uniqueness.
 
 ## **Screenshots** 📸
 

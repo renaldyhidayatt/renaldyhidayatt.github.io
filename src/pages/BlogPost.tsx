@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import MDXContent from "@/components/MDXContent";
 import ReadingProgress from "@/components/ReadingProgress";
 import TableOfContents from "@/components/TableOfContents";
+import RelatedCheatsheets from "@/components/RelatedCheatsheets";
 import { getBlogPost, getBlogPosts } from "@/utils/mdx";
 import { Calendar, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import { useMemo } from "react";
@@ -166,6 +167,10 @@ const BlogPost = () => {
                 {/* ── Related Articles ─────────────────────────── */}
                 <div className="max-w-[960px] mx-auto px-6 mt-20">
                     <div className="h-[3px] bg-border mb-14" />
+
+                    <div className="mb-14">
+                        <RelatedCheatsheets tags={post.tags || []} />
+                    </div>
 
                     {randomPosts.length > 0 && (
                         <section className="space-y-8">

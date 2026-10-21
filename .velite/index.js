@@ -2,3 +2,4 @@
 
 export { default as posts } from './posts.json'
 export { default as portofolio } from './portofolio.json'
+export { default as cheatsheet } from './cheatsheet.json'

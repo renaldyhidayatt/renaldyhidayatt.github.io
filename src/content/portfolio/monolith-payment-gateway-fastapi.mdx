@@ -2,6 +2,8 @@
 title: "Monolithic Payment Gateway fastapi"
 excerpt: "A monolithic payment system with full features including authentication, user management, balance tracking, top-up, transfer, withdrawal, and email notifications."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["python", "fastapi", "postgresql", "kafka", "docker-compose", "keycloak", "prometheus", "grafana", "opentelemetry", "jaeger"]
 status: "selesai"
 image: "https://github.com/MamangRust/monolith-fastapi-payment-gateway/blob/main/images/otel.png?raw=true"
@@ -28,6 +30,20 @@ This project implements a **Monolithic Payment Gateway**, designed to handle var
 - **Comprehensive Observability**: Integrated with OTel, Jaeger, Prometheus, and Grafana.
 - **Scalable Communication**: Utilizes Kafka for efficient transaction processing.
 - **Modular Design**: Well-structured service architecture for easy development and maintenance.
+
+## Technical Decisions & Trade-offs
+
+**FastAPI for money-moving endpoints**
+Async request handling plus Pydantic-validated bodies put strict typing on exactly the surface where malformed input hurts most: top-ups, transfers, withdrawals. The cost is assembling the rest yourself — auth, ORM wiring, and background workers are all manual compared to a batteries-included framework, and the GIL still caps CPU-bound work per process even though this I/O-heavy workload barely notices it.
+
+**Monolith first, services later**
+Keeping balance, top-up, transfer, withdrawal, and email in one deployable means a transfer can be validated and settled in a single database transaction — no sagas, no distributed commit choreography. The trade: a bug in the email path can take the transfer path down with it, and module boundaries survive through discipline rather than deployment isolation. At this size, correctness beats independence.
+
+**Kafka for notifications, not for money movement**
+Emails ride Kafka so SMTP latency never lands in a transfer's response time. The discipline this forces: Kafka is at-least-once, so a redelivered message must not read as a second top-up — the ledger stays the source of truth while the notification stream is treated as best-effort, duplicates allowed.
+
+**Tracing from day one**
+OpenTelemetry spans across every service, collected in Jaeger, turn a slow balance query into a searchable trace instead of a support ticket. The cost is modest but real: instrumentation overhead and occasional span noise on simple requests — cheap insurance for a system where the first question of every incident is where the money went.
 
 ---
 

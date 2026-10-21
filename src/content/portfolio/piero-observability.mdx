@@ -2,6 +2,8 @@
 title: "PIERO GPUI Observability Platform"
 excerpt: "A high-performance GPU-accelerated desktop monitoring console built with the Zed GPUI framework, designed for distributed tracing visualization and real-time system observability at scale."
 date: "2026-02-25"
+created_at: "2026-02-25"
+updated_at: "2026-02-25"
 tags:
   - rust
   - gpui
@@ -61,6 +63,22 @@ Extends traditional observability beyond infrastructure metrics into AI-native s
 - **Telemetry Protocol**: OpenTelemetry OTLP for standardized distributed tracing
 - **Data Integration**: Direct gRPC pipelines for Edge-AI telemetry ingestion
 - **Rendering Backend**: GPU-native vector graphics pipeline
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Native GPUI console vs browser-based APM dashboards**
+Rendering spans with GPU vector primitives removes the DOM, JavaScript runtime, and per-frame memory pressure that make web APM tools buckle at scale — millions of spans stay interactive where a browser would stall. The cost is distribution: no URL to share, platform-specific builds, and every viewer needs the desktop application installed.
+
+**GPU-side geometry for trace rendering**
+Computing span bounding boxes and critical-path highlights on the GPU keeps zooming and panning at frame rate even on dense RPC chains. The trade-off is that rendering now depends on driver quality and GPU availability, and text-heavy metadata still flows through the CPU, so detail panels — not the waterfall — become the next bottleneck.
+
+**OTLP as the only ingestion contract**
+Standardizing on OpenTelemetry OTLP means the console works with any instrumented service and never fights proprietary exporters. The flip side is that it stays a viewer: no storage or query language of its own, so long-term retention and heavy analysis still belong to whatever backend feeds it.
+
+**Extending observability into RAG and token telemetry**
+Tracking token consumption, retrieval pipeline traces, and confidence drift treats AI workloads as first-class observability citizens — a view conventional APM simply lacks. The trade-off is coupling: the AI-specific semantics assume one shape of LLM pipeline and will need revision as serving architectures change.
 
 ---
 

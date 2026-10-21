@@ -2,6 +2,8 @@
 title: "Payment Gateway Project"
 excerpt: "A payment gateway system handling transactions, top-ups, withdrawals, and transfers using Go and sync.Mutex."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["golang", "sync.Mutex"]
 status: "selesai"
 image: "/portofolio/payment_gateway_grpc.png"
@@ -24,6 +26,26 @@ This project simulates a payment gateway handling operations like card transacti
 - **Database**: PostgreSQL
 - **API**: RESTful
 - **Containerization**: Docker
+
+## Technical Decisions & Trade-offs
+
+**In-memory sync.Mutex as the consistency mechanism**
+A single mutex around shared state makes double-debit races trivially impossible: one writer at a time, no lock ordering to document, no deadlock matrix to reason about. The cost is equally direct - every balance mutation serializes behind one lock no matter which card it touches, so throughput is capped, and the guarantee evaporates the moment a second process joins or the process restarts. It is the clearest possible demonstration of the problem; a production design would invert it and make PostgreSQL row locks or compare-and-swap updates the source of truth.
+
+**Go instead of Rust for the same domain**
+Goroutines and a fast compiler make this kind of concurrency simulation quick to build and easy to read. The trade-off is weaker guarantees: the compiler will not prevent a data race the way Rust's borrow checker does, so correctness rests on discipline and the race detector, and the garbage collector can add pauses the Rust implementations of this domain do not have. For a project whose point is concurrency mechanics, Go's visibility into those primitives is the draw.
+
+**PostgreSQL for storage, the process for correctness**
+Balances, cards, top-ups, withdrawals, and transfers are persisted in PostgreSQL, but the consistency story lives in the application's mutex rather than in database transactions. That split is the design's main fragility: a crash between an in-memory mutation and its commit leaves the two disagreeing, and multiple app instances cannot share one lock. Moving that guarantee into the database is the first change a production version would make.
+
+**A ledger-style data model**
+Every operation type - transaction, top-up, withdrawal, transfer - is its own recorded entity with identifiers and timestamps, on top of a saldo aggregate per card. That is the right instinct for an audit trail: history survives as first-class rows instead of a mutable balance alone. The cost is that the bookkeeping tables and the balance must stay consistent under the same lock, doubling the write surface of every operation.
+
+**REST with API keys for merchants**
+Merchant authentication is a static API key checked on payment endpoints, which is easy to implement and demo. The limitation is that bare keys carry no scopes, expiry, or per-request signing, so they simulate integration rather than secure it. Acceptable for a concurrency study; the first thing a production version would replace.
+
+**Docker for packaging**
+The service compiles to a single binary and ships in a container, keeping the run story uniform across machines. It is the least contentious choice in the project, with the usual cost of maintaining images for little benefit beyond reproducibility.
 
 ## Instalasi
 ```bash

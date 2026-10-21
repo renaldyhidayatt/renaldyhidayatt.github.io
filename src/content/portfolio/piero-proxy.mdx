@@ -2,6 +2,8 @@
 title: "PIERO Pingora WAF & Proxy"
 excerpt: "A high-performance zero-trust security dataplane powered by Cloudflare Pingora, featuring integrated WAF protection, asynchronous telemetry streaming, and ultra-low-latency Layer-7 traffic inspection."
 date: "2026-02-20"
+created_at: "2026-02-20"
+updated_at: "2026-02-20"
 tags:
   - rust
   - proxy
@@ -74,6 +76,25 @@ The observability pipeline is architected to ensure that audit and telemetry col
 - **Concurrent Messaging**: Crossbeam lock-free channels for parallel telemetry distribution.
 - **Inter-Service Communication**: Tonic gRPC over HTTP/2 for distributed policy synchronization.
 - **Transport Security**: Hardened TLS 1.3 termination with modern cipher suites.
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Pingora in Rust vs C-based proxy stacks**
+Building on Cloudflare's Pingora eliminates the buffer overflow and use-after-free bug classes that C proxies expose during complex payload inspection, while inheriting a production-tested multiplexing core. The cost is a younger ecosystem: fewer off-the-shelf modules than nginx or Envoy, so more of the WAF and telemetry behavior is self-maintained.
+
+**TLS termination with full Layer-7 inspection**
+Terminating TLS 1.3 at the edge is what makes WAF inspection possible at all — you cannot filter what you cannot read. The trade-offs are computational (every connection pays handshake and parsing costs) and architectural: the proxy becomes a trust boundary holding decrypted traffic, and anything encrypted end-to-end past it is invisible to enforcement.
+
+**In-memory IP reputation before HTTP parsing**
+Checking source IPs against local caches and terminating malicious connections at the socket layer means known-bad traffic never costs a byte of HTTP parsing. The price is that local reputation is a snapshot: it goes stale between refreshes, and a memory-resident list trades RAM and update discipline for speed at the edge.
+
+**Recursive WAF inspection of parameters, headers, cookies, and JSON**
+Deep recursive scanning catches SQLi, XSS, LFI, and malformed payloads wherever they hide in a request, not just in the obvious fields. The costs are latency on large payloads, false positives that need tuning, and the permanent reality that signature-based inspection trails novel evasion techniques — depth buys coverage, not certainty.
+
+**Lock-free async telemetry duplication (PieroBridge)**
+Duplicating audit metadata into Crossbeam MPMC queues and streaming it over gRPC in background workers means observability never sits on the request path — user traffic forwards upstream before telemetry even exists. The trade-off is that under extreme pressure telemetry, not traffic, is the lossy side, so the audit stream is eventually consistent with what the dataplane actually saw.
 
 ---
 

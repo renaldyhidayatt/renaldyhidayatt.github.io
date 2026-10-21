@@ -2,6 +2,8 @@
 title: 'Distributed Microservice Simple E-commerce'
 excerpt: 'A Distributed Microservice Simple E-commerce Platform built with Go, gRPC, PostgreSQL, and Kafka with full observability stack.'
 date: '2025-11-15'
+created_at: "2025-11-15"
+updated_at: "2025-11-15"
 tags:
   [
     'golang',
@@ -65,6 +67,23 @@ The application is composed of several microservices that communicate with each 
 - **Message Broker:** Kafka
 - **Containerization:** Docker, Docker Compose
 - **Observability:** OpenTelemetry, Jaeger, Prometheus, Grafana, Loki
+
+## Technical Decisions & Trade-offs
+
+**Microservices at "simple" scale vs a monolith**
+Four domain services (user, product, order, role) plus a gateway — deliberately the lightest expression of the pattern. The cost of gRPC wiring, a Kafka broker, and the full observability suite on a single host exceeds what a monolith would need; the value is the pattern itself, as a baseline that the heavier e-commerce and payment-gateway variants build on.
+
+**gRPC internally + REST gateway at the edge**
+Typed, contract-first internal communication, while clients only ever see JSON + Swagger through the gateway. The trade-off: two interface layers to keep in sync, and error semantics are mapped twice — gRPC status codes have to be translated to HTTP codes at the gateway or clients see raw internal failures.
+
+**Kafka for asynchronous communication**
+Event-driven decoupling for order/notification flows: consumers can lag or restart without blocking a transaction. The costs: at-least-once delivery (consumers must be idempotent), ordering only within a partition, and a full broker in the compose file — real operational weight for a "simple" demo system.
+
+**sqlc + pgx for the data layer**
+Compiler-checked, type-safe Go code generated from hand-written SQL — no reflection, no ORM magic, and every query is explicit enough to audit with `EXPLAIN`. The cost: every query is written by hand and a code-generation step sits between schema and code. At this service count, pgx's built-in pooler is sufficient for Postgres — the larger variant needed PgBouncer because socket exhaustion actually showed up; here it would have been a layer of indirection for nothing.
+
+**Load testing scope: read-only endpoints only**
+The published k6 numbers (capability/load/stress/spike per module) cover GET paths: that's where you cheaply establish a throughput baseline and backpressure behavior. The honest trade-off: the write path — checkout contention, order-item races — is the hardest part and is *not* measured in these results. Note the "dropped iterations" at the capability point is intentional backpressure protecting the service, not a failure; and single-node compose numbers do not transfer directly to a K8s deployment.
 
 ## Getting Started
 

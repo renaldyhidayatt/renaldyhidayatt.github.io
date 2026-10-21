@@ -1,0 +1,486 @@
+---
+title: "gRPC & Protobuf — Cheat Sheet"
+description: "Cheat sheet gRPC + Protobuf untuk JVM dan Go: definisi kontrak, status code, deadline, interceptor, streaming, error mapping, dan jebakan streaming yang meledakkan memory."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "gRPC 1.6x · Protobuf 3.25+"
+order: 2
+tags:
+  - grpc
+  - protobuf
+  - java
+  - go
+  - backend
+---
+
+# gRPC & Protobuf — Cheat Sheet
+
+> Target: **Protobuf 3.25+** (proto3) + **gRPC 1.6x**, dipakai bareng **Spring gRPC** (JVM) dan
+> **grpc-go** (Go). Semua snippet di bawah dipakai di service E-Commerce, POS, dan Payment Gateway
+> dan **diverifikasi compile**.
+
+**Isi sheet ini**
+
+- Kontrak `.proto`
+- Definisi service & message
+- Naming & kompatibilitas
+- Status code & error mapping
+- Deadline, timeout, retry
+- Interceptor (logging, tracing, auth)
+- Streaming: unary, server, client, bidi
+- Spring gRPC (server & client)
+- grpc-go (server & client)
+- Jebakan (wajib dibaca)
+
+---
+
+## Kontrak `.proto`
+
+```proto
+syntax = "proto3";
+
+package com.sanedge.pos.order.v1;      // package = namespace, WAJIB versioned
+
+option java_multiple_files = true;      // tiap message jadi file Java terpisah
+option java_package = "com.sanedge.pos.order.v1";
+option java_outer_classname = "OrderProto";
+option go_package = "github.com/sanedge/pos/gen/order/v1;orderv1";
+
+// Enum: JANGAN pakai 0 sebagai nilai bermakna
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;   // default proto3 — selalu ada
+  ORDER_STATUS_PENDING = 1;
+  ORDER_STATUS_PAID = 2;
+  ORDER_STATUS_FAILED = 3;
+}
+
+message Order {
+  string id = 1;                 // NEVER change the type of an existing field
+  string merchant_id = 2;
+  OrderStatus status = 3;
+  int64 total_price_cents = 4;   // uang dalam satuan terkecil, JANGAN float/double
+  repeated OrderItem items = 5;
+  google.protobuf.Timestamp created_at = 6;
+  map<string, string> attributes = 7;
+}
+
+message OrderItem {
+  string product_id = 1;
+  int32 quantity = 2;
+  int64 price_cents = 3;
+}
+
+message ListOrdersRequest {
+  string merchant_id = 1;
+  int32 page_size = 2;           // default page size
+  string page_token = 3;         // cursor, bukan offset
+  string idempotency_key = 4;    // untuk mutasi
+}
+```
+
+**Struktur folder kontrak** (satu proto per domain, shared library):
+
+```
+common/src/main/proto/
+├── order.proto
+├── order_item.proto
+├── product.proto
+├── transaction.proto
+└── common/types.proto          # shared: money, timestamp, pagination
+```
+
+---
+
+## Definisi service & message
+
+```proto
+service OrderService {
+  // Unary: 1 request → 1 response
+  rpc CreateOrder (CreateOrderRequest) returns (Order);
+
+  // Server streaming: 1 request → N response (stream server ke client)
+  rpc WatchOrders (WatchOrdersRequest) returns (stream Order);
+
+  // Client streaming: N request → 1 response
+  rpc UploadOrders (stream Order) returns (UploadSummary);
+
+  // Bidi: N request ↔ N response
+  rpc SyncOrders (stream SyncRequest) returns (stream SyncResponse);
+}
+```
+
+```java
+// Generated: OrderServiceGrpc.OrderServiceImplBase
+@Service
+public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
+
+    @Override
+    public void createOrder(CreateOrderRequest req, StreamObserver<Order> observer) {
+        try {
+            observer.onNext(command.create(req));
+            observer.onCompleted();
+        } catch (Exception e) {
+            observer.onError(GrpcErrorMapper.map(e));
+        }
+    }
+}
+```
+
+```go
+// Generated: orderv1.OrderServiceServer
+type OrderServer struct {
+    orderv1.UnimplementedOrderServiceServer
+    cmd *OrderCommandService
+}
+
+func (s *OrderServer) CreateOrder(ctx context.Context, req *orderv1.CreateOrderRequest) (*orderv1.Order, error) {
+    order, err := s.cmd.Create(ctx, req)
+    if err != nil {
+        return nil, status.Error(codes.Internal, "create order failed")
+    }
+    return order, nil
+}
+```
+
+---
+
+## Naming & kompatibilitas
+
+Aturan yang menjaga wire-format backward-compatible:
+
+| Aturan | Contoh | Kenapa |
+| :--- | :--- | :--- |
+| Field number **tidak boleh** diubah/ditukar | `id = 1` selalu `id` | Nomor = identitas di wire |
+| Field yang dihapus → `reserved` | `reserved 4, 7;` | Cegah dipakai ulang |
+| Tipe field **tidak boleh** berubah | `int64` → `string` = BREAKING | Data lama jadi tidak terbaca |
+| Tipe baru → field baru | tambah `optional string note = 12;` | Aman, field lama default |
+| `optional` = field boleh absent | `optional string coupon = 8;` | Scalar proto3 tanpa `optional` selalu ada (default) |
+| Enum: tambah nilai, jangan ubah urutan | tambah `ORDER_STATUS_CANCELLED = 4;` | Ordinal/string consistency |
+| Enum 0 = `UNSPECIFIED` | wajib |.protobuf lama tidak tahu enum baru → fallback ke 0 |
+| Package di-version | `com.sanedge.pos.order.v1` | Boleh ada v1 & v2 berdampingan |
+| Service name & method name stable | `OrderService/CreateOrder` | Nama = bagian dari kontrak |
+
+```proto
+message Order {
+  reserved 4, 7;                  // pernah ada `discount` & `note`, sudah dihapus
+  reserved "discount_code";       // jangan dipakai lagi
+
+  string id = 1;
+  string merchant_id = 2;
+  OrderStatus status = 3;
+  optional string coupon_code = 8;  // field baru → aman
+}
+```
+
+---
+
+## Status code & error mapping
+
+**Peta resmi `grpc status` → HTTP** (dipakai gateway & tracing):
+
+| gRPC code | HTTP | Kapan dipakai |
+| :--- | :--- | :--- |
+| `OK` | 200 | sukses |
+| `INVALID_ARGUMENT` | 400 | input salah → **jangan** retry |
+| `UNAUTHENTICATED` | 401 | token hilang/expired |
+| `PERMISSION_DENIED` | 403 | tidak boleh akses |
+| `NOT_FOUND` | 404 | resource tidak ada |
+| `ALREADY_EXISTS` | 409 | bentrok unik |
+| `FAILED_PRECONDITION` | 400 | state belum memenuhi syarat |
+| `RESOURCE_EXHAUSTED` | 429 | rate limit / quota habis |
+| `ABORTED` | 409 | optimistic lock gagal → **retryable** |
+| `UNAVAILABLE` | 503 | dependency down → **retryable** |
+| `DEADLINE_EXCEEDED` | 504 | timeout → retryable *hanya* kalau idempoten |
+| `INTERNAL` | 500 | bug di server |
+| `UNIMPLEMENTED` | 501 | method tidak ada (versi client > server) |
+| `DATA_LOSS` | 500 | data rusak |
+
+```java
+// Mapping exception → status (JVM)
+public final class GrpcErrorMapper {
+
+    public static StatusRuntimeException map(Throwable t) {
+        if (t instanceof StatusRuntimeException sre) return sre;
+
+        if (t instanceof EntityNotFoundException)
+            return Status.NOT_FOUND.withDescription("not found").withCause(t).asRuntimeException();
+
+        if (t instanceof DataIntegrityViolationException)
+            return Status.ALREADY_EXISTS.withDescription("conflict").withCause(t).asRuntimeException();
+
+        if (t instanceof IllegalArgumentException)
+            return Status.INVALID_ARGUMENT.withDescription(t.getMessage()).withCause(t).asRuntimeException();
+
+        if (t instanceof AccessDeniedException)
+            return Status.PERMISSION_DENIED.withDescription("forbidden").withCause(t).asRuntimeException();
+
+        // WAJIB: jangan bocorkan detail internal ke client
+        return Status.INTERNAL.withDescription("internal error").withCause(t).asRuntimeException();
+    }
+}
+```
+
+```go
+// Mapping error → status (Go)
+func ToStatus(err error) error {
+    switch {
+    case err == nil:
+        return nil
+    case errors.Is(err, ErrNotFound):
+        return status.Error(codes.NotFound, "not found")
+    case errors.Is(err, ErrConflict):
+        return status.Error(codes.AlreadyExists, "conflict")
+    case errors.Is(err, context.DeadlineExceeded):
+        return status.Error(codes.DeadlineExceeded, "timeout")
+    case errors.Is(err, context.Canceled):
+        return status.Error(codes.Canceled, "canceled")
+    default:
+        return status.Error(codes.Internal, "internal error")
+    }
+}
+```
+
+> **Jebakan:** `Status.INTERNAL.withDescription(err.Error())` membocorkan nama tabel/kolom
+> ke client. Description harus generik; detail ada di log server.
+
+---
+
+## Deadline, timeout, retry
+
+Deadline adalah **propagasi otomatis**: nilai deadline dari caller ikut tersalin ke setiap call
+di bawahnya. Kalau tidak, satu chain panjang bisa menggantung.
+
+```java
+// JVM client — selalu set deadline
+OrderServiceGrpc.OrderServiceBlockingStub stub =
+        OrderServiceGrpc.newBlockingStub(channel)
+                .withDeadlineAfter(2, TimeUnit.SECONDS);
+
+Order order = stub.createOrder(request);
+```
+
+```go
+// Go client — deadline via context
+ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+defer cancel()
+
+order, err := client.CreateOrder(ctx, req)
+if errors.Is(err, context.DeadlineExceeded) {
+    return status.Error(codes.DeadlineExceeded, "upstream timeout")
+}
+```
+
+| Praktik | Nilai |
+| :--- | :--- |
+| Deadline default | 2–5 detik untuk call internal |
+| Deadline total | daha pendek untuk chain panjang (edge → 3 service) |
+| Retry | hanya `UNAVAILABLE` & `ABORTED`, **dan** operasi idempoten |
+| Backoff | exponential + jitter, max 3 percobaan |
+| Retry budget | batasi 10% request, kalau tidak → retry storm |
+
+---
+
+## Interceptor
+
+Interceptor = tempat paling murah untuk hal yang lintas semua RPC: logging, tracing, auth,
+metric. Taruh di **server** untuk observability, di **client** untuk retry/auth.
+
+```java
+// Server interceptor — logging + trace propagation
+public class LoggingInterceptor implements ServerInterceptor {
+
+    @Override
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
+            ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+
+        long start = System.nanoTime();
+        String method = call.getMethodDescriptor().getFullMethodName();
+
+        return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(
+                next.startCall(call, headers)) {
+            @Override
+            public void onComplete() {
+                long ms = (System.nanoTime() - start) / 1_000_000;
+                Status status = call.getStatus();
+                log.info("grpc method={} status={} durationMs={}", method, status.getCode(), ms);
+                Metrics.grpcCall(method, status.getCode().name(), ms);
+            }
+        };
+    }
+}
+```
+
+```go
+// Go client interceptor — retry + auth
+func UnaryRetryInterceptor(maxAttempts int) grpc.UnaryClientInterceptor {
+    return func(ctx context.Context, method string, req, reply any,
+        cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+
+        for attempt := 0; attempt < maxAttempts; attempt++ {
+            err := invoker(ctx, method, req, reply, cc, opts...)
+            if err == nil {
+                return nil
+            }
+            st, _ := status.FromError(err)
+            if st.Code() != codes.Unavailable && st.Code() != codes.Aborted {
+                return err
+            }
+            time.Sleep(backoff(attempt))
+        }
+        return status.Error(codes.Unavailable, "retries exhausted")
+    }
+}
+```
+
+---
+
+## Streaming: unary, server, client, bidi
+
+```java
+// Server streaming — iterator di server
+@Override
+public void watchOrders(WatchOrdersRequest req, StreamObserver<Order> observer) {
+    Flux<Order> flux = orderService.watch(req.getMerchantId());
+    flux.subscribe(
+        order -> observer.onNext(order),
+        err -> observer.onError(GrpcErrorMapper.map(err)),
+        () -> observer.onCompleted()
+    );
+}
+```
+
+```go
+// Server streaming — Send
+func (s *OrderServer) WatchOrders(req *orderv1.WatchOrdersRequest, srv orderv1.OrderService_WatchOrdersServer) error {
+    for _, o := range s.svc.Watch(req.MerchantId) {
+        if err := srv.Send(o); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+```
+
+| Jenis | Cardinality | Use case |
+| :--- | :--- | :--- |
+| Unary | 1 → 1 | mayoritas (99% RPC) |
+| Server streaming | 1 → N | notifikasi order, live update, tail log |
+| Client streaming | N → 1 | bulk upload, batch insert |
+| Bidi | N ↔ N | chat, sinkronisasi dua arah, interaktif |
+
+> **Jebakan:** streaming membuka koneksi **lama**. Di Envoy/Nginx butuh `grpc_http2_max_duration`
+> yang cukup, dan tiap stream menahan 1 goroutine/thread. Kalau ribuan order monitoring aktif
+> bersamaan, thread server habis.
+
+---
+
+## Spring gRPC (server & client)
+
+```java
+// Server
+@SpringBootApplication
+@EnableGrpc
+public class OrderApplication { public static void main(String[] args) {
+    SpringApplication.run(OrderApplication.class, args);
+} }
+
+@Configuration
+public class GrpcServerConfig {
+
+    @Bean
+    GrpcServerBuilderCustomizer grpcCustomizer(OrderGrpcService service) {
+        return builder -> builder
+                .addService(service)
+                .intercept(new LoggingInterceptor())
+                .maxInboundMessageSize(4 * 1024 * 1024);   // default 4 MiB
+    }
+}
+```
+
+```java
+// Client — stub + load balancing via Eureka
+@Bean
+OrderServiceGrpc.OrderServiceBlockingStub orderStub(
+        @Qualifier("orderChannel") ManagedChannel channel) {
+    return OrderServiceGrpc.newBlockingStub(channel)
+            .withDeadlineAfter(2, TimeUnit.SECONDS)
+            .withWaitForReady();            // antri saat service belum ready, jangan langsung error
+}
+```
+
+```yaml
+grpc:
+  client:
+    order-service:
+      default-service-config: |
+        {
+          "loadBalancingConfig": [{"round_robin": {}}],
+          "methodConfig": [{
+            "name": [{"service": "com.sanedge.pos.order.v1.OrderService"}],
+            "timeout": "3s",
+            "retryPolicy": {
+              "maxAttempts": 3,
+              "initialBackoff": "0.1s",
+              "maxBackoff": "1s",
+              "retryableStatusCodes": ["UNAVAILABLE", "ABORTED"]
+            }
+          }]
+        }
+      address: discovery://order-service
+```
+
+---
+
+## grpc-go (server & client)
+
+```go
+// Server
+func NewServer(svc OrderService) *grpc.Server {
+    s := grpc.NewServer(
+        grpc.ChainUnaryInterceptor(logInterceptor, authInterceptor),
+        grpc.MaxRecvMsgSize(4*1024*1024),
+        grpc.KeepaliveParams(keepalive.ServerParameters{
+            MaxConnectionIdle: 5 * time.Minute,
+            Time:              30 * time.Second,
+            Timeout:           10 * time.Second,
+        }),
+    )
+    orderv1.RegisterOrderServiceServer(s, svc)
+    return s
+}
+
+// Client
+conn, err := grpc.NewClient(
+    "dns:///order-service:50051",
+    grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg)),
+    grpc.WithDefaultServiceConfig(`{
+      "loadBalancingConfig": [{"round_robin": {}}],
+      "methodConfig": [{"name": [{"service": "order.v1.OrderService"}],
+        "timeout": "3s",
+        "retryPolicy": {"maxAttempts": 3, "initialBackoff": "0.1s",
+                        "maxBackoff": "1s",
+                        "retryableStatusCodes": ["UNAVAILABLE"]}}]
+    }`),
+    grpc.WithChainUnaryInterceptor(retryInterceptor(3)),
+)
+```
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| Deadline tidak di-set | Panggilan menggantung, resource habis | `withDeadlineAfter` / `context.WithTimeout` |
+| Retry tanpa idempotency | Transaksi dobel | Kunci idempotency di DB + `idempotency_key` di request |
+| Streaming panjang di behind proxy | Stream putus di 60 detik | Naikkan `grpc_http2_max_duration`, pakai keepalive |
+| `INTERNAL` + detail error mentah | Bocor struktur DB ke client | Description generik, detail di log |
+| Enum mulai dari 1 tanpa `UNSPECIFIED` | Client lama dapat nilai ngawur | Selalu definisikan `*_UNSPECIFIED = 0` |
+| Ganti nomor field | Data lama salah baca | Nomor field adalah kontrak permanen |
+| `float64` untuk uang | Selisih pembulatan | `int64` cents / `BigDecimal` |
+| Marshal/Unmarshal di loop | CPU meledak | Batch message, atau pakai streaming |
+| gRPC tanpa mTLS | Traffic bisa diintip | TLS + token per-RPC (metadata) |
+| Header auth tanpa expiration | Token bocor | Validasi `exp` + `aud` + `iss` di interceptor |
+| `waitForReady` tanpa deadline | Request menumpuk | Tetap pasang deadline |

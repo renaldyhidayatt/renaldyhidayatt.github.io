@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Ecommerce Quarkus - GraphQL"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan GraphQL Gateway, gRPC, Quarkus, Kafka, dan PostgreSQL."
 date: "2026-05-26"
+created_at: "2026-05-26"
+updated_at: "2026-05-26"
 tags: [
   "java", "quarkus", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "flyway"
@@ -839,6 +841,28 @@ flowchart TB
 | **Observability** | OpenTelemetry + Jaeger | Distributed telemetry tracing pipeline and visualization. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**GraphQL gateway instead of REST at the edge**
+Clients query exactly the fields they need, so a storefront listing and an admin panel can share one endpoint without over-fetching, and introspection plus the GraphQL UI replace hand-maintained API docs. The cost is that query shape is now caller-controlled: unbounded depth and wide field selection can multiply server work, and standard HTTP caching patterns stop applying. Schema design and query governance carry weight that REST offloads to fixed endpoints.
+
+**Resolvers that terminate in gRPC, not the database**
+SmallRye GraphQL fields map onto protobuf-backed calls, which keeps the gateway thin but means a naively nested query degrades into one gRPC round trip per level. The Redis read-through cache absorbs most of the repeat cost, yet the gateway still receives whole downstream payloads and trims them to match the query. That is the price of layering GraphQL over contract-first services instead of a dedicated data layer.
+
+**Quarkus reactive runtime over Spring Boot**
+The reactive engine keeps gateway threads free while one query fans out to several downstream modules at once, which is exactly the workload a GraphQL resolver creates. The trade is familiarity: Mutiny types and non-blocking discipline raise the learning curve, and the Spring ecosystem offers more off-the-shelf tooling when something misbehaves. For a gateway whose job is concurrent fan-out, the reactive model fits.
+
+**PostgreSQL 17 with PgBouncer and Flyway**
+Cart, order, and transaction data demand ACID semantics, and the audit-ledger design depends on relational integrity holding across every module. PgBouncer keeps two dozen reactive pool users from exhausting database sockets, and Flyway turns schema evolution into ordered, repeatable steps. The costs are pooled-connection ceilings under burst load and a fixed schema shared across all 21 modules.
+
+**Kafka-driven invoice and notification worker**
+Order and transaction events are published to Kafka and the email worker handles SMTP on its own clock, so a slow mail server never delays checkout. At-least-once delivery means a retried event can produce a duplicate invoice email, and the broker is one more moving part to monitor. Acceptable, because receipt-style notifications are precisely the work that tolerates eventual delivery.
+
+**E-commerce consistency without distributed transactions**
+Checkout touches cart, shipping, order, and transaction modules as separate gRPC calls; nothing wraps them in one atomic transaction. The design leans on explicit order lifecycle states and the centralized audit ledger so a partially completed checkout is visible and recoverable rather than silently lost. Simpler to operate than saga tooling, but it pushes reconciliation responsibility onto the data model.
 
 ---
 

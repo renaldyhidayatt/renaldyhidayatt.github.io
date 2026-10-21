@@ -2,6 +2,8 @@
 title: "Booking Hotel"
 excerpt: "A hotel booking management system with user authentication, built using Spring Boot and PostgreSQL, running in a Docker environment."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["spring-boot", "postgres", "docker", "java"]
 status: "selesai"
 image: "/portofolio/booking-scheduling.png"
@@ -43,6 +45,31 @@ image: "/portofolio/booking-scheduling.png"
 6. Room Management (Admin Only)
     Admins can add, update, or remove rooms from the system.
 
+
+## Technical Decisions & Trade-offs
+
+**Spring Boot + JVM vs lighter stacks (Go, Node.js)**
+Chosen for its mature ecosystem: Spring Security handles registration/login/verification with little custom code, and OpenAPI support ships out of the box. The cost is a heavier runtime — JVM startup time and memory footprint are much larger than a Go/Node service, and boilerplate (DTOs, mappers, config classes) grows quickly. For this scale that's a fine trade; the payoff in developer velocity and type safety wins.
+
+**PostgreSQL (relational) vs NoSQL**
+A booking system fundamentally needs ACID transactions and referential integrity: a booking must atomically link user ↔ room ↔ date range, and availability checks are relational queries (date-range overlap). A document store would make the consistency logic ad-hoc. The trade-off is a rigid schema — every new room type or status means a migration — and it doesn't scale horizontally the way a document store can. At this data volume, consistency wins.
+
+**Preventing double-booking (the core domain trade-off)**
+- *Pessimistic locking* (`SELECT ... FOR UPDATE` on the room row): simple and safe, but serialized — throughput collapses when many users fight for the same room.
+- *Optimistic locking* (version column on room/availability): high throughput, no blocking, but contended requests fail and must retry — the client has to handle "someone just took this room" gracefully.
+- Last line of defense either way: a *unique constraint* on the room + overlapping date range, so the database itself rejects a duplicate even if application logic has a race. I leaned toward optimistic with the unique constraint as a backstop, prioritizing throughput over simplicity.
+
+**Monolith vs microservices**
+Auth, booking, and room management live in one Spring Boot app. That keeps local development trivial (one `docker-compose up`), with a single deployable and simple transactional boundaries. The costs: no independent scaling (the whole app scales as one unit), shared failure domain, and coarser team boundaries. At this scope that's the right call — the overhead of inter-service communication (network, serialization, distributed transactions) would exceed the benefit.
+
+**Docker / docker-compose deployment**
+Reproducible environment, one-command setup. The trade-off: a compose stack is still a single-node story — no load balancer, auto-scaling, or CI/CD pipeline behind it. It's "containerized" but not "production-grade infrastructure."
+
+**Email-based verification & password reset**
+Standard UX, but it outsources availability to the email pipeline (deliverability, SPF/DKIM, spam folders). The security trade-off lives in token design: reset/verification links must be *random, single-use, and short-lived* (stored hashed, not in plain text), otherwise a leaked or guessed link hands over the account.
+
+**Admin room management inside the same app**
+Role-gated in the monolith is cheap to build (Spring Security `@PreAuthorize`), but it couples admin tooling lifecycle to the public API — an admin bug means a redeploy of the entire service. Acceptable at this scale; would split out in a larger system.
 
 ## ERD & Swagger
 

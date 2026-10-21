@@ -1,0 +1,494 @@
+---
+title: "ArgoCD — Cheat Sheet"
+description: "Cheat sheet ArgoCD 2.9+: App-of-Apps, Application spec, sync policy & options, sync wave, project & RBAC, repo-server, CLI harian, image updater, notifikasi, rollback, plus jebakan self-heal yang menjebak."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "ArgoCD 2.9+"
+order: 7
+tags:
+  - argocd
+  - gitops
+  - kubernetes
+  - devops
+  - backend
+---
+
+# ArgoCD — Cheat Sheet
+
+> Target: **ArgoCD 2.9+** dengan pola **App-of-Apps** untuk deployment semua microservice
+> (E-Commerce, POS, Payment Gateway) di namespace per platform. Semua manifest di bawah
+> dipakai di repo `*-k8s` dan **diverifikasi** ter-sync.
+
+**Isi sheet ini**
+
+- Mental model 5 menit
+- Arsitektur komponen
+- App-of-Apps
+- Application: spec lengkap
+- Sync policy & sync options
+- Sync wave
+- Project, RBAC, namespace
+- Argo CD Image Updater
+- Notifikasi
+- CLI & UI harian
+- Rollback & dry-run
+- Jebakan (wajib dibaca)
+
+---
+
+## Mental model 5 menit
+
+| Konsep | Ringkasan |
+| :--- | :--- |
+| ArgoCD = control plane GitOps | Git = sumber kebenaran, bukan cluster |
+| Application | CRD yang menunjuk 1 target (path/repo/ref) |
+| App-of-Apps | root Application manages child Applications |
+| Sync | apply manifest dari Git ke cluster |
+| Diff | bandingkan desired (Git) vs live (cluster) |
+| Health | status Healthy/Progressing/Degraded |
+| Sync wave | urutan sync antar Application (annotation) |
+| selfHeal | perubahan manual di cluster **ditarik** kembali |
+| prune | resource yang tak ada di Git **dihapus** dari cluster |
+| project | batas izin: repo, cluster, namespace, resource |
+| repo-server | yangYrclone repo & render manifest (bisa di-scale) |
+| ApplicationSet | generate Applications dari git/helm/list |
+
+---
+
+## Arsitektur komponen
+
+```
+┌──────────────┐   ┌──────────────┐   ┌────────────────┐
+│ argocd-server│   │ repo-server  │   │  application   │
+│  (API/UI/    │   │ (git clone + │   │  controller    │
+│   controller)│   │  render)     │   │ (sync & health)│
+└──────┬───────┘   └──────┬───────┘   └───────┬────────┘
+       │                  │                   │
+       └──────────────────┴───────────────────┘
+                    Redis (cache & state)
+```
+
+| Komponen | Tugas | Scaling |
+| :--- | :--- | :--- |
+| `argocd-server` | API, UI, gRPC | horizontal (behind ingress) |
+| `repo-server` | clone repo, render manifest | horizontal (paling berat) |
+| `application-controller` | sync + health check | horizontal (sharding by name) |
+| `redis` | cache, lock, state | wajib (bukan opsional) |
+
+---
+
+## App-of-Apps
+
+```yaml
+# root-app.yaml — bootstrap: manages daftar child Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pos-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io   # hapus child saat root dihapus
+spec:
+  project: pos
+  source:
+    repoURL: https://github.com/sanedge/pos-k8s.git
+    targetRevision: main
+    path: deployments/gitops/argocd/apps       # folder berisi child Application manifests
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+```
+
+```bash
+# bootstrap: buat namespace + install ArgoCD + root app
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd -f root-app.yaml
+```
+
+---
+
+## Application: spec lengkap
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: service-order
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"        # urutan sync
+    argocd.argoproj.io/sync-options: "Prune=true;ServerSideApply=true"
+spec:
+  project: pos
+  source:
+    repoURL: https://github.com/sanedge/pos-k8s.git
+    targetRevision: main
+    path: deployments/kubernetes/base/order-service
+    helm:
+      valueFiles: [values/prod.yaml]
+      parameters:
+        - name: image.tag
+          value: v1.4.2
+    kustomize:
+      images:
+        - name: superapp/order-service
+          newTag: v1.4.2
+    directory:
+      recurse: true
+      include: '{*.yaml,*.yml}'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pos
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 5m }
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers: [/spec/replicas]        # HPA yang pegang replicas
+  revisionHistoryLimit: 5
+```
+
+| Field `spec` | Arti |
+| :--- | :--- |
+| `source.repoURL` | repo git |
+| `source.targetRevision` | branch/tag/commit |
+| `source.path` | folder dalam repo |
+| `source.helm` / `source.kustomize` / `source.directory` | cara render (satu saja) |
+| `destination.server` | cluster target (`https://kubernetes.default.svc` = cluster yang sama) |
+| `destination.namespace` | namespace target |
+| `syncPolicy.automated` | `prune`, `selfHeal`, `allowEmpty` |
+| `syncPolicy.syncOptions` | flag saat sync |
+| `syncPolicy.retry` |ponential backoff saat sync gagal |
+| `ignoreDifferences` | field yang boleh berbeda (HPA vs replicas) |
+| `ignoreDifferences` | dengan `jsonPointers` | ignores field spesifik |
+
+---
+
+## Sync policy & sync options
+
+```yaml
+syncPolicy:
+  automated:
+    prune: true          # hapus resource yang hilang dari Git
+    selfHeal: true       # revert perubahan manual di cluster
+    allowEmpty: false    # jangan hapus semua resource kalau Git kosong
+  syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    - ApplyOutOfSyncOnly=true
+    - RespectIgnoreDifferences=true
+    - PruneLast=true
+    - Replace=true            # GANTI resource (bukan patch) — untuk immutable field
+    - FailOnSharedResourceWarning=true
+```
+
+| Sync option | Arti | Peringatan |
+| :--- | :--- | :--- |
+| `CreateNamespace` | buat namespace target | aman |
+| `ServerSideApply` | SSA, conflict resolution | recommended |
+| `ApplyOutOfSyncOnly` | apply hanya yang OutOfSync | lebih cepat |
+| `RespectIgnoreDifferences` | hormati `ignoreDifferences` | aktifkan kalau pakai ignore |
+| `PruneLast` | prune setelah apply | lebih aman untuk service |
+| `Replace` | delete & create ulang | **ber downtime** |
+| `FailOnSharedResourceWarning` | gagal kalau resource dipakai app lain | baik untuk shared DB |
+
+| `automated` | Efek |
+| :--- | :--- |
+| `prune: true` | Resource yang dihapus di Git ikut terhapus di cluster |
+| `selfHeal: true` | Perubahan manual (`kubectl edit`) **ditarik kembali** |
+| `allowEmpty: false` | Kalau Git kosong, jangan hapus semua |
+
+---
+
+## Sync wave
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: service-order
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+```
+
+| Wave | Isi | Contoh |
+| :--- | :--- | :--- |
+| 0 | CRD & controller | cert-manager, sealed-secrets |
+| 1 | Namespace & infra | postgres, redis, kafka |
+| 2 | Migrasi database | `Job` migrasi Flyway |
+| 3 | Domain service | order, payment, auth |
+| 4 | Gateway & ingress | api-gateway, nginx |
+| 5 | Observability | prometheus, grafana, loki |
+
+> Sync wave = urutan **antar Application** di App-of-Apps. Wave yang sama berjalan
+> **paralel** (bukan berurutan). Kalau B butuh A selesai → A harus di wave lebih kecil.
+
+---
+
+## Project, RBAC, namespace
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: pos
+  namespace: argocd
+spec:
+  description: "Platform Point of Sale"
+  sourceRepos:
+    - https://github.com/sanedge/pos-k8s.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: pos
+    - server: https://kubernetes.default.svc
+      namespace: pos-observability
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: Secret
+      name: "*-vault-token"      # secret khusus tidak boleh disentuh ArgoCD
+  roles:
+    - name: ci-bot
+      policies:
+        - p, proj:pos:deploy, applications, sync, pos/*, allow
+        - p, proj:pos:read, applications, pos/*, allow
+      jwtTokens:
+        - my-jwt-token
+```
+
+```yaml
+# RBAC untuk user (pakai groupoidc / OIDC)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argocd-reader
+  namespace: pos
+rules:
+  - apiGroups: ["argoproj.io"]
+    resources: ["applications", "applicationsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+```
+
+| Objek | Fungsi |
+| :--- | :--- |
+| `AppProject` | batas: repo, cluster, namespace, jenis resource |
+| `role` di project | policy per token/JWT |
+| `ClusterRole` | akses ke resource cluster (namespace, CRD) |
+| `namespaceResourceBlacklist` | resource yang tidak boleh di-sync ArgoCD (mis. secret RA) |
+
+---
+
+## Argo CD Image Updater
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: service-order
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/refresh: normal
+spec:
+  source:
+    repoURL: https://github.com/sanedge/pos-k8s.git
+    targetRevision: main
+    path: deployments/kubernetes/base/order-service
+  imageUpdater:
+    # Image Updater v1 (argo-cd-image-updater) memakai spec ini
+    updateStrategy: semver
+    allowTags: "regexp:^v\\d+\\.\\d+\\.\\d+$"
+    imageList:
+      - superapp/order-service
+```
+
+```bash
+#-tracking manual (alternatif: bot commit PR)
+argocd app get service-order --output wide
+```
+
+> Image Updater menulis tag baru **langsung ke Git** (commit) → memicu sync.
+> Alternatif yang lebih aman: bot membuka PR dan butuh review manusia.
+
+---
+
+## Notifikasi
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: pos
+  namespace: argocd
+spec:
+  notifications:
+    - type: webhook
+      webhook:
+        url: https://hooks.slack.com/services/xxx
+        jira:
+          enabled: false
+      when:
+        - sync-status.succeeded
+        - sync-status.failed
+        - sync-status.orphaned
+        - degraded
+      channels:
+        - slack-pos
+```
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: service-order
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded: slack-pos
+    notifications.argoproj.io/subscribe.on-sync-failed: slack-pos
+    notifications.argoproj.io/subscribe.on-deployed: slack-pos
+```
+
+| Trigger | Arti |
+| :--- | :--- |
+| `on-sync-succeeded` | Sync sukses |
+| `on-sync-failed` | Sync gagal |
+| `on-sync-status-unknown` | Timeout saat cek status |
+| `on-deployed` | Resource berhasil di-deploy |
+| `on-health-degraded` | Health-Degraded |
+
+---
+
+## CLI & UI harian
+
+```bash
+# install CLI
+brew install argocd           # macOS
+# atau: kubectl -n argocd port-forward svc/argocd-server 8080:80 & argocd login localhost:8080
+
+# login & context
+argocd login localhost:8080 --username admin --password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)
+argocd context list
+
+# aplikasi
+argocd app list
+argocd app get service-order
+argocd app get service-order --output wide          # kolom health & sync
+argocd app get service-order --show-operation
+argocd app history service-order
+argocd app logs service-order --tail 100
+
+# sync manual
+argocd app sync service-order
+argocd app sync service-order --prune
+argocd app rollback service-order 3
+
+# diff & resources
+argocd app diff service-order
+argocd app resources service-order
+argocd app manifests service-order
+
+# projects & settings
+argocd proj list
+argocd proj get pos
+argocd settings
+```
+
+```bash
+# port-forward UI paling cepat
+kubectl port-forward -n argocd svc/argocd-server 8080:80
+kubectl port-forward -n argocd svc/argocd-repo-server 8081:8081   # untuk render helm/OCI
+```
+
+| Command | Pakai saat |
+| :--- | :--- |
+| `argocd app list` | cek semua health |
+| `argocd app diff` | sebelum sync, pastikan tidak ada perubahan tak terduga |
+| `argocd app sync` | sync manual setelah update Git |
+| `argocd app history` / `rollback` | rollback versi sebelumnya |
+| `argocd app logs` | log pod yang di-deploy |
+| `argocd app resources` | resource milik app (tree) |
+
+---
+
+## Rollback & dry-run
+
+```bash
+# lihat riwayat revisi
+argocd app history service-order
+
+# rollback ke revisi tertentu
+argocd app rollback service-order 5
+
+# dry-run: render tanpa apply
+argocd app diff service-order --local
+kubectl diff -k production/kubernetes/overlays/production
+
+# preview manifest yang akan di-apply
+argocd app manifests service-order
+```
+
+```yaml
+# ArgoCD UI: Sync dengan "Dry Run" — render + compare tanpa apply
+spec:
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+```
+
+> **Jebakan:** `argocd app rollback` me-*sync* revisi lama → **Deployments** bisa
+> ter-rollback, tapi **ConfigMap/Secret** ikut berubah. Kalau ada migrasi DB yang sudah
+> jalan, rollback app = kode lama vs schema baru.
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| `selfHeal: true` + `kubectl edit` | Perubahan manual hilang dalam hitungan menit | Pakai `ignoreDifferences` untuk field yang memang boleh beda |
+| `prune: true` + path salah | Resource terhapus semua | Cek `argocd app diff` sebelum sync pertama |
+| `targetRevision: main` | Isi deploy berubah tanpa review | Pakai tag/commit immutable |
+| Sync wave tidak urut | Pod crash karena CRD belum ada | Naikkan wave CRD ke 0 |
+| `ignoreDifferences` tanpa `RespectIgnoreDifferences` | Field tetap di-revert | Tambahkan sync option-nya |
+| Sync tanpa `ServerSideApply` | Konflik field manager | Pakai SSA |
+| `Replace=true` | Service downtime | Hindari; perbaiki immutable field di manifest |
+| Secret sync tanpa enkripsi | Rahasia di Git | SealedSecrets / External Secrets |
+| `sourceRepos` terlalu longgar | App bisa deploy dari repo mana pun | Kunci per project |
+| Namespace target tidak ada | Sync gagal | `CreateNamespace=true` atau buat manual |
+| `appProject` di namespace berbeda | Project tidak ketemu | `spec.project` harus **nama**, bukan `ns/nama` |
+| Image Updater commit langsung ke `main` | Deploy tanpa review | Pakai PR-based updater |
+| Redundant sync (2 controller) | Konflik ownership object | Satu controller per cluster, atau sharding |
+| `prune` + CRD dihapus | Resource unmanaged | Hati-hati saat menghapus CRD |
+| Timeout sync pendek | Sync dianggap gagal padahal masih jalan | Naikkan `timeout.reconciliation` |

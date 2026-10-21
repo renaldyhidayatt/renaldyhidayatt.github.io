@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Payment Gateway Quarkus - GraphQL"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan GraphQL Gateway, gRPC, Quarkus, Kafka, dan PostgreSQL."
 date: "2026-05-26"
+created_at: "2026-05-26"
+updated_at: "2026-05-26"
 tags: [
   "java", "quarkus", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "flyway"
@@ -806,6 +808,28 @@ flowchart TB
 | **Observability** | OpenTelemetry + Jaeger | Vendor-neutral distributed telemetry pipeline and visualization. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**GraphQL as the public face of a payments API**
+One endpoint with introspection and the bundled GraphQL UI makes the API self-documenting, and a merchant dashboard can pull card, balance, and transaction fields in a single shaped query. The risk is flexibility aimed at money: deep queries fan out into multiple gRPC calls across the saldo, card, and transaction modules, and error handling gets trickier because one response can mix partial data with a per-field error list. Worth it for read-heavy dashboards; mutations stay deliberately narrow.
+
+**Mutations are one gRPC call each, by design**
+Every topup, transfer, and withdraw mutation maps to a single downstream gRPC invocation, which keeps failure semantics explainable: the operation completed or it did not. The cost is that flows spanning several modules cannot be wrapped in one GraphQL-level transaction, so ordering and status tracking in the transaction ledger carry the consistency story. Simplicity at the gateway beats the illusion of atomicity.
+
+**Saldo with optimistic locking**
+Concurrent balance updates rely on optimistic concurrency rather than database locks, so throughput does not collapse when many requests touch the same account. The bill is paid in retries under contention, and the failure mode surfaces to callers as a fast rejection instead of a slow wait. At this traffic level that is the right side of the trade.
+
+**Ledger records are soft-deleted, never removed**
+Topup and transaction audit rows survive deletion as tombstones with restore paths, preserving the financial narrative after mistakes. Queries must therefore filter deleted rows everywhere, and storage only grows. With money, an append-mostly history you can reconstruct beats a tidy database you cannot audit.
+
+**PostgreSQL 17 behind PgBouncer with Flyway**
+Balances and ledgers demand ACID guarantees and relational integrity, which rules out document stores for the core money tables. PgBouncer shields Postgres from the connection hunger of many reactive modules, and Flyway turns schema evolution into ordered, reviewable migrations. The constraints: pooling adds a hop with its own limits, and startup migrations need care when several pods launch together.
+
+**Kafka events keep mail off the money path**
+Transfer, topup, and withdraw events are published to Kafka and a dedicated worker handles SMTP invoices, so email latency or outages cannot delay settlement. At-least-once delivery means the worker must tolerate duplicate events, and the broker is another stateful service in the stack. For financial notifications, eventual and retryable beats synchronous and fragile.
 
 ---
 

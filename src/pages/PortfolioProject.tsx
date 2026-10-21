@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import MDXContent from "@/components/MDXContent";
 import ReadingProgress from "@/components/ReadingProgress";
 import TableOfContents from "@/components/TableOfContents";
+import RelatedCheatsheets from "@/components/RelatedCheatsheets";
 import { getPortfolioProject, getPortfolioProjects } from "@/utils/mdx";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { useMemo } from "react";
@@ -157,6 +158,10 @@ const PortfolioProject = () => {
                 {/* ── Related Projects ─────────────────────────── */}
                 <div className="max-w-[960px] mx-auto px-6 mt-20">
                     <div className="h-[3px] bg-border mb-14" />
+
+                    <div className="mb-14">
+                        <RelatedCheatsheets tags={project.tags || []} title="Cheatsheet Untuk Proyek Ini" />
+                    </div>
 
                     {latestProjects.length > 0 && (
                         <section className="space-y-8">

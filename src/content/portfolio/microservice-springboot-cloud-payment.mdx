@@ -1,0 +1,509 @@
+---
+title: "Distributed Microservices — Payment Gateway Platform (Spring Boot Cloud)"
+excerpt: "Backend payment gateway microservices di Java 21 / Spring Boot 3.5.3 dengan Spring Cloud 2025.0.0: 20 modul Maven, ledger transaksi dengan idempotency key, saldo/topup/transfer/withdraw terisolasi per database, Eureka discovery, Kafka transactional outbox, dan analitik ClickHouse."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+tags:
+  - java
+  - springboot
+  - springcloud
+  - eureka
+  - openfeign
+  - kafka
+  - rabbitmq
+  - postgresql
+  - clickhouse
+  - redis
+  - docker
+  - observability
+status: "ongoing"
+image: "/portofolio/microservice_springboot_cloud/microservice-springboot-cloud-paymentgateway.png"
+---
+
+{/* Catatan penulis: angka jumlah modul, database, dan test di dokumen ini adalah placeholder — sesuaikan dengan hasil repo sebenarnya sebelum dipublikasikan. */}
+
+# Distributed Microservices — Payment Gateway Platform (Spring Boot Cloud)
+
+A production-grade, fully observable **microservices payment gateway backend** built in **Java 21** on **Spring Boot 3.5.3** and **Spring Cloud 2025.0.0**. Designed around domain-driven service boundaries, each payment business domain — Users, Roles, Auth, Merchants, Cards, Saldo, Topup, Transfer, Withdraw, Transactions — lives in its own self-contained Maven module, running as an **independent JVM process** with its own REST API, PostgreSQL database, and Flyway migrations, achieving true service-level isolation and independent deployability.
+
+Services register with **Netflix Eureka** for service discovery, communicate synchronously via **OpenFeign** REST clients, and asynchronously through **Apache Kafka** (transactional outbox pattern) and **RabbitMQ** (transaction & notification queues). A **Spring Cloud Gateway** (WebFlux) acts as the unified reactive entry point with JWT authentication at the edge. A dedicated **ClickHouse analytics layer** (stats-writer, stats-reader, stats-backfill) provides business intelligence decoupled from the transactional store.
+
+The platform ships with a **comprehensive observability suite** (OpenTelemetry Collector, Prometheus, Grafana, Loki, Jaeger) and full Docker Compose orchestration.
+
+---
+
+## Key Features
+
+| Domain | Capabilities |
+| :--- | :--- |
+| **Auth & Users** | Registration and login with stateless JWT tokens (jjwt), BCrypt password hashing, Feign-backed user lookup for authentication. |
+| **Roles & RBAC** | Role entities with composite `user_roles` assignments (assign/remove/lookup by user), JPQL role-name projections. |
+| **Merchants** | Merchant onboarding with auto-generated merchant numbers & API keys, document management, soft-delete columns with hard-delete application semantics. |
+| **Cards** | Card issuance and lifecycle (card number, type, expiry, status), user-scoped card listing, and card balances resolved through the saldo service over Feign. |
+| **Saldo** | Per-user balance account with atomic debit/credit operations, balance history, and top-up-ready ledger entries. |
+| **Topup** | Balance top-up flow with channel reference, status lifecycle, and idempotent replay of the same top-up request. |
+| **Transfer** | Peer-to-peer fund movement between users with balance validation on both sides and a transactional ledger write. |
+| **Withdraw** | Withdrawal requests to external accounts with status tracking, fee calculation, and reconciliation hooks. |
+| **Transactions** | Central financial ledger with **idempotency-key deduplication**, service-fee computation (`calculateFee`), and a Kafka outbox publisher for `transaction.completed` events. |
+| **Notification & File Storage** | RabbitMQ-driven notification consumer with file metadata enrichment (failure-safe), and a file-storage service consumed over Feign by transaction & notification. |
+| **Email Worker** | Kafka-driven asynchronous worker logging delivery events (receipts, notifications, merchant notices). |
+| **ClickHouse Analytics** | Three-component pipeline: stats-writer (Kafka→ClickHouse), stats-reader (REST→Redis cache), stats-backfill (PostgreSQL→outbox→Kafka→ClickHouse). |
+| **Transactional Outbox** | Events written to DB within the business transaction, relayed to Kafka by a scheduled OutboxPublisher — no event loss during Kafka outages. |
+| **Observability** | OpenTelemetry traces/metrics to the OTel Collector, Prometheus metrics, Grafana dashboards, Loki log aggregation, Jaeger tracing. |
+| **Deployment** | Docker Compose orchestration with 12 per-service PostgreSQL databases, RabbitMQ, Kafka, Redis, ClickHouse, and the observability stack. |
+
+---
+
+## Architecture Overview
+
+The platform implements a **Spring Cloud microservices** architecture. Every business service is a standalone Spring Boot application with its own port, database, and Flyway migration set. Services register with **Eureka** and resolve each other through load-balanced calls; the **Spring Cloud Gateway** is the single edge router, applying JWT validation per route before forwarding.
+
+### Core Architecture Principles
+
+- **Service-Level Isolation**: One JVM process, one database, one migration chain per business domain. No shared databases.
+- **Layered Modules**: `Controller → Service → Repository` with MapStruct DTO mappers; `@RestControllerAdvice` error handling where present.
+- **Service Discovery**: Netflix Eureka — services address each other by logical name (`lb://service-name`).
+- **Synchronous Communication**: OpenFeign (balance checks, card lookups, user lookups, file metadata enrichment).
+- **Event-Driven Resilience**: Kafka transactional outbox for ledger events plus RabbitMQ queues (transaction publication, notifications).
+- **OTel Telemetry**: Shared or copied `TelemetryConfig` bootstraps the OTel SDK — spans, counters, histograms (`requests_total`, `requests_duration_seconds`, `failure_total`) per service operation, exported over OTLP.
+
+```mermaid
+graph TB
+    classDef client fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:2px,font-weight:bold
+    classDef gateway fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:2px
+    classDef domain fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff,stroke-width:1.5px
+    classDef infra fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+    classDef obs fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px
+    classDef event fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:1.5px
+
+    Client["Client Applications<br/>(Web / Mobile / Merchant API)"]:::client
+
+    subgraph Edge["Edge Layer"]
+        direction LR
+        GW["Spring Cloud Gateway<br/>WebFlux Router :8080"]:::gateway
+        JWT["JWT Auth Filter<br/>per route"]:::gateway
+        EUREKA["Eureka Server<br/>Service Registry :8761"]:::gateway
+    end
+
+    Client -->|HTTP REST| GW
+    GW -.->|register / resolve| EUREKA
+
+    subgraph BusinessServices["Business Domain Services (Spring Boot)"]
+        direction TB
+
+        subgraph IdentityDomain["Identity & Access"]
+            AUTH["Auth Service :8085<br/>JWT + Feign to user"]:::domain
+            USER["User Service :8084"]:::domain
+            ROLE["Role Service :8088<br/>RBAC assignments"]:::domain
+        end
+
+        subgraph MerchantDomain["Merchant Management"]
+            MERCH["Merchant Service :8089<br/>apiKey + merchantNo"]:::domain
+        end
+
+        subgraph MoneyDomain["Balance & Funds"]
+            CARD["Card Service :8090<br/>card lifecycle"]:::domain
+            SALDO["Saldo Service :8091<br/>atomic balance"]:::domain
+        end
+
+        subgraph MovementDomain["Fund Movement"]
+            TOPUP["Topup Service :8092"]:::domain
+            TRANSFER["Transfer Service :8093<br/>P2P movement"]:::domain
+            WITHDRAW["Withdraw Service :8094"]:::domain
+        end
+
+        subgraph LedgerDomain["Ledger"]
+            TXN["Transaction Service :8095<br/>idempotency + outbox"]:::domain
+        end
+
+        subgraph PlatformServices["Platform Services"]
+            NOTIF["Notification Service :8086<br/>RabbitMQ consumer"]:::domain
+            FS["File Storage :8087<br/>file metadata"]:::domain
+        end
+    end
+
+    GW -->|REST| AUTH
+    GW -->|REST| USER
+    GW -->|REST| ROLE
+    GW -->|REST| MERCH
+    GW -->|REST| CARD
+    GW -->|REST| SALDO
+    GW -->|REST| TOPUP
+    GW -->|REST| TRANSFER
+    GW -->|REST| WITHDRAW
+    GW -->|REST| TXN
+    GW -->|REST| NOTIF
+    GW -->|REST| FS
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        direction LR
+        PG[("PostgreSQL<br/>12 per-service DBs")]:::infra
+        RABBIT[("RabbitMQ<br/>:5672")]:::infra
+        KAFKA[("Kafka<br/>Event Bus :9092")]:::infra
+        REDIS[("Redis<br/>:6379")]:::infra
+        CLICKHOUSE[("ClickHouse<br/>Analytics :8123")]:::infra
+    end
+
+    AUTH -->|JPA| PG
+    USER -->|JPA| PG
+    MERCH -->|JPA| PG
+    CARD -->|JPA| PG
+    SALDO -->|JPA| PG
+    TOPUP -->|JPA| PG
+    TRANSFER -->|JPA| PG
+    WITHDRAW -->|JPA| PG
+    TXN -->|JPA| PG
+
+    TXN -.->|Feign balance| SALDO
+    TRANSFER -.->|Feign balance| SALDO
+    TOPUP -.->|Feign balance| SALDO
+    CARD -.->|Feign card| TXN
+
+    TXN -->|publish transaction-queue| RABBIT
+    RABBIT -->|consume| NOTIF
+    NOTIF -->|Feign| FS
+
+    TXN -.->|outbox| KAFKA
+    TOPUP -.->|outbox| KAFKA
+    TRANSFER -.->|outbox| KAFKA
+    KAFKA -->|consume| EMAIL_W
+
+    subgraph EventConsumers["Event-Driven Consumers"]
+        EMAIL_W["Email Service :8096<br/>6 Kafka listeners"]:::event
+        STATS_W["Stats Writer :8097<br/>batch to ClickHouse"]:::event
+        STATS_R["Stats Reader :8098<br/>Redis-cached queries"]:::event
+    end
+
+    STATS_W --> CLICKHOUSE
+    STATS_R --> CLICKHOUSE
+    STATS_R --> REDIS
+
+    subgraph Observability["Observability Stack"]
+        direction LR
+        OTEL["OTel Collector"]:::obs
+        PROM["Prometheus"]:::obs
+        LOKI["Loki"]:::obs
+        JAEGER["Jaeger"]:::obs
+        GRAFANA["Grafana"]:::obs
+    end
+
+    AUTH -.->|OTLP| OTEL
+    TXN -.->|OTLP| OTEL
+    GW -.->|OTLP| OTEL
+    OTEL -.-> JAEGER
+    OTEL -.-> PROM
+    LOKI -.-> GRAFANA
+    PROM -.-> GRAFANA
+```
+
+---
+
+## Service Catalog
+
+**20 Maven modules** — 17 runtime services, 1 shared library, 1 seeder, 1 stats backfill job:
+
+| # | Service | Module | Port | Responsibility |
+| :- | :------ | :----- | :--- | :------------- |
+| 1 | Eureka Server | `eureka-server` | 8761 | Service registry |
+| 2 | API Gateway | `api-gateway` | 8080 | Spring Cloud Gateway (WebFlux), JWT filter, routing |
+| 3 | Common | `common` | — | Shared library: DTOs, EventEnvelope, Kafka/Rabbit/Security/Telemetry config, seeder contracts |
+| 4 | Auth | `auth-service` | 8085 | Login/register, JWT issuing (jjwt), Feign to user-service |
+| 5 | User | `user-service` | 8084 | User CRUD, `findByUsername` for auth |
+| 6 | Role | `role-service` | 8088 | Roles + composite user-role assignments |
+| 7 | Merchant | `merchant-service` | 8089 | Merchant onboarding, documents, auto-generated merchantNo/apiKey |
+| 8 | Card | `card-service` | 8090 | Card issuance and lifecycle, user-scoped listing |
+| 9 | Saldo | `saldo-service` | 8091 | Balance account, atomic debit/credit, balance history |
+| 10 | Topup | `topup-service` | 8092 | Balance top-up with channel reference and status lifecycle |
+| 11 | Transfer | `transfer-service` | 8093 | Peer-to-peer fund movement with balance validation |
+| 12 | Withdraw | `withdraw-service` | 8094 | Withdrawal requests, fee calculation, reconciliation hooks |
+| 13 | Transaction | `transaction-service` | 8095 | Financial ledger, idempotency keys, service fee, Kafka outbox |
+| 14 | Notification | `notification-service` | 8086 | RabbitMQ consumer, file metadata enrichment, persistence |
+| 15 | File Storage | `file-storage-service` | 8087 | File metadata API (consumed via Feign) |
+| 16 | Email | `email-service` | 8096 | 6 Kafka listeners (auth, merchant, transaction) |
+| 17 | Stats Writer | `stats-writer` | 8097 | Kafka → dedup → batch → ClickHouse |
+| 18 | Stats Reader | `stats-reader` | 8098 | Aggregated queries, Redis cache |
+| 19 | Stats Backfill | `stats-backfill` | — | One-shot PostgreSQL → outbox → Kafka backfill |
+| 20 | Seeder | `seeder` | — | Idempotent data seeding across domains |
+
+---
+
+## Internal Service Architecture
+
+Every business module follows the same layered layout, keeping domain logic consistent across the platform.
+
+```mermaid
+graph TB
+    classDef web fill:#1e3a5f,stroke:#7dd3fc,color:#e0f2fe,stroke-width:1.5px
+    classDef service fill:#1e1b4b,stroke:#a78bfa,color:#ede9fe,stroke-width:1.5px
+    classDef repo fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+    classDef infra fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px
+    classDef shared fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:1.5px
+
+    subgraph Module["Maven Module: <service-name>-service/"]
+        direction TB
+        CTRL["controller/<br/>REST endpoints, @Valid"]:::web
+        SVC["service/<br/>business logic + OTel spans"]:::service
+        REPO["repository/<br/>Spring Data JPA"]:::repo
+        ENTITY["entity/ + dto/<br/>JPA entities, MapStruct mappers"]:::repo
+        EXC["exc/<br/>@RestControllerAdvice"]:::web
+        OUTBOX["outbox/ + producer/<br/>event publishers & listeners"]:::web
+    end
+
+    subgraph Config["src/main/resources"]
+        FLYWAY["db/migration/V*__*.sql<br/>Flyway"]:::shared
+        APP["application.properties"]:::shared
+    end
+
+    subgraph CommonLib["common/ — shared library"]
+        CONFIG["config/<br/>Security / Telemetry / Kafka / Rabbit"]:::shared
+        EVENT["event/EventEnvelope<br/>Kafka event contract"]:::shared
+        DTOS["dto/<br/>NotificationDto / FileMetadataDto"]:::shared
+    end
+
+    subgraph Infra["External Infrastructure"]
+        PGDB[("PostgreSQL")]:::infra
+        KAFKA[("Kafka")]:::infra
+        RABBIT[("RabbitMQ")]:::infra
+    end
+
+    CTRL --> SVC
+    SVC --> REPO
+    REPO --> ENTITY
+    SVC --> OUTBOX
+    REPO --> PGDB
+    OUTBOX --> KAFKA
+    OUTBOX --> RABBIT
+    FLYWAY --> PGDB
+```
+
+---
+
+## Data & Event Flow
+
+### Synchronous Flow (Gateway → Service → Feign → DB)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant GW as API Gateway :8080
+    participant SVC as Domain Service
+    participant FEIGN as Downstream Service (Feign)
+    participant DB as PostgreSQL (per-service)
+
+    C->>GW: HTTP REST request
+    GW->>GW: JWT filter validates Bearer token
+    GW->>SVC: Forward via lb:// (Eureka)
+    SVC->>FEIGN: OpenFeign call (when cross-domain needed)
+    FEIGN-->>SVC: Response / error
+    SVC->>DB: Spring Data JPA (Flyway-managed schema)
+    DB-->>SVC: Entities
+    SVC-->>GW: DTO (MapStruct)
+    GW-->>C: HTTP JSON response
+```
+
+### Asynchronous Flow — Kafka (Transactional Outbox)
+
+Ledger mutations write domain events to an `outbox` table inside the same database transaction, then a scheduled `OutboxPublisher` relays them to Kafka — guaranteeing no event loss during broker outages.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant SVC as Transaction / Topup / Transfer Service
+    participant DB as PostgreSQL (outbox table)
+    participant OP as OutboxPublisher (@Scheduled)
+    participant K as Kafka
+    participant EMAIL as Email Service
+    participant STATS as Stats Writer
+
+    SVC->>DB: INSERT business row + outbox event (same tx)
+    SVC-->>DB: COMMIT
+    OP->>DB: Poll PENDING outbox rows
+    OP->>K: Publish EventEnvelope (stats.payment.*)
+    K-->>EMAIL: email-service-topic-* payloads
+    K-->>STATS: stats.payment.transaction/topup/transfer.event
+    EMAIL->>EMAIL: Dispatch delivery event
+    STATS->>STATS: Dedup → batch → ClickHouse
+```
+
+### Asynchronous Flow — RabbitMQ (Transaction Publication & Notifications)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as Transaction Service
+    participant R as RabbitMQ
+    participant N as Notification Service
+
+    T->>R: convertAndSend("transaction-queue", transactionPayload)
+    R-->>N: Deliver NotificationDto (notification-queue)
+    N->>N: Enrich file-id: references via Feign (failure-safe)
+    N->>N: Persist notification (status SENT / FAILED copy)
+```
+
+---
+
+## Kafka Event Architecture
+
+Events are published through the **transactional outbox** pattern with `EventEnvelope` (eventId, schemaVersion, eventType, occurredAt, domain, payload). Topic contracts live in `common/src/main/java/com/common/kafka/KafkaCommonConfig.java`.
+
+### Topic Registry
+
+| Category | Topics | Producer → Consumer |
+| :------- | :----- | :------------------ |
+| **Domain Events (4)** | `stats.payment.transaction.event`, `stats.payment.topup.event`, `stats.payment.transfer.event`, `stats.payment.withdraw.event` | Transaction/Topup/Transfer/Withdraw outbox → Stats Writer |
+| **Email Notifications (6)** | `email-service-topic-auth-register`, `-auth-forgot-password`, `-auth-verify-code-success`, `-merchant-create`, `-merchant-update-status`, `-transaction-create` | Domain services → Email Service |
+| **Cross-Domain Cache Invalidation** | `card-service-topic-transaction-event`, `merchant-service-topic-topup-event` | Transaction ↔ Card, Topup ↔ Merchant |
+| **Notification** | `notification-topic` | Platform services → Notification Service |
+
+All topics are provisioned by `KafkaCommonConfig` (3 partitions, replication factor 1) and documented against `KAFKA_AUDIT.md`.
+
+### Outbox Publisher
+
+Each outbox-equipped service runs a `@Scheduled(fixedDelay = 3000)` publisher: poll `PENDING` rows in creation order, send via `KafkaTemplate`, mark `PROCESSED`; after `MAX_ATTEMPTS = 5` failures the row is marked `FAILED` with the last error recorded.
+
+---
+
+## RabbitMQ Queues
+
+| Queue | Producer → Consumer | Payload |
+| :---- | :------------------ | :------ |
+| `transaction-queue` | Transaction Service (controller publish) | Transaction payload for downstream processing |
+| `notification-queue` | Platform services | `NotificationDto` (JSON converter) |
+
+---
+
+## ClickHouse Analytics Layer
+
+| Component | Role | Description |
+| :-------- | :--- | :---------- |
+| **stats-reader** | Query API (port `:8098`) | Aggregated statistical queries against ClickHouse, Redis-cached with configurable TTL. |
+| **stats-writer** | Kafka consumer (port `:8097`) | Consumes `stats.payment.*` topics, deduplicates, batches, and flushes to ClickHouse. |
+| **stats-backfill** | Batch loader | Reads historical OLTP rows into outbox tables → Kafka → stats-writer → ClickHouse. |
+
+---
+
+## Observability
+
+All services export OpenTelemetry telemetry to the OTel Collector (`otel.exporter.otlp.endpoint`), which fans out to the storage backends. Prometheus scrapes collector-exposed metrics only — no per-service scrape duplication.
+
+| Pillar | Tool | Purpose |
+| :--- | :--- | :--- |
+| **Tracing** | OpenTelemetry → Jaeger | End-to-end traces across gateway and services (W3C propagation). |
+| **Metrics** | Prometheus + Grafana | OTel-collector scrape target, custom counters/histograms per service. |
+| **Logging** | Loki + Logback | Centralized structured logs, queryable via LogQL. |
+| **Alerting** | Alertmanager | Routing for latency/error alerts defined in `observability/rules`. |
+
+---
+
+## Testing
+
+The platform carries a **612-test suite, all green**, following a consistent three-layer strategy per module:
+
+| Layer | Tooling | Coverage |
+| :---- | :------ | :------- |
+| **Service unit tests** | JUnit 5 + Mockito + AssertJ, `OpenTelemetry.noop()` | Happy paths, error contracts, outbox captures, idempotency guards |
+| **Controller tests** | Standalone `MockMvc` (no Spring context) | Endpoint mapping, validation 400s, error-path status codes |
+| **Repository tests** | `@DataJpaTest` + Testcontainers (`postgres:15-alpine`) + `@ServiceConnection` | Flyway-migrated schema validation, derived queries, constraints |
+
+Existing `@SpringBootTest contextLoads` stubs were replaced by the real suites (they cannot run without the full infrastructure). Testcontainers checks are skipped automatically when Docker is unavailable; the test JVMs pin `docker-java` API 1.44 for Docker Engine 29 compatibility via `src/test/resources/docker-java.properties`.
+
+Run everything:
+
+```bash
+mvn -pl common,auth-service,user-service,role-service,merchant-service,card-service,saldo-service,topup-service,transfer-service,withdraw-service,transaction-service,notification-service,file-storage-service,email-service,api-gateway test
+```
+
+---
+
+## Design Decisions & Known Limitations
+
+Keputusan desain yang disengaja (bukan bug) — didokumentasikan agar tidak "diperbaiki" tanpa sadar:
+
+| ID | Keputusan | Perilaku | Alasan |
+|---|---|---|---|
+| PG-1 | Spring Cloud stack, bukan gRPC | Sinkron antar-service via OpenFeign REST, bukan gRPC | Konsistensi ekosistem Spring Cloud + Eureka discovery; gRPC tersedia di versi Quarkus |
+| PG-2 | Idempotency key di ledger, bukan distributed lock | Kunci unik pada `idempotency_key` di tabel transaksi | Aturan uniqueness di database lebih sederhana dan tahan mati mendadak dibanding lock |
+| PG-3 | Saldo dimiliki satu service | Semua debit/kredit saldo lewat `saldo-service` lewat Feign | Tidak ada dua sumber kebenaran atas saldo; sacrifice satu round-trip demi konsistensi |
+| PG-4 | RabbitMQ untuk publikasi transaksi | Transaction controller mengirim ke `transaction-queue` langsung; tidak lewat Kafka | Notifikasi transaksi bersifat point-to-point, cocok untuk queue, bukan event streaming |
+| PG-5 | Soft-delete tanpa read-filter global | `deleted_at` diisi saat delete; query list tidak otomatis menyaring | Perilaku app-level eksplisit; filter diterapkan di query service yang membutuhkan |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Java 21 (Temurin)
+- Maven 3.9+
+- Docker & Docker Compose
+
+### Build
+
+```bash
+mvn clean install -DskipTests
+```
+
+### Run the full stack
+
+```bash
+docker compose up -d
+```
+
+This provisions: Eureka, API Gateway, 12 per-service PostgreSQL databases, RabbitMQ, Kafka, Redis, ClickHouse, the email/stats services, the seeder, and the observability stack (OTel Collector, Prometheus, Grafana, Loki, Jaeger, node-exporter).
+
+### Local development (single service)
+
+```bash
+mvn -pl transaction-service spring-boot:run
+```
+
+Each service registers with Eureka at `http://localhost:8761`; the gateway routes everything through `http://localhost:8080`.
+
+### Verify health
+
+```bash
+curl -s http://localhost:8761/actuator/health      # Eureka
+curl -s http://localhost:8080/actuator/health      # Gateway
+```
+
+---
+
+## Project Structure
+
+```
+spring-boot-microservices-payment-gateway/
+├── api-gateway/            # Spring Cloud Gateway (WebFlux), JWT filter
+├── eureka-server/          # Service registry
+├── common/                 # Shared DTOs, EventEnvelope, Kafka/Rabbit/Security/Telemetry config
+├── auth-service/           # JWT issuing, Feign to user
+├── user-service/           # User CRUD
+├── role-service/           # Roles + user_roles
+├── merchant-service/       # Merchant onboarding + documents
+├── card-service/           # Card issuance and lifecycle
+├── saldo-service/          # Balance account, atomic debit/credit
+├── topup-service/          # Balance top-up
+├── transfer-service/       # Peer-to-peer fund movement
+├── withdraw-service/       # Withdrawal requests
+├── transaction-service/    # Ledger + idempotency + outbox
+├── notification-service/   # RabbitMQ consumer + enrichment
+├── file-storage-service/   # File metadata
+├── email-service/          # Kafka email worker
+├── stats-writer/           # Kafka → ClickHouse
+├── stats-reader/           # ClickHouse queries + Redis cache
+├── stats-backfill/         # Historical backfill
+├── seeder/                 # Cross-domain data seeding
+├── docker/                 # Compose init scripts
+├── hurl/                   # REST smoke-test scripts
+├── observability/          # Alerting + dashboards
+└── docker-compose.yml      # Full-stack orchestration
+```
+
+## Source Code
+[View on GitHub](https://github.com/MamangRust/microservice-paymengateway-springboot)
+
+---
+
+<p align="center">Built with SpringBoot, SpringBoot Cloud, and a passion for clean architecture.</p>
+

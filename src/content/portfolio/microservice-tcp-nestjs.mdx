@@ -2,6 +2,8 @@
 title: "MyExperiment with nx.js and NestJS Backend"
 excerpt: "An experimental project to develop an e-commerce system with payment gateway and shipping service integration."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["nx.js", "nestjs", "typescript", "postgresql", "midtrans", "rajaongkir", "react.js", "redux toolkit", "tailwind css", "flowbite", "tauri", "rust", "bootstrap", "mazer dashboard"]
 status: "selesai"
 image: "https://github.com/renaldyhidayatt/MicroserviceTcpNestReact/raw/main/images/tcp.png?raw=true"
@@ -24,6 +26,28 @@ This project is an **experiment** in building an **e-commerce platform** using m
 - **Shipping Service** 📦: **Raja Ongkir**
 - **Frontend** 🖥️: JavaScript, **React.js** ⚛️, **Redux Toolkit** 🔄, **Tailwind CSS** 🌊, **Flowbite** 💡
 - **Admin Panel** 🛠️: **Tauri** 🦀, **Rust** 🦠, **React.js** ⚛️, **Redux Toolkit** 🔄, **Bootstrap** ⚙️, **Mazer Dashboard** 📊
+
+---
+
+## Technical Decisions & Trade-offs
+
+**NestJS microservices over raw TCP instead of HTTP**
+Service-to-service calls ride Nest's TCP transport, which skips HTTP header and connection overhead per message and ships with built-in request-response and event patterns. The cost is losing what HTTP gives for free: standard status codes, caching semantics, universal tooling, and curl-able endpoints — debugging means custom clients instead of a browser tab. For an experiment about microservice messaging, that loss is the lesson.
+
+**TCP framing is now your problem**
+Raw TCP is a byte stream, so message boundaries come from the protocol layer rather than the transport — Nest's serializer handles the envelope, but retries, timeouts, and partial-failure semantics around each call are design work you would not have with REST. The payoff is a lighter wire format and a clear view of what HTTP normally hides.
+
+**Midtrans as the payment gateway**
+Delegating payments to Midtrans keeps card data and compliance out of this codebase. The trade-off is that confirmation is asynchronous: webhooks and status checks become the source of truth, so the backend must treat payment states as pending until Midtrans confirms, and stay idempotent because notifications can arrive more than once. Handling duplicate webhooks correctly is not optional in this design.
+
+**PostgreSQL as the single transactional store**
+Orders, payments, and product data share one ACID database, so an order and its payment record stay consistent without distributed transactions. The cost is coupling: every service's schema evolution lands in one migration path. At this scale that is simpler than per-service databases and all the experiment needs.
+
+**Raja Ongkir for shipping rates**
+Courier cost calculation is delegated to Raja Ongkir instead of maintaining rate tables locally. The price is a third-party dependency inside the checkout path: its latency and downtime become yours, and rate data is the kind of thing worth caching or degrading gracefully rather than blocking an order on a live quote.
+
+**Tauri and Rust for the admin desktop app**
+Tauri wraps the React admin panel in a native webview with a Rust core, producing a far smaller binary than an Electron equivalent. The cost is a Rust toolchain in the build and webview differences across platforms. For an internal admin panel, the lightweight footprint justifies the extra toolchain.
 
 ---
 

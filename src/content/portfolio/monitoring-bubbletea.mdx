@@ -2,10 +2,26 @@
 title: "Example System Monitoring Bubble Tea"
 excerpt: "System monitoring application built with Bubble Tea."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["go", "bubbletea", "system-monitoring"]
 status: "selesai"
 image: "https://github.com/MamangRust/example-monitoring-bubble_tea/raw/main/image/example.png?raw=true"
 ---
+
+## Technical Decisions & Trade-offs
+
+**Bubble Tea's Elm architecture vs imperative redraw loops**
+Every keypress and periodic update flows through an update function that returns a new model, so state changes happen in one predictable place and are easy to trace. The price is buying into the framework: commands, messages, and subscriptions are Bubble Tea idioms, and that structure is more ceremony than a small dashboard strictly needs.
+
+**Framework-owned rendering**
+Bubble Tea handles raw mode, redraws, and terminal teardown, so the code never manages cursor positions or screen buffers directly. The flip side is that when rendering misbehaves, you are debugging the framework's renderer rather than your own drawing code.
+
+**Go as the runtime**
+The result is a single static binary with nothing to install, and Go's garbage collector keeps iteration fast compared to Rust's borrow checker. The cost is a runtime footprint bigger than a leaner language would produce, which matters a little in a program whose job is watching system resources.
+
+**Refresh cadence vs measurement distortion**
+Like any self-monitoring tool, the faster it polls the system the more load it adds to the very system it reports on. A slow cadence keeps the app cheap but hides brief spikes, so the interval is a compromise rather than a setting with a correct value.
 
 ## Demo
 

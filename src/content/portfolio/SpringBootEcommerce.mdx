@@ -2,6 +2,8 @@
 title: "Spring Boot E-commerce API"
 excerpt: "API E-commerce lengkap dan terintegrasi yang dibangun dengan Java 21, Spring Boot, Spring Security & JWT, PostgreSQL, dan didokumentasikan menggunakan Swagger OpenAPI."
 date: "2026-05-21"
+created_at: "2026-05-21"
+updated_at: "2026-05-21"
 tags: ["java", "springboot", "springsecurity", "jwt", "postgresql", "maven", "swagger", "openapi"]
 status: "selesai"
 image: "/portofolio/SpringBootEcommerce/SpringBootEcommerce.png"
@@ -237,6 +239,28 @@ erDiagram
     ORDERS ||--|{ TRANSACTIONS : has
     REVIEWS ||--|{ REVIEW_DETAILS : has
 ```
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Spring Boot 3.x and Java 21 vs lighter stacks**
+Spring Boot buys a mature, batteries-included ecosystem: Spring Security handling JWT, Springdoc generating Swagger UI, and a consistent configuration model with almost no glue code. The cost is real — JVM memory footprint, startup time, and plenty of ceremonial code (DTOs, mappers, layer interfaces) that a Go or Node service would not need. At the scale of a portfolio API, developer velocity and type safety outweigh the resource overhead.
+
+**Spring Data JPA (Hibernate) vs raw SQL**
+Repository interfaces and entity relationships keep a 20-plus-table relational model manageable, and the persistence code stays database-agnostic. The price is a leaky abstraction: lazy-loading pitfalls, N+1 query risk on relationships like order items and reviews, and little visibility into the SQL Hibernate actually emits. For CRUD-heavy commerce flows that is an acceptable trade; hand-tuned SQL only pays off under heavy read load.
+
+**PostgreSQL vs a document store**
+An e-commerce schema spanning users, merchants, products, carts, orders, and transactions is fundamentally relational — an order must atomically bind a user, its order items, and a shipping address, and referential integrity should be enforced by the database rather than application code. The trade-off is schema rigidity: every new attribute means a migration, and horizontal scaling is harder than with documents. Consistency matters more here than flexibility.
+
+**JWT with refresh tokens vs server sessions**
+Stateless JWTs keep the API horizontally scalable with no session store, and the dedicated refresh-token table allows token rotation and per-user revocation paths. The cost is that security changes such as logout-everywhere or role downgrades take effect only as fast as token expiry, and client-side token handling is more complex than a cookie session. For a stateless public API this remains the standard, defensible choice.
+
+**Single deployable vs microservices**
+Auth, catalog, cart, orders, reviews, and merchant management all live in one process over one database, which keeps transactional boundaries trivial and deployment a single jar. What is given up is independent scaling and fault isolation — a burst of review writes pressures the same pool as checkout. Splitting would only pay off at team and traffic scales this project does not operate at.
+
+**Stock integrity on checkout (the core domain risk)**
+Products carry a countInStock column that order fulfillment must decrement. The honest risk is the race: two concurrent checkouts reading the same stock can oversell unless the decrement runs inside the same transaction as order creation, ideally as a conditional update that only applies when stock is sufficient rather than a read-then-write. Application-level checks alone are the cheapest implementation and the easiest one to break under load.
 
 ---
 

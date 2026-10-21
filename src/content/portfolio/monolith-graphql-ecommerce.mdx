@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith E-commerce Go - GraphQL"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan GraphQL API Gateway, gRPC, Go, Kafka, dan PostgreSQL."
 date: "2026-05-21"
+created_at: "2026-05-21"
+updated_at: "2026-05-21"
 tags: [
   "golang", "graphql", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "sqlc"
@@ -644,6 +646,28 @@ flowchart TD
 | **Orchestration** | Kubernetes | Production-grade container orchestration with HPA |
 | **API Docs** | GraphQL Playground | Built-in interactive GraphQL IDE & schema documentation |
 | **Resilience** | Circuit Breaker, Rate Limiter, Load Monitor | Built-in fault tolerance patterns (`pkg/resilience`) |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**GraphQL as the only front door**
+Clients shape their own responses against a single endpoint, and the Playground doubles as always-current documentation. The bill: a careless resolver chain can trigger N+1 gRPC calls behind one query, and since every request is a POST to /query, HTTP-level caching mostly disappears — caching moves into Redis inside each service, where invalidation becomes that service's own problem.
+
+**gRPC and Protobuf between services**
+Contract-first schemas with binary encoding keep calls between 21 services fast and compile-time checked. The cost is workflow friction: every new field means editing a .proto, regenerating stubs on both sides, and redeploying — none of the ad-hoc flexibility the GraphQL edge gives clients.
+
+**Distributed modular monolith instead of a single binary**
+Each domain — auth, catalog, orders, transactions — is an independently deployable container with its own database access, which buys fault isolation and per-service HPA scaling. The price is real: network hops where function calls used to be, 111 Kubernetes manifests to maintain, and tracing promoted from nice-to-have to mandatory. For demonstrating production patterns, the overhead is the point.
+
+**Kafka for side effects**
+Email confirmations and merchant notifications leave the request path entirely, so a slow SMTP server can never stall a checkout. The trade-off is at-least-once delivery: consumers must tolerate duplicates, and Zookeeper is a stateful component to operate for what is ultimately a notification bus.
+
+**PostgreSQL with sqlc and Goose**
+Checkout and stock tracking must be atomic or the store oversells, so ACID guarantees beat schema flexibility here. sqlc keeps hand-written SQL type-checked rather than hiding it behind an ORM — the cost is a codegen step and awkwardness with fully dynamic queries, a fair price for knowing exactly what hits the database.
+
+**Redis read-through caching per service**
+Hot catalog and permission reads skip PostgreSQL, and cache metrics are instrumented so hit ratios are observed rather than guessed. The standing cost is invalidation discipline: every write path must remember to bust its keys, or users see stale product data.
 
 ---
 

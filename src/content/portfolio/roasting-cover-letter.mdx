@@ -2,6 +2,8 @@
 title: "Roasting CoverLetter OR CV"
 excerpt: "Aplikasi AI untuk memberikan kritik sarkastik terhadap Cover Letter dengan model DeepSeek melalui Ollama."
 date: "2025-03-02"
+created_at: "2025-03-02"
+updated_at: "2025-03-02"
 tags: ["ai", "ollama", "deepSeek", "streamlit"]
 status: "selesai"
 image: "/portofolio/roasting_.png"
@@ -39,6 +41,20 @@ image: "/portofolio/roasting_.png"
 ✅ **Meningkatkan kualitas artikel dengan kritik berbasis AI.**
 ✅ **Memberikan sudut pandang objektif tanpa bias manusia.**
 ✅ **Bisa digunakan sebagai alat belajar untuk menulis lebih baik.**
+
+## Technical Decisions & Trade-offs
+
+**A local 1.5B model via Ollama**
+Running `deepseek-r1:1.5b` locally means zero API cost, no rate limits, and cover letters full of personal detail never leaving the machine. The cost is capability: a 1.5B model reasons and writes well below hosted large models, and output quality depends on the hardware it runs on. For a sarcasm-generation tool, local and free is the right trade against remote and better.
+
+**Tone control lives in the prompt**
+The sharp-but-constructive sarcasm is instructed behavior, not fine-tuned, which makes the persona cheap to iterate on. The risk is drift: a small model sometimes lands flat and sometimes overshoots into plain rudeness. Requiring every roast to come with concrete improvement suggestions is a prompt-level guardrail, and it mostly — not always — holds.
+
+**Streamlit as the fastest usable interface**
+Streamlit turns the idea into an upload-and-submit application with minimal code, which is the right call for a single-purpose tool. The trade-off is that it stays demo-grade: limited layout control and no deployment story beyond running it locally.
+
+**Only .txt and .docx**
+Supporting plain text and Word documents covers where cover letters actually live while keeping parsing scope small. The cost is a document-parsing dependency and the format edge cases that .docx brings, and no PDF support, which is the obvious next request for a tool like this.
 
 ## 📌 Cara Menggunakan
 1. **Pilih mode** → Cover Letter atau Artikel.

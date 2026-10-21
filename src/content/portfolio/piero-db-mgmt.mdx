@@ -2,6 +2,8 @@
 title: "PIERO GPUI Database Management Utility"
 excerpt: "A GPU-accelerated desktop database administration interface for automated backups, relational data dumping, and FIFO-based retention lifecycle management."
 date: "2026-02-28"
+created_at: "2026-02-28"
+updated_at: "2026-02-28"
 tags:
   - rust
   - gpui
@@ -72,6 +74,22 @@ Automates database maintenance workflows while preserving UI responsiveness.
 - **Concurrency Runtime**: Tokio asynchronous task system
 - **Storage Adapters**: PostgreSQL, MySQL, SQLite, Redis, MongoDB
 - **Architecture Pattern**: Event-driven async job orchestration with GPU-native visualization
+
+---
+
+## Technical Decisions & Trade-offs
+
+**GPUI desktop console vs a web-based dashboard**
+GPU-rendered native UI keeps the interface responsive during large transfers and skips the browser entirely — no DOM, no tab overhead, no web server to harden. The cost is reach: GPUI is a young, Zed-specific framework with limited platform support, and unlike a web console this cannot be opened from any machine with a URL, which is exactly what most database tooling assumes.
+
+**One adapter layer across SQLite, PostgreSQL, MySQL, and Redis**
+A single console with consistent semantics across engines is convenient, but each engine's snapshot story is genuinely different — SQLite needs safe file locking, PostgreSQL and MySQL dump over TCP, Redis snapshots without blocking active reads and writes. The unified layer must either paper over those differences or leak them into the UI; both choices trade correctness clarity for convenience.
+
+**FIFO retention instead of smarter retention policies**
+Deterministically deleting the oldest artifacts when a quota is hit makes storage costs predictable and the lifecycle trivially explainable. The trade-off is blunt: the oldest backup is not always the most expendable, and there is no tiered rotation policy, so a long-lived recovery point can be evicted by routine churn if quotas are set carelessly.
+
+**Isolated async workers for backup jobs**
+Running compression and export in isolated Tokio worker threads keeps the UI responsive even mid-dump, and job isolation prevents a stuck backup from interfering with interactive operations. The cost is that progress reporting and error handling cross a thread boundary, and a backup taken while writers stay active is only as consistent as each engine's locking allows.
 
 ---
 

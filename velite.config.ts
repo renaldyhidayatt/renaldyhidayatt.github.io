@@ -19,6 +19,9 @@ const posts = defineCollection({
       slug: s.path(),
       title: s.string().max(99),
       date: s.isodate(),
+      created_at: s.isodate().optional(),
+      updated_at: s.isodate().optional(),
+      updated_reason: s.string().optional(),
       status: s.string().optional(),
       excerpt: s.string().max(999).optional(),
       readTime: s.string().optional(),
@@ -41,7 +44,31 @@ const portofolio = defineCollection({
       image: s.string(),
       excerpt: s.string().max(999).optional(),
       date: s.isodate(),
+      created_at: s.isodate().optional(),
+      updated_at: s.isodate().optional(),
+      updated_reason: s.string().optional(),
       status: s.string(),
+      tags: s.array(s.string()).optional(),
+      toc: s.toc(),
+      body: s.mdx(),
+    })
+    .transform(computedFields),
+});
+
+const cheatsheet = defineCollection({
+  name: "Cheatsheet",
+  pattern: "cheatsheet/**/*.mdx",
+  schema: s
+    .object({
+      slug: s.path(),
+      title: s.string().max(99),
+      description: s.string().max(999),
+      date: s.isodate(),
+      created_at: s.isodate().optional(),
+      updated_at: s.isodate().optional(),
+      status: s.string().default("verified"),
+      version: s.string().optional(),
+      order: s.number().optional(),
       tags: s.array(s.string()).optional(),
       toc: s.toc(),
       body: s.mdx(),
@@ -58,7 +85,7 @@ export default defineConfig({
     name: "[name]-[hash:6].[ext]",
     clean: true,
   },
-  collections: { posts, portofolio },
+  collections: { posts, portofolio, cheatsheet },
   mdx: {
     rehypePlugins: [
       rehypeSlug,

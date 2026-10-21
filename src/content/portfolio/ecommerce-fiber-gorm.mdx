@@ -2,6 +2,8 @@
 title: "Ecommerce Fiber with Midtrans and Raja Ongkir"
 excerpt: "An e-commerce application using the Fiber framework for the backend, integrated with Midtrans for payments and Raja Ongkir for shipping."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["go-fiber","react", "bootstrap", "midtrans", "rajaongkir", "go", "tauri", "rust"]
 status: "selesai"
 image: "https://github.com/renaldyhidayatt/ecommerce_fiber_gorm/raw/grpc_fiber/images/home.png?raw=true"
@@ -26,6 +28,23 @@ The application provides a seamless shopping experience with a clean and functio
 - **Payment** 💳: **Midtrans**
 - **Shipping** 📦: **Raja Ongkir**
 - **Frontend** 🖥️: **React.js** ⚛️, **Bootstrap 5** ⚙️, and **Tauri.js** 🦀
+
+## Technical Decisions & Trade-offs
+
+**Go + Fiber**
+A single static binary with a tiny footprint, which suits an API server well. The trade-off is that Fiber is built on `fasthttp`, not the stdlib `net/http`: Koa-style middleware and speed, but different server semantics (e.g., HTTP/2 support) and an ecosystem that mostly assumes the standard library.
+
+**GORM vs raw SQL**
+GORM buys dev speed: associations, callbacks, and auto-migration. The costs are reflection overhead, opaque SQL generation (you need the logger to audit what it actually runs), N+1 risk on associations (deliberate `Preload`), and auto-migration being fine in dev but something you must not run in production.
+
+**Outsourcing payment to Midtrans**
+You don't build payment infrastructure: PCI compliance, many payment methods, and a sandbox for free. The cost is a dependency on someone else's SLA — and because payment success arrives asynchronously (webhook), the order must sit in a *pending* state that transitions on notification. That forces idempotent webhook handling (retries and duplicates) plus a reconciliation fallback for callbacks that get lost.
+
+**RajaOngkir for shipping rates**
+Instant per-route shipping cost without implementing carrier pricing — but a second external dependency (rate limits, API changes), and the rate fetched at cart time can be stale by order confirmation, so it gets re-validated at checkout.
+
+**Tauri desktop shell around React**
+Tauri's Rust shell ships a fraction of an Electron binary's size. The trade-offs: per-OS packaging and signing, and distributing an e-commerce storefront as a desktop app is a demo choice, not a distribution channel. The backend is a separate process, so its URL/CORS must be configured per platform.
 
 
 ## 📸 Demo

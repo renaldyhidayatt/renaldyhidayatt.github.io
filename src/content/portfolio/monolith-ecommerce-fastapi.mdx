@@ -2,6 +2,8 @@
 title: "Monolith E-commerce Project"
 excerpt: "A monolithic e-commerce application built with FastAPI, PostgreSQL, and Kafka."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["python", "fastapi", "postgresql", "kafka", "docker-compose", "keycloak", "prometheus", "grafana", "opentelemetry", "jaeger"]
 status: "selesai"
 image: "https://github.com/MamangRust/monolith-ecommerce-example/raw/main/images/jaeger.png?raw=true"
@@ -27,6 +29,26 @@ This project is a monolithic e-commerce application that integrates multiple ser
 - **Monitoring and Observability**: Prometheus, Grafana, OpenTelemetry, Jaeger
 - **Authentication**: Keycloak
 - **Containerization**: Docker Compose
+
+## Technical Decisions & Trade-offs
+
+**FastAPI instead of Django**
+Async handlers on ASGI, Pydantic-validated payloads, and OpenAPI docs generated per route make each small service cheap to define and document. What is given up is the batteries: no admin, no bundled auth, no built-in migrations — acceptable here because each service exposes a handful of endpoints and identity is delegated anyway.
+
+**Keycloak instead of hand-rolled authentication**
+Delegating login, token issuance, and user management to Keycloak means the services only verify tokens, eliminating a whole class of security bugs you would otherwise write yourself. The cost: one more stateful container to run and configure, and its realm and client model carries a learning curve that a small JWT library does not.
+
+**Kafka between orders and email**
+Order creation publishes an event that the email service consumes, so a slow or dead mail server can never fail a checkout. The trade-off: Kafka is at-least-once, so the consumer must be idempotent and the confirmation email is eventually consistent rather than guaranteed inline with the order.
+
+**SQLAlchemy as the ORM**
+Mapping products and orders to Python objects keeps the query logic readable and the service code compact. The price: an ORM hides SQL just enough to invite N+1 query patterns and makes performance tuning less obvious than raw SQL — tolerable at this data size, worth watching as queries grow.
+
+**The GIL in a service-per-process layout**
+Each service runs as its own process, so the GIL is mostly a non-issue here: the work is I/O-bound (Postgres queries, Kafka publishes, SMTP sends), which FastAPI's async event loop handles well. The honest limit is CPU-bound work — heavy computation would still serialize per worker, and the fix is more processes, not threads.
+
+**Docker Compose over Kubernetes**
+The whole stack — services, PostgreSQL, Kafka, Keycloak, and the observability set — comes up with one compose file, keeping the demo reproducible on a laptop. The cost: no self-healing, autoscaling, or rolling updates; fine for a reference monolith, not for real production traffic.
 
 ## Instalasi
 ```bash

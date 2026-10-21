@@ -2,6 +2,8 @@
 title: "Minimal SQLite Database App"
 excerpt: "This application is a simple example of using PyQt6 to interact with an SQLite database."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["python", "pyqt", "sqlite"]
 status: "selesai"
 image: "https://github.com/MamangRust/pyqt6_sqlite_app/blob/master/images/image.png?raw=true"
@@ -24,6 +26,20 @@ This application is a **simple example** of using **PyQt6** to interact with an 
 - **PyQt6** 🖥️: GUI framework for building desktop applications with Python.
 - **SQLite** 🗄️: Lightweight, file-based database for data storage.
 ![Project Screenshot](https://github.com/MamangRust/pyqt6_sqlite_app/blob/master/images/image.png?raw=true)
+
+## Technical Decisions & Trade-offs
+
+**SQLite as a file, not a service**
+The entire storage model is a single file the app creates, opens, and saves: no server to install, no connection strings, and backup is copying the file. The trade-off is that SQLite permits one writer at a time, so this stays a single-user browser, and its loose typing means the schema is only as disciplined as the code writing to it.
+
+**PyQt6's weight for a small utility**
+PyQt6 provides real desktop widgets, including tables, dialogs, and file pickers, so the app behaves natively without hand-drawing an interface. The cost is a heavy dependency: large Qt binaries to ship, a steeper learning curve than lighter Python GUI kits, and GPL or LGPL licensing terms to respect when distributing.
+
+**GUI-thread discipline under the GIL**
+Everything runs on Qt's event loop under Python's GIL, which is fine while queries are small but bites when they are not: a long search or a large export executed on the GUI thread freezes the whole window. Keeping the interface responsive means moving heavy work off the event loop, something Qt enables but does not do automatically.
+
+**Export to SQL as a portability feature**
+Dumping a table to an SQL file buys backup and migration to other databases almost for free. The cost is correctness risk in the writer: quoting, escaping, and NULL handling are precisely where naive export code produces files that fail to re-import on awkward data.
 
 ---
 

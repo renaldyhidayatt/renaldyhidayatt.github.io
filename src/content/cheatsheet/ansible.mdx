@@ -1,0 +1,662 @@
+---
+title: "Ansible — Cheat Sheet"
+description: "Cheat sheet Ansible (ansible-core 2.17+): inventory & group_vars, ad-hoc, playbook/role/task, variabel & presedensi, template Jinja2, handler, loop & fakta, modul penting, vault, check mode, idempotensi, troubleshooting, dan jebakan yang paling sering bikin gagal."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "ansible-core 2.17+"
+order: 16
+tags:
+  - ansible
+  - iac
+  - config-management
+  - devops
+  - automation
+---
+
+# Ansible — Cheat Sheet
+
+> Target: **ansible-core 2.17+** di controller, managed node Linux (Debian/Ubuntu/RHEL).
+> Agentless: cukup SSH + Python di target. Semua contoh memakai host generik
+> (`web-01`, `db-01`) supaya bisa ditempel ke proyek apa pun.
+
+**Isi sheet ini**
+
+- Konsep & alur eksekusi
+- Struktur project
+- Inventory & group_vars
+- Perintah harian (cheat CLI)
+- Playbook, role, task
+- Variabel: presedensi & debugging
+- Template Jinja2
+- Handler & notify
+- Condition, loop, fakta
+- Modul yang paling sering dipakai
+- Vault & secret
+- Check mode, diff, dan dry-run yang benar
+- Idempotensi — aturan main
+- Troubleshooting
+- Jebakan (wajib dibaca)
+
+---
+
+## Konsep & alur eksekusi
+
+```text
+controller (laptop/CI)  ──SSH──>  managed node
+   ├── inventory.ini         tidak ada agent
+   ├── playbook.yml          push task, jalankan modul (python), buang
+   ├── roles/                hasil: file/config/service di target
+   └── group_vars/           state dihitung ulang tiap run
+```
+
+| Istilah | Arti |
+| :--- | :--- |
+| **Inventory** | daftar host + group yang dikelola |
+| **Playbook** | daftar **play**; satu play = host target + task |
+| **Role** | kumpulan task/template/handler yang bisa dipakai ulang |
+| **Task** | satu pemanggilan modul (idempoten) |
+| **Module** | unit kerja (`apt`, `template`, `systemd`) |
+| **Handler** | task yang hanya jalan jika di-`notify` |
+| **Facts** | data host yang dikumpulkan (`ansible_facts`) |
+
+Alur satu run: parse inventory → gather facts → jalankan play per host (paralel, `forks`) →
+task yang `changed` menandai handler → handler jalan di akhir play.
+
+---
+
+## Struktur project
+
+```text
+ansible-project/
+├── ansible.cfg                 # inventory default, ssh args, vault password
+├── site.yml                    # playbook utama
+├── inventory/
+│   └── production.ini
+├── group_vars/
+│   ├── all/main.yml            # variabel umum
+│   ├── all/vault.yml           # secret (terenkripsi)
+│   └── webservers.yml          # variabel per group
+├── host_vars/
+│   └── db-01.yml
+├── roles/<nama>/{defaults,tasks,templates,handlers,meta,vars,files}
+├── playbooks/                  # playbook tambahan (deploy, maintenance)
+└── requirements.yml            # collection & role eksternal
+```
+
+```ini
+# ansible.cfg
+[defaults]
+inventory               = inventory/production.ini
+roles_path              = roles
+stdout_callback         = default
+callback_result_format  = yaml
+callbacks_enabled       = profile_tasks
+inject_facts_as_vars    = False
+host_key_checking       = True
+pipelining              = True
+forks                   = 10
+vault_password_file     = .vault-pass
+log_path                = /tmp/ansible.log
+
+[ssh_connection]
+ssh_args = -o ControlMaster=auto -o ControlPersist=60s -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes
+```
+
+```bash
+# dependency eksternal dipasang dari file, bukan manual
+cat requirements.yml
+# collections: [ { name: community.general }, { name: ansible.posix } ]
+ansible-galaxy collection install -r requirements.yml
+```
+
+| Pilihan | Efek |
+| :--- | :--- |
+| `inject_facts_as_vars = False` | mengikuti default ansible-core 2.24; pakai `ansible_facts['x']` |
+| `vault_password_file` | tidak ada prompt interaktif, cocok untuk CI |
+| `IdentitiesOnly=yes` | key lain di ssh-agent tidak menghabiskan `MaxAuthTries` |
+| `StrictHostKeyChecking=accept-new` | host baru diterima, host key **berubah** tetap ditolak |
+| `pipelining = True` | lebih cepat (tanpa sftp per modul); pastikan `requiretty` tidak aktif |
+| `profile_tasks` | tampilkan task terlambat, berguna saat play panjang |
+
+---
+
+## Inventory & group_vars
+
+```ini
+[all:vars]
+ansible_user=deploy
+ansible_python_interpreter=/usr/bin/python3
+# ansible_ssh_private_key_file=~/.ssh/ansible
+
+[webservers]
+web-01 ansible_host=10.10.1.11
+web-02 ansible_host=10.10.1.12
+
+[dbservers]
+db-01 ansible_host=10.10.1.21 db_role=primary
+
+[staging:children]                # group of groups
+webservers
+dbservers
+
+[staging:vars]
+env=staging
+```
+
+```yaml
+# group_vars/all/main.yml — nilai umum, TANPA secret
+timezone: Asia/Jakarta
+app_port: 8080
+admin_cidr: "10.10.1.0/24"
+```
+
+```yaml
+# group_vars/webservers.yml
+nginx_worker_processes: auto
+ufw_rules:
+  - { port: "80", from: "{{ admin_cidr }}", comment: "http" }
+```
+
+| Hal | Aturan |
+| :--- | :--- |
+| `ansible_host` | alamat nyata yang dipakai SSH |
+| `inventory_hostname` | nama logis (dipakai di template & log) |
+| Group bersarang | variabel group anak menang atas parent |
+| `host_vars/` | override per host — simpan pengecualian di sini, bukan if di task |
+| Secret | jangan di `main.yml`; pakai file vault terpisah |
+| File `.example` | konvensi untuk nilai yang tidak boleh ikut repo (Ansible tidak memuatnya) |
+
+> **Jebakan #1:** host baru yang lupa dimasukkan ke group induk tidak akan kena role umum
+> (paket dasar, NTP, monitoring agent). Selalu verifikasi dengan
+> `ansible-inventory --graph` setelah mengedit inventory.
+
+---
+
+## Perintah harian (cheat CLI)
+
+```bash
+# MELIHAT lebih dulu — hampir selalu langkah pertama
+ansible-inventory --graph                       # hirarki group
+ansible-inventory --host web-01 --yaml          # variabel efektif satu host
+ansible all -m setup -a 'filter=ansible_distribution*'
+
+# ad-hoc (satu modul, tanpa playbook)
+ansible all -m ping
+ansible webservers -m shell -a 'systemctl is-active nginx'
+ansible webservers -m command -a 'nginx -v' -b
+
+# playbook
+ansible-playbook site.yml --check --diff        # simulasi
+ansible-playbook site.yml --limit webservers    # satu group
+ansible-playbook site.yml --tags nginx          # hanya task bertag
+ansible-playbook site.yml --list-tasks          # apa yang akan jalan
+
+# debugging
+ansible-playbook site.yml -vvv 2>&1 | tee /tmp/run.log
+ANSIBLE_LOG_PATH=/tmp/ansible-debug.log ansible-playbook site.yml
+```
+
+| Flag | Fungsi |
+| :--- | :--- |
+| `--check` | dry-run (task tanpa check mode akan di-skip) |
+| `--diff` | tampilkan perubahan file/template |
+| `--limit` | batasi host/group |
+| `--list-hosts` / `--list-tasks` | lihat target/task tanpa menjalankan |
+| `--start-at-task` | mulai dari task tertentu (debug, bukan produksi) |
+| `-e` / `--extra-vars` | presedensi tertinggi |
+| `-b` / `-K` | become (sudo), opsional minta password sudo |
+| `--tags` / `--skip-tags` | seleksi task bertag |
+| `--syntax-check` | parse playbook tanpa koneksi |
+
+---
+
+## Playbook, role, task
+
+```yaml
+---
+# site.yml — urutan play = urutan dependency nyata
+- name: "Base system untuk semua host"
+  hosts: all
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+
+- name: "Web server"
+  hosts: webservers
+  become: yes
+  gather_facts: no                  # tidak perlu fakta -> lebih cepat
+  roles:
+    - nginx
+
+- name: "Deploy aplikasi"
+  hosts: webservers
+  become: yes
+  vars_files:
+    - group_vars/all/vault.yml      # hanya nilai, bukan logika
+  tasks:
+    - name: Render unit systemd
+      ansible.builtin.template:
+        src: app.service.j2
+        dest: /etc/systemd/system/app.service
+        mode: '0644'
+      notify: Reload systemd
+```
+
+```yaml
+# roles/nginx/meta/main.yml — dependency eksplisit
+dependencies:
+  - role: common
+```
+
+```yaml
+# roles/common/tasks/main.yml — pola yang dipakai konsisten
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600          # tidak fetch ulang dalam 1 jam
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+
+- name: Deploy konfigurasi SSH
+  ansible.builtin.template:
+    src: sshd-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    mode: '0644'
+    validate: 'sshd -t -f %s'       # file salah = task gagal, bukan ssh rusak
+  notify: Reload sshd
+```
+
+| Konsep | Kapan dipakai |
+| :--- | :--- |
+| `roles:` | satu role utuh untuk host group |
+| `include_role` + `tasks_from` | menjalankan **bagian** role saja |
+| `import_tasks` | statis, dievaluasi saat parse |
+| `include_tasks` | dinamis, dievaluasi saat run (bisa loop dari variabel) |
+| `import_playbook` | komposisi playbook |
+| `tags:` | lari cepat untuk bagian tertentu saat iterasi |
+| `gather_facts: no` | hemat waktu; syaratnya tidak memakai fakta |
+
+> **Jebakan #2:** `import_*` tidak membaca variabel yang baru di-set task sebelumnya;
+> `include_*` membacanya. Kalau file task bergantung pada `set_fact` di atasnya dan hasilnya
+> tidak sesuai, tukar import → include.
+
+---
+
+## Variabel: presedensi & debugging
+
+```text
+rendah  role defaults            roles/x/defaults/main.yml
+        inventory group_vars    filter by group
+        inventory host_vars     filter by host
+        play vars / vars_files
+        task vars
+        block vars
+        set_fact / register
+        extra-vars (-e)         <- tertinggi, menang atas semua
+```
+
+```yaml
+# Debug cepat, jangan ditinggal di produksi
+- name: Variabel efektif
+  ansible.builtin.debug:
+    var: nginx_worker_processes
+    verbosity: 1                    # hanya tampil dengan -v
+
+- name: Bandingkan kondisi
+  ansible.builtin.debug:
+    msg: "host={{ inventory_hostname }} ip={{ ansible_facts['default_ipv4']['address'] }}"
+```
+
+```bash
+# Dari luar playbook — cara paling jujur melihat nilai akhir
+ansible-inventory --host web-01 --yaml
+ansible-playbook site.yml -vv --check
+```
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| `-e` menang atas semuanya, termasuk `defaults` | berguna untuk override; berbahaya jika iseng |
+| Jangan pakai `vars:` di level play untuk nilai yang bisa berubah | susah dilacak; pakai group_vars/host_vars |
+| `ansible_facts['x']` | variabel fakta global sudah tidak lengkap di ansible-core baru |
+| Nilai dari `-e` adalah string | bandingkan dengan `| bool` / `| int` |
+
+> **Jebakan #3:** `when: app_enabled` dengan `-e app_enabled=false` tetap **true** (string
+> tidak kosong). Selalu `when: app_enabled | bool`.
+
+---
+
+## Template Jinja2
+
+```jinja2
+{# Host lokal vs remote: beda URL #}
+api_base_url: >-
+  http://{{ 'localhost' if inventory_hostname == 'web-01' else ansible_host }}:{{ app_port }}
+
+{# Filter & map, tanpa loop manual #}
+upstreams: "{{ groups['webservers'] | map('extract', hostvars, 'ansible_host') | list }}"
+
+{# Aman untuk group yang mungkin kosong #}
+replicas: "{{ groups['replicas'] | default([]) }}"
+```
+
+```jinja2
+{# templates/nginx-site.conf.j2 #}
+upstream app_backend {
+{% for host in groups['webservers'] %}
+    server {{ hostvars[host].ansible_host }}:{{ app_port }};
+{% endfor %}
+}
+
+server {
+    listen 80;
+    server_name {{ inventory_hostname }};
+    location / {
+        proxy_pass http://app_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+| Filter | Kegunaan |
+| :--- | :--- |
+| `map('extract', hostvars, 'ansible_host')` | ambil IP semua host dalam group |
+| `default([])` / `default('x', true)` | nilai cadangan untuk variabel/group kosong |
+| `combine()` | gabung dict (override sebagian nilai) |
+| `to_json` / `to_nice_yaml` | render config (JSON/YAML) |
+| `bool` / `int` | konversi sebelum membandingkan |
+| `regex_replace` | normalisasi teks |
+| `omit` | hilangkan parameter modul secara kondisional |
+| `selectattr` / `rejectattr` | filter list of dict berdasarkan field |
+
+> **Jebakan #4:** `template` hanya menulis file saat isi **berubah**. Kalau hasil render
+> bergantung pada fakta yang fluktuatif (hostname resolve, IP), file akan di-rewrite — lalu
+> handler restart service. Handler agresif = downtime yang tidak perlu.
+
+---
+
+## Handler & notify
+
+```yaml
+# roles/nginx/handlers/main.yml
+- name: Reload nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+```
+
+```yaml
+- name: Deploy konfigurasi nginx
+  ansible.builtin.template:
+    src: nginx-site.conf.j2
+    dest: /etc/nginx/conf.d/site.conf
+    validate: 'nginx -t -c %s'
+  notify: Reload nginx
+```
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| Handler jalan **sekali** di akhir play walau di-notify berulang | hindari restart berulang |
+| `notify` hanya saat task `changed` | idempotensi terjaga |
+| `meta: flush_handlers` | paksa handler jalan sebelum task berikutnya |
+| Perubahan `listen`/socket butuh `restarted` | `reloaded` tidak cukup untuk sebagian service |
+| Urutan handler = urutan definisi | struktur file handler memengaruhi urutan eksekusi |
+| `listen: "restart web stack"` | satu notify bisa memicu banyak handler |
+
+> **Jebakan #5:** handler **tidak** jalan di `--check`. Jangan pakai `--check` untuk
+> memastikan service sudah restart — verifikasi terpisah (`systemctl is-active`, cek port).
+
+---
+
+## Condition, loop, fakta
+
+```yaml
+# Condition — bandingkan tipe yang benar
+- name: Install nginx hanya di web
+  ansible.builtin.apt:
+    name: nginx
+  when:
+    - inventory_hostname in groups['webservers']
+    - nginx_enabled | bool
+
+# Loop dengan item dict
+- name: Buat direktori aplikasi
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    mode: '0750'
+  loop:
+    - { path: /opt/app/data, owner: app }
+    - { path: /opt/app/logs, owner: app }
+
+# until/retries — polling kondisi, bukan sleep buta
+- name: Tunggu aplikasi siap
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ app_port }}/health"
+    status_code: 200
+  register: health
+  retries: 10
+  delay: 3
+  until: health.status == 200
+```
+
+```yaml
+# Fakta — akses lewat ansible_facts['...']
+- ansible.builtin.debug:
+    msg: "{{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}"
+
+- name: Simpan hasil untuk play berikutnya
+  ansible.builtin.set_fact:
+    deployed_sha: "{{ lookup('pipe', 'git rev-parse --short HEAD') }}"
+```
+
+| Kata kunci | Catatan |
+| :--- | :--- |
+| `register` + `.stdout`, `.rc`, `.changed` | pakai `stdout_lines` untuk output multi-baris |
+| `changed_when: false` | untuk perintah read-only |
+| `failed_when` | override logika sukses (mis. `rc not in [0, 1]`) |
+| `ignore_unreachable: true` | play yang menangani host mati |
+| `delegate_to` | jalankan modul di host lain |
+| `run_once: true` | task dijalankan sekali, hasil berlaku untuk semua host |
+| `throttle` | batasi paralelisme task berat |
+
+> **Jebakan #6:** perintah `psql`, `ss`, `docker ps` tanpa `changed_when: false` selalu
+> melaporkan `changed` → run kedua bukan `changed=0` dan handler ikut jalan tanpa alasan.
+
+---
+
+## Modul yang paling sering dipakai
+
+| Kebutuhan | Modul | Catatan |
+| :--- | :--- | :--- |
+| Paket | `ansible.builtin.apt` / `dnf` | `cache_valid_time` untuk hemat waktu |
+| File/dir/izin | `ansible.builtin.file` | wajib `mode` eksplisit untuk secret (`'0600'`) |
+| Template | `ansible.builtin.template` | `validate:` sebelum replace |
+| Copy/isi | `ansible.builtin.copy` | `content:` untuk file kecil |
+| Baris config | `ansible.builtin.lineinfile` | `regexp` + `backup: yes` |
+| Service | `ansible.builtin.systemd` | `daemon_reload: yes` setelah ubah unit |
+| Timer | `ansible.builtin.systemd` | kelola `x.timer`: `state: started`, `enabled: yes` |
+| Shell | `ansible.builtin.shell` | butuh pipe/redirect; jangan jika ada modulnya |
+| Program | `ansible.builtin.command` | tanpa shell; lebih aman & cepat |
+| Status file | `ansible.builtin.stat` | cek sebelum bertindak |
+| Tunggu | `ansible.builtin.wait_for` | `host`+`port`, atau `path`+`search_regex` |
+| Uji HTTP | `ansible.builtin.uri` | `status_code`, `retries`, `until` |
+| Assert | `ansible.builtin.assert` | **gerbang** sebelum operasi berbahaya |
+| SSH key | `ansible.posix.authorized_key` | collection `ansible.posix` |
+| Timezone | `community.general.timezone` | collection `community.general` |
+| Git | `ansible.builtin.git` | `version:` pin commit, bukan branch |
+| User/group | `ansible.builtin.user` / `group` | `system: yes` untuk service account |
+| Cron | `ansible.builtin.cron` | `name:` wajib agar bisa diubah & dihapus |
+
+```yaml
+# pola gerbang: tolak eksekusi berbahaya sebelum terjadi
+- name: Wajib konfirmasi (operasi destruktif)
+  ansible.builtin.assert:
+    that: (confirm | default('')) == 'DROP-AND-REBUILD'
+    fail_msg: "Jalankan dengan -e confirm=DROP-AND-REBUILD"
+    quiet: true
+```
+
+---
+
+## Vault & secret
+
+```bash
+# password vault di file yang di-gitignore (atau password manager)
+echo 'my-strong-passphrase' > .vault-pass && chmod 600 .vault-pass
+
+ansible-vault create  group_vars/all/vault.yml
+ansible-vault edit    group_vars/all/vault.yml
+ansible-vault view    group_vars/all/vault.yml
+ansible-vault rekey   group_vars/all/vault.yml
+ansible-vault encrypt_string --name 'db_password' 'S3cret'   # satu variabel saja
+```
+
+```sh
+#!/bin/sh
+# .vault-pass.sh — password dari macOS Keychain / secret manager, bukan plaintext
+security find-generic-password -a ansible-vault -s my-project -w
+```
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| Secret hanya di file vault terpisah | audit mudah, tidak tercampur nilai konfigurasi |
+| `no_log: true` pada task yang menyentuh secret | mencegah bocor di log |
+| `mode: '0600'` untuk file berisi secret | default `0644` bocor ke user lain |
+| Jangan taruh secret di `-e` | muncul di shell history & log proses |
+| Prefix variabel vault (`vault_db_password`) opsional tapi membantu audit | jelas mana yang terenkripsi |
+| Rotasi: `rekey` lalu update di password manager | satu sumber kebenaran |
+
+> **Jebakan #7:** variabel vault yang diakses di `when:` bisa gagal jika vault belum
+> terdekripsi (mis. di `--check` tanpa password). Simpan hanya **nilai** di vault, bukan
+> struktur kondisi.
+
+---
+
+## Check mode, diff, dan dry-run yang benar
+
+```bash
+# 1. Mulai dengan simulasi + diff
+ansible-playbook site.yml --check --diff --limit webservers
+
+# 2. Pastikan daftar task sesuai harapan sebelum jalan
+ansible-playbook site.yml --list-tasks
+
+# 3. Operasi destruktif: gerbang confirm= lebih andal daripada --check
+ansible-playbook playbooks/reset-app.yml            # tanpa confirm = tampil rencana
+ansible-playbook playbooks/reset-app.yml -e confirm=RESET-APP
+```
+
+```yaml
+# Task yang tidak mendukung check mode: beri tahu pembaca
+- name: Pratinjau perintah (tidak dijalankan saat --check)
+  ansible.builtin.command: app-cli migrate --dry-run
+  changed_when: false
+  check_mode: true
+```
+
+| Atribut | Efek |
+| :--- | :--- |
+| `check_mode: yes` | paksa task hanya disimulasikan |
+| `check_mode: no` | paksa task **benar-benar jalan** meski `--check` |
+| `diff: yes` | tampilkan diff walau `--diff` global tidak dipakai |
+| `--step` | konfirmasi per task (debug manual) |
+| `supports_check_mode` | metadata modul; `command`/`shell` tidak mendukung |
+
+> **Jebakan #8:** `--check` pada playbook yang bergantung pada hasil task sebelumnya (file yang
+> belum benar-benar dibuat) sering menghasilkan error palsu. Untuk operasi destruktif, gerbang
+> `confirm=` (assert) lebih dapat dipercaya.
+
+---
+
+## Idempotensi — aturan main
+
+Prinsip: **jalankan dua kali, run kedua harus `changed=0`.**
+
+```bash
+ansible-playbook site.yml > /tmp/run1.log
+ansible-playbook site.yml > /tmp/run2.log
+grep -E 'changed=[1-9]' /tmp/run2.log && echo "TIDAK IDEMPOTEN" || echo "idempotent"
+```
+
+| Sumber tidak idempoten | Perbaikan |
+| :--- | :--- |
+| `shell`/`command` read-only | `changed_when: false` |
+| `command` yang kadang gagal normal | `failed_when:` dengan kondisi eksplisit |
+| `lineinfile` tanpa `regexp` | tambahkan `regexp` + `line` |
+| Timestamp di nama file | `creates:` atau `stat` dulu |
+| `shell` yang selalu menulis | ganti ke modul native (`copy`, `template`) |
+| `git` tanpa `version` | pin commit/tag agar tidak selalu fetch |
+| `file` tanpa owner/mode | nilai eksplisit menghindari diff berulang |
+| Seed data selalu dijalankan | `creates:` / cek `stat` hasil |
+
+> **Jebakan #9:** `register` + `when: result.changed` adalah jebakan klasik — `changed`
+> milik task, bukan kondisi lingkungan. Simpan keputusan di variabel eksplisit.
+
+---
+
+## Troubleshooting
+
+```bash
+# 1. Koneksi
+ansible web-01 -m ping -vvv
+ssh -i ~/.ssh/ansible -o IdentitiesOnly=yes deploy@web-01
+
+# 2. Variabel salah / tidak terdefinisi
+ansible-inventory --host web-01 --yaml | less
+ansible-playbook site.yml --limit webservers -vv | grep -n 'nginx_'
+
+# 3. Syntax & lint
+ansible-playbook site.yml --syntax-check
+ansible-lint site.yml roles/
+
+# 4. Di target: apa yang sebenarnya terjadi
+journalctl -u nginx --no-pager | tail -50
+cat /tmp/ansible.log | tail -100          # dari ansible.cfg
+systemctl status app
+```
+
+| Gejala | Penyebab umum | Cek |
+| :--- | :--- | :--- |
+| `UNREACHABLE` | IP salah / host mati / firewall | `ping`, `ssh -v`, cek `ansible_host` |
+| `Permission denied (publickey)` | key salah / `IdentitiesOnly` | `ssh -v` tanpa agent |
+| `MODULE FAILURE` + python error | interpreter salah / python belum ada | `ansible_python_interpreter` |
+| Variabel `undefined` | host tidak masuk group / typo nama | `ansible-inventory --graph` |
+| Task jalan di host salah | host di dua group | `--limit` + `-vv` |
+| Handler tidak jalan | task tidak `changed` | cek idempotensi |
+| Play lambat | `gather_facts` tak perlu / `forks` kecil | `gather_facts: no`, naikkan `forks` |
+| Vault error | password tidak terbaca | cek `vault_password_file` |
+| `sudo: a password is required` | `-K` belum, atau NOPASSWD tidak ada | `-K` atau perbaiki sudoers |
+
+> **Jebakan #10:** `ansible_host` dibaca dari inventory di awal run. Jika playbook mengubah
+> IP/DNS host, run yang sama masih memakai nilai lama — jalankan play baru atau
+> `meta: refresh_inventory`.
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejala | Solusi |
+| :--- | :--- | :--- |
+| `when` membandingkan string ke bool | Task jalan padahal `-e x=false` | `| bool` |
+| `command` read-only tanpa `changed_when` | Run kedua bukan `changed=0` | `changed_when: false` |
+| `import_tasks` dengan `set_fact` | Variabel kosong / undefined | ganti `include_tasks` |
+| Handler tidak jalan di `--check` | Service tampak tidak restart | verifikasi manual |
+| `template` fluktuatif | File berubah tiap run, service restart | sumber data stabil |
+| `lineinfile` tanpa `regexp` | Baris duplikat menumpuk | `regexp` + `line` |
+| Kredensial di `-e` | Bocor di history & log | vault / env |
+| Task berisi secret tanpa `no_log` | Secret tercetak di output | `no_log: true` |
+| `validate:` tidak dipakai | Config rusak baru ketahuan saat reload | `validate` untuk nginx/sshd/systemd |
+| Host lupa di group induk | Role umum tidak jalan | `ansible-inventory --graph` |
+| `ansible_facts['x']` vs variabel lama | `undefined` setelah upgrade core | migrasi ke `ansible_facts[]` |
+| `gather_facts: no` padahal butuh fakta | Variabel fakta kosong | aktifkan kembali per play |

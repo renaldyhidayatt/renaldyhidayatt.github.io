@@ -2,6 +2,8 @@
 title: "Example Sea Query Tonic Payment Gateway"
 excerpt: "A monorepo payment gateway built with Rust, gRPC, PostgreSQL, and with full observability stack."
 date: "2025-08-18"
+created_at: "2025-08-18"
+updated_at: "2025-08-18"
 tags: [
   "rust", "grpc", "tonic", "axum", "postgresql", "docker", "docker-compose",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis",
@@ -97,6 +99,26 @@ Arsitektur proyek ini dirancang dengan pendekatan *microservices*, memisahkan an
 -   **Server Service (Tonic)**: Menerima panggilan gRPC, memproses seluruh logika bisnis, berinteraksi dengan database (PostgreSQL) dan cache (Redis), lalu mengembalikan hasilnya.
 -   **Database (PostgreSQL)**: Menyimpan data persisten seperti informasi pengguna, saldo, dan riwayat transaksi.
 -   **Observability**: Metrik dari kedua layanan dikumpulkan oleh Prometheus, dan log dikumpulkan oleh Loki. Keduanya dapat divisualisasikan menggunakan Grafana.
+
+## Technical Decisions & Trade-offs
+
+**A monorepo split into a public REST edge and a private gRPC core**
+One workspace holds two services: an Axum client that validates and forwards external requests, and a Tonic server that owns the money logic. The split enforces a real boundary - the edge never touches the database directly - while a single repository keeps the proto contracts and both services in lockstep. The cost is a network hop plus serialization on every call that a single binary would not pay, and two deployables to run even in development. At this scale that overhead is paid deliberately, to keep the separation honest.
+
+**SeaQuery for dynamic queries, SQLx for execution**
+Filters and query shapes are composed programmatically with SeaQuery instead of concatenated SQL strings, then run through SQLx's pool, with migrations handled by sqlx-cli. The benefit is injection-safe, composable queries; the cost is two query layers to understand and generated SQL that occasionally needs inspecting before you trust it. For a payment schema with many filtered list endpoints, the composability earns its keep.
+
+**Tonic gRPC as the internal contract**
+Protocol Buffers define the interface between client and server, so mismatches fail at compile time and payloads stay compact. The trade-off is workflow friction: contract changes mean proto regeneration in the shared crate, and debugging needs gRPC-specific tooling. Inside a monorepo the regeneration step is cheap, which is where this design is most comfortable.
+
+**Axum and utoipa on the public edge**
+The REST side speaks the HTTP and JSON that web and mobile clients expect, with OpenAPI documentation generated from the handlers. The cost is maintaining two views of the same operations - REST at the edge, gRPC in the core - and keeping the OpenAPI annotations truthful. Exposing REST externally while keeping the typed protocol internal is the standard shape for good reason.
+
+**Redis in front of PostgreSQL**
+Sessions and hot reads are served from Redis so the database is not hit for every token check. The trade-offs are cache invalidation and a second stateful service that can fail independently. At this traffic level Redis is more learning exercise than necessity - which is a fair thing for a project like this to be.
+
+**Database transactions for money movement**
+Transfers debit and credit inside one SQLx transaction against PostgreSQL, so a partial move can never be committed. The boundary of that guarantee is the single database: scaling writes eventually means distributing the transaction, which is a genuinely hard problem. One honest gap is retry safety - idempotency keys on the mutating endpoints - which this example does not implement.
 
 ## Entity-Relationship Diagram (ERD)
 

@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Payment Gateway Quarkus"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan REST API Gateway, gRPC, Quarkus, Kafka, dan PostgreSQL."
 date: "2026-05-26"
+created_at: "2026-05-26"
+updated_at: "2026-05-26"
 tags: [
   "java", "quarkus", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "flyway"
@@ -889,6 +891,28 @@ flowchart TB
 | **Observability** | OpenTelemetry + Jaeger | Vendor-neutral distributed telemetry pipeline and visualization. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Saldo updates with optimistic concurrency instead of row locks**
+Balance writes use optimistic locking, so concurrent debits do not queue behind database row locks and throughput stays high under normal traffic. The cost appears on hot accounts: contended updates fail and the service layer must retry, and a genuinely popular card could turn that into visible latency. For this workload the lock-free path wins, with the transaction ledger capturing every attempt either way.
+
+**Transfer as a multi-module flow, not a distributed transaction**
+A card-to-card transfer is sequenced through the card, saldo, and transaction services over gRPC; no transaction manager spans them. The upside is that modules stay independently evolvable; the downside is that a failure mid-sequence can leave a debit without its matching credit. Status tracking in the centralized transaction ledger is the reconciliation surface, a deliberate bet that operational reconciliation beats bolting on saga orchestration.
+
+**Soft delete and restore for financial records**
+Cards, merchants, and topup records are marked deleted rather than removed, so history survives operator error and audits can be replayed. The bill arrives as query complexity, since every read must filter tombstones, and as unbounded table growth. For money movement, never physically destroying records is the cheaper regret.
+
+**Caching balances with Redis, carefully**
+The saldo service keeps a Redis-side copy for fast reads, which keeps dashboards and card screens responsive under load. The trade-off is that a cached balance can briefly trail the ledger, so staleness is only tolerated on the read path; anything that actually moves money is validated by optimistic locking against PostgreSQL at write time. Knowing that boundary is what makes caching money safe.
+
+**Withdraw thresholds instead of a fraud engine**
+Daily transaction limits on withdrawals are a blunt but cheap risk control: no external scoring service, no model to maintain, just a hard ceiling on blast radius. The trade-off is coarse edges, since legitimate heavy users get blocked while determined fraud is merely slowed down. At this scale, a threshold plus the audit ledger is proportionate.
+
+**Kafka for invoices and OTP mail**
+Topup, transfer, and withdraw events fan out to the email worker asynchronously, so SMTP latency can never sit inside a money movement path. At-least-once delivery permits duplicate notification emails unless the consumer deduplicates, and the broker adds a stateful component to the deployment. Decoupling financial notifications from the ledger write path is worth both costs.
 
 ---
 

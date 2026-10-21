@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Payment Gateway Go"
 excerpt: "A Distributed Modular Monolith Payment Gateway built with Go, gRPC, PostgreSQL, and Kafka with full observability stack."
 date: "2025-08-18"
+created_at: "2025-08-18"
+updated_at: "2025-08-18"
 tags: [
   "golang", "grpc", "echo", "postgresql", "kafka", "docker", "docker-compose",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "kubernetes",
@@ -617,6 +619,28 @@ flowchart TD
 | **Continuous Profiler**| Pyroscope | Real-time memory allocation tracker to identify hot paths. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Go on the hot money paths**
+Static typing, explicit error returns, and a small runtime make transfer and topup loops predictable in latency and memory, and Pyroscope continuously profiles allocations so hot paths are measured rather than guessed. The cost is missing batteries: transactional discipline, auth, and resilience are assembled by hand from the pkg modules, with no ORM safety net to lean on. For a system whose bottleneck is correctness under concurrency, that explicitness is the right trade.
+
+**Distributed modular monolith for a payment gateway**
+Twelve logical services with strictly forbidden cross-boundary database access keep the finance domains isolated, and any of them can scale on its own HPA. The honest cost: a transfer debits one card and credits another across separate service boundaries, so the one operation a payment gateway must get atomically right becomes coordinated gRPC calls with status pipelines and event-driven logging rather than a single ACID commit. That is a real weakening compared to a shared-database monolith, accepted here as deliberate practice for genuine service splits.
+
+**PgBouncer between the services and the ledger**
+A dozen services plus Kubernetes replicas would exhaust PostgreSQL connections quickly, and pooling is what keeps the ACID ledger reachable under load. The trade-off is one more stateful hop in every query path, plus pooling-mode semantics to respect — statements that assume a dedicated session behave differently through a pool. Cheaper than connection storms, but not transparent.
+
+**Eleven isolated Redis databases instead of one shared cache**
+Per-service Redis isolation removes noisy-neighbor eviction and lets each domain own its invalidation rules, at the cost of running and monitoring eleven extra containers locally and a larger aggregate memory bill. It also creates a discipline problem: cached balances and permissions go stale, so anything money-adjacent treats Redis as a read accelerator only and settles the truth in PostgreSQL.
+
+**JWT, OTP, and RBAC on a money API**
+Stateless tokens keep the gateway and gRPC services free of session state, OTP email verification and login alerts harden the front door, and Redis-cached permission matrices keep RBAC evaluation fast. The standing weakness is revocation: a bearer token on a financial endpoint stays valid until expiry, and refresh-token rotation narrows but does not close that window. Defensible at this scope; production money movement would push toward shorter TTLs and server-side introspection.
+
+**Ledger consistency and idempotency (the core domain risk)**
+Saldo updates rely on optimistic concurrency locks, movements are recorded as auditable ledger rows with soft-delete history, and the central transaction service tracks status across topups, transfers, and withdrawals. What this design still demands is honesty about failure: Kafka events are delivered at-least-once, so a duplicate invoice email is acceptable while a duplicate balance mutation is not, and movement rows stuck in a non-final status need a reconciliation path rather than silence. The schema makes the audit trail possible; the guarantees have to be enforced in code.
 
 ---
 

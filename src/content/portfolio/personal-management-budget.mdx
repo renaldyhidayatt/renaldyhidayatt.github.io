@@ -2,6 +2,8 @@
 title: "Personal Financial Management App"
 excerpt: "A personal financial management app that helps users track transactions, set budgets, and achieve financial goals with ease."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["rust", "react", "sqlite", "tauri"]
 status: "selesai"
 image: "https://github.com/MamangRust/personal-financial-management/raw/main/images/image.png?raw=true"
@@ -38,6 +40,17 @@ The app is built using **Tauri** to create a lightweight desktop application, wi
 ### 🎯 Goal Setting
 - Create financial goals with target amounts and deadlines.
 - Track progress toward achieving financial goals.
+
+## Technical Decisions & Trade-offs
+
+**Local-first with SQLite**
+Every transaction, budget, and goal lives in a local SQLite database, so financial data never leaves the machine and the app works offline by construction. The cost: no sync across devices, no web access, and backups are the user's responsibility. For personal financial records, keeping the data on-device is worth giving up cloud conveniences.
+
+**Tauri instead of Electron**
+Tauri wraps the React interface in the operating system's webview with a Rust core, producing a far lighter application than bundling a full Chromium runtime. The trade-offs: building the app requires the Rust toolchain and Cargo, and the UI renders through whatever webview each platform ships, so rendering can drift slightly between systems. For a lightweight desktop utility, the smaller footprint wins.
+
+**Authentication with honest limits**
+Registering and logging in protects individual profiles on a shared computer; there is no remote account to breach, but also no password-reset email and no recovery if the database file is lost. That is the price of local-first design, accepted deliberately rather than patched over with a server.
 
 ## How to Run the App
 

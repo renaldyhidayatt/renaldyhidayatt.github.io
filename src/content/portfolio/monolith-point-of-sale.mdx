@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Point Of Sale Go"
 excerpt: "A Distributed Modular Monolith Point Of Sale built with Go, gRPC, PostgreSQL, and Kafka with full observability stack."
 date: "2025-08-18"
+created_at: "2025-08-18"
+updated_at: "2025-08-18"
 tags: [
   "golang", "grpc", "echo", "postgresql", "kafka", "docker", "docker-compose",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "kubernetes",
@@ -593,6 +595,28 @@ flowchart TD
 | **Orchestration** | Kubernetes | Production-grade container orchestration with HPA |
 | **API Docs** | Swagger UI | Interactive API documentation (echo-swagger) |
 | **Resilience** | Circuit Breaker, Rate Limiter, Load Monitor | Built-in fault tolerance patterns (`pkg/resilience`) |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Go and gRPC for a register backend**
+A point-of-sale lane cares about steady low-latency writes more than anything else, and Go's small binaries plus gRPC's binary protobuf payloads deliver predictable round-trips that generated client stubs can be built against. The cost is framework absence: auth, logging, and resilience come from the shared pkg modules instead of a batteries-included stack, and protobuf contracts add a regeneration step to every interface change. For an API that cashier and merchant clients integrate against, contract-first is worth the ceremony.
+
+**Splitting the checkout across four services**
+Order, order item, product, and transaction each run as their own container, so the transaction service can scale independently for peak hours and a catalog bug does not take sales down with it. The price shows up exactly at checkout: creating an order, decomposing items, and recording payment cross three gRPC boundaries where a single-deployable POS would use one database transaction. The isolation is real, and so is the consistency work it pushes into application code.
+
+**Redis in the read path**
+Product lookups and role permissions are served cache-first with instrumented hit ratios, which keeps the catalog off PostgreSQL during a rush. The trade-off is staleness: a price or stock change does not reach the register until invalidation lands, so anything the till depends on for correctness — stock especially — must be re-checked against the database at write time rather than trusted from cache.
+
+**JWT roles for staff hardware**
+Stateless tokens suit register clients that reconnect often and cannot require session affinity, and the RBAC model keeps a cashier token away from merchant and admin operations. The gap is revocation: deactivating a cashier mid-shift does not kill an already-issued token until expiry, so the practical mitigation is short access-token lifetimes backed by refresh rotation. Contained for internal staff devices, but a real limit to design around.
+
+**Kafka-decoupled notifications**
+Transaction and merchant events flow to the email service asynchronously, so a slow SMTP provider cannot stall a sale. The cost is eventual consistency and at-least-once delivery — consumers must tolerate duplicates, and consumer lag becomes a health metric worth exporting rather than a silent backlog.
+
+**Cashier attribution and stock integrity (the core domain risk)**
+The cashier service tracks per-cashier status and monthly or yearly sales performance, which only means anything if every order and transaction carries its cashier identity and failed payments are persisted as records instead of dropped — otherwise end-of-day reconciliation quietly falls apart. On the inventory side, stock tracking lives in the product service while checkout runs in the order service, so the check-and-decrement cannot share one transaction; without a conditional update there, two simultaneous sales of the last unit can both succeed. The domain punishes both mistakes: a drawer that does not reconcile, and a shelf that oversells.
 
 ---
 

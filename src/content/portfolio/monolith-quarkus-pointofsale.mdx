@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Point of Sale Quarkus"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan REST API Gateway, gRPC, Quarkus, Kafka, dan PostgreSQL."
 date: "2026-05-26"
+created_at: "2026-05-26"
+updated_at: "2026-05-26"
 tags: [
   "java", "quarkus", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "flyway"
@@ -824,6 +826,28 @@ flowchart TB
 | **Observability** | OpenTelemetry + Jaeger | Vendor-neutral distributed telemetry pipeline and visualization. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Quarkus reactive over the Spring Boot default**
+Checkout is latency-sensitive: a register request hops through the order, product, and transaction modules, and the reactive engine keeps threads serving other requests during those gRPC waits. The cost is code that demands Mutiny fluency and careful discipline to avoid accidental blocking, plus a smaller ecosystem than Spring when something breaks. For a checkout path where every hop is a network call, non-blocking is the right default.
+
+**Modular monolith with gRPC boundaries**
+Cashier, product, category, order, and transaction logic live in separate Maven modules that speak protobuf over gRPC, giving clean ownership without operating real microservices. The trade-off is ceremony: contract changes require stub regeneration, payloads are not human-readable on the wire, and the boundaries hold only if nobody takes shortcuts through another module's repository. At this size, isolation without the distributed-systems tax is the winning deal.
+
+**Checkout integrity across module boundaries**
+Recording a sale reaches the product service for price lookup and the transaction service for the audit register, and no single database transaction covers the whole path. Consistency therefore rests on the flow: order items decompose the basket with the prices looked up at checkout, and the centralized transaction ledger is the record to reconcile against if a step fails. Module isolation buys clean ownership and charges for it in coordination logic.
+
+**Caching the catalog, not the sale**
+Redis absorbs product and permission reads so browsing and search stay fast under load, while the checkout flow performs its price lookup through the product service instead of trusting a cached value. That split sacrifices some cache hits on the hottest write path but prevents receipts that disagree with the ledger. In point of sale, a stale price is not a performance issue, it is a correctness bug.
+
+**Kafka-driven receipts and notifications**
+Completed orders publish events and a dedicated email worker sends receipts and invoices, so SMTP problems can never make a customer wait at the register. At-least-once delivery means duplicate receipt emails are possible without deduplication, and the broker is one more thing to run. Offloading receipt delivery from the checkout path is worth both.
+
+**PostgreSQL 17, PgBouncer, and Flyway migrations**
+Sales ledgers, order items, and inventory counts need ACID transactions and relational integrity, so the database choice was settled before the architecture was. PgBouncer prevents the many reactive modules from exhausting Postgres connections, and Flyway keeps schema evolution versioned and repeatable. The costs are pooled-connection ceilings under burst load and migrations that run at startup, which needs care when multiple pods start together.
 
 ---
 

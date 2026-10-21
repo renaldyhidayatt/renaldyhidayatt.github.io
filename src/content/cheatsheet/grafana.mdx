@@ -1,0 +1,601 @@
+---
+title: "Grafana — Cheat Sheet"
+description: "Cheat sheet Grafana 11: struktur dashboard JSON, panel & query, variabel template bertingkat, transformation, provisioning (file & folder), alerting, contact point & notification policy, performa query, API automation, plus jebakan dashboard yang tidak muncul."
+date: "2026-10-22"
+created_at: "2026-10-22"
+updated_at: "2026-10-22"
+status: "verified"
+version: "Grafana 11.x"
+order: 9.2
+tags:
+  - grafana
+  - dashboard
+  - observability
+  - backend
+---
+
+# Grafana — Cheat Sheet
+
+> Target: **Grafana 11.x** dengan datasource **Prometheus** (metrik), **Loki** (log), dan
+> **Jaeger** (trace), dipakai visualizing semua platform (E-Commerce, POS, Payment Gateway).
+> Dashboard dikelola sebagai file JSON di repo dan di-*provision* ke cluster. Semua snippet
+> di bawah dipakai di repo dan **diverifikasi**.
+
+**Isi sheet ini**
+
+- Mental model
+- Struktur dashboard JSON
+- Panel & target query
+- Variabel template
+- Transformation
+- Datasource & provisioning
+- Provisioning dashboard & folder
+- Alerting di Grafana
+- Explore & integrasi antar-tool
+- Performa query & dashboard
+- API & otomatisasi
+- Jebakan (wajib dibaca)
+
+---
+
+## Mental model
+
+```
+Datasource ──query──▶ Panel ──render──▶ Dashboard ──browse──▶ Viewer
+     ▲                   │
+     └── dashboard JSON ─┘ (disimpan di Git, di-provision ke cluster)
+```
+
+| Konsep | Arti |
+| :--- | :--- |
+| Datasource | koneksi ke sumber data (Prometheus, Loki, Jaeger, SQL) |
+| Dashboard | kumpulan panel + variabel + layout, disimpan sebagai JSON |
+| Panel | satu visualisasi (timeseries, stat, table, …) |
+| Target | query di dalam panel (bisa banyak) |
+| Variable | parameter yang dipakai di query (namespace, pod, service) |
+| Transformation | ubah data hasil query sebelum dirender |
+| Folder | pengelompokan dashboard |
+| Provisioning | Grafana memuat dashboard/datasource dari file saat start |
+| Alert rule | dievaluasi Grafana (atau Prometheus) → contact point |
+
+> Kenapa dashboard **file JSON di Git** dan bukan disimpan lewat UI? Karena yang tersimpan
+> di UI bisa berubah tanpa review dan hilang saat reinstall. File di Git = ter-versioning,
+> ter-review, dan bisa di-rollback.
+
+---
+
+## Struktur dashboard JSON
+
+```json
+{
+  "uid": "order-service",
+  "title": "Super App — Order Service",
+  "description": "Request rate, latensi, error, dan dependency",
+  "tags": ["superapp", "backend", "order"],
+  "timezone": "utc",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 7,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": { "refresh_intervals": ["10s", "30s", "1m", "5m", "15m"] },
+  "templating": { "list": [] },
+  "panels": []
+}
+```
+
+| Field | Arti | Jebakan |
+| :--- | :--- | :--- |
+| `uid` | ID unik, dipakai URL & API | **wajib** unik & stabil (dipakai link + annotation) |
+| `schemaVersion` | versi format | naikkan kalau di-import dari UI |
+| `version` | revisi | incremented tiap save, dipakai optimistic locking saat provisioning |
+| `refresh` | auto-refresh | `""` = mati |
+| `time.from` | rentang awal default | `now-6h` = 6 jam terakhir |
+| `editable` | boleh diubah dari UI | `false` kalau mau pure GitOps |
+| `tags` | label dashboard | dipakai filter & organizing |
+| `links` | link ke dashboard lain | `type: dashboard` |
+
+```json
+{
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request Rate by Status",
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+          "expr": "sum by (status) (rate(http_server_requests_total{job=\"$job\"}[$__rate_interval]))",
+          "legendFormat": "{{status}}",
+          "instant": false,
+          "range": true
+        }
+      ],
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    }
+  ]
+}
+```
+
+---
+
+## Panel & target query
+
+| Panel type | Untuk |
+| :--- | --- |
+| `timeseries` | garis waktu (default untuk metrik) |
+| `stat` | angka besar (single value) |
+| `gauge` | nilai terhadap rentang (persentase) |
+| `bar` / `barchart` | perbandingan kategori |
+| `table` | data tabular (format kolom) |
+| `heatmap` | korelasi 2 dimensi (latensi × status) |
+| `logs` | panel log (Loki) |
+| `traces` | panel trace (Jaeger/Tempo) |
+| `candlestick` | OHLC |
+| `text` | markdown/catatan |
+| `alertlist` | daftar alert aktif |
+| `row` | pengelompokan panel (collapse) |
+
+```json
+{
+  "type": "table",
+  "title": "Top 10 Endpoint Terlambat",
+  "transformations": [
+    { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true } } }
+  ],
+  "fieldConfig": {
+    "defaults": { "unit": "s", "decimals": 3 },
+    "overrides": [
+      { "matcher": { "id": "byName", "options": "Value" },
+        "properties": [{ "id": "custom.cellOptions", "value": { "type": "color-text" } }] }
+    ]
+  },
+  "targets": [{
+    "refId": "A",
+    "format": "table",
+    "instant": true,
+    "expr": "topk(10, sum by (path) (rate(http_server_request_duration_seconds_sum[5m]) / rate(http_server_request_duration_seconds_count[5m])))"
+  }]
+}
+```
+
+| Elemen target | Arti |
+| :--- | :--- |
+| `refId` | "A", "B" — nyConnecting antar target di panel yang sama |
+| `expr` | query (Prometheus) |
+| `legendFormat` | pola label (`{{status}}`, `{{pod}}`) |
+| `instant` | `true` = query "sekarang" (bukan rentang) — wajib untuk table |
+| `range` | query rentang waktu |
+| `format` | `time_series`, `table`, `heatmap` |
+| `datasource.uid` | **UID**, bukan nama (Grafana 9+) |
+
+> **Jebakan:** `datasource` wrote `{"type": "prometheus", "uid": "..."}` — kalau pakai
+> **nama** ("Prometheus"), provisioning gagal diam-diam saat nama berubah.
+
+---
+
+## Variabel template
+
+```json
+{
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "label": "Namespace",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+        "definition": "label_values(kube_pod_info, namespace)",
+        "query": { "query": "label_values(kube_pod_info, namespace)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" },
+        "options": []
+      },
+      {
+        "name": "pod",
+        "label": "Pod",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+        "definition": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)",
+        "query": { "query": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)", "refId": "StandardVariableQuery" },
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*"
+      },
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "hide": 0
+      },
+      {
+        "name": "interval",
+        "type": "interval",
+        "query": "30s",
+        "auto": true,
+        "auto_min": "10s"
+      },
+      {
+        "name": "env",
+        "type": "custom",
+        "query": "prod,staging",
+        "current": { "text": "prod", "value": "prod" }
+      }
+    ]
+  }
+}
+```
+
+| Tipe | Fungsi |
+| :--- | --- |
+| `query` | dari datasource (label_values, query metric, atau query Loki) |
+| `custom` | daftar manual (comma separated) |
+| `interval` | rentang waktu (`$__interval`, `$__rate_interval`) |
+| `datasource` | pilih datasource (untuk dashboard multi-sumber) |
+| `constant` | nilai tetap, disembunyikan |
+| `textbox` | input bebas dari user |
+| `adhoc` | filter bebas (key + operator + value) |
+
+| Opsi penting | Arti |
+| :--- | :--- |
+| `includeAll` | tampilkan opsi "All" |
+| `allValue` | nilai yang dipakai saat All dipilih (`.*`) |
+| `multi` | boleh pilih beberapa |
+| `refresh` | `1` = saat dashboard dibuka, `2` = saat variabel berubah |
+| `hide` | `0` tampil, `1` = hide label, `2` = hide total |
+| `definition` | teks query (untuk display), `query` = query sebenarnya |
+
+```promql
+# pakai variabel di query
+sum by (pod) (rate(http_server_requests_total{namespace=~"$namespace", pod=~"$pod"}[$__rate_interval]))
+```
+
+> **Jebakan:** variabel bertingkat harus pakai regex, bukan `=`:
+> `namespace=~"$namespace"` (bukan `namespace="$namespace"`), karena nilainya bisa
+> `prod|staging`.
+
+---
+
+## Transformation
+
+```json
+{
+  "transformations": [
+    { "id": "filter", "options": { "filters": [] } },
+    { "id": "groupBy", "options": { "fields": { "Name": { "aggregations": [], "operation": "groupby" } } } },
+    { "id": "calculateField", "options": { "alias": "error_ratio", "mode": "binary", "binary": { "left": "errors", "operator": "/", "right": "total" } } },
+    { "id": "renameByRegex", "options": { "renamePattern": "(.*)_total", "renamePatternFormat": "PLAIN" } },
+    { "id": "organize", "options": { "excludeByName": { "Time": true } } },
+    { "id": "joinByField", "options": { "byField": "orderId", "mode": "outer" } },
+    { "id": "addFieldFromCalculation", "options": { "mode": "binary", "alias": "ratio" } },
+    { "id": "labelsToFields", "options": { "mode": "columns" } },
+    { "id": "reduce", "options": { "reducers": ["lastNotNull"] } }
+  ]
+}
+```
+
+| Transformasi | Gunanya |
+| :--- | --- |
+| `filter` | saring baris (mis. hanya status 5xx) |
+| `groupBy` | kelompokkan baris |
+| `calculateField` | hitung kolom baru (rasio) |
+| `renameByRegex` / `renameByName` | rapikan nama kolom |
+| `organize` | sembunyikan/urutkan kolom |
+| `joinByField` | join dua query (mis. metric + log) |
+| `labelsToFields` | ubah label Prometheus jadi kolom |
+| `reduce` | gabung baris jadi satu nilai |
+| `sortBy` | urutkan |
+| `limit` | ambil N teratas |
+
+---
+
+## Datasource & provisioning
+
+```yaml
+# observability/grafana/provisioning/datasources/datasources.yaml
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus-main
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      httpMethod: POST
+      timeInterval: 30s
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.50.0
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger-main
+
+  - name: Loki
+    uid: loki-main
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - name: TraceID
+          matcherRegex: "trace_id=(\\w+)"
+          url: "$${__value.raw}"
+          datasourceUid: jaeger-main
+
+  - name: Jaeger
+    uid: jaeger-main
+    type: jaeger
+    access: proxy
+    url: http://jaeger-query:16686
+```
+
+```yaml
+# observability/grafana/provisioning/dashboards/dashboards.yaml
+apiVersion: 1
+providers:
+  - name: superapp
+    orgId: 1
+    folder: Super App
+    folderUid: superapp
+    type: file
+    disableDeletion: false
+    allowUiUpdates: false          # dashboard diubah di Git, bukan di UI
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
+```
+
+| Opsi | Arti |
+| :--- | --- |
+| `uid` | **wajib** unik — dipakai panel & API |
+| `allowUiUpdates` | `false` = UI read-only (dashboard di Git = sumber kebenaran) |
+| `disableDeletion` | `true` = dashboard tak terhapus walau file hilang |
+| `updateIntervalSeconds` | Poll file dari disk (default 10s) |
+| `foldersFromFilesStructure` | folder ikut struktur folder di disk |
+
+> **Jebakan:** kalau `allowUiUpdates: true`, orang bisa ubah dashboard di UI dan
+> perubahan itu **hilang** saat provisioning berikutnya menimpa file.
+
+---
+
+## Provisioning dashboard & folder
+
+```text
+observability/grafana/
+├── provisioning/
+│   ├── dashboards/
+│   │   ├── dashboards.yaml       # provider
+│   │   └── dashboards/
+│   │       ├── order-service.json
+│   │       └── payment-gateway.json
+│   └── datasources/
+│       └── datasources.yaml
+```
+
+```yaml
+# banyak dashboard → pakai satu provider + struktur folder
+apiVersion: 1
+providers:
+  - name: superapp
+    folder: Super App
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
+```
+
+```bash
+# validasi JSON dashboard sebelum commit
+jq empty dashboards/order-service.json
+
+# cek UID unik antar file
+jq -r '.uid' dashboards/*.json | sort | uniq -d     # harus kosong
+```
+
+> **Jebakan (pengalaman nyata):** folder Grafana **tidak boleh** dibuat lewat *key* ConfigMap
+> karena key tidak boleh mengandung garis miring (`/`). solved dengan `items[].path` +
+> `initContainer` yang me-*resolve* symlink, atau `foldersFromFilesStructure: true`.
+> Tanpa itu, provider melihat **0 dashboard** padahal file-nya ada di volume.
+
+---
+
+## Alerting di Grafana
+
+```yaml
+# provisioning/alerting/contact-points.yaml
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: slack-backend
+    receivers:
+      - uid: slack-backend-uid
+        type: slack
+        settings:
+          url_file: /etc/grafana/secrets/slack-webhook
+          recipient: "#alerts-backend"
+          title: "{{ template \"slack.default.title\" . }}"
+          text: "{{ template \"slack.default.text\" . }}"
+```
+
+```yaml
+# provisioning/alerting/policies.yaml
+apiVersion: 1
+policies:
+  - orgId: 1
+    receiver: slack-backend
+    group_by: ["grafana_folder", "alertname"]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    routes:
+      - receiver: pagerduty-oncall
+        object_matchers: ["severity=critical"]
+        continue: false
+      - receiver: slack-backend
+        object_matchers: ["severity=warning"]
+```
+
+| Konsep | Arti |
+| :--- | :--- |
+| Contact point | tujuan notifikasi (Slack, PagerDuty, email, webhook) |
+| Notification policy | routing: mana yang dapat mana |
+| `group_by` | alert mana yang digabung ke satu notifikasi |
+| `group_wait` | tunggu sebelum notifikasi pertama |
+| `repeat_interval` | berapa sering kirim ulang selama masih firing |
+| Silence | matikan alert sementara (maintenance) |
+
+```promql
+# alert rule (Grafana-managed, unified alerting)
+sum(rate(http_server_requests_total{job="order-service",status=~"5.."}[5m]))
+  / sum(rate(http_server_requests_total{job="order-service"}[5m])) > 0.05
+```
+
+> **Jebakan:** `repeat_interval` terlalu kecil (mis. 1m) → spam notifikasi saat alert
+> berdenyut. `group_wait` + `group_interval` + `repeat_interval` harus naik secara berlapis.
+
+---
+
+## Explore & integrasi antar-tool
+
+```
+Explore ── query Loki ──► log lines ──► klik trace_id ──► Jaeger trace
+   │
+   └─── Trace to metrics ──► dari span Jaeger ──► query Prometheus
+```
+
+| Integrasi | Cara |
+| :--- | --- |
+| Loki → Jaeger | `derivedFields` dengan `matcherRegex` trace_id + `datasourceUid` |
+| Jaeger → Prometheus | Trace view → "Trace to metrics" |
+| Metrics → Logs | Panel time series → "Explore" → Loki pada rentang yang sama |
+| Dashboard → Dashboard | `links` dengan `type: dashboard` + variabel diteruskan |
+| Logs → Metrics | Dari log line, buka Explore Prometheus di timestamp yang sama |
+
+```json
+{
+  "links": [
+    {
+      "title": "Loki logs (same window)",
+      "type": "link",
+      "url": "/explore?left={\"datasource\":\"loki-main\",\"queries\":[{\"expr\":\"{job=~\\\"$job\\\"}\"}]}",
+      "targetBlank": true
+    }
+  ]
+}
+```
+
+---
+
+## Performa query & dashboard
+
+| Variable | Arti |
+| :--- | --- |
+| `$__interval` | interval dihitung dari lebar panel (untuk `$__rate_interval`) |
+| `$__rate_interval` | `max($__interval + scrape_interval, 4 × scrape_interval)` — **wajib** untuk `rate()` |
+| `$__from` / `$__to` | timestamp awal/akhir panel (ms) |
+
+```promql
+# JANGAN: interval tetap, tidak ikut zoom
+rate(http_server_requests_total[5m])
+
+# LAKUK: ikut ukuran panel
+rate(http_server_requests_total[$__rate_interval])
+```
+
+| Gejala | Penyebab | Fix |
+| :--- | :--- | --- |
+| Dashboard lambat | query berat (bukan `$__rate_interval`) | pakai variabel interval |
+| Panel "No data" saat zoom | window rate kekecilan | `$__rate_interval` |
+| Render server berat | `maxDataPoints` terlalu besar | turunkan `maxDataPoints` |
+| Many series | label tak diringkas | `sum by (...)` di query |
+| Dashboard load > 3 detik | terlalu banyak panel | pecah dashboard, pakai `row` collapse |
+
+```json
+{ "maxDataPoints": 500, "interval": "30s" }
+```
+
+```ini
+# grafana.ini
+[query_cache]
+enabled = true
+ttl = 5s
+[server]
+max_connections_per_host = 100
+[users]
+default_theme = dark
+```
+
+---
+
+## API & otomatisasi
+
+```bash
+# list dashboard
+curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
+  http://localhost:3000/api/search?type=dash-db | jq '.[] | {title, uid}'
+
+# export dashboard sebagai JSON
+curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
+  http://localhost:3000/api/dashboards/uid/order-service | jq '.dashboard' > order-service.json
+
+# import / update dashboard
+curl -s -X POST -H "Authorization: Bearer $GRAFANA_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @order-service.json \
+  http://localhost:3000/api/dashboards/db
+
+# provisioned dashboards → endpoint ini READ-ONLY
+curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
+  http://localhost:3000/api/dashboards/uid/order-service
+
+# health
+curl -s http://localhost:3000/api/health
+```
+
+| Endpoint | Fungsi |
+| :--- | --- |
+| `GET /api/search` | cari dashboard/data source/folder |
+| `GET /api/dashboards/uid/:uid` | ambil dashboard |
+| `POST /api/dashboards/db` | simpan dashboard |
+| `GET /api/datasources` | daftar datasource |
+| `GET /api/folders` | daftar folder |
+| `GET /api/annotations` | annotation (event deploy) |
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| Datasource pakai **nama** bukan UID | Provisioning gagal diam-diam | Pakai `uid` |
+| `allowUiUpdates: true` | Perubahan UI hilang | `false` + dashboard di Git |
+| Folder dibuat sebagai key ConfigMap | 0 dashboard terlihat | `items[].path` + symlink resolve, atau `foldersFromFilesStructure` |
+| `rate()` dengan window tetap | Lambat di panel kecil | `$__rate_interval` |
+| Variabel pakai `=` untuk multi-select | Tidak match | Pakai `=~` |
+| `allValue` lupa diisi | "All" tidak match apa pun | `allValue: ".*"` |
+| `instant: true` lupa di table | Table kosong | Set `instant` + `format: table` |
+| `legendFormat` pakai label yang tidak ada | Label kosong di legend | Cek nama label asli |
+| UID duplikat | Dashboard saling timpa | `jq -r '.uid' *.json \| sort \| uniq -d` |
+| Dashboard tanpa `version` | Konflik saat provisioning | Naikkan `version` tiap perubahan |
+| `refresh` terlalu cepat (5s) | Beban Grafana & Prometheus | 30s–1m |
+| Alert `repeat_interval` kecil | Notifikasi spam | ≥ 1 jam untuk non-critical |
+| Panel `maxDataPoints` besar | Render lambat | Turunkan ke 200–500 |
+| Impor JSON dari UI tanpa `uid` | Dashboard tak stabil | Set `uid` manual |
+| Dashbord "No data" padahal metric ada | Filter namespace/servis salah | Cek variabel & label |

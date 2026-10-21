@@ -2,6 +2,8 @@
 title: "Spring Boot Observable Microservices Platform"
 excerpt: "A production-grade, highly resilient, and fully observable Spring Boot Microservices platform built on Spring Cloud, Spring Boot, and Java 21."
 date: "2026-05-25"
+created_at: "2026-05-25"
+updated_at: "2026-05-25"
 tags: [
   "java", "spring-boot", "spring-cloud", "kubernetes", "kafka", "prometheus", "grafana", "opentelemetry"
 ]
@@ -177,6 +179,26 @@ graph TD
     *   **`notification-service` 🔗 `file-storage-service`**: Real-time asynchronous file uploaded/deleted event notifications are processed and enriched with real-time metadata (file size, file type, file name).
 
 ---
+
+## Technical Decisions & Trade-offs
+
+**True microservices vs a modular monolith**
+Seven domain services plus a gateway and a registry, each deployable and independently scalable, with fault isolation per domain. The price: operational complexity (discovery, config, per-service CI), network latency on every inter-service hop, and no more two-phase-commit-style global transactions — cross-service consistency has to be modeled as eventual consistency, which is a real modeling burden that a monolith would never carry.
+
+**Database-per-service (individual PostgreSQL databases)**
+Each service owns its schema: no shared-table coupling, independent migrations, and a service can't accidentally corrupt another's data. The costs: you can't write one global `JOIN` across domains — cross-service data has to be fetched via API/Feign calls or duplicated, and data that logically belongs to two services (e.g., product snapshot inside an order) must be deliberately denormalized and kept in sync by events.
+
+**Hybrid communication: synchronous Feign + asynchronous RabbitMQ events**
+The platform deliberately mixes both. Sync Feign (`product-service` → `file-storage-service`) is simple and gives immediate validation, but creates a hard dependency: if file storage is down or slow, product creation fails or stalls unless retries/circuit breakers are layered on. Async RabbitMQ events (`order-service` publishes, `notification-service` consumes) decouple producers from consumers — a service can be offline without breaking the flow — but introduces at-least-once delivery, ordering questions, and the requirement that every consumer be idempotent. The choice is per interaction: request/response semantics → Feign; "tell, don't ask" semantics → event.
+
+**Eureka + Spring Cloud Gateway**
+A registry and central entry point make routing dynamic (no hardcoded service URLs, traffic can be shifted per service) and give one place for rate limiting, CORS, and auth checks. The trade-off: the registry itself is a dependency (a single-Eureka-node setup is a local single point of failure, and in Kubernetes the value of Eureka drops because K8s services are natively discoverable), plus the gateway adds one network hop to every request.
+
+**Shared `common` library (security, Swagger, event converters)**
+Uniform security baseline and message converters across all services — no per-service drift in auth or event format. The cost is coupling through the artifact: releasing a change in `common` forces a rebuild and redeploy of every service that imports it, so its API must be versioned conservatively (additive-only changes), otherwise one library release becomes a fleet-wide incident.
+
+**Full observability suite (OTel Collector + Prometheus + Loki + Grafana)**
+All three pillars — metrics, logs, traces — correlated through OpenTelemetry, so a slow request can be followed from gateway to service to queue. The trade-off is footprint and volume: locally the suite adds many containers, and every service now emits spans and structured logs continuously, which is fine for demo/staging but has real cost on production traffic; sampling and log-retention policies become necessary, not optional.
 
 ## Port Map Registry
 

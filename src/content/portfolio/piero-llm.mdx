@@ -2,6 +2,8 @@
 title: "PIERO Edge LLM Reasoning Engine"
 excerpt: "A high-performance edge AI reasoning server that isolates small language models (SLMs) through cryptographic verification, strict CPU budget enforcement, and deterministic output sanitization."
 date: "2026-02-15"
+created_at: "2026-02-15"
+updated_at: "2026-02-15"
 tags:
   - rust
   - llm
@@ -74,6 +76,25 @@ Ensures all AI outputs conform to strict, machine-readable schemas suitable for 
   - Qwen2.5-0.5B (Alibaba Cloud)
 - **Inter-Service Communication**: Tonic gRPC over HTTP/2 for low-latency internal coordination
 - **Deployment Target**: Edge computing environments with constrained compute resources
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Small local models vs larger or hosted LLMs**
+Running LiquidAI LFM at 350M parameters and Qwen2.5-0.5B through ONNX keeps inference free of per-token API cost, network round trips, and data egress — the model never leaves the device. The trade-off is a hard capability ceiling: these models reason shallowly, so the surrounding pipeline (compression, gating, schema enforcement) has to compensate for what the weights cannot do.
+
+**SHA-256 and signature verification before weight loading**
+Verifying every model artifact cryptographically before it touches runtime memory closes a supply-chain hole most local inference setups ignore entirely. The cost is operational: keys must be managed and rotated, and a legitimate but unsigned or repackaged model is rejected outright — integrity strictly wins over convenience here.
+
+**CPU budget throttling and the LlmGate fast path**
+Throttling or queueing inference when host load crosses thresholds keeps the edge host responsive, which matters more than raw inference latency on a box running security-critical services. The LlmGate fast path skips full model execution when heuristic confidence is already high — a large average-latency win that will occasionally return the heuristic's answer where the model might have disagreed.
+
+**Graph-based prompt compression**
+Converting verbose telemetry and JSON payloads into compact causal graphs cuts token count and time-to-first-token, which on constrained edge hardware is often the difference between usable and not. The risk is silent information loss: if compression drops the wrong edge, the model confidently reasons over a scene that no longer matches reality.
+
+**Deterministic JSON output filtering**
+Forcing every output into a fixed label, confidence, explanation, and entities schema and stripping embedded shell instructions makes the LLM safe to wire into downstream automation — the consumer never parses free text. The cost is expressiveness: outputs that do not fit the schema are discarded or rewritten, so genuinely open-ended reasoning is structurally out of scope for this service.
 
 ---
 

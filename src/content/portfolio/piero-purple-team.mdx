@@ -2,6 +2,8 @@
 title: "PIERO Purple Team Engine"
 excerpt: "A distributed defense assurance platform powered by causal graph reasoning and graph-native temporal architecture for continuous adversary validation and real-time security verification."
 date: "2026-03-05"
+created_at: "2026-03-05"
+updated_at: "2026-03-05"
 tags:
   - rust
   - purple-team
@@ -86,6 +88,25 @@ All operational instructions must pass through a hardened mediation perimeter be
 - **Concurrency Runtime**: Tokio asynchronous runtime with MPSC channels
 - **Telemetry Processing**: Non-blocking asynchronous event pipelines
 - **Validation Engine**: Distributed causal reasoning and invariant assurance system
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Dual-use adversary simulation with a governance kernel**
+A purple-team engine intentionally wields offensive capability against its own infrastructure — that is the only way to validate defenses under realistic conditions. The same capability is dangerous with the wrong scope, which is why every instruction passes a mediation kernel with cryptographic trust lineage; the guardrails are not overhead, they are the difference between a test and an incident, and they still assume operators are authorized to run what they run.
+
+**Deterministic clock synchronization vs wall-clock time**
+Reconstructing attack chains requires event ordering that survives out-of-order telemetry, so the spine normalizes timestamps against a deterministic clock instead of trusting host wall time. The cost is an extra reconciliation layer, and replayed timelines will not line up one-to-one with raw log timestamps, which can confuse anyone correlating against external evidence.
+
+**Synchronous invariants plus asynchronous reasoning workers**
+Halting propagation immediately when the InvariantChecker sees a fatal deviation buys safety that background analysis cannot, while heavy event-chain correlation runs async to keep backpressure off active runtime nodes. The trade-off is two pipelines to keep correct, and the deep answers always arrive after the fast ones — by then the fast path has already acted on partial information.
+
+**Graph-native temporal storage vs flat time-series stores**
+Linking events into causal graph lineage makes threat-chain reconstruction a traversal rather than a cross-correlation job across log stores. The cost is operational: graph-native structures are heavier to run and less familiar than time-series backends, a price only worth paying because causality, not raw volume, is the core question here.
+
+**Online skepticism hooks**
+Dynamically raising validation strictness when execution behavior looks anomalous adapts assurance intensity to perceived risk instead of charging the same overhead everywhere. The flip side is non-determinism in how strictly the platform validates its own automation, which makes behavior harder to predict and means threshold changes themselves deserve auditing.
 
 ---
 

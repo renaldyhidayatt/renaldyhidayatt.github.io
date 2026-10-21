@@ -2,6 +2,8 @@
 title: "Ecommerce FastAPI React"
 excerpt: "An e-commerce project built with the FastAPI framework, known for its speed and Express.js-like syntax."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["fastapi", "react", "postgres", "javascript"]
 status: "selesai"
 image: "https://github.com/renaldyhidayatt/ecomfastapireact/raw/main/images/images1.png"
@@ -22,6 +24,23 @@ This project is an **e-commerce platform** developed using **FastAPI** for the b
 - **FastAPI** 🚀 – High-performance web framework for building APIs.
 - **React.js** ⚛️ – Modern frontend library for dynamic UI.
 - **PostgreSQL** 🗃️ – Relational database management system.
+
+## ⚖️ Technical Decisions & Trade-offs
+
+**FastAPI vs Django / Flask**
+FastAPI gives you ASGI (true async), Pydantic-validated request/response models, and auto-generated OpenAPI docs for free — a good deal for a REST API. The cost: it's an API framework, not a full web framework, so you assemble auth, admin, and ORM wiring yourself (Django ships all three out of the box). For a headless backend in front of a React app, that's the right trade — you're not paying for web-page machinery you don't use.
+
+**PostgreSQL for e-commerce**
+An e-commerce domain (products, carts, orders, inventory) is squarely relational: order/stock changes must be atomic, or you oversell. ACID transactions and FK integrity are the payoff. The cost is a fixed schema — every catalog change is a migration, and it won't scale horizontally the way a document store can. At this data volume, that's a non-issue.
+
+**JWT over session cookies**
+JWTs are stateless: no server-side session store, so any replica can verify any request — clean for a horizontally scaled API. The honest trade-offs: a leaked access token is valid until it expires (no instant revocation without a blacklist or short expiry + refresh-token rotation), and claims are small — you can't store much in the token, so it just carries identity. The standard mitigation is short-lived access tokens + rotating refresh tokens.
+
+**React SPA + Tailwind for the frontend**
+A fully client-side app gives fast interactions and a clean component model; Tailwind keeps styling consistent without a CSS framework's abstraction layer. The costs: no server-rendered HTML, so SEO has to be handled deliberately (and a static SPA behind a headless API has two deployables + CORS to manage, instead of one). For a portfolio-scale storefront that's acceptable; a public high-traffic store would push toward SSR (Next.js) or a partial-island approach.
+
+**Why FastAPI "feels like Express"**
+The framework was chosen partly for the familiar mental model: route-driven handlers, dependency injection for auth/middleware, and minimal boilerplate — so the API reads the way an Express router would, but with strict request validation and typed responses underneath.
 
 
 ## 📸 Screenshots

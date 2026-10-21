@@ -1,0 +1,613 @@
+---
+title: "Kubernetes — Cheat Sheet"
+description: "Cheat sheet Kubernetes 1.28+: workload (Deployment/StatefulSet/DaemonSet/Job), Service & Ingress, ConfigMap/Secret, probe, resource/HPA/PDB, NetworkPolicy, Kustomize, kubectl harian, debug pod, plus jebakan manifest yang mahal di produksi."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "Kubernetes 1.28+"
+order: 6
+tags:
+  - kubernetes
+  - k8s
+  - devops
+  - backend
+---
+
+# Kubernetes — Cheat Sheet
+
+> Target: **Kubernetes 1.28+**, namespace per platform, manifest **Kustomize** (base + overlay),
+> deploy via **ArgoCD** (lihat sheet terpisah). Dipakai untuk E-Commerce, POS, dan Payment
+> Gateway di Minikube & cluster produksi. Semua manifest di bawah **diverifikasi** ter-apply.
+
+**Isi sheet ini**
+
+- Mental model 5 menit
+- Workload: Deployment
+- Workload lain: StatefulSet, DaemonSet, Job, CronJob
+- Service & Ingress
+- ConfigMap & Secret
+- Probe: liveness, readiness, startup
+- Resource, HPA, PDB
+- NetworkPolicy
+- Kustomize: base & overlay
+- kubectl harian
+- Debug pod
+- Jebakan (wajib dibaca)
+
+---
+
+## Mental model 5 menit
+
+| Konsep | Ringkasan |
+| :--- | :--- |
+| Pod | unit scheduling terkecil; 1+ container |
+| Deployment | manages ReplicaSet → pod stateless |
+| StatefulSet | pod berurutan, volume persisten, identitas stabil |
+| DaemonSet | satu pod per node (agent, exporter) |
+| Service | selector → pod; ClusterIP default, LoadBalancer/NodePort opsional |
+| Ingress | routing HTTP → Service (perlu controller) |
+| ConfigMap / Secret | konfigurasi non-rahasia / rahasia (base64, bukan enkripsi) |
+| Namespace | isolasi logic + RBAC + quota per tim |
+| ReplicaSet | jumlah pod dijaga |
+| Resource request vs limit | request = minimum yang dijamin; limit = batas atas (dan bisa OOMKill) |
+| Probe | contract antara controller dan aplikasi |
+| HPA | autoscale horizontal berbasis metrik |
+| PDB | batas pod yang boleh mati bersamaan (voluntary disruption) |
+| Kustomize | template + overlay tanpa template engine |
+
+---
+
+## Workload: Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  labels: { app: order-service, tier: backend }
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels: { app: order-service }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  template:
+    metadata:
+      labels: { app: order-service, tier: backend }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8083"
+    spec:
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: order-service
+          image: superapp/order-service:v1.4.2     # JANGAN :latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 8083 }
+          envFrom:
+            - configMapRef: { name: order-service-config }
+            - secretRef: { name: order-service-secrets }
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { cpu: "1",  memory: 1Gi }
+          startupProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            periodSeconds: 20
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec: { command: ["sh", "-c", "sleep 10"] }   # biarkan pod drain
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  type: ClusterIP
+  selector: { app: order-service }
+  ports:
+    - { name: http, port: 8083, targetPort: http }
+```
+
+| Field | Arti | Jebakan |
+| :--- | :--- | :--- |
+| `selector` | pod mana yang dilayani | harus cocok dengan `template.metadata.labels` |
+| `maxSurge` / `maxUnavailable` | kontrol kecepatan rollout | `maxUnavailable: 0` = nol downtime, butuh surge room |
+| `terminationGracePeriodSeconds` | waktu pod Receive SIGTERM selesai | default 30 → request terpotong |
+| `preStop` | delay sebelum SIGTERM | untuk load balancer drain |
+| `imagePullPolicy` | `Always` untuk `:latest` | `IfNotPresent` default untuk tag immutable |
+
+---
+
+## Workload lain: StatefulSet, DaemonSet, Job, CronJob
+
+```yaml
+# StatefulSet: stateful app (DB, Kafka broker, queue) — volume per pod
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka-broker
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  selector: { matchLabels: { app: kafka } }
+  template:
+    metadata: { labels: { app: kafka } }
+    spec:
+      containers:
+        - name: kafka
+          image: apache/kafka:3.8.0
+          ports: [{ containerPort: 9092 }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources: { requests: { storage: 20Gi } }
+---
+# DaemonSet: satu pod per node (node-exporter, ebpf agent)
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+spec:
+  selector: { matchLabels: { app: node-exporter } }
+  template:
+    metadata: { labels: { app: node-exporter } }
+    spec:
+      hostNetwork: true
+      containers:
+        - name: node-exporter
+          image: prom/node-exporter:v1.8.2
+          args: ["--path.rootfs=/host"]
+          volumeMounts:
+            - { name: host, mountPath: /host, readOnly: true }
+      volumes:
+        - name: host
+          hostPath: { path: / }
+---
+# Job: tugas sekali jalan (migrasi database)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migration
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: superapp/order-service:v1.4.2
+          args: ["migrate", "up"]
+          envFrom:
+            - secretRef: { name: db-credentials }
+---
+# CronJob: terjadwal
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: stats-backfill
+spec:
+  schedule: "0 3 * * *"            # 03:00 setiap hari
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: backfill
+              image: superapp/stats-backfill:v1.0.0
+```
+
+| Workload | Pakai untuk | Khas |
+| :--- | :--- | :--- |
+| Deployment | service stateless | scalinghorizontal, rolling update |
+| StatefulSet | service berstate | ordinal, volume per pod (`volumeClaimTemplates`) |
+| DaemonSet | agent per node | 1 pod/node, wajib tolerasi `nodeAffinity` |
+| Job | sekali jalan | `ttlSecondsAfterFinished` biar tidak menumpuk |
+| CronJob | terjadwal | `concurrencyPolicy: Forbid` biar tidak tumpang tindih |
+
+---
+
+## Service & Ingress
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  type: ClusterIP
+  clusterIP: None          # headless (untuk StatefulSet)
+  selector: { app: order-service }
+  ports:
+    - { name: http, port: 8083, targetPort: http }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: superapp
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [api.example.com]
+      secretName: api-tls
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          - path: /api/orders
+            pathType: Prefix
+            backend:
+              service:
+                name: order-service
+                port: { name: http }
+```
+
+| Tipe Service | ClusterIP | NodePort | LoadBalancer | ExternalName |
+| :--- | :--- | :--- | :--- | :--- |
+| Akses | internal cluster | node:port | cloud LB | CNAME ke service lain |
+| Kapan | default | minimikube/dev | produksi (jika tak ada Ingress) | migrasi |
+
+> **Jebakan:** `pathType: Prefix` dengan path `/api/orders` juga cocok `/api/orders-legacy`.
+> Pakai `pathType: Exact` atau trailing slash eksplisit kalau butuh presisi.
+
+---
+
+## ConfigMap & Secret
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  LOG_LEVEL: "INFO"
+  KAFKA_BROKERS: "kafka:9092"
+  application.yaml: |
+    server:
+      port: 8083
+    management:
+      endpoints.web.exposure.include: health,prometheus
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: order-service-secrets
+type: Opaque
+stringData:                    # stringData = plaintext (dikonversi ke base64)
+  DB_PASSWORD: "rahasia"
+  JWT_SECRET: "..."
+```
+
+```bash
+# buat secret dari file
+kubectl create secret generic order-service-secrets \
+  --from-literal=DB_PASSWORD="$(cat secret.txt)" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# hash untuk memicu rollout saat config berubah
+kubectl create secret generic order-service-secrets --from-literal=DB_PASSWORD=... --dry-run=client -o yaml
+```
+
+> **Jebakan:** Secret di K8s **tidak** terenkripsi (hanya base64). Pakai **SealedSecrets**,
+> External Secrets Operator, atau CSI driver untuk encryption at rest. `stringData` vs
+> `data`: `stringData` ditulis plaintext lalu di-encode oleh API server; `data` harus base64.
+
+---
+
+## Probe: liveness, readiness, startup
+
+| Probe | Kapan dijalankan | Gagal → |
+| :--- | :--- | :--- |
+| `startupProbe` |Selama container start | Container **di-restart** |
+| `readinessProbe` |Periodik | Pod **dikeluarkan dari Service** (pod tetap jalan) |
+| `livenessProbe` | Periodik | Pod **di-restart** |
+
+```yaml
+startupProbe:
+  httpGet: { path: /actuator/health/readiness, port: http }
+  failureThreshold: 30        # 30 × 5s = 150s toleransi startup lambat
+  periodSeconds: 5
+readinessProbe:
+  httpGet: { path: /actuator/health/readiness, port: http }
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+livenessProbe:
+  httpGet: { path: /actuator/health/liveness, port: http }
+  periodSeconds: 20
+  timeoutSeconds: 2
+  failureThreshold: 3
+```
+
+| Jenis probe | Kapan pakai |
+| :--- | :--- |
+| `httpGet` | endpoint HTTP (paling umum) |
+| `tcpSocket` | port terbuka (service tanpa HTTP) |
+| `exec` | command dalam container (butuh shell) |
+| `grpc` | health service gRPC (K8s 1.24+) |
+
+> **Jebakan:** `readiness` dan `liveness` harus **beda**. Kalau liveness memakai endpoint
+> yang butuh dependency (DB), DB hiccup → semua pod restart → outage beruntun.
+
+---
+
+## Resource, HPA, PDB
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: order-service
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: order-service }
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+    - type: Resource
+      resource:
+        name: memory
+        target: { type: Utilization, averageUtilization: 80 }
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300     # anti-thrash
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: order-service
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: order-service }
+```
+
+> **Jebakan:** HPA **butuh `resources.requests`** yang terisi. Tanpa request, HPA tidak bisa
+> menghitung utilisasi. Dan `limits` yang terlalu dekat dengan `requests` → OOMKill saat
+> trafik naik. Rule of thumb: request ≈ rata-rata pemakaian, limit ≈ 2× request.
+
+---
+
+## NetworkPolicy
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: order-service-egress
+spec:
+  podSelector:
+    matchLabels: { app: order-service }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ podSelector: { matchLabels: { app: postgres } } }]
+      ports: [{ protocol: TCP, port: 5432 }]
+    - to: [{ namespaceSelector: {} }]
+      ports:
+        - { protocol: UDP, port: 53 }     # DNS
+        - { protocol: TCP, port: 53 }
+        - { protocol: TCP, port: 9092 }   # Kafka
+    - to: [{ ipBlock: { cidr: 10.0.0.0/8 } }]   # egress ke dalam VPC
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-metrics-scrape
+spec:
+  podSelector:
+    matchLabels: { app: order-service }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ namespaceSelector: { matchLabels: { name: monitoring } } }]
+      ports: [{ protocol: TCP, port: 8083 }]
+```
+
+> **Jebakan:** setelah `default-deny-all`, **DNS ikut terblokir** kalau egress tidak
+> mengizinkan port 53. Gejalanya: pod `CrashLoopBackOff` dengan
+> `Temporary failure in name resolution`.
+
+---
+
+## Kustomize: base & overlay
+
+```
+production/kubernetes/
+├── base/
+│   ├── order-service/
+│   │   ├── kustomization.yaml
+│   │   ├── deployment.yaml
+│   │   └── service.yaml
+│   └── postgres/
+└── overlays/
+    └── production/
+        ├── kustomization.yaml
+        ├── patches/
+        │   └── replicas.yaml
+        └── configmap-generator.yaml
+```
+
+```yaml
+# base/order-service/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+commonLabels:
+  app: order-service
+  tier: backend
+images:
+  - name: superapp/order-service
+    newTag: v1.4.2
+```
+
+```yaml
+# overlays/production/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: pos
+resources:
+  - ../../base/order-service
+patches:
+  - path: patches/replicas.yaml
+configMapGenerator:
+  - name: order-service-config
+    literals:
+      - SPRING_PROFILES_ACTIVE=prod
+    options:
+      disableNameSuffixHash: false      # hash = rollout saat config berubah
+secretGenerator:
+  - name: order-service-secrets
+    envs: [secrets.env]
+    options:
+      disableNameSuffixHash: true
+```
+
+```bash
+kubectl kustomize production/kubernetes/overlays/production   # render tanpa apply
+kubectl diff -k production/kubernetes/overlays/production      # bandingkan dengan cluster
+kubectl apply -k production/kubernetes/overlays/production
+```
+
+| Overlay | Isi |
+| :--- | :--- |
+| `base` | manifest minimal, tanpa nilai environment |
+| `overlays/production` | namespace, replicas, resource, config per env |
+| `components` | potongan reusable (ingress, TLS) untuk di-`include` |
+
+> **Jebakan:** `commonLabels` di base menimpa label `selector` → Deployment jadi tidak
+> match Service. Pakai `labels:` (baris baru) + `commonAnnotations` kalau butuh label baru.
+
+---
+
+## kubectl harian
+
+```bash
+# resource & status
+kubectl get pods -n pos -o wide
+kubectl get deploy,svc,ingress -n pos
+kubectl get events -n pos --sort-by=.lastTimestamp | tail -20
+kubectl top pods -n pos
+
+# logs
+kubectl logs -n pos <pod> --tail=200
+kubectl logs -n pos <pod> --previous          # log sebelum restart
+kubectl logs -n pos <pod> -c <container> --follow
+
+# describe & edit
+kubectl describe pod <pod> -n pos
+kubectl get pod <pod> -n pos -o yaml
+kubectl edit deploy order-service -n pos      # counter-ArgoCD (selfHeal)
+
+# apply & hapus
+kubectl apply -f manifest.yaml
+kubectl delete -f manifest.yaml
+kubectl rollout restart deploy/order-service -n pos
+kubectl rollout status deploy/order-service -n pos
+kubectl rollout history deploy/order-service -n pos
+kubectl rollout undo deploy/order-service -n pos
+
+# scale & expose
+kubectl scale deploy/order-service --replicas=3 -n pos
+kubectl port-forward -n pos svc/order-service 8083:8083
+
+# context & config
+kubectl config get-contexts
+kubectl config use-context minikube
+kubectl get secret order-service-secrets -n pos -o jsonpath='{.data.DB_PASSWORD}' | base64 -d
+```
+
+---
+
+## Debug pod
+
+```bash
+# debug container di pod yang berjalan
+kubectl debug -it -n pos <pod> --image=nicolaka/netshoot --target=order-service
+
+# debug pod yang gagal start (pakai image lama)
+kubectl debug -it -n pos <pod> --image=busybox --target=order-service
+
+# cek jaringan dari luar pod
+kubectl run netcheck -n pos --rm -it --image=alpine -- \
+  sh -c "nc -zv postgres 5432 && nc -zv kafka 9092"
+
+# list resource di namespace
+kubectl api-resources --namespaced=true | head -30
+kubectl get <resource> -n pos -o wide
+
+# cek RBAC
+kubectl auth can-i get deployments -n pos
+kubectl auth can-i --list -n pos
+```
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| Image tag `:latest` | Deploy tidak deterministik, cache basi | Tag versi / commit SHA |
+| Tidak ada `resources.requests` | HPA mati, QoS Burstable tanpa batas | Set request & limit |
+| `default-deny-all` tanpa aturan DNS | Pod `CrashLoopBackOff`, DNS gagal | Allow egress UDP/TCP 53 |
+| Readiness = liveness | Traffic dialihkan saat app lambat, pod ikut restart | Pisahkan endpoint probe |
+| `terminationGracePeriodSeconds` default 30 | Request terpotong saat rollout | Naikkan + `preStop` sleep |
+| Migration jalan bersama app | Bentrok schema | Job migrasi terpisah (sync wave) |
+| Secret di ConfigMap / Git polos | Bocor | SealedSecrets + encryption at rest |
+| `kubectl apply` manual | Melawan GitOps, ditarik balik ArgoCD | Semua lewat Git |
+| HPA scale-down agresif | Pod thrash, cold start | `stabilizationWindowSeconds` |
+| Health check `GET /` | 404 → pod restart terus | Endpoint health khusus |
+| Exec form hilang di image | SIGTERM tak sampai | `ENTRYPOINT ["java","-jar","app.jar"]` |
+| Ingress timeout default 60s | Request panjang terpotong | Set timeout + annotation |
+| `commonLabels` menimpa selector | Service tak match pod | Pakai `labels:` + `commonAnnotations` |
+| StatefulSet tanpa headless Service | DNS pod tak stabil | `clusterIP: None` + `serviceName` |
+| CronJob `concurrencyPolicy` default | Job tumpang tindih | Set `Forbid` |
+| Job menumpuk | Job lama menuhin | `ttlSecondsAfterFinished` |
+| Pod `Pending` | Node penuh / PVC belum ada | `kubectl describe` → cek Events |
+| Pod `CrashLoopBackOff` | App crash saat start | `kubectl logs --previous` |
+| `imagePullBackOff` | Image/tag salah atau tidak ada | Cek registry & tag |
+| Service `ExternalIP` pending | LoadBalancer belum terprovision | Tunggu IP dari cloud provider, atau pakai Ingress |

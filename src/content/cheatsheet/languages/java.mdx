@@ -1,0 +1,1049 @@
+---
+title: "Java 21 Cheat Sheet"
+description: "Cheat sheet Java 21 (LTS): record, sealed interface, pattern matching, virtual thread, stream, Optional, text block, collection, concurrency, dan jebakan yang costing-nya mahal di produksi."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "Java 21 (LTS)"
+order: 12
+tags:
+  - java
+  - language
+  - jvm
+  - backend
+---
+
+# Java 21 Cheat Sheet
+
+> Target: **Java 21 (LTS)** — dipakai Spring Boot 3.5.x. Rilisan ini membawa **virtual thread**,
+> **pattern matching untuk switch**, **record**, **sealed interface**, dan **text block**.
+> Semua snippet di bawah dipakai di service Java (E-Commerce, POS, Payment Gateway) dan
+> **diverifikasi compile**.
+
+**Isi sheet ini**
+
+- CLI & toolchain
+- Mental model 5 menit
+- Record, sealed, pattern matching
+- Virtual thread & concurrency
+- Optional & Stream
+- Collection
+- String & text block
+- Exception
+- boxing, equality, hashing
+- I/O & NIO
+- std lib: java.time
+- std lib: java.util.function & Stream lanjutan
+- std lib: java.util.concurrent lengkap
+- std lib: regex, Math, BigDecimal
+- std lib: Files, Collections, Arrays
+- std lib: java.net.http & logging
+- std lib: testing lanjutan (JUnit & AssertJ)
+- Testing
+- JVM & container
+- Jebakan (wajib dibaca)
+
+---
+
+## CLI & toolchain
+
+```sh
+java -version                       # versi JVM yang dipakai
+javac -version
+
+java --enable-preview --source 21 App.java     # preview feature (perlu flag)
+java -jar app.jar --spring.profiles.active=prod
+
+jshell                             # REPL cepat, tanpa bikin file
+jcmd <pid> Thread.print            # dump thread tanpa attach debugger
+jcmd <pid> GC.heap_info
+jmap -h:live <pid> > heap.bin      # heap dump saat JVM live
+```
+
+| Tool | Arti |
+| :--- | :--- |
+| `jshell` | REPL — uji regex/record tanpa compile file |
+| `jcmd` | diagnostik runtime (thread, heap, GC) |
+| `jmap` | heap dump + class histogram |
+| `jstack` | thread dump (versi tool) |
+| `javap` | lihat signature hasil compile |
+| `jlink` | buat runtime image custom (smaller container) |
+
+> **Container:** JDK 21 LTS adalah basis build image `eclipse-temurin:21-jre-alpine` untuk
+> produksi. JDK lengkap (bukan JRE) hanya dipakai di tahap build.
+
+---
+
+## Mental model 5 menit
+
+| Konsep | Ringkasan |
+| :--- | :--- |
+| Reference vs value | Java **semua** object adalah reference; primitive = value |
+| `final` | variabel tidak bisa reassign; untuk object, referensinya saja |
+| `static` | milik class, bukan instance; shared state = sumber bug |
+| `==` vs `equals` | `==` bandingkan reference (untuk primitive: nilai), `equals` bandingkan konten |
+| `hashCode` | harus konsisten dengan `equals`; dipakai `HashMap`/`HashSet` |
+| Immutability | default terbaik: `record`, `final class`, field `final` |
+| Null | bagian dari tipe — gunakan Optional di API boundary, null check di internal |
+| Exception | unchecked = bug programmer; checked = kontrak eksplisit |
+| Class loading | satu classloader per nama; static init sekali |
+| Generics | erased di runtime → tidak ada `new T[]` |
+
+---
+
+## Record, sealed, pattern matching
+
+```java
+// record: data carrier immutable, equals/hashCode/toString otomatis
+public record Money(BigDecimal amount, String currency) {
+
+    // compact constructor: validasi + normalisasi
+    public Money {
+        Objects.requireNonNull(currency, "currency required");
+        if (amount == null || amount.signum() < 0) {
+            throw new IllegalArgumentException("amount must be >= 0");
+        }
+        if (amount.scale() > 2) {
+            amount = amount.setScale(2, RoundingMode.HALF_UP);
+        }
+    }
+
+    // method tambahan boleh
+    public Money plus(Money other) {
+        if (!currency.equals(other.currency)) {
+            throw new IllegalArgumentException("currency mismatch");
+        }
+        return new Money(amount.add(other.amount), currency);
+    }
+}
+```
+
+```java
+// sealed interface: hierarki tipe tertutup (exhaustive switch)
+public sealed interface PaymentResult
+        permits PaymentResult.Success, PaymentResult.Declined, PaymentResult.Error {
+
+    record Success(String authCode, Instant at) implements PaymentResult {}
+    record Declined(String reason) implements PaymentResult {}
+    record Error(String code, String message) implements PaymentResult {}
+}
+```
+
+```java
+// pattern matching untuk switch (Java 21) — exhaustiveness dicek compiler
+String describe(PaymentResult result) {
+    return switch (result) {
+        case PaymentResult.Success s      -> "ok: " + s.authCode();
+        case PaymentResult.Declined d     -> "declined: " + d.reason();
+        case PaymentResult.Error e        -> "error " + e.code();
+    };   // tanpa default → compiler wajib menangani semua
+}
+```
+
+```java
+// record deconstruction pattern
+if (result instanceof PaymentResult.Success(String code, Instant at)) {
+    log.info("auth {} at {}", code, at);
+}
+
+// switch dengan guard
+String label = switch (status) {
+    case PAID   when amount > 1_000_000 -> "PAID_BIG";
+    case PAID                          -> "PAID";
+    case PENDING                       -> "PENDING";
+    default                            -> "OTHER";
+};
+```
+
+| Fitur | Versi | Catatan |
+| :--- | :--- | :--- |
+| Record | 16 | compact constructor untuk validasi |
+| Sealed interface | 17 | `permits` mengunci hierarki |
+| Pattern switch | 21 | exhaustiveness dicek compiler |
+| Text block | 15 | `"""` |
+| `instanceof` pattern | 16 | tidak perlu cast manual |
+| Virtual thread | 21 | `Thread.ofVirtual().start()` |
+| Record pattern (deconstruct) | 21 | `case Point(int x, int y)` |
+
+---
+
+## Virtual thread & concurrency
+
+```java
+// virtual thread: ringan, thousands of them OK
+Thread vt = Thread.ofVirtual().start(() -> handle(request));
+vt.join();
+
+// virtual thread + executor
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    Future<String> a = executor.submit(() -> callServiceA());
+    Future<String> b = executor.submit(() -> callServiceB());
+    System.out.println(a.get() + b.get());
+}   // close() = wait, jangan lupa
+```
+
+```java
+// ConcurrencyStructuredTaskScope (preview di 21 — masih perlu --enable-preview)
+try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    var t1 = scope.fork(() -> fetchUser(id));
+    var t2 = scope.fork(() -> fetchOrders(id));
+    scope.join();                      // gagal satu → semua dibatalkan
+    return new Result(t1.get(), t2.get());
+}
+```
+
+```java
+// Concurrency-safe collection
+var map = new ConcurrentHashMap<String, AtomicLong>();
+map.computeIfAbsent("orders", k -> new AtomicLong()).incrementAndGet();
+
+var list = new CopyOnWriteArrayList<>();   // read-heavy, write jarang
+var queue = new LinkedBlockingQueue<Task>(1000);
+```
+
+| Primitif | Untuk |
+| :--- | :--- |
+| Virtual thread | I/O-bound: HTTP client, JDBC (dengan driver async) |
+| Platform thread | CPU-bound: encode, kompresi, kalkulasi |
+| `CompletableFuture` | komposisi async non-blocking |
+| `StructuredTaskScope` | kelompok task dengan scoped lifetime (preview di 21) |
+| `ConcurrentHashMap` | map yang diakses multi-thread |
+| `synchronized` | lock monitor — **jangan** di hot path |
+| `ReentrantLock` | butuh `tryLock`, timeout, atau fairness |
+| `AtomicLong` | counter thread-safe |
+| `CountDownLatch` | tunggu N event selesai |
+| `Semaphore` | batasi jumlahgnekan Resource yang jalan bersamaan |
+
+> **Jebakan:** virtual thread **tidak** membuat CPU-bound work cepat. `synchronized` di dalam
+> virtual thread memblokir **carrier thread** (pool-nya kecil). Untuk CPU-bound, tetap pakai
+> platform thread pool.
+
+---
+
+## Optional & Stream
+
+```java
+// Optional: hanya di API boundary, jangan jadi field
+Optional<User> findById(Long id);
+if (findById(id).isEmpty()) { ... }
+
+userOpt.map(User::email)
+      .filter(s -> s.contains("@"))
+      .ifPresent(System.out::println);
+
+userOpt.ifPresentOrElse(
+    u -> log.info("found {}", u.id()),
+    () -> log.warn("not found"));
+
+// orElseThrow — lebih baik dari orElse(null)
+User u = repo.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+
+// map/flatMap
+Optional<Address> addr = user.flatMap(User::address);
+```
+
+```java
+// stream
+List<Order> paid = orders.stream()
+    .filter(o -> o.status() == PAID)
+    .sorted(Comparator.comparing(Order::createdAt).reversed())
+    .toList();                     // Java 16+, unmodifiable
+
+Map<String, List<Order>> byMerchant = orders.stream()
+    .collect(Collectors.groupingBy(Order::merchantId));
+
+Map<String, BigDecimal> total = orders.stream()
+    .collect(Collectors.toMap(
+        Order::id,
+        Order::total,
+        (a, b) -> a,                  // merge function WAJIB kalau key bisa duplikat
+        BigDecimal::add));            // akumulator
+
+BigDecimal sum = orders.stream()
+    .map(Order::total)
+    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+Map<String, Long> counts = orders.stream()
+    .collect(Collectors.groupingBy(Order::status, Collectors.counting()));
+
+// parallel — hanya kalau stream besar & operation CPU-bound
+long n = hugeList.parallelStream().filter(...).count();
+```
+
+| Yang sebaiknya dihindari | Pakai |
+| :--- | :--- |
+| `stream().count()` | `list.size()` |
+| `for` loop dengan `if` penapis | `filter()` |
+| `Optional.get()` tanpa check | `orElseThrow()` |
+| `Collectors.toMap` tanpa merge | tambah merge function |
+| `parallelStream` untuk I/O | `CompletableFuture` + IO-bound pool |
+| Side effect di stream | `forEach` hanya untuk terminal void, sisain pure |
+
+---
+
+## Collection
+
+```java
+List<String> list = new ArrayList<>();
+Set<String> set = new HashSet<>();
+Map<String, Integer> map = new HashMap<>();
+
+// immutable
+List<String> immutable = List.of("a", "b");            // compact, immutable
+List<String> mutable = new ArrayList<>(List.of("a"));   // copy dari immutable
+Map<String, Integer> imap = Map.of("a", 1);            // max 10 pasang key-value
+Set<String> iset = Set.copyOf(list);
+
+// LinkedHashMap = ada urutan
+Map<String, Integer> ordered = new LinkedHashMap<>();
+
+// deque untuk stack/queue
+Deque<String> dq = new ArrayDeque<>();
+dq.push("a"); dq.pollFirst();
+
+// Arrays
+int[] nums = {1, 2, 3};
+Arrays.sort(nums);
+int idx = Arrays.binarySearch(nums, 2);
+System.out.println(Arrays.toString(nums));
+
+// convert
+int[] arr = list.stream().mapToInt(Integer::intValue).toArray();
+```
+
+| Struktur | Pilih saat |
+| :--- | :--- |
+| `ArrayList` | default, akses acak by index |
+| `LinkedList` | sisip/hapus di tengah sering (jarang tepat di produksi) |
+| `HashMap`/`HashSet` | default |
+| `TreeMap`/`TreeSet` | perlu urutan terurut |
+| `ArrayDeque` | stack/queue, performant |
+| `EnumMap`/`EnumSet` | key enum → array-backed, sangat cepat |
+| `ConcurrentHashMap` | multi-thread |
+| `CopyOnWriteArrayList` | read-mostly, iterasi tanpa lock |
+
+> **Jebakan:** `HashMap` tidak thread-safe. `ConcurrentHashMap` **tidak** mengizinkan `null`
+> key/value (NPE saat put).
+
+---
+
+## String & text block
+
+```java
+// text block
+String json = """
+        {
+          "name": "%s",
+          "qty": %d
+        }
+        """.formatted(name, qty);
+
+// indentasi otomatis dihapus sesuai baris penanda
+String sql = """
+        SELECT id, total
+        FROM orders
+        WHERE merchant_id = ?
+        """;
+```
+
+```java
+// String
+String s = "abc";
+s.length(); s.isEmpty(); s.isBlank();          // isBlank: whitespace semua
+s.trim(); s.strip();                           // strip: Unicode-aware
+s.split(",", -1);                              // -1 = simpan empty trailing
+s.replace('a', 'b'); s.replaceAll("\\d+", "#");
+s.substring(0, 3); s.chars().forEach(...);
+s.repeat(3); s.lines().toList();
+String.join(",", list);
+"a,b".formatted("x");                          // String.formatted (15+)
+Integer.parseInt("42");
+String.join("", "a", "b");
+```
+
+| Metode | Perhatikan |
+| :--- | :--- |
+| `isEmpty()` vs `isBlank()` | `isBlank` juga true untuk `" \t"` |
+| `split` tanpa limit | membuang string kosong di akhir |
+| `equals` | bandingkan **konten**, bukan reference |
+| `==` untuk String | **jangan** — bandingkan reference |
+| `String.intern()` | Umumnya jangan; gunakan constant pool |
+
+---
+
+## Exception
+
+```java
+// custom exception
+public class OrderNotFoundException extends RuntimeException {
+    public OrderNotFoundException(Long id) {
+        super("order not found: " + id);
+    }
+}
+
+// try-with-resources
+try (var conn = dataSource.getConnection();
+     var ps = conn.prepareStatement(SQL)) {
+    ps.setLong(1, id);
+    try (var rs = ps.executeQuery()) {
+        return map(rs);
+    }
+}   // close otomatis, even on exception
+
+// multi-catch & chaining
+try {
+    process();
+} catch (IllegalStateException | IllegalArgumentException e) {
+    log.warn("bad input", e);
+} catch (Exception e) {
+    log.error("unexpected", e);
+    throw new ServiceException("gagal memproses order", e);
+}
+
+// suppress exception
+try {
+    risky();
+} catch (IOException e) {
+    // diabaikan dengan sengaja
+}
+```
+
+| Jenis | Quando dipakai |
+| :--- | :--- |
+| `RuntimeException` (unchecked) | bug programmer; tidak wajib catch |
+| `IOException` (checked) |>I/O bisa gagal — wajib ditangani atau declare |
+| IllegalArgumentException | input tidak valid |
+| IllegalStateException | dipanggil pada state yang salah |
+| NoSuchElementException | `Optional.get()` kosong |
+| Custom domain exception | kilogram domain (mis. `InsufficientBalanceException`) |
+
+> **Jebakan:** jangan`tthrow new RuntimeException(e)` tanpa pesan —cause saja hilang di log.
+> Selalu beri pesan yang menyebut **konteks** (id, nilai, operasi).
+
+---
+
+## Boxing, equality, hashing
+
+```java
+// autoboxing
+Integer a = 127, b = 127;
+a == b;                    // true (cache -128..127)
+Integer c = 1000, d = 1000;
+c == d;                    // false! (di luar cache) → WAJIB .equals()
+c.equals(d);               // true
+
+// equals & hashCode harus konsisten
+@Override public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Order other)) return false;
+    return id.equals(other.id);
+}
+@Override public int hashCode() { return id.hashCode(); }
+
+// compareTo untuk Comparable
+@Override public int compareTo(Order o) {
+    return createdAt.compareTo(o.createdAt);
+}
+```
+
+| Tipe | Cache | Peringatan |
+| :--- | :--- | :--- |
+| `Integer` | −128..127 | `==` di luar cache = salah |
+| `Long` | −128..127 | sama |
+| `Boolean` | TRUE/FALSE | selalu cache |
+| `Character` | 0..127 | selalu cache |
+| `Double`/`Float` | **tidak ada** | `==` tetap bandingkan nilai, tapi hati-hati |
+
+> **Jebakan:** `Double`/`Float` **tidak** punya cache — `==` selalu bandingkan nilai, tapi
+> `Double.valueOf(0.1) == 0.1` tetap bisaTJ fails karena representasi. Tetap pakai `equals()`
+> atau `compareTo()`.
+
+---
+
+## I/O & NIO
+
+```java
+// Files
+Path p = Path.of("/tmp/data.txt");
+Files.writeString(p, "halo", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+String content = Files.readString(p);
+List<String> lines = Files.readAllLines(p);
+Files.createDirectories(Path.of("/tmp/a/b"));
+boolean exists = Files.exists(p);
+Files.deleteIfExists(p);
+try (Stream<Path> s = Files.list(Path.of("/tmp"))) { ... }
+
+// NIO.2 channels
+try (FileChannel ch = FileChannel.open(p, StandardOpenOption.READ)) {
+    ByteBuffer buf = ByteBuffer.allocate(4096);
+    ch.read(buf);
+}
+
+// InputStream -> String (Java 16+)
+String s = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+```
+
+```java
+// HttpClient (JDK, tanpa library)
+HttpClient client = HttpClient.newBuilder()
+    .connectTimeout(Duration.ofSeconds(5))
+    .version(HttpClient.Version.HTTP_2)
+    .build();
+
+HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+    .header("Content-Type", "application/json")
+    .timeout(Duration.ofSeconds(10))
+    .POST(HttpRequest.BodyPublishers.ofString(body))
+    .build();
+
+HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+```
+
+| API | Untuk |
+| :--- | :--- |
+| `Files` | operasi file modern (replaces `File`) |
+| `Path` | path aman (replaces `File` untuk path) |
+| `HttpClient` | HTTP client tanpa dependency |
+| `InputStream.readAllBytes()` | baca seluruh (Java 16+) |
+| `Scanner` | parse text — tapi `split` lebih cepat untuk file besar |
+
+---
+
+## std lib: java.time
+
+```java
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+
+// tipe yang benar untuk konteks yang benar
+Instant now = Instant.now();                       // titik waktu UTC - simpan di DB
+LocalDate today = LocalDate.now(ZoneId.of("Asia/Jakarta"));
+LocalDateTime ldt = LocalDateTime.now();           // tanpa zona - HINDARI untuk timestamp
+ZonedDateTime zdt = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"));
+OffsetDateTime odt = OffsetDateTime.now(ZoneOffset.UTC);
+
+// konversi
+ZonedDateTime z = now.atZone(ZoneId.of("Asia/Jakarta"));
+Instant back = z.toInstant();
+long epochMilli = now.toEpochMilli();
+Instant fromMillis = Instant.ofEpochMilli(epochMilli);
+
+// aritmetika
+LocalDate nextMonth = today.plusMonths(1);
+LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
+long daysBetween = ChronoUnit.DAYS.between(today, nextMonth);
+Duration d = Duration.between(startInstant, Instant.now());
+Period p = Period.between(today, LocalDate.of(2027, 1, 1));
+
+// format & parse (thread-safe, tidak seperti SimpleDateFormat)
+DateTimeFormatter custom = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+        .withZone(ZoneId.of("Asia/Jakarta"));
+String s = custom.format(now);
+Instant parsed = Instant.parse("2026-10-21T03:00:00Z");
+LocalDate parsedDate = LocalDate.parse("2026-10-21");
+
+// clock untuk test
+Clock fixed = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneId.of("UTC"));
+LocalDate testToday = LocalDate.now(fixed);
+```
+
+| Tipe | Pakai untuk | Jangan untuk |
+| :--- | :--- | :--- |
+| `Instant` | timestamp event, kolom DB `TIMESTAMPTZ` | tanggal kalender manusia |
+| `LocalDate` | tanggal tanpa jam (jatuh tempo) | timestamp event |
+| `LocalDateTime` | jadwal lokal tanpa zona | menyimpan ke DB lintas zona |
+| `ZonedDateTime` | rendering untuk pengguna | perhitungan lintas zona berulang |
+| `OffsetDateTime` | API yang membawa offset | konversi zona rumit |
+| `Duration` | durasi berbasis waktu (detik) | selisih kalender (bulan) |
+| `Period` | selisih tanggal (tahun/bulan/hari) | durasi presisi |
+
+> **Jebakan:** `LocalDateTime` tidak menyimpan zona — dua server di zona berbeda menghasilkan
+> nilai berbeda untuk "jam yang sama". Simpan `Instant`, render dengan zona pengguna.
+
+---
+
+## std lib: java.util.function & Stream lanjutan
+
+```java
+import java.util.function.*;
+import java.util.stream.*;
+
+// functional interface bawaan
+Function<String, Integer> parse = Integer::parseInt;
+BiFunction<Integer, Integer, Integer> add = Integer::sum;
+Predicate<String> notBlank = s -> !s.isBlank();
+Consumer<String> log = System.out::println;
+Supplier<List<String>> factory = ArrayList::new;
+UnaryOperator<Integer> inc = x -> x + 1;
+BinaryOperator<Integer> sum = Integer::sum;
+
+// primitive stream - hindari boxing
+IntStream.rangeClosed(1, 10).sum();
+IntStream.range(0, n).map(i -> i * 2).boxed().toList();
+
+// collectors penting
+Map<Boolean, List<Order>> partitioned = orders.stream()
+    .collect(Collectors.partitioningBy(o -> o.total().signum() > 0));
+
+Map<String, Long> counts = orders.stream()
+    .collect(Collectors.groupingBy(Order::status, Collectors.counting()));
+
+Map<String, BigDecimal> totals = orders.stream()
+    .collect(Collectors.groupingBy(
+        Order::merchantId,
+        Collectors.reducing(BigDecimal.ZERO, Order::total, BigDecimal::add)));
+
+TreeMap<String, List<Order>> sorted = orders.stream()
+    .collect(Collectors.groupingBy(Order::status, TreeMap::new, Collectors.toList()));
+
+String csv = orders.stream().map(Order::id).collect(Collectors.joining(","));
+
+// teeing (Java 12+): dua hasil sekaligus
+record Stats(long count, BigDecimal total) {}
+Stats stats = orders.stream().collect(Collectors.teeing(
+    Collectors.counting(),
+    Collectors.reducing(BigDecimal.ZERO, Order::total, BigDecimal::add),
+    Stats::new));
+
+// takeWhile (Java 9+)
+List<Order> recent = sortedByDate.stream()
+    .takeWhile(o -> o.createdAt().isAfter(cutoff))
+    .toList();
+
+// grouping + downstream mapping
+Map<String, Set<String>> merchantsByStatus = orders.stream()
+    .collect(Collectors.groupingBy(Order::status,
+             Collectors.mapping(Order::merchantId, Collectors.toSet())));
+
+// flatMap + Optional::stream
+List<Item> items = orders.stream().flatMap(o -> o.items().stream()).toList();
+List<String> emails = users.stream().map(User::email).flatMap(Optional::stream).toList();
+```
+
+| Kolektor | Hasil |
+| :--- | :--- |
+| `toList()` | List immutable (Java 16+) |
+| `groupingBy` | `Map<K, List<V>>`; + downstream untuk agregasi |
+| `partitioningBy` | `Map<Boolean, List<V>>` |
+| `mapping` | transform nilai downstream |
+| `reducing` | agregasi manual dalam downstream |
+| `joining` | String dengan delimiter/prefix/suffix |
+| `teeing` | dua kolektor sekaligus (Java 12+) |
+| `summarizingInt` | count/sum/min/max/avg |
+
+> **Jebakan:** `Collectors.toMap` tanpa merge function melempar `IllegalStateException` saat
+> key duplikat — selalu sediakan merge.
+
+---
+
+## std lib: java.util.concurrent lengkap
+
+```java
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
+
+// executor: pilih berdasarkan jenis beban
+try (var io = Executors.newVirtualThreadPerTaskExecutor()) {        // Java 21
+    io.submit(() -> callRemote());
+}
+var cpuBound = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+var scheduled = Executors.newScheduledThreadPool(2);
+scheduled.scheduleAtFixedRate(task, 0, 1, TimeUnit.MINUTES);
+
+// CompletableFuture
+CompletableFuture<User> user = CompletableFuture.supplyAsync(() -> fetchUser(id), pool);
+CompletableFuture<List<Order>> orders = CompletableFuture.supplyAsync(() -> fetchOrders(id), pool);
+
+Result combined = user.thenCombine(orders, Result::new)
+    .exceptionally(ex -> Result.empty())
+    .orTimeout(3, TimeUnit.SECONDS)
+    .join();
+
+CompletableFuture.allOf(user, orders).join();
+CompletableFuture.anyOf(user, orders).join();
+
+// sinkronisasi
+ConcurrentHashMap<String, AtomicInteger> hits = new ConcurrentHashMap<>();
+hits.computeIfAbsent("k", k -> new AtomicInteger()).incrementAndGet();
+hits.merge("k", 1, Integer::sum);
+
+CopyOnWriteArrayList<String> listeners = new CopyOnWriteArrayList<>();   // read-heavy
+BlockingQueue<Task> queue = new LinkedBlockingQueue<>(1000);            // backpressure
+AtomicLong counter = new AtomicLong();
+LongAdder adder = new LongAdder();          // kontensi tinggi: lebih cepat dari AtomicLong
+adder.increment();
+long total = adder.sum();
+
+// latch & barrier
+CountDownLatch latch = new CountDownLatch(3);
+latch.countDown();
+latch.await(5, TimeUnit.SECONDS);
+CyclicBarrier barrier = new CyclicBarrier(3);      // reusable
+Semaphore permits = new Semaphore(10);              // batasi konkurensi
+
+// lock manual (bila butuh tryLock / timeout)
+ReentrantLock lock = new ReentrantLock();
+if (lock.tryLock(100, TimeUnit.MILLISECONDS)) {
+    try { mutate(); } finally { lock.unlock(); }
+}
+ReadWriteLock rw = new ReentrantReadWriteLock();
+```
+
+| Kelas | Kapan |
+| :--- | :--- |
+| `newVirtualThreadPerTaskExecutor` | I/O-bound skala besar (Java 21) |
+| `newFixedThreadPool` | CPU-bound dengan batas jelas |
+| `newScheduledThreadPool` | job periodik |
+| `CompletableFuture` | komposisi async, timeout, fallback |
+| `ConcurrentHashMap` | map multi-thread (tidak boleh null) |
+| `CopyOnWriteArrayList` | listener list, read >> write |
+| `LinkedBlockingQueue` | producer-consumer + backpressure |
+| `AtomicLong` / `LongAdder` | counter; LongAdder untuk kontensi tinggi |
+| `CountDownLatch` | tunggu N event (sekali pakai) |
+| `Semaphore` | batasi konkurensi (mis. jumlah koneksi) |
+
+> **Jebakan:** executor tanpa `shutdown()` (atau try-with-resources) membuat JVM tidak pernah
+> mati karena thread non-daemon. Tutup di `@PreDestroy` atau shutdown hook.
+
+---
+
+## std lib: regex, Math, BigDecimal
+
+```java
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+// regex: compile sekali, pakai berkali-kali
+private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+boolean ok = EMAIL.matcher(input).matches();
+
+Matcher m = Pattern.compile("(?<key>\\w+)=(?<val>[^&]+)").matcher(query);
+while (m.find()) {
+    String key = m.group("key");
+    String val = m.group("val");
+}
+String masked = Pattern.compile("(\\d{4})\\d{8}").matcher(card).replaceAll("$1********");
+
+// Math
+Math.abs(-1); Math.max(1, 2);
+Math.round(2.5);                       // long
+Math.ceil(2.1); Math.floor(2.9);
+Math.pow(2, 10); Math.sqrt(16);
+Math.addExact(a, b);                   // ArithmeticException saat overflow
+Math.multiplyExact(a, b);
+Math.toIntExact(l);
+
+// BigDecimal - uang
+BigDecimal price = new BigDecimal("19.99");          // dari String, BUKAN double
+BigDecimal qty   = BigDecimal.valueOf(3);            // dari long/int
+BigDecimal total = price.multiply(qty).setScale(2, RoundingMode.HALF_UP);
+total.compareTo(BigDecimal.ZERO) > 0;                // bandingkan dengan compareTo
+total.divide(qty, 2, RoundingMode.HALF_UP);          // bagi WAJIB kasih scale + rounding
+BigDecimal pct = total.multiply(new BigDecimal("0.11"), MathContext.DECIMAL64);
+```
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| `new BigDecimal(String)` / `valueOf` | `new BigDecimal(0.1)` menyimpan error biner |
+| `compareTo` bukan `equals` | `1.0` != `1.00` menurut equals |
+| `divide` wajib scale+rounding | pembagian tak berhingga -> `ArithmeticException` |
+| `setScale(2, HALF_UP)` sebelum simpan | spek pembulatan bisnis eksplisit |
+| `Math.*Exact` untuk id/uang | overflow senyap adalah bug mahal |
+| `SecureRandom` untuk token | `Math.random` mudah diprediksi |
+| `Pattern` sebagai `static final` | compile regex itu mahal |
+
+> **Jebakan:** `BigDecimal.equals` juga membandingkan scale. Aturan jumlah uang: selalu
+> normalisasi ke `setScale(2, ...)` di boundary, bandingkan dengan `compareTo`.
+
+---
+
+## std lib: Files, Collections, Arrays
+
+```java
+import java.nio.file.*;
+import java.util.*;
+
+// Files - API utama (Path, bukan File)
+Path p = Path.of("/var/app/config.yaml");
+String s = Files.readString(p);
+Files.writeString(p, "data", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+List<String> lines = Files.readAllLines(p);
+Files.lines(p).filter(l -> l.startsWith("#")).toList();     // stream, tutup otomatis
+Files.createDirectories(Path.of("/var/app/logs/2026"));
+Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE);
+Files.deleteIfExists(p);
+long size = Files.size(p);
+BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
+
+List<Path> javas;
+try (var walk = Files.walk(Path.of("src"))) {                // rekursif
+    javas = walk.filter(x -> x.toString().endsWith(".java")).toList();
+}
+
+// Collections utility
+List<String> list = new ArrayList<>(List.of("b", "a"));
+Collections.sort(list);
+Collections.reverse(list);
+Collections.unmodifiableList(list);
+Collections.emptyList();
+Collections.singletonList("x");
+Collections.nCopies(3, "x");
+Collections.frequency(list, "a");
+Collections.max(list);
+
+// Arrays
+int[] nums = {3, 1, 2};
+Arrays.sort(nums);
+int i = Arrays.binarySearch(nums, 2);      // array harus sorted
+int[] copy = Arrays.copyOf(nums, 5);
+Arrays.fill(copy, 0);
+boolean eq = Arrays.equals(nums, new int[]{1, 2, 3});
+String dump = Arrays.toString(nums);
+Integer[] boxed = Arrays.stream(nums).boxed().toArray(Integer[]::new);
+```
+
+| API | Catatan |
+| :--- | :--- |
+| `Files.readString/readAllLines` | file kecil-sedang; besar pakai `Files.lines` |
+| `Files.walk` | stream rekursif (harus ditutup / try-with-resources) |
+| `ATOMIC_MOVE` | rename atomik (filesystem harus mendukung) |
+| `List.of` | immutable, **menolak null** |
+| `Collections.unmodifiableList` | view read-only (sumber masih bisa berubah) |
+| `Arrays.binarySearch` | hasil tak terdefinisi kalau array tidak urut |
+
+> **Jebakan:** `Files.walk` mengembalikan stream yang memegang file handle. Tanpa
+> try-with-resources, direktori tetap terbuka dan proses bisa kehabisan FD.
+
+---
+
+## std lib: java.net.http & logging
+
+```java
+import java.net.URI;
+import java.net.http.*;
+import java.time.Duration;
+
+HttpClient client = HttpClient.newBuilder()
+    .connectTimeout(Duration.ofSeconds(5))
+    .version(HttpClient.Version.HTTP_2)
+    .followRedirects(HttpClient.Redirect.NORMAL)
+    .build();
+
+HttpRequest req = HttpRequest.newBuilder(URI.create("https://api.example.com/orders"))
+    .header("Content-Type", "application/json")
+    .header("Authorization", "Bearer " + token)
+    .timeout(Duration.ofSeconds(10))
+    .POST(HttpRequest.BodyPublishers.ofString(json))
+    .build();
+
+// sinkron
+HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+if (res.statusCode() >= 400) {
+    throw new IllegalStateException("HTTP " + res.statusCode() + ": " + res.body());
+}
+
+// asinkron
+client.sendAsync(req, HttpResponse.BodyHandlers.ofByteArray())
+      .thenApply(HttpResponse::body)
+      .exceptionally(ex -> new byte[0]);
+
+// body besar langsung ke file
+client.send(req, HttpResponse.BodyHandlers.ofFile(Path.of("/tmp/out.bin")));
+```
+
+| Hal | Catatan |
+| :--- | :--- |
+| `HttpClient` | dibuat **sekali**, dipakai ulang (punya pool internal) |
+| `BodyHandlers.ofString` | kecil; `ofFile`/`ofInputStream` untuk besar |
+| `timeout` per request | tanpa ini koneksi menggantung |
+| `System.Logger` | cukup untuk library tanpa dependency |
+| SLF4J | parameterized `log.info("{}", x)` — jangan string concat |
+
+> **Jebakan:** `HttpClient` baru per request = handshake TCP+TLS berulang dan thread bocor.
+> Simpan sebagai field `static final` / bean singleton.
+
+---
+
+## std lib: testing lanjutan (JUnit lifecycle & AssertJ)
+
+```java
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.*;
+import org.junit.jupiter.params.provider.*;
+import org.assertj.core.api.Assertions;
+
+@DisplayName("Order service")
+class OrderServiceTest {
+
+    @BeforeAll static void boot() { }                  // sekali per class
+    @BeforeEach void setUp(TestInfo info) { }          // tiap test
+    @AfterEach void tearDown() { }
+    @AfterAll static void shutdown() { }
+
+    @Test
+    @Tag("slow")
+    @Timeout(3)
+    void createsOrder() {
+        Order o = service.create(req);
+        Assertions.assertThat(o)
+            .isNotNull()
+            .extracting(Order::status)
+            .isEqualTo(OrderStatus.PENDING);
+    }
+
+    @ParameterizedTest(name = "qty {0} -> valid {1}")
+    @CsvSource({ "1,true", "0,false", "-1,false" })
+    void validateQty(int qty, boolean valid) {
+        Assertions.assertThat(service.isValid(qty)).isEqualTo(valid);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> dynamic() {
+        return cases.stream().map(c ->
+            DynamicTest.dynamicTest(c.name(), () -> service.run(c)));
+    }
+
+    @Nested
+    class WhenExpired {
+        @Test void rejects() { }
+    }
+}
+```
+
+| Fitur | Fungsi |
+| :--- | :--- |
+| `@BeforeAll/@AfterAll` | static, sekali per class |
+| `@Timeout` | batas waktu per test |
+| `@Tag` | seleksi test (slow/integration) |
+| `@TestFactory` | dynamic test dari collection |
+| `@Nested` | kelompok test kontekstual |
+| AssertJ `assertThat` | assert dengan pesan jelas |
+| `assertSoftly` | kumpulkan semua kegagalan sekaligus |
+
+> **Jebakan:** `@BeforeAll` wajib `static` kecuali class ber-`@TestInstance(PER_CLASS)`, dan
+> test paralel tidak berbagi instance — jangan simpan state mutable di field static.
+
+---
+
+## Testing
+
+```java
+// JUnit 5
+@ExtendWith(MockitoExtension.class)
+class OrderServiceTest {
+
+    @Mock OrderRepository repository;
+    @InjectMocks OrderService service;
+
+    @Test
+    @DisplayName("order tidak ditemukan → exception")
+    void notFound() {
+        when(repository.findById(1L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.get(1L))
+            .isInstanceOf(OrderNotFoundException.class)
+            .hasMessageContaining("1");
+    }
+}
+
+// parameterized
+@ParameterizedTest
+@ValueSource(ints = {1, 2, 3})
+void validQuantity(int qty) { ... }
+
+@ParameterizedTest
+@CsvSource({"1000,1100", "2000,2200"})
+void tax(long in, long out) { ... }
+
+// timeout & order
+@Test
+@Timeout(2)
+void fast() { ... }
+
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class Ordered { @Order(1) void first() {} @Order(2) void second() {} }
+```
+
+| Layer | Tool |
+| :--- | :--- |
+| Unit | JUnit 5 + Mockito + AssertJ |
+| Parameter | `@ParameterizedTest` + `@ValueSource`/`@CsvSource` |
+| Slice | `@WebMvcTest`, `@DataJpaTest` |
+| Integrasi | `@SpringBootTest` + Testcontainers |
+| E2E | Hurl / RestAssured |
+
+> **Jebakan:** `Mockito.mockStatic` & `mockConstruction`.mockito-inline sudah default aktif —
+> tapi static mock **tidak thread-safe** dengan `parallel` JUnit.
+
+---
+
+## JVM & container
+
+```yaml
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError -Duser.timezone=UTC"
+```
+
+| Flag | Arti |
+| :--- | :--- |
+| `-XX:MaxRAMPercentage=75` | heap ikut limit kontainer |
+| `-XX:+ExitOnOutOfMemoryError` | mati cepat, jangan freeze |
+| `-XX:+HeapDumpOnOutOfMemoryError` | simpan dump untuk post-mortem |
+| `-XX:MaxGCPauseMillis=200` | target pause GC |
+| `-XX:+UseZGC` | low-latency GC (JDK 21 stabil) |
+| `-Duser.timezone=UTC` | satu zona waktu |
+| `-Xlog:gc*:file=gc.log` | log GC untuk analisis |
+
+```java
+// shutdown hook + graceful stop
+Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    log.info("shutting down...");
+    server.shutdown();
+    pool.close();
+}));
+```
+
+| Pitfall JVM | Gejala | Solusi |
+| :--- | :--- | :--- |
+| Heap terlalu kecil | OOM saat load | Naikkan `MaxRAMPercentage`, periksa retensi |
+| Metaspace habis | `OutOfMemoryError: Metaspace` |JBekoad classloader, restart, kurangi dynamic proxy |
+| GC sering | Latensi naik | Kurangi alokasi, `MaxGCPauseMillis` |
+| Thread leak | Thread makin banyak | `jcmd Thread.print` |
+| Direct buffer leak | `OutOfMemoryError: Direct buffer memory` | Tutup buffer (`try-with-resources`) |
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| `==` untuk String | Perbandingan gagal diam-diam | Selalu `.equals()` |
+| `Integer` di luar cache | `==` false | `Objects.equals` |
+| `equals` tanpa `hashCode` | Item hilang di `HashSet`/`HashMap` | Override dua-duanya |
+| `Optional` sebagai field | NPE/null noise | Optional hanya di return type |
+| `Optional.get()` | `NoSuchElementException` | `orElseThrow` |
+| `Collectors.toMap` tanpa merge | `IllegalStateException` duplikat key | Kasih merge function |
+| `stream().count()` | Lambat, alokasi | `size()` |
+| `parallelStream` untuk I/O | Thread pool jadi bottleneck | `CompletableFuture` + executor I/O |
+| `synchronized` di virtual thread | Carrier thread terblokir | Lock hanya untuk bagian kritis kecil |
+| Resource tanpa try-with-resources | FD/koneksi bocor | `try (var x = ...)` |
+| Exception tanpa pesan | Log tidak berguna | Pesan + konteks + cause |
+| `LocalDate` untuk jam | Bug zona waktu | `Instant` (UTC) + `LocalDateTime` + `ZoneId` |
+| `LocalDateTime` untuk timestamp | Ambigu | `Instant` / `OffsetDateTime` |
+| `double` untuk uang | Selisih pembulatan | `BigDecimal` + `setScale` |
+| `BigDecimal.equals` | `1.0` != `1.00` | `compareTo() == 0` |
+| Divide tanpa scale | `ArithmeticException` | `divide(d, 2, RoundingMode.HALF_UP)` |
+| HashMap sebagai field static | Race condition | `ConcurrentHashMap` |
+| `Thread.stop()` | Thread mati di tengah | Interrupt + cancel |
+| `finalize()` | Tidak dipanggil | `Cleaner`/`PhantomReference` |
+| `System.gc()` | Tidak menjamin | Jangan pakai |
+| Reflection di hot path | Overhead besar | Cache `Method`/constructor |
+| `String.format` di loop | Alokasi berlimpah | `StringBuilder` atau `formatted` sekali |
+| checked exception ditangkap lalu dibuang | Error hilang | Log + rethrow, atau strategi yang jelas |

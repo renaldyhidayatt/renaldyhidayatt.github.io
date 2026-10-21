@@ -2,6 +2,8 @@
 title: "Distributed Microservice Simple E-commerce"
 excerpt: "A distributed microservice e-commerce platform built with Rust, gRPC, PostgreSQL, Kafka, and a full observability stack."
 date: "2025-11-15"
+created_at: "2025-11-15"
+updated_at: "2025-11-15"
 tags: ["rust", "microservice", "grpc", "kafka", "observability"]
 status: "finished"
 image: "/portofolio/distributed-simple-ecommerce-rust/SimpleMicroServiceEcommerce.png"
@@ -55,6 +57,26 @@ The system is designed around a distributed architecture where each business dom
 * **Logging**: Loki & Promtail
 * **Dashboards**: Grafana
 * **Alerting**: Alertmanager
+
+## Technical Decisions & Trade-offs
+
+**True microservices with a database per service**
+Auth, user, role, product, order, and email each own a separate PostgreSQL database, so no service reaches into another's tables and every domain can evolve and scale independently. The cost is immediate: operations spanning services cannot share a transaction, so consistency becomes eventual and has to be designed rather than assumed. Operationally it is the heaviest option - a database, Redis, and deployment per service. That overhead is deliberate; the project exists to exercise the real pattern, not a cheap approximation of it.
+
+**Tonic gRPC between services**
+The internal protocol is typed proto contracts over HTTP/2, keeping cross-service calls fast and impossible to mismatch at compile time. The price is contract management - every change ripples through proto regeneration - and tooling, since debugging a gRPC hop needs dedicated clients where JSON can just be curled. The gateway is the only place that speaks plain REST.
+
+**A gateway that owns rate limiting, sessions, and caching**
+External traffic enters through a single REST gateway that rate-limits, caches, and manages sessions before anything reaches the internal services. That shields the gRPC services from abusive or malformed traffic and keeps cross-cutting concerns in one place. The trade-off: the gateway is a bottleneck and a single point of failure by construction, and every request pays one extra hop. Concentrating that risk in one configurable layer beats exposing the internals.
+
+**PgBouncer in front of every database**
+Independent services with their own connection pools can exhaust PostgreSQL quickly, because Postgres connections are expensive and services scale on their own schedules. PgBouncer caps and reuses connections so the databases stay healthy under fan-out. The cost is one more stateful component per database and pooling-mode constraints that trade away some session-level behavior.
+
+**Kafka for the asynchronous side of checkout**
+Order events go to Kafka and the email service consumes them, so the order flow completes without waiting on email delivery and an email outage cannot fail an order. The trade-offs are the standard event-driven ones: at-least-once delivery means consumers must be idempotent, and the broker is one more stateful service to run. Decoupling a side effect from the critical path is worth exactly that price.
+
+**Observability sized to the architecture**
+Seven services plus Kafka and multiple databases is where debugging by reading logs stops working, so observability is a first-class feature: OpenTelemetry to Jaeger for tracing, Prometheus and Node Exporter for metrics, Loki with Promtail for logs, and Alertmanager wired to Grafana. That is a lot of containers running before any business logic. The alternative - distributed debugging without traces - costs more the first time a request fails somewhere between the gateway and the order service.
 
 ## Project Structure
 

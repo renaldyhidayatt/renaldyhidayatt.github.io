@@ -5,6 +5,7 @@ import Layout from "@/components/Layout";
 import { getBlogPosts } from "@/utils/mdx";
 import { Search, Calendar, Clock, ArrowRight, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { useReveal } from "@/hooks/use-reveal";
+import CheatsheetBanner from "@/components/CheatsheetBanner";
 
 const POSTS_PER_PAGE = 8; // Match portfolio Items Per Page for 4-columns
 
@@ -54,8 +55,11 @@ const BlogPostCard = ({ post, index }: { post: any; index: number }) => {
                         <div className="pt-3 mt-auto flex items-center justify-between border-t-2 border-ink">
                             <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
                                 <Calendar className="w-3.5 h-3.5" />
-                                <time dateTime={post.date}>
-                                    {new Date(post.date).toLocaleDateString("en-US", {
+                                {post.updated_at && post.updated_at !== post.created_at && (
+                                    <span className="px-1.5 py-0.5 bg-primary text-primary-foreground font-black uppercase tracking-wider">Updated</span>
+                                )}
+                                <time dateTime={post.updated_at ?? post.date} title={post.updated_reason}>
+                                    {new Date(post.updated_at ?? post.date).toLocaleDateString("en-US", {
                                         year: "numeric",
                                         month: "short",
                                         day: "numeric",
@@ -80,18 +84,36 @@ const Blog = () => {
     });
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [page, setPage] = useState(1);
 
+    const allTags = useMemo(() => {
+        const counts = new Map<string, number>();
+        posts.forEach((p) => (p.tags || []).forEach((t) => counts.set(t, (counts.get(t) || 0) + 1)));
+        return Array.from(counts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 30)
+            .map((e) => e[0]);
+    }, [posts]);
+
+    const toggleTag = (tag: string) =>
+        setSelectedTags((prev) =>
+            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+        );
+
     const filteredPosts = useMemo(() => {
+        const q = searchTerm.toLowerCase();
         return posts.filter((post) => {
             const title = post?.title?.toLowerCase() || '';
             const excerpt = post?.excerpt?.toLowerCase() || '';
             const tags = Array.isArray(post?.tags) ? post.tags.join(' ').toLowerCase() : '';
-            return title.includes(searchTerm.toLowerCase()) || 
-                   excerpt.includes(searchTerm.toLowerCase()) ||
-                   tags.includes(searchTerm.toLowerCase());
+            const matchesSearch = !q || title.includes(q) || excerpt.includes(q) || tags.includes(q);
+            const matchesTags =
+                selectedTags.length === 0 ||
+                (post.tags || []).some((t) => selectedTags.includes(t));
+            return matchesSearch && matchesTags;
         });
-    }, [posts, searchTerm]);
+    }, [posts, searchTerm, selectedTags]);
 
     const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
     const paginatedPosts = filteredPosts.slice(
@@ -136,6 +158,9 @@ const Blog = () => {
                         <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl">
                             A collection of technical write-ups, systems studies, and engineering explorations.
                         </p>
+                        <div className="pt-2">
+                            <CheatsheetBanner />
+                        </div>
                     </div>
 
                     <div className="relative w-full max-w-xl animate-fade-in group" style={{ animationDelay: '0.2s' }}>
@@ -150,6 +175,30 @@ const Blog = () => {
                             }}
                             className="w-full pl-11 pr-4 py-2.5 border-2 border-ink bg-surface text-foreground placeholder:text-muted-foreground shadow-retro-sm focus:outline-none focus:shadow-retro font-mono text-xs md:text-sm transition-all"
                         />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 mt-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mr-1">Filter tag:</span>
+                        {allTags.map((tag) => {
+                            const active = selectedTags.includes(tag);
+                            return (
+                                <button
+                                    key={tag}
+                                    onClick={() => toggleTag(tag)}
+                                    className={`text-[10px] px-2.5 py-1 border-2 border-ink font-mono font-black uppercase tracking-wider transition-all ${active ? "bg-badge text-badge-ink shadow-retro -translate-y-0.5" : "bg-surface text-foreground shadow-retro-sm hover:bg-accent-light hover:shadow-retro hover:-translate-y-0.5"}`}
+                                >
+                                    {tag}
+                                </button>
+                            );
+                        })}
+                        {selectedTags.length > 0 && (
+                            <button
+                                onClick={() => setSelectedTags([])}
+                                className="text-[10px] px-2.5 py-1 border-2 border-ink bg-surface text-muted-foreground font-mono font-black uppercase tracking-wider hover:bg-accent-light"
+                            >
+                                Clear ✕
+                            </button>
+                        )}
                     </div>
                 </header>
 

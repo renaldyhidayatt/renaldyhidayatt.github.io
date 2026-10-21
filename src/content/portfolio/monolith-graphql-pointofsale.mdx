@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Point of Sale - GraphQL"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan GraphQL API Gateway, gRPC, Go, Kafka, dan PostgreSQL."
 date: "2026-05-21"
+created_at: "2026-05-21"
+updated_at: "2026-05-21"
 tags: [
   "golang", "graphql", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "sqlc"
@@ -592,6 +594,28 @@ flowchart TD
 | **Orchestration** | Kubernetes | Production-grade container orchestration with HPA |
 | **API Docs** | GraphQL Playground | Built-in interactive GraphQL IDE & schema documentation |
 | **Resilience** | Circuit Breaker, Rate Limiter, Load Monitor | Built-in fault tolerance patterns (`pkg/resilience`) |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**GraphQL edge for mixed POS clients**
+Back-office dashboards and counter-facing clients each request only the fields they need from one endpoint, with the Playground serving as living documentation. The cost: a chatty resolver tree fans out into many gRPC calls per query, and POST-only traffic rules out HTTP caching — Redis read-through caching inside each service does that job instead.
+
+**Cashiers as a first-class domain**
+Modeling cashiers separately from merchants, with monthly and yearly sales performance per operator, keeps register-level reporting clean and independently queryable. The trade-off: merchant-wide rollups now require either cross-service aggregation or denormalized summaries — cheap at one store, a real design decision at fifty.
+
+**Stock decrements inside PostgreSQL transactions**
+Checkout deducts inventory and records the sale as one atomic unit, because a register that oversells or double-charges fails in the most visible way a POS can. Strict consistency caps throughput versus eventual-consistency designs, but a counter doing hundreds of transactions per hour is nowhere near that ceiling.
+
+**Resilience patterns in a shared package**
+Circuit breakers and rate limiters ship in `pkg/resilience` so a slow downstream trips open instead of piling up requests across the gateway. Honestly, a deployment this size rarely needs them — the value is learning the failure modes and threshold tuning now, before a real outage teaches them.
+
+**Kafka for confirmations**
+Merchant and cashier verification emails ride on domain events rather than inline SMTP calls, keeping checkout latency independent of mail delivery. The usual cost applies: at-least-once semantics can duplicate a notification, and Zookeeper is one more stateful process to keep alive for the privilege.
+
+**PostgreSQL with sqlc for sales data**
+Sales, orders, and order items are deeply relational, so a primary store with foreign-key integrity fits naturally, and sqlc keeps the SQL explicit and type-checked. The cost is a migration for every schema change and no ORM convenience for dynamic queries — deliberate, given how much money-adjacent logic flows through these queries.
 
 ---
 

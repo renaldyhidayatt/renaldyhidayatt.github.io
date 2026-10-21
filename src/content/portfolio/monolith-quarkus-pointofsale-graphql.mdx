@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Point of Sale Quarkus - GraphQL"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan GraphQL Gateway, gRPC, Quarkus, Kafka, dan PostgreSQL."
 date: "2026-05-26"
+created_at: "2026-05-26"
+updated_at: "2026-05-26"
 tags: [
   "java", "quarkus", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "flyway"
@@ -885,6 +887,28 @@ flowchart TB
 | **Observability** | OpenTelemetry + Jaeger | Vendor-neutral distributed telemetry pipeline and visualization. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**GraphQL for register and reporting clients**
+A receipt screen wants the order, its items, the cashier, and totals in one round trip; a sales dashboard wants different fields again. GraphQL lets each client shape its own query against one endpoint, removing the over-fetching that a fixed REST payload forces on someone. The price is exposure: query depth and width are chosen by the client, so the gateway has to police complexity that REST would have made impossible by design.
+
+**Resolvers over gRPC, so N+1 has a real cost**
+Each GraphQL field resolves through a protobuf-backed call to a downstream module, so a naively written query can turn into one gRPC round trip per level of nesting. The Redis read-through cache blunts repeats, but the gateway still receives whole downstream responses and trims them to the requested fields. That is the accepted overhead of keeping a thin gateway on top of contract-first services.
+
+**Quarkus reactive runtime**
+Mutiny-based non-blocking execution suits a resolver that fans out to several gRPC modules concurrently, keeping gateway threads free during downstream waits. The trade is a steeper learning curve and fewer ready-made answers than the Spring ecosystem when reactive chains misbehave. A gateway whose core job is concurrent fan-out is exactly where that model pays off.
+
+**Checkout and receipt integrity**
+An order mutation reaches the product service for price and stock state and the transaction service for the audit register, and nothing wraps those calls in one atomic transaction. Receipts stay trustworthy because order items record what was actually looked up at sale time, and the centralized transaction ledger is the reconciliation record when a step fails midway. The register flow is only as consistent as its flow design, which is the honest cost of module boundaries.
+
+**PostgreSQL 17 with PgBouncer and Flyway**
+Sales ledgers and inventory counts need ACID semantics and relational integrity, so a relational core was non-negotiable. PgBouncer keeps the many reactive modules from exhausting database sockets, and Flyway makes schema changes ordered and repeatable at startup. Pooling adds a layer with its own limits, and concurrent pod startups need care not to race migrations.
+
+**Kafka-driven receipts, OTPs, and alerts**
+Order events land on Kafka and a separate email worker handles SMTP delivery, so a slow mail provider never delays a sale finishing at the register. At-least-once delivery means the worker sees duplicate events and must handle them, and the broker is one more stateful component in the stack. Receipt-style mail is exactly the workload that should be eventual rather than synchronous.
 
 ---
 

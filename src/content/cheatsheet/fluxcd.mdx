@@ -1,0 +1,644 @@
+---
+title: "FluxCD — Cheat Sheet"
+description: "Cheat sheet FluxCD 2.9+: GitRepository/Kustomization/HelmRelease (GitOps Toolkit API), CLI flux, bootstrap, drift detection, SOPS & SealedSecrets, image automation, OCI artifact & promotion, plus jebakan reconcile yang siklusnya."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "FluxCD 2.9"
+order: 8
+tags:
+  - fluxcd
+  - gitops
+  - kubernetes
+  - devops
+  - backend
+---
+
+# FluxCD — Cheat Sheet
+
+> Target: **FluxCD 2.9** dengan GitOps Toolkit API: `source.toolkit.fluxcd.io/v1`
+> (GitRepository, OCIRepository, HelmRepository), `kustomize.toolkit.fluxcd.io/v1`
+> (Kustomization), `helm.toolkit.fluxcd.io/v2` (HelmRelease),
+> `notification.toolkit.fluxcd.io/v1` (Alert, Provider, Receiver), dan image automation v1.
+> Dipakai sebagai alternatif ArgoCD untuk cluster yang butuh **drift detection** per-object,
+> **OCI artifact**, dan **image automation** bawaan.
+
+**Isi sheet ini**
+
+- Mental model 5 menit
+- Arsitektur & controller
+- CLI flux
+- Bootstrap
+- GitRepository (source API v1)
+- Kustomization (kustomize API v1)
+- HelmRelease (helm API v2)
+- Notifikasi (notification API v1)
+- Image automation
+- Reconciling, drift & suspend
+- OCI artifact & promotion
+- SOPS & SealedSecrets
+- Multi-cluster & RBAC
+- Jebakan (wajib dibaca)
+
+---
+
+## Mental model 5 menit
+
+| Konsep | Ringkasan |
+| :--- | :--- |
+| Flux = sekumpulan controller, bukan 1 aplikasi | source-controller, kustomize-controller, helm-controller, notification-controller, image-reflector-controller, image-automation-controller |
+| Source | artifact dari Git/OCI/Bucket → disimpan di cluster sebagai Artifact |
+| Kustomization | pipeline: fetch → decrypt → build → validate → apply → health check |
+| HelmRelease | chart Helm yang direkonsiliasi (bukan `helm install`) |
+| Reconciliation | controller menarik state → menerapkan → melaporkan status |
+| Drift | perbedaan antara yang di-apply dan apa yang ada di cluster |
+| Artifact | hasil fetch source (immutable, ada di cluster) |
+| Suspend | hentikan rekonsiliasi tanpa menghapus resource |
+| `dependsOn` | urutan antar Kustomization (tunggu Ready) |
+| Prune | hapus resource yang hilang dari source |
+| Interval | frekuensi rekonsiliasi (min 60 detik) |
+| Notification | Alert → Provider → Receiver (event → webhook) |
+
+---
+
+## Arsitektur & controller
+
+```
+source-controller      → fetch Git/OCI/Helm chart → Artifact
+kustomize-controller   → Artifact + Kustomize → apply ke cluster
+helm-controller        → Artifact + HelmRelease → apply ke cluster
+notification-controller→ Alert event → Provider → Receiver
+image-reflector-controller → tag & digest dari registry
+image-automation-controller → update image ref di Git
+```
+
+| Controller | CRD yang diurus |
+| :--- | :--- |
+| `source-controller` | GitRepository, OCIRepository, HelmRepository, HelmChart, Bucket |
+| `kustomize-controller` | Kustomization |
+| `helm-controller` | HelmRelease |
+| `notification-controller` | Alert, Provider, Receiver |
+| `image-reflector-controller` | ImageRepository, ImagePolicy |
+| `image-automation-controller` | ImageUpdateAutomation |
+
+> Flux **tidak** monolithic seperti ArgoCD: tiap controller bisa di-scale & di-restart
+> sendiri, dan reconcile state disimpan di Kubernetes (bukan di database internal).
+
+---
+
+## CLI flux
+
+```bash
+# install
+curl -s https://fluxcd.io/install.sh | sudo bash
+brew install fluxcd/tap/flux
+# di container:
+docker run -it --entrypoint sh -v ~/.kube/config:/kubeconfig ghcr.io/fluxcd/flux-cli:v2.9.0
+
+# cek
+flux version
+flux check --pre
+flux check                    # prasyarat controller terpasang
+
+# sumber & target
+flux get sources all
+flux get kustomizations
+flux get helmreleases
+flux get all
+flux tree kustomization order-service      # dependensi Kustomization
+
+# rekonsiliasi manual
+flux reconcile source git pos
+flux reconcile kustomization order-service
+flux reconcile helmrelease podinfo
+
+# suspend / resume
+flux suspend kustomization order-service
+flux resume kustomization order-service
+
+# diff & build lokal
+flux diff kustomization order-service
+flux build kustomization ./manifests/order-service
+flux build artifact ./manifests/order-service
+
+# event & log
+flux events --for Kustomization/order-service
+flux events --for HelmRelease/podinfo --watch
+flux logs
+
+# export (yaml CRD)
+flux export kustomization order-service
+flux export source git pos
+
+# trace satu request
+flux trace --kind Kustomization --name order-service
+```
+
+| Command | Pakai saat |
+| :--- | :--- |
+| `flux get all` | audit cepat semua resource |
+| `flux tree kustomization` | lihat dependensi & urutan |
+| `flux reconcile` | paksa sync sekarang (tanpa tunggu interval) |
+| `flux diff kustomization` | apa yang akan berubah sebelum apply |
+| `flux events --for` | kenapa tidak reconcile (authoritative!) |
+| `flux trace` | telusuri reconcile satu resource |
+| `flux suspend` | hentikan reconcile saat_values debugging |
+
+---
+
+## Bootstrap
+
+```bash
+# bootstrap: install controller + buat GitRepository + Kustomization
+flux bootstrap git \
+  --owner=sanedge \
+  --repository=pos-k8s \
+  --branch=main \
+  --path=clusters/pos \
+  --personal=false \
+  --token-auth=false \
+  --silent
+```
+
+```bash
+# atau manual
+flux install --export > flux-system.yaml
+kubectl apply -f flux-system.yaml
+kubectl -n flux-system wait --for=condition=ready pod --all --timeout=5m
+
+flux create source git pos \
+  --url=ssh://git@github.com/sanedge/pos-k8s.git \
+  --branch=main \
+  --secret-ref=git-auth \
+  --interval=5m
+
+flux create kustomization pos \
+  --source=pos \
+  --path="./clusters/pos" \
+  --prune=true \
+  --interval=10m \
+  --health-check="Deployment/order-service" \
+  --health-check="Deployment/api-gateway" \
+  --timeout=5m
+```
+
+---
+
+## GitRepository (source API v1)
+
+```yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: pos
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: ssh://git@github.com/sanedge/pos-k8s.git
+  ref:
+    branch: main
+  ignore: |
+    # abaikan path tertentu saat memindai perubahan
+    #!/.*\.md$
+    #!/README\.md$
+  secretRef:
+    name: git-auth
+  verify:
+    mode: public-key                # public-key | signed | header
+  proxySecretRef:
+    name: proxy-config
+  timeout: 60s
+  suspend: false
+```
+
+```bash
+# buat secret git (deploy key / token)
+flux create secret git git-auth \
+  --url=ssh://git@github.com/sanedge/pos-k8s.git \
+  --ssh-key-algorithm=ecdsa \
+  --private-key-file=./id_ecdsa
+
+flux create secret git git-auth \
+  --url=https://github.com/sanedge/pos-k8s.git \
+  --username=git \
+  --password=$(cat token.txt)
+```
+
+| Field | Arti |
+| :--- | :--- |
+| `interval` | frekuensi fetch (min 60s) |
+| `ref` | branch / tag / commit / semver |
+| `ignore` | regex path yang diabaikan saat deteksi perubahan |
+| `secretRef` | kredensial (SSH key, token) |
+| `verify.mode` | `public-key` (recommended), `signed`, `header` |
+| `reconcileStrategy` | `Revision` (default) atau `Retries` |
+
+---
+
+## Kustomization (kustomize API v1)
+
+```yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: order-service
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./deployments/kubernetes/base/order-service
+  prune: true
+  wait: true                      # tunggu semua resource ready
+  timeout: 5m
+  retryInterval: 1m
+  targetNamespace: pos
+  sourceRef:
+    kind: GitRepository
+    name: pos
+    # namespace: shared           # cross-namespace reference
+  dependsOn:
+    - name: infra-postgres        # tunggu Kustomization lain Ready
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: order-service
+      namespace: pos
+  healthCheckExprs:
+    - apiVersion: bitnami.com/v1alpha1
+      kind: SealedSecret
+      failed: status.conditions.filter(e, e.type == 'Synced').all(e, e.status == 'False')
+      current: status.conditions.filter(e, e.type == 'Synced').all(e, e.status == 'True')
+  postBuild:
+    substitute:
+      cluster_env: "prod"
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+        optional: true
+    substituteStrategy: Always
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-keys
+  commonMetadata:
+    labels: { managed-by: flux }
+  images:
+    - name: superapp/order-service
+      newTag: v1.4.2
+  ignore:
+    - paths: ["/spec/replicas"]    # biar HPA yang pegang
+      target: { kind: Deployment }
+```
+
+| Field | Arti | Jebakan |
+| :--- | :--- | :--- |
+| `prune` | hapus resource yang hilang dari source | `false` → resource yatim menumpuk |
+| `wait` | tunggu semua resource ready | `healthChecks` jadi diabaikan |
+| `dependsOn` | urutan antar Kustomization | circular dependency = tidak pernah apply |
+| `healthChecks` | cek rollout Deployment | salah nama = timeout terus |
+| `healthCheckExprs` | logika custom (CEL) | ekspresi salah = tunggu sampai timeout |
+| `postBuild.substitute` | variabel `${var}` | hanya jalan jika ada variabel (atau `substituteStrategy: Always`) |
+| `decryption` | SOPS untuk Secret | hanya provider yang didukung: `sops` |
+| `targetNamespace` | namespace target | **tidak** dibuat otomatis |
+| `deletionPolicy` | `Mirror` (default), `Delete`, `WaitForTermination`, `Orphan` | `Delete` = resource hilang saat CR dihapus |
+
+> **Jebakan:** `targetNamespace` **tidak** otomatis dibuat — harus ada di source atau
+> dibuat manual. `postBuild.substitute` hanya dieksekusi kalau ada minimal satu variabel
+> tersedia; kalau tidak, pakai `substituteStrategy: Always`.
+
+---
+
+## HelmRelease (helm API v2)
+
+```yaml
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: podinfo
+  namespace: flux-system
+spec:
+  interval: 5m
+  timeout: 5m
+  chart:
+    spec:
+      chart: podinfo
+      version: "6.x"
+      sourceRef:
+        kind: HelmRepository
+        name: podinfo
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+    cleanupOnFail: true
+  rollback:
+    cleanupOnFail: true
+    timeout: 5m
+  values:
+    replicaCount: 2
+    resources:
+      limits: { cpu: 500m, memory: 256Mi }
+  valuesFrom:
+    - kind: ConfigMap
+      name: podinfo-values
+      valuesKey: values.yaml
+    - kind: Secret
+      name: podinfo-secret
+      valuesKey: values.yaml
+  dependsOn:
+    - name: ingress-nginx
+```
+
+```yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: podinfo
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://stefanprodan.github.io/podinfo
+```
+
+| Field | Arti |
+| :--- | :--- |
+| `chart.sourceRef` | HelmRepository / GitRepository / Bucket |
+| `install.remediation` | rollback otomatis kalau install gagal |
+| `upgrade.remediation` | rollback kalau upgrade gagal |
+| `upgrade.cleanupOnFail` | bersihkan resource release yang gagal |
+| `values` | values inline |
+| `valuesFrom` | values dari ConfigMap/Secret |
+
+---
+
+## Notifikasi (notification API v1)
+
+```yaml
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Provider
+metadata:
+  name: slack
+  namespace: flux-system
+spec:
+  type: slack
+  address: https://hooks.slack.com/services/xxx
+---
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Alert
+metadata:
+  name: pos
+  namespace: flux-system
+spec:
+  providerRef:
+    name: slack
+  eventSeverity: info
+  eventSources:
+    - kind: GitRepository
+      name: "*"
+    - kind: Kustomization
+      name: "*"
+  eventTypes:
+    - ready
+    - not-ready
+  exclusionList:
+    - "waiting for.*"
+  suspend: false
+```
+
+| Event | Kapan |
+| :--- | :--- |
+| `ready` | resource sukses direkonsiliasi |
+| `not-ready` | gagal / timeout |
+| `info` | informasi umum (reconcile dimulai) |
+| `severity` | hanya yang butuh perhatian |
+
+---
+
+## Image automation
+
+```yaml
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: order-service
+  namespace: flux-system
+spec:
+  interval: 10m
+  image: ghcr.io/sanedge/order-service
+  provider: generic
+  secretRef:
+    name: regcred
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: order-service
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: order-service
+  latest: true                       # atau semver range
+  filterTags:
+    - "semver:*"
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: order-service
+  namespace: flux-system
+spec:
+  imageRef:
+    name: order-service
+  update:
+    kind: GitRepository
+    imageRepositoryRef:
+      name: order-service
+    commit:
+      author: fluxcdbot
+      message: 'Update image'
+  writeBack:
+    method: annotation                 # annotation | patch
+```
+
+| Field | Arti |
+| :--- | :--- |
+| `ImagePolicy.latest` | ambil tag terbaru |
+| `filterTags` | filter tag (mis. hanya `semver:*`) |
+| `ImageUpdateAutomation.update` | target penulisan (Git) |
+| `writeBack.method` | `annotation` (aman) atau `patch` (menimpa file) |
+
+---
+
+## Reconciling, drift & suspend
+
+```bash
+flux get kustomizations
+# NAME             READY   MESSAGE
+# order-service   True    Applied revision: main@sha1:abc123
+
+flux events --for Kustomization/order-service
+flux reconcile source git pos --with-source
+flux suspend kustomization order-service    # hentikan reconcile
+flux resume kustomization order-service
+```
+
+```yaml
+spec:
+  suspend: true       # resource tidak di-reconcile, tapi tetap ada di cluster
+```
+
+| Status | Arti |
+| :--- | :--- |
+| `Ready: True` | sukses |
+| `Ready: False` | gagal — lihat `message` |
+| `Stalled: True` | reconcile berhenti total (resource tidak ada) |
+| `Reconciling` | sedang berjalan |
+
+> Flux **memperbaiki drift** secara default (reconcile = terapkan state yang diinginkan).
+> Kalau perlu field tertentu tidak di-revert, pakai `spec.ignore` dengan `target` —
+> **selalu** scope dengan `target`, jangan global.
+
+---
+
+## OCI artifact & promotion
+
+```bash
+# push & tag artifact OCI (bukan image!)
+flux push artifact oci://ghcr.io/sanedge/manifests/order-service \
+  --path=./deployments/kubernetes/base/order-service \
+  --source="$(git rev-parse HEAD)" \
+  --path=./manifests
+
+flux tag artifact oci://ghcr.io/sanedge/manifests/order-service:staging \
+  --tag=production
+```
+
+```yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: pos-artifacts
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: oci://ghcr.io/sanedge/manifests
+  ref:
+    tag: production
+  secretRef:
+    name: regcred
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: order-service
+  namespace: flux-system
+spec:
+  sourceRef:
+    kind: OCIRepository
+    name: pos-artifacts
+  path: ./order-service
+  prune: true
+```
+
+> **Jebakan:** artifact OCI disimpan di **registry**, bukan di cluster. Cluster yang
+> tidak punya akses registry → `Kustomization` gagal. Bobot & hemat bandwidth, tapi
+> butuh registry yang stabil.
+
+---
+
+## SOPS & SealedSecrets
+
+```yaml
+# Flux: decryption provider sops
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: order-service
+  namespace: flux-system
+spec:
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-keys
+```
+
+```bash
+# encrypt sebelum commit
+sops --encrypt --encrypted-regex '^(data|stringData)$' \
+  --in-place secrets/order-service.yaml
+
+# age key untuk Flux (suffix .agekey)
+flux create secret sops sops-keys --kubeconfig=...  # atau manual
+```
+
+```yaml
+# SealedSecrets (alternatif) — CRD terpisah
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: order-service-secrets
+  namespace: pos
+spec:
+  encryptedData:
+    DB_PASSWORD: AgBy...
+  template:
+    metadata:
+      name: order-service-secrets
+```
+
+| Pendekatan | Catatan |
+| :--- | :--- |
+| SOPS | Flux decrypt sendiri; file terenkripsi di Git |
+| SealedSecrets | CRD; controller decrypt di cluster |
+| External Secrets | Integrasi dengan Vault/AWS/GCP |
+
+---
+
+## Multi-cluster & RBAC
+
+```yaml
+# Kustomization Applying to remote cluster (kubeConfig)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: order-service
+  namespace: apps
+spec:
+  kubeConfig:
+    configMapRef:
+      name: kubeconfig           # workload identity, tanpa kubeconfig statis
+  serviceAccountName: apps-sa   # untuk impersonation di cluster target
+```
+
+| Mekanisme | Keterangan |
+| :--- | :--- |
+| `kubeConfig.secretRef` | kubeconfig statis di Secret (namespace sama) |
+| `kubeConfig.configMapRef` | **rekomendasi** — secretless via workload identity |
+| `serviceAccountName` | impersonasi SA di cluster target |
+| `spec.dependsOn[].readyExpr` | CEL expression untuk dependensi siap |
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| `interval` < 60s | Ditolak controller (min 60s) | Pakai ≥ 1m |
+| `targetNamespace` tidak ada | Apply gagal | Buat namespace di source atau manual |
+| `prune: false` | Resource yatim menumpuk & masih jalan | Set `prune: true` |
+| `wait: true` + `healthChecks` | `healthChecks` diabaikan | Pilih salah satu |
+| `healthCheckExprs` salah | Tunggu sampai timeout | Uji ekspresi di CEL Playground |
+| `dependsOn` circular | Tidak pernah apply | Cek `flux tree kustomization` |
+| SOPS tanpa `decryption` | Secret ter-apply dalam bentuk terenkripsi | Tambahkan `spec.decryption.provider: sops` |
+| `postBuild.substitute` tanpa variabel | Substitution dilewati | Set `substituteStrategy: Always` |
+| `spec.ignore` tanpa `target` | Semua resource kehilangan field itu | **Selalu** scope dengan `target` |
+| Image Update menulis ke `main` | Deploy tanpa review | Tulis ke branch khusus + PR |
+| `latest` tag di ImagePolicy | Update tak terduga | Pakai `semver` range |
+| OCI artifact tak bisa diakses | Reconcile gagal | Pastikan registry reachable |
+| Secret commit polos | Rahasia bocor | SOPS / SealedSecrets |
+| `flux reconcile` menutupi masalah | Masalah asli tak terlihat | Baca `flux events` dulu |
+| Upgrade controller tanpa baca release note | Field berubah | Baca changelog sebelum upgrade |
+| Ingress & service tak sinkron | 404 saat deploy | Satu Kustomization untuk keduanya |

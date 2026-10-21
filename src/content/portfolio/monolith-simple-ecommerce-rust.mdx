@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith – Simple E-commerce"
 excerpt: "A Distributed Modular Monolith – Simple E-commerce with Rust, gRPC, PostgreSQL, and with full observability stack."
 date: "2025-08-18"
+created_at: "2025-08-18"
+updated_at: "2025-08-18"
 tags: [
   "rust", "grpc", "tonic", "axum", "postgresql", "docker", "docker-compose",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis",
@@ -196,6 +198,26 @@ Metode ini mengharuskan Anda untuk menjalankan database dan dependensi lainnya d
 - Auth: JWT, bcrypt, email verification
 - CI/CD: GitHub Actions (via image tags)
 - Containerization: Docker + Docker Compose
+
+## Technical Decisions & Trade-offs
+
+**Modular monolith instead of full microservices**
+Each domain (auth, user, role, product, order, email) is an isolated crate with its own gRPC API, but the whole system ships and deploys as one unit behind a single gateway. That buys real service boundaries and explicit contracts without the operational tax of independently deployed microservices. The cost is that some boundaries are ceremony at this scale: calling a function over the network is slower and more verbose than calling it in-process, and the proto definitions are extra surface to maintain. It is the right middle ground for exercising the pattern while keeping `docker compose up` as the entire deployment story.
+
+**Tonic gRPC for inter-service communication**
+Typed proto contracts make every internal call compile-checked on both ends, and HTTP/2 multiplexing keeps the hop cheap. The trade-off is iteration friction: changing a message means regenerating the prost code and updating every client, and a failing gRPC call is harder to inspect than a JSON payload. REST exists only at the Axum gateway, so the stricter protocol stays on the internal network where it pays off.
+
+**Axum as the public REST gateway**
+External clients get plain JSON over HTTP, and the gateway doubles as a load balancer in front of the internal services. The price is an extra network hop on every request plus a second framework to maintain. Concentrating authentication, routing, and client-facing concerns at one edge is worth it - the alternative is every client knowing the internal service topology.
+
+**Kafka for order events**
+Order completion is published to Kafka and consumed by the email worker, so checkout is never blocked on sending mail and the order service knows nothing about email. The cost is a stateful broker in the stack and at-least-once delivery, which forces consumers to tolerate duplicates. For an event-driven design lesson built into the domain, that complexity is the point.
+
+**SQLx over a full ORM**
+Queries are written as SQL and checked against the real schema at compile time, with sqlx-cli handling migrations. That catches broken queries at build time, which is exactly where an ORM without compile-time checking gives you nothing. The cost is less abstraction: no entity graph or relation API, so complex result mapping is manual and SQL strings live in the source.
+
+**Observability from day one**
+OpenTelemetry feeds Jaeger, Prometheus, and Loki, so a request crossing five services can be followed end to end. The stack is a heavy docker-compose footprint for a portfolio project and demands real learning time. But in a distributed design, debugging without traces and correlated logs is guesswork, so this is load-bearing infrastructure rather than decoration.
 
 ---
 

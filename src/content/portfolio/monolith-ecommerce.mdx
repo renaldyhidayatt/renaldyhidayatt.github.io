@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith E-commerce Go"
 excerpt: "A Distributed Modular Monolith E-commerce Platform built with Go, gRPC, PostgreSQL, and Kafka with full observability stack."
 date: "2025-08-18"
+created_at: "2025-08-18"
+updated_at: "2025-08-18"
 tags: [
   "golang", "grpc", "echo", "postgresql", "kafka", "docker", "docker-compose",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "kubernetes",
@@ -645,6 +647,28 @@ flowchart TD
 | **Orchestration** | Kubernetes | Production-grade container orchestration with HPA |
 | **API Docs** | Swagger | Built-in interactive Swagger UI API documentation |
 | **Resilience** | Circuit Breaker, Rate Limiter, Load Monitor | Built-in fault tolerance patterns (`pkg/resilience`) |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Go with assembled libraries vs a batteries-included framework**
+Go buys small static binaries, fast startup, and cheap concurrency — at 21 independently deployable services, that footprint difference is what makes the full stack runnable on a single machine at all. The cost is that nothing comes bundled: auth, logging, resilience, and database plumbing are hand-assembled from Echo, Zap, sqlc, and the shared pkg modules rather than provided by a framework. For a project whose point is understanding the plumbing, that is a feature, not a defect.
+
+**Distributed modular monolith vs one process**
+Each domain ships as its own container with isolated data access, but everything still shares one codebase, one set of protobuf contracts, and one PostgreSQL instance. The honest cost of the split: a checkout can no longer be a single ACID transaction, because the order, its items, and the payment status live behind different gRPC boundaries — consistency becomes an application concern handled through status tracking and Kafka-driven confirmation pipelines instead of a database guarantee. A true single binary would be simpler to reason about; a full microservice organization would not share this much. This sits deliberately in between.
+
+**gRPC and Protobuf behind a REST gateway**
+Contract-first protobuf keeps the service interfaces typed and reviewable, and generated code catches drift at compile time across all 21 domains. The price: browsers speak JSON, so every external request pays a translation hop through the Echo API gateway, and each schema change means regenerating proto definitions, mappers, and stubs before any logic can move. At this service count the contract discipline pays for itself; at three services it would feel like ceremony.
+
+**sqlc over an ORM**
+Queries are written as SQL and compiled into type-safe Go, so there is no hidden lazy loading, no surprise N+1 across products, carts, and order items, and the exact statement hitting PostgreSQL is always visible. The trade-off is verbosity: relationships must be joined by hand, dynamic queries get awkward, and every new query is a codegen step. For read-heavy catalog and cart paths, predictability beats convenience.
+
+**JWT at the edge, permissions cached in Redis**
+Stateless tokens let the gateway authenticate once and forward identity over gRPC, which fits the HPA-driven scaling story without session affinity. The weakness is revocation — a leaked token stays valid until expiry — and role permissions cached in Redis add a staleness window on top, so a revoked permission can linger until invalidation runs. Acceptable for this threat model; a real deployment would shorten TTLs before trusting it.
+
+**Stock integrity across the checkout path (the core domain risk)**
+Stock tracking lives in the product service while orders are created by the order service, so a decrement cannot share the order's database transaction. The failure modes are overselling (two concurrent checkouts pass the same availability check) and orphaned decrements (the order fails after stock was reserved), and the mitigation — a conditional check-and-decrement inside the product service plus compensation events when an order fails — is strictly more machinery than the single update a monolith would run. That extra machinery is the actual price of the modular split, and it is the first place this architecture would break under load.
 
 ---
 

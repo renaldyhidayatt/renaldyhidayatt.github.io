@@ -1,0 +1,959 @@
+---
+title: "Apache Kafka — Cheat Sheet"
+description: "Cheat sheet Apache Kafka 3.8+ (KRaft): KRaft & arsitektur, CLI zookeeper-free, topic/partition/retention, producer & idempotence, consumer & rebalance, transactional outbox, schema registry, Connect, Streams, Kafka UI/Topic UI, tuning & operasi, security, plus jebakan yang bikin data hilang."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "Kafka 3.8+ (KRaft)"
+order: 3
+tags:
+  - kafka
+  - outbox
+  - event-driven
+  - backend
+---
+
+# Apache Kafka — Cheat Sheet
+
+> Target: **Apache Kafka 3.8+** dalam mode **KRaft** (tanpa ZooKeeper), dipakai sebagai event
+> backbone di Payment Gateway, E-Commerce, dan POS. Semua snippet di bawah **diverifikasi**
+> terhadap broker KRaft.
+
+**Isi sheet ini**
+
+- Arsitektur & KRaft
+- CLI & operasi harian
+- Topic, partition, retention, compaction
+- Producer (config, idempotence, batch, error)
+- Consumer group & rebalance
+- Transactional outbox
+- Idempotency & dedup
+- DLQ & retry
+- Ordering & keying
+- Schema & serialisasi (Avro/Protobuf)
+- Kafka Connect (source/sink)
+- Kafka Streams & ksqlDB
+- CLI lanjutan (kcat, ACL, reassign)
+- Konfigurasi broker & tuning
+- Operasi: upgrade, rebalancing, disk full
+- Security (TLS, SASL, ACL)
+- Observability
+- Jebakan (wajib dibaca)
+
+---
+
+## Arsitektur & KRaft
+
+```text
+producer ──▶ [ broker 0 (leader p1,p2) ] ──▶ [ broker 1 (follower) ] ──▶ consumer
+             [ broker 1 (leader p0)   ]        [ broker 2 (follower) ]
+             [ controller quorum: broker 0,1,2 ]   <- KRaft, tanpa ZooKeeper
+```
+
+| Konsep | Arti |
+| :--- | :--- |
+| **Broker** | node Kafka; menyimpan partisi |
+| **Controller quorum** | Raft quorum (3 atau 5 node) untuk metadata — pengganti ZooKeeper |
+| **Leader / follower** | satu leader per partisi; follower mereplikasi |
+| **ISR** | in-sync replicas — follower yang tertinggal terlalu jauh dikeluarkan dari ISR |
+| **min.insync.replicas=2** | `acks=all` + ISR < 2 → producer **gagal** (benar, jangan ubah) |
+| **Consumer offset** | disimpan di internal topic `__consumer_offsets` |
+| **Epoch / leader election** | KRaft memilih leader baru dalam hitungan detik |
+
+```properties
+# server.properties (KRaft, broker + controller gabungan 3 node)
+process.roles=broker,controller
+node.id=1
+controller.quorum.voters=1@k1:9093,2@k2:9093,3@k3:9093
+listeners=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+advertised.listeners=PLAINTEXT://broker1.example:9092
+inter.broker.listener.name=PLAINTEXT
+controller.listener.names=CONTROLLER
+log.dirs=/var/lib/kafka/data
+num.partitions=6
+default.replication.factor=2
+min.insync.replicas=2
+log.retention.hours=168
+log.segment.bytes=1073741824
+compression.type=producer
+```
+
+```bash
+# format storage KRaft (sekali per node) & start
+kafka-storage.sh random-uuid
+kafka-storage.sh format -t <cluster-id> -c /etc/kafka/server.properties
+kafka-server-start.sh /etc/kafka/server.properties
+
+# cluster metadata (pengganti zkCli)
+kafka-metadata-quorum.sh --bootstrap-server localhost:9092 describe --status
+kafka-metadata-quorum.sh --bootstrap-server localhost:9092 describe --replication
+```
+
+> **Jebakan:** di KRaft, `controller.quorum.voters` harus konsisten di **semua** node. Satu node
+> dengan daftar voters berbeda = quorum tidak pernah terbentuk, cluster tidak bisa election.
+
+---
+
+## CLI & operasi harian
+
+```bash
+# topik
+kafka-topics.sh --bootstrap-server localhost:9092 --list
+kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic order.payment.requested
+kafka-topics.sh --bootstrap-server localhost:9092 --create \
+  --topic order.payment.requested \
+  --partitions 6 --replication-factor 2 \
+  --config retention.ms=604800000 \
+  --config cleanup.policy=delete \
+  --config min.insync.replicas=2
+kafka-topics.sh --bootstrap-server localhost:9092 --alter \
+  --topic order.payment.requested --partitions 12          # hanya boleh NAIK
+kafka-topics.sh --bootstrap-server localhost:9092 --delete --topic legacy.topic
+
+# produce/consume
+kafka-console-producer.sh --bootstrap-server localhost:9092 \
+  --topic order.payment.requested \
+  --property parse.key=true --property key.separator=:  <<'EOF'
+ord-1:{"id":"ord-1","total":15000}
+EOF
+
+kafka-console-consumer.sh --bootstrap-server localhost:9092 \
+  --topic order.payment.requested --from-beginning \
+  --property print.key=true --property print.timestamp=true --max-messages 10
+
+# consumer group
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group payment-bridge
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --delete --group payment-bridge  # group harus kosong
+
+# reset offset (dry-run dulu tanpa --execute)
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --group payment-bridge --topic order.payment.requested \
+  --reset-offsets --to-earliest --dry-run
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --group payment-bridge --topic order.payment.requested --reset-offsets --to-earliest --execute
+# ke timestamp tertentu
+... --reset-offsets --to-datetime 2026-10-21T00:00:00.000 --execute
+
+# config dinamis (tanpa restart broker)
+kafka-configs.sh --bootstrap-server localhost:9092 --entity-type topics \
+  --entity-name order.payment.requested --describe
+kafka-configs.sh --bootstrap-server localhost:9092 --entity-type topics \
+  --entity-name order.payment.requested --alter --add-config retention.ms=1209600000
+
+# get offset per partisi
+kafka-get-offsets.sh --bootstrap-server localhost:9092 --topic order.payment.requested
+```
+
+```bash
+# alias harian
+alias klag='kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group'
+alias ktopics='kafka-topics.sh --bootstrap-server localhost:9092'
+alias kcat='kcat -b localhost:9092'
+```
+
+---
+
+## Topic, partition, retention, compaction
+
+```properties
+# topic-level
+retention.ms=604800000          # 7 hari
+retention.bytes=-1              # tak terbatas per partisi (hati-hati disk)
+cleanup.policy=delete|compact|compact,delete
+segment.bytes=1073741824        # 1 GiB per segment - batas granularitas hapus
+segment.ms=86400000
+min.insync.replicas=2
+max.message.bytes=1048576
+compression.type=producer
+```
+
+| Setting | Efek |
+| :--- | :--- |
+| `acks=all` | tunggu semua ISR acknowledging — tidak ada data hilang selama ISR ≥ 2 |
+| `acks=1` | hanya leader — bisa hilang saat leader mati |
+| `acks=0` | fire-and-forget — **jangan** untuk data bisnis |
+| `retention.ms` / `retention.bytes` | hapus berdasarkan lama / ukuran (mana dulu tercapai) |
+| `cleanup.policy=delete` | hapus segment lama |
+| `cleanup.policy=compact` | simpan **nilai terakhir per key** (state, changelog) |
+| `compact,delete` | kompaksi + batas waktu (tombstone tetap terhapus) |
+| `min.cleanable.dirty.ratio` | seberapa sering kompaksi dijalankan |
+| `delete.retention.ms` | berapa lama tombstone (`null` value) dipertahankan |
+| `segment.bytes` | makin kecil = hapus lebih granular, lebih banyak file |
+
+**Partisi = unit paralelisme.** Throughput naik linear dengan jumlah partisi, tapi ada biaya:
+
+| Kebutuhan | Partisi | Trade-off |
+| :--- | :--- | :--- |
+| Throughput tinggi, tanpa ordering | 12–24 | consumer maksimal, ordering hilang |
+| Ordering per order | 6 + key `orderId` | 6 consumer paralel, per key berurutan |
+| Ordering global | 1 | 1 consumer, throughput terbatas |
+| Event per merchant | 6 + key `merchantId` | ordering per merchant terjaga |
+
+| Batas penting | Angka |
+| :--- | :--- |
+| Partisi **menaik** | boleh (`--alter --partitions`) |
+| Partisi **menurun** | **tidak bisa** — buat topic baru + migrate |
+| Rekomendasi partisi per cluster | < 10.000 total untuk latensi metadata stabil |
+| Replication factor | 3 di produksi (2 hanya homelab) |
+| `min.insync.replicas` | 2 (dengan RF=3 → toleransi 1 node mati) |
+
+> **Jebakan:** menaikkan partisi **mengubah hash(key) → partisi**. Event untuk key yang sama
+> bisa pindah partisi setelah penambahan, sehingga **ordering per key rusak**.
+
+---
+
+## Producer (config, idempotence, batch, error)
+
+```java
+Properties p = new Properties();
+p.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+p.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+p.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
+// durability + tidak ada duplikat dari retry
+p.put(ProducerConfig.ACKS_CONFIG, "all");
+p.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);      // default true sejak 3.0
+p.put(ProducerConfig.RETRIES_CONFIG, Integer.MAX_VALUE);
+p.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5);
+p.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120_000);
+p.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 30_000);
+
+// throughput
+p.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "lz4");       // zstd lebih hemat CPU/disk
+p.put(ProducerConfig.LINGER_MS_CONFIG, 5);
+p.put(ProducerConfig.BATCH_SIZE_CONFIG, 32 * 1024);
+p.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 64L * 1024 * 1024);
+
+KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+```
+
+```java
+// kirim sinkron (butuh error handling & ordering) — lambat
+RecordMetadata md = producer.send(new ProducerRecord<>(
+        "order.payment.requested", orderId, json)).get(5, TimeUnit.SECONDS);
+log.info("partition={} offset={}", md.partition(), md.offset());
+
+// kirim asinkron (throughput) — WAJIB callback
+producer.send(record, (metadata, ex) -> {
+    if (ex != null) {
+        log.error("publish gagal key={}", key, ex);
+        outbox.markFailed(id, ex);        // jangan hilang diam-diam
+    } else {
+        outbox.markProcessed(id);
+    }
+});
+```
+
+```go
+// sarama - producer sinkron
+cfg := sarama.NewConfig()
+cfg.Producer.RequiredAcks = sarama.WaitForAll
+cfg.Producer.Idempotent = true
+cfg.Net.MaxOpenRequests = 1               // wajib 1 bila idempotent di sarama
+cfg.Producer.Return.Successes = true
+cfg.Producer.Compression = sarama.CompressionLZ4
+
+producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, cfg)
+_, _, err = producer.SendMessage(&sarama.ProducerMessage{
+    Topic: "order.payment.requested",
+    Key:   sarama.StringEncoder(orderID),
+    Value: sarama.ByteEncoder(payload),
+})
+```
+
+```go
+// segmentio/kafka-go - writer
+w := &kafka.Writer{
+    Addr:         kafka.TCP("localhost:9092"),
+    Topic:        "order.payment.requested",
+    Balancer:     &kafka.Hash{},          // hash by key
+    RequiredAcks: kafka.RequireAll,
+    BatchTimeout: 10 * time.Millisecond,
+    Compression:  kafka.Snappy,
+    Async:        false,                  // false = error bisa ditangani
+}
+err := w.WriteMessages(ctx, kafka.Message{
+    Key: []byte(orderID), Value: payload,
+})
+```
+
+| Properti | Default | Saran |
+| :--- | :--- | :--- |
+| `acks` | `all` (3.x) | jangan diturunkan |
+| `enable.idempotence` | `true` (3.x) | biarkan true |
+| `retries` | `MAX` | biarkan |
+| `delivery.timeout.ms` | 120000 | total budget retry+request |
+| `linger.ms` | 5 | 5–20 ms untuk request, 50–100 untuk batch |
+| `batch.size` | 16 KiB | 32–64 KiB untuk throughput |
+| `compression.type` | `none` | `lz4` (cepat) / `zstd` (paling hemat) |
+| `buffer.memory` | 32 MiB | naikkan bila `RecordTooLarge`/`TimeoutException` |
+| `max.in.flight` | 5 | boleh 5 hanya dengan idempotence |
+
+| Error producer | Arti | Aksi |
+| :--- | :--- | :--- |
+| `TimeoutException` (batch expired) | broker lambat / buffer penuh | naikkan `delivery.timeout.ms`, cek jaringan |
+| `RecordTooLargeException` | melebihi `max.request.size` / broker `max.message.bytes` | pecah payload, naikkan keduanya |
+| `NetworkException` | koneksi putus | retry otomatis; cek DNS/firewall |
+| `NotEnoughReplicasException` | ISR < `min.insync.replicas` | **jangan** turunkan acks; pulihkan replika |
+| `SerializationException` | serializer gagal | validasi payload sebelum send |
+| `OutOfOrderSequenceException` | idempotence state rusak (jarang) | producer akan di-reset; log |
+
+> **Jebakan:** `Hash` balancer **butuh key**. Kalau `Key` kosong, semua event masuk partisi
+> acak → ordering antar order hilang.
+
+---
+
+## Consumer group & rebalance
+
+```java
+// Spring Kafka - manual ack
+@KafkaListener(
+    topics = "order.payment.requested",
+    groupId = "payment-bridge",
+    concurrency = "3-6",              // thread = partisi aktif yang bisa diproses
+    containerFactory = "kafkaListenerContainerFactory"
+)
+public void onPaymentRequested(ConsumerRecord<String, String> record, Acknowledgment ack) {
+    try {
+        bridge.handle(record.value());
+        ack.acknowledge();                 // commit setelah sukses
+    } catch (Exception e) {
+        throw e;                           // jangan ack → retry / DLQ
+    }
+}
+```
+
+```yaml
+spring:
+  kafka:
+    consumer:
+      group-id: payment-bridge
+      auto-offset-reset: earliest
+      enable-auto-commit: false        # WAJIB false kalau pakai ack manual
+      max-poll-records: 100
+      properties:
+        max.poll.interval.ms: 300000   # lewat ini = consumer dikeluarkan dari group
+        session.timeout.ms: 45000
+        heartbeat.interval.ms: 3000
+        partition.assignment.strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+        group.instance.id: payment-bridge-1     # static membership
+    listener:
+      ack-mode: manual
+      type: single
+```
+
+```go
+// sarama - consumer group handler
+handler := consumerGroupHandler{}
+group, _ := sarama.NewConsumerGroup(brokers, "payment-bridge", cfg)
+for {
+    if err := group.Consume(ctx, []string{"order.payment.requested"}, handler); err != nil {
+        return err
+    }
+}
+
+func (h consumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+    for msg := range claim.Messages() {
+        if err := process(msg.Value); err != nil {
+            return err                 // sesi berhenti → pesan akan di-redeliver
+        }
+        sess.MarkMessage(msg, "")      // tandai sukses
+    }
+    return nil
+}
+```
+
+| Istilah | Arti |
+| :--- | :--- |
+| **Consumer group** | tim consumer; tiap partisi hanya dipegang satu anggota |
+| **Rebalance** | komposisi group berubah → partisi dialihkan → proses dihentikan sementara |
+| **Heartbeat** | hilang > `session.timeout.ms` → anggota dikeluarkan |
+| **`max.poll.interval.ms`** | batas total waktu antar-poll; lewat ini → dikeluarkan |
+| **`max.poll.records`** | jumlah record per poll — kecilkan kalau processing lambat |
+| **Static membership** | `group.instance.id` → restart tidak memicu rebalance penuh |
+| **Cooperative sticky** | rebalance incremental, hanya partisi yang pindah yang dihentikan |
+| **`auto.offset.reset`** | `earliest` / `latest` — hanya dipakai bila tidak ada offset tersimpan |
+
+```bash
+# lihat siapa memegang partisi apa & lag
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --describe --group payment-bridge --members --verbose
+```
+
+| Gejala | Penyebab | Perbaikan |
+| :--- | :--- | :--- |
+| Consumer dikeluarkan tiap beberapa menit | proses > `max.poll.interval.ms` | naikkan interval / turunkan `max.poll.records` |
+| Rebalance terus (flapping) | heartbeat lambat (GC, CPU) | `session.timeout.ms` > `heartbeat`×3, cek GC |
+| Semua partisi di satu consumer | anggota lain idle/salah config | cek `concurrency` dan jumlah anggota |
+| Lag tidak turun | throughput consumer < producer | tambah partisi + consumer, optimalkan batch |
+
+> **Jebakan:** processing satu batch > `max.poll.interval.ms` (default 5 menit) → consumer
+> dianggap mati, partisi pindah, **pesan diproses dua kali**.
+
+---
+
+## Transactional outbox
+
+Pola wajib untuk "tulis ke DB" + "publish ke Kafka" tanpa kehilangan pesan.
+
+```text
+1. BEGIN
+2.   INSERT INTO orders (...)          -- data bisnis
+3.   INSERT INTO outbox_events (...)   -- event, transaksi yang sama
+4. COMMIT
+5. relay poll PENDING -> publish -> mark PROCESSED (idempotent consumer menutup duplikat)
+```
+
+```sql
+CREATE TABLE outbox_events (
+    id             BIGSERIAL PRIMARY KEY,
+    aggregate_id   VARCHAR(100) NOT NULL,
+    event_type     VARCHAR(100) NOT NULL,
+    topic          VARCHAR(100) NOT NULL,
+    event_key      VARCHAR(100),
+    payload        JSONB        NOT NULL,
+    status         VARCHAR(20)  NOT NULL DEFAULT 'PENDING',  -- PENDING|PROCESSED|FAILED
+    attempts       INT          NOT NULL DEFAULT 0,
+    last_error     TEXT,
+    created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    published_at   TIMESTAMPTZ,
+    CONSTRAINT uq_outbox_event UNIQUE (aggregate_id, event_type, payload)
+);
+CREATE INDEX idx_outbox_pending ON outbox_events (created_at) WHERE status = 'PENDING';
+```
+
+```sql
+-- ambil batch dengan lock SKIP LOCKED: aman untuk beberapa relay paralel
+BEGIN;
+SELECT * FROM outbox_events
+ WHERE status = 'PENDING'
+ ORDER BY created_at
+ LIMIT 100
+   FOR UPDATE SKIP LOCKED;
+-- publish ke Kafka (di aplikasi), lalu:
+UPDATE outbox_events SET status = 'PROCESSED', published_at = now() WHERE id = ANY($1);
+COMMIT;
+```
+
+```go
+// relay - poll batch, publish, mark
+func (r *Relay) Run(ctx context.Context) {
+    ticker := time.NewTicker(3 * time.Second)
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
+            events, err := r.repo.ClaimPending(ctx, 100)   // FOR UPDATE SKIP LOCKED
+            if err != nil { continue }
+            for _, e := range events {
+                if err := r.publish(ctx, e); err != nil {
+                    r.repo.MarkFailed(ctx, e.ID, err)       // retry hingga max attempts
+                    continue
+                }
+                r.repo.MarkProcessed(ctx, e.ID)
+            }
+        }
+    }
+}
+```
+
+| Kenapa outbox (bukan publish langsung) | Konsekuensi bila salah |
+| :--- | :--- |
+| Publish gagal, data bisnis sudah commit | Event hilang tanpa outbox |
+| Publish di dalam transaksi = RPC di DB transaction | Transaksi panjang, lock menahan |
+| Dual-write (DB + Kafka) | **Bug klasik data hilang** |
+| Relay crash setelah publish, sebelum mark | Duplikat — ditangani consumer idempotent |
+
+| Alternatif / pelengkap | Catatan |
+| :--- | :--- |
+| CDC (Debezium) dari WAL | tanpa relay, tapi butuh konektor & schema stabil |
+| Kafka transaction (`sendOffsetsToTransaction`) | hanya aman bila **offset juga di Kafka**, bukan DB |
+| Outbox + Debezium | relay jadi bebas kode; kompleksitas pindah ke konektor |
+
+> **Jebakan:** relay yang `SELECT ... LIMIT` tanpa `FOR UPDATE SKIP LOCKED` akan diproses ganda
+> oleh dua relay paralel — tepatnya duplikat yang tidak perlu.
+
+---
+
+## Idempotency & dedup
+
+At-least-once delivery = **pasti ada duplikat**. Consumer wajib dedup.
+
+```sql
+-- consumer inbox: dedup per event
+CREATE TABLE consumer_inbox (
+    consumer_name VARCHAR(100) NOT NULL,
+    event_id      VARCHAR(100) NOT NULL,
+    processed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (consumer_name, event_id)
+);
+
+-- dalam transaksi yang sama dengan proses bisnis
+INSERT INTO consumer_inbox (consumer_name, event_id)
+VALUES ('payment-bridge', :eventId)
+ON CONFLICT DO NOTHING;     -- 0 baris = sudah pernah diproses -> skip
+```
+
+```java
+if (!inbox.markProcessed("payment-bridge", eventId)) {
+    log.debug("duplicate event skipped id={}", eventId);
+    return;                          // ack, jangan proses lagi
+}
+```
+
+```java
+// idempotency key pada API pihak ketiga
+@PostMapping("/payments")
+public PaymentResult pay(@RequestBody PayRequest req) {
+    return idempotency.runOnce(req.getIdempotencyKey(), () -> gateway.charge(req));
+}
+```
+
+| Lapisan | Mekanisme |
+| :--- | :--- |
+| Producer | `enable.idempotence=true` → retry tidak membuat duplikat di broker |
+| Consumer | `consumer_inbox` / unique constraint di transaksi yang sama |
+| Domain | `idempotency_key` UNIQUE pada tabel transaksi |
+| Upstream API | header `Idempotency-Key` + cache hasil |
+
+> Producer idempotence **hanya** mencegah duplikat dari retry dalam satu sesi producer.
+> Redelivery karena rebalance/crash tetap harus ditangani consumer.
+
+---
+
+## DLQ & retry
+
+```java
+@Bean
+public DefaultErrorHandler errorHandler(KafkaTemplate<String, String> template) {
+    DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(template,
+        (record, ex) -> new TopicPartition(record.topic() + ".DLT", -1));   // partisi apa pun
+
+    var backoff = new ExponentialBackOffWithMaxRetries(3);
+    backoff.setInitialInterval(500);
+    backoff.setMultiplier(2.0);
+    backoff.setMaxInterval(5_000);
+
+    var handler = new DefaultErrorHandler(recoverer, backoff);
+    handler.addNotRetryableExceptions(IllegalArgumentException.class, JsonParseException.class);
+    return handler;
+}
+```
+
+```yaml
+spring:
+  kafka:
+    listener:
+      ack-mode: manual
+      common-error-handler: defaultCommonErrorHandler
+```
+
+```text
+payload DLT:
+{
+  "original_topic": "order.payment.requested",
+  "original_partition": 3,
+  "original_offset": 912441,
+  "original_timestamp": "2026-10-21T03:12:44Z",
+  "exception_fqcn": "com.example.BizException",
+  "exception_message": "insufficient balance",
+  "payload": { }
+}
+```
+
+| Strategi | Kapan |
+| :--- | :--- |
+| Retry in-memory (3×, backoff) | error transien (timeout, 503) |
+| Retry topic (`*.retry.1m`) | butuh delay panjang tanpa memblokir partisi |
+| DLQ / DLT | error permanen (schema salah, data invalid) |
+| Kombinasi | retry dulu → DLT; DLT **wajib** kalau tidak event hilang diam-diam |
+| Replay | setelah bug diperbaiki, konsumsi DLT ke topic asal |
+
+> **Jebakan:** retry in-memory yang panjang memblokir partisi (record berikutnya menunggu).
+> Untuk delay menit, gunakan retry **topic**, bukan `Thread.sleep`.
+
+---
+
+## Ordering & keying
+
+| Kebutuhan | Cara |
+| :--- | :--- |
+| Ordering per order | `key = orderId` (partition = hash(key)) |
+| Ordering per merchant | `key = merchantId` |
+| Ordering global | 1 partisi — throughput turun drastis |
+| Tanpa ordering | `key = null` → round robin, throughput maksimum |
+
+```java
+// event untuk order yang sama WAJIB key sama
+kafkaTemplate.send("order.payment.requested", orderId, event);
+```
+
+```java
+// strategi partisi: default murmur2 (Java) — konsisten antar client
+p.put(ProducerConfig.PARTITIONER_CLASS_CONFIG,
+      "org.apache.kafka.clients.producer.internals.DefaultPartitioner");
+```
+
+> **Jebakan:** "ordering dijamin per partisi", bukan per key. Key sama lewat producer dengan
+> `acks`/`retries` berbeda bisa masuk urutan berbeda. Juga: menambah partisi mengubah
+> `hash(key) % partitions` → key bisa pindah partisi.
+
+---
+
+## Schema & serialisasi (Avro / Protobuf)
+
+```json
+// avro - order.payment.requested v2 (tambah field dengan default)
+{
+  "type": "record",
+  "name": "PaymentRequested",
+  "namespace": "com.example.events",
+  "fields": [
+    { "name": "eventId", "type": "string" },
+    { "name": "orderId", "type": "string" },
+    { "name": "total",   "type": "long" },
+    { "name": "currency", "type": "string", "default": "IDR" }
+  ]
+}
+```
+
+```properties
+# producer/consumer dengan Schema Registry
+schema.registry.url=http://schema-registry:8081
+value.serializer=io.confluent.kafka.serializers.KafkaAvroSerializer
+auto.register.schemas=false          # produksi: daftarkan lewat CI, bukan otomatis
+use.latest.version=true
+```
+
+| Kompatibilitas | Arti |
+| :--- | :--- |
+| `BACKWARD` | consumer baru bisa baca data lama (default) |
+| `FORWARD` | consumer lama bisa baca data baru |
+| `FULL` | keduanya — paling aman untuk event jangka panjang |
+| `NONE` | bebas (hindari di event backbone) |
+
+| Aturan evolusi | Detail |
+| :--- | :--- |
+| Tambah field | wajib punya `default` |
+| Hapus field | wajib punya `default` dan tidak dipakai consumer |
+| Rename field | gunakan alias, jangan hapus langsung |
+| Ubah tipe | **tidak kompatibel** — buat field baru |
+| Serializer | konsisten Avro **atau** Protobuf per topic |
+
+> **Jebakan:** `auto.register.schemas=true` di produksi memungkinkan producer menulis skema
+> tidak kompatibel yang langsung merusak semua consumer lama.
+
+---
+
+## Kafka Connect (source / sink)
+
+```json
+// sink ke PostgreSQL (idempotent upsert)
+{
+  "name": "orders-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "topics": "order.payment.requested",
+    "connection.url": "jdbc:postgresql://db:5432/app",
+    "insert.mode": "upsert",
+    "pk.mode": "record_key",
+    "pk.fields": "orderId",
+    "auto.create": "false",
+    "auto.evolve": "false",
+    "errors.tolerance": "none",
+    "tasks.max": "3"
+  }
+}
+```
+
+```bash
+# manage connector via REST
+curl -s localhost:8083/connectors
+curl -s -X POST -H 'Content-Type: application/json' \
+  --data @orders-sink.json localhost:8083/connectors
+curl -s localhost:8083/connectors/orders-sink/status | jq .tasks
+curl -s -X PUT -H 'Content-Type: application/json' \
+  --data @orders-sink.json localhost:8083/connectors/orders-sink/config
+curl -s -X DELETE localhost:8083/connectors/orders-sink
+```
+
+| Mode | Contoh |
+| :--- | :--- |
+| Source | Debezium PostgreSQL (CDC dari WAL) |
+| Sink | JDBC (Postgres/MySQL), S3, Elasticsearch, BigQuery |
+| Transform | `SMT` (Single Message Transform): rename field, mask PII, route topic |
+| Konversi | Avro/JSON Schema + Schema Registry |
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| `insert.mode=upsert` + `pk.mode` | duplikat Kafka tidak menggandakan baris |
+| `errors.tolerance=all` + DLQ | jangan matikan sink hanya karena 1 record buruk |
+| `tasks.max` ≤ jumlah partisi | task lebih banyak = idle |
+| `auto.create=false` | DDL diam-diam di produksi berbahaya |
+
+> **Jebakan:** Connector sink yang bukan upsert (insert-only) akan menggandakan baris setiap kali
+> consumer lag di-reset atau event di-replay.
+
+---
+
+## Kafka Streams & ksqlDB
+
+```java
+StreamsBuilder b = new StreamsBuilder();
+
+KStream<String, PaymentRequested> payments = b.stream("order.payment.requested",
+        Consumed.with(Serdes.String(), paymentSerde));
+
+// aggregation windowed: total per merchant per 5 menit
+KTable<Windowed<String>, Long> perMerchant = payments
+    .groupBy((k, v) -> v.merchantId(), Grouped.with(Serdes.String(), paymentSerde))
+    .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(5)))
+    .count(Materialized.as("payments-count-store"));
+
+perMerchant.toStream().to("merchant.payment.count", Produced.with(
+        WindowedSerdes.timeWindowedSerdeFrom(String.class), Serdes.Long()));
+
+// join stream-table
+KTable<String, Order> orders = b.table("orders", Consumed.with(Serdes.String(), orderSerde));
+payments.join(orders, (p, o) -> new Enriched(p, o)).to("enriched.topic");
+
+KafkaStreams streams = new KafkaStreams(b.build(), props);
+streams.start();
+Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+```
+
+```properties
+application.id=payment-analytics
+processing.guarantee=exactly_once_v2      # idempotent write ke topic output
+num.stream.threads=3
+default.key.serde=org.apache.kafka.common.serialization.Serdes$StringSerde
+state.dir=/var/lib/kafka-streams
+```
+
+| Konsep | Catatan |
+| :--- | :--- |
+| `KStream` vs `KTable` | stream = event, table = state per key |
+| `GlobalKTable` | direplikasi ke semua instance (lookup kecil) |
+| State store | lokal + changelog topic; restore saat rebalance |
+| Exactly-once (`exactly_once_v2`) | terhadap output topic, bukan side-effect eksternal |
+| `ksqlDB` | SQL streaming: `CREATE STREAM`, `EMIT CHANGES`, push query |
+
+> **Jebakan:** `processing.guarantee=exactly_once_v2` **tidak** membuat HTTP call di
+> `peek/forEach` idempotent. Side-effect eksternal tetap butuh idempotency key.
+
+---
+
+## CLI lanjutan (kcat, ACL, reassign)
+
+```bash
+# kcat: baca/tulis cepat, header, format
+kcat -b localhost:9092 -t order.payment.requested -C -o beginning -c 5 \
+     -f '%p:%o key=%k value=%s\n'
+kcat -b localhost:9092 -t order.payment.requested -P -K: \
+     -H 'trace-id=abc123' <<'EOF'
+ord-1:{"id":"ord-1"}
+EOF
+
+# pindahkan partisi ke broker lain (skala / maintenance)
+kafka-reassign-partitions.sh --bootstrap-server localhost:9092 \
+  --topics-to-move-json-file topics.json \
+  --broker-list "0,1,2" --generate > reassignment.json
+kafka-reassign-partitions.sh --bootstrap-server localhost:9092 \
+  --reassignment-json-file reassignment.json --execute
+kafka-reassign-partitions.sh --bootstrap-server localhost:9092 \
+  --reassignment-json-file reassignment.json --verify
+kafka-reassign-partitions.sh --bootstrap-server localhost:9092 \
+  --reassignment-json-file reassignment.json --cancel     # batalkan (3.x)
+
+# leader election / prefered leader
+kafka-leader-election.sh --bootstrap-server localhost:9092 \
+  --election-type preferred --all-topic-partitions
+
+# ACL
+kafka-acls.sh --bootstrap-server localhost:9092 --add \
+  --allow-principal User:payment-bridge --operation Write --topic order.payment.requested
+kafka-acls.sh --bootstrap-server localhost:9092 --list
+```
+
+| Perintah | Pakai saat |
+| :--- | :--- |
+| `reassign-partitions` | tambah broker, kurangi hotspot, maintenance |
+| `leader-election --election-type preferred` | kembalikan leadership ke replica awal |
+| `kafka-dump-log.sh` | inspeksi segment/resource record biner |
+| `kafka-verifiable-producer/consumer` | uji throughput & latensi |
+| `kafka-jmx / jmx_prometheus_javaagent` | expose metrik ke Prometheus |
+
+> **Jebakan:** `reassign --execute` saat broker tujuan penuh membuat replica terus tertinggal
+> dan leadership flapping. Cek disk broker tujuan dulu.
+
+---
+
+## Konfigurasi broker & tuning
+
+```properties
+# throughput & durability
+num.network.threads=3
+num.io.threads=8
+socket.send.buffer.bytes=102400
+socket.receive.buffer.bytes=102400
+socket.request.max.bytes=104857600
+replica.fetch.max.bytes=1048576
+num.replica.fetchers=4
+replica.lag.time.max.ms=30000
+
+# retention & disk
+log.retention.hours=168
+log.retention.bytes=-1
+log.segment.bytes=1073741824
+log.retention.check.interval.ms=300000
+log.cleaner.threads=2
+log.cleaner.dedupe.buffer.size=134217728
+
+# group coordinator
+group.initial.rebalance.delay.ms=3000
+offsets.topic.num.partitions=50
+transaction.state.log.replication.factor=2
+transaction.state.log.min.isr=2
+```
+
+| Parameter | Gejala bila salah |
+| :--- | :--- |
+| `num.io.threads` < disk queues | `RequestQueueTimeMs` naik |
+| `replica.fetch.max.bytes` kecil | replikasi lambat, ISR menyusut |
+| `log.segment.bytes` besar | lama menghapus data expired |
+| `group.initial.rebalance.delay.ms` | rebalance cepat tetapi lebih sering |
+| `log.cleaner.threads` | kompaksi ketinggalan → disk naik |
+
+```bash
+# cek JVM & disk broker (sering jadi akar masalah, bukan Kafka-nya)
+jcmd <pid> GC.heap_info
+df -h /var/lib/kafka
+iostat -xz 1 | grep -E 'Device|nvme|sda'
+```
+
+---
+
+## Operasi: upgrade, rolling restart, disk penuh
+
+```bash
+# rolling restart (tidak ada downtime, tapi jaga ISR)
+for b in 2 1 0; do
+  ssh broker$b 'systemctl restart kafka'
+  until kafka-broker-api-versions.sh --bootstrap-server broker$b:9092 >/dev/null 2>&1; do sleep 5; done
+  sleep 30                                    # tunggu ISR kembali penuh
+  kafka-topics.sh --bootstrap-server broker0:9092 --describe --under-replicated-partitions
+done
+```
+
+| Kejadian | Langkah |
+| :--- | :--- |
+| Disk hampir penuh | turunkan `retention.bytes` per topic, hapus segment lama, tambah broker + reassign |
+| ISP/leader mati | broker lain mengambil leadership (detik) — pastikan RF ≥ 3 |
+| Consumer lag melonjak | tambah partisi **hanya jika** ordering tidak kritikal; scale consumer dulu |
+| Perlu reset group | pastikan semua consumer berhenti; reset; start ulang |
+| Perlu upgrade versi | upgrade client dulu (kompatibel), lalu broker rolling; KRaft: **jangan** naikkan `log.message.format.version` mundur |
+
+> **Jebakan:** disk penuh pada satu broker = replica gagal, ISR menyusut, `acks=all` mulai
+> gagal → **producer error seluruh cluster**. Alert `disk_free < 20%` wajib.
+
+---
+
+## Security (TLS, SASL, ACL)
+
+```properties
+# broker
+listeners=SASL_SSL://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094
+advertised.listeners=SASL_SSL://broker1.example:9093
+sasl.enabled.mechanisms=SCRAM-SHA-512
+ssl.keystore.location=/etc/kafka/ssl/broker.keystore.jks
+ssl.truststore.location=/etc/kafka/ssl/broker.truststore.jks
+ssl.client.auth=required
+authorizer.class.name=org.apache.kafka.metadata.authorizer.StandardAuthorizer
+allow.everyone.if.no.acl.found=false
+super.users=User:kafka-admin
+```
+
+```properties
+# client
+security.protocol=SASL_SSL
+sasl.mechanism=SCRAM-SHA-512
+sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
+  username="payment-bridge" password="${KAFKA_PASSWORD}";
+ssl.truststore.location=/etc/kafka/ssl/client.truststore.jks
+```
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| `ssl.client.auth=required` | client tanpa sertifikat ditolak |
+| `allow.everyone.if.no.acl.found=false` | default-deny (jangan biarkan terbuka) |
+| ACL per principal per topic | least privilege, bukan shared user |
+| `super.users` minimal | super user bypass semua ACL |
+| `SCRAM-SHA-512` | mTLS boleh, tapi SASL memudahkan rotasi |
+
+> **Jebakan:** mengaktifkan `authorizer` di cluster yang sudah punya banyak consumer tanpa ACL
+> = semua consumer langsung `TopicAuthorizationException`. Siapkan ACL dulu, baru aktifkan.
+
+---
+
+## Observability
+
+```properties
+# expose JMX untuk Prometheus (jmx_exporter)
+KAFKA_OPTS="-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=7071:/opt/jmx_exporter/kafka.yml"
+```
+
+```bash
+# metrik yang harus dipantau
+kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec
+kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec
+kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions
+kafka.server:type=ReplicaManager,name=OfflinePartitionsCount
+kafka.server:type=ReplicaManager,name=IsrShrinksPerSec
+kafka.server:type=ReplicaFetcherManager,name=MaxLag,clientId=Replica
+kafka.consumer:type=consumer-fetch-manager-metrics,client-id=*
+kafka.consumer:type=consumer-metrics,client-id=*   # records-lag-max
+```
+
+| Metrik | Alert |
+| :--- | :--- |
+| `consumergroup_lag` | > 1000 selama 5 menit |
+| `underreplicatedpartitions` > 0 | segera |
+| `offlinepartitions` > 0 | kritis |
+| `isrshrinkspersec` naik | replika/follower bermasalah |
+| DLQ depth naik | segera |
+| `producer record-retry-total` naik | sedang |
+| `disk_free < 20%` | segera |
+
+```bash
+# cek lag tanpa JMX (dari CLI)
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group payment-bridge \
+  | awk 'NR>1 {lag+=$6} END {print "total lag:", lag}'
+```
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| `acks=1` | Data hilang saat leader mati | `acks=all` + `min.insync.replicas=2` |
+| Dual-write DB + Kafka tanpa outbox | Event hilang | Transactional outbox (+ SKIP LOCKED) |
+| `enable-auto-commit=true` | Offset commit sebelum proses selesai | `false` + ack manual setelah sukses |
+| `max.poll.interval.ms` < durasi proses | Consumer kicked, pesan diproses 2× | Naikkan interval / turunkan `max.poll.records` |
+| Retry tanpa idempotency | Double debit | Idempotency key + unique constraint |
+| Key kosong di producer | Ordering hilang, partisi tidak merata | Selalu set key |
+| Menambah partisi dengan key | Ordering per key rusak | Jangan tambah jika ordering kritikal; buat topic baru |
+| Terlalu banyak partisi | Metadata & rebalance lambat | < 10.000 partisi per cluster |
+| Topic tanpa retention | Disk penuh | `retention.ms` + `retention.bytes` |
+| DLQ tanpa alarm | Pesan hilang diam-diam | Metrik + alert DLQ depth |
+| Consumer tidak idempotent saat rebalance | Efek ganda | `consumer_inbox` |
+| `linger.ms` terlalu besar | Latensi naik | 5–20 ms untuk request |
+| Retry in-memory panjang | Partisi terblokir | Retry topic dengan delay |
+| `auto.register.schemas=true` | Schema rusak untuk consumer lama | Daftar lewat CI, `false` |
+| Sink connector insert-only | Baris ganda setelah replay | `upsert` + `pk.mode` |
+| Hot partition | Satu consumer kewalahan | Key ber-entrepi (mis. `merchantId#bucket`) |
+| Consumer hanya jalan saat start | offset commit tidak terkirim | commit eksplisit / `ack-mode: manual` |
+| Reset offset saat consumer hidup | Data diproses ganda/konflik group | hentikan consumer dulu |

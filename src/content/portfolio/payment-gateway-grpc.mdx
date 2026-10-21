@@ -2,6 +2,8 @@
 title: 'Payment Gateway with Echo and gRPC'
 excerpt: 'A system that simulates a payment gateway handling transactions like card payments, top-ups, withdrawals, and transfers.'
 date: '2025-05-31'
+created_at: "2025-05-31"
+updated_at: "2025-05-31"
 tags:
   [
     'golang',
@@ -73,6 +75,26 @@ The key components that form the core of this project include:
 - 🐳 **Docker** — A containerization platform for consistent development environments.
 - 📄 **Swago** — Generates Swagger 2.0 documentation for Echo routes.
 - 🔗 **Docker Compose** — Manages multi-container Docker applications.
+
+## Technical Decisions & Trade-offs
+
+**Go with gRPC for the core**
+The business logic lives in a gRPC server: typed proto contracts, compact HTTP/2 payloads, and generated code that turns client-server mismatches into build failures. The trade-offs are proto regeneration in every build and traffic that is harder to inspect than JSON. Go rather than Rust keeps iteration fast and the code approachable; the cost is giving up the compile-time guarantees a Rust implementation of this domain would add, plus garbage-collection pauses on the hot path.
+
+**Echo REST gateway in front of the gRPC server**
+Browsers, mobile clients, and the Tauri desktop app all speak HTTP and JSON to an Echo service that translates requests into gRPC calls. That keeps the public API conventional - with Swagger documentation generated straight from the Echo routes - while the internal protocol stays strict. The cost is two API layers for the same operations and a translation hop on every request.
+
+**SQLC instead of an ORM**
+Queries are written as SQL and compiled into type-safe Go code, so the SQL stays inspectable and there is no reflection or runtime mapping to surprise anyone. The trade-off is rigidity: every query needs a named entry in a SQL file, dynamic filtering gets awkward, and schema or query changes require regeneration. For a payment schema where the queries are few and well understood, explicit SQL is the better default.
+
+**JWT with refresh tokens**
+Short-lived access tokens plus refresh token management keep API verification stateless while getting session semantics approximately right. The standard costs apply: a stolen access token remains valid until expiry, and the token logic is one more moving part to test. It remains the conventional choice for a REST client backed by an independent server.
+
+**Goose migrations and Zap logging**
+Schema changes are versioned, reversible goose migrations, and Zap provides structured, low-overhead logging. Neither is exotic, and that is the point: boring, proven tools are what a payment project wants in its plumbing. The only real cost is workflow - migrations and generated artifacts add steps between editing code and running it.
+
+**Publishing the load-test failures, not just the wins**
+The k6 section reports the card module holding a steady 12.5 percent error rate across every test type, alongside clean numbers for the user and role modules. Keeping that visible is worth more than a flattering benchmark: an error rate that stays constant while load scales points at a structural bug, not a capacity limit, and says exactly where to dig next. The cost is that the project documents its own flaws - which is the honest version of a performance section.
 
 ---
 

@@ -2,6 +2,8 @@
 title: "Movie GRPC"
 excerpt: "A CRUD application for movies using GORM, with observability provided by Jaeger, OpenTelemetry, and Prometheus."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["go", "gin", "gorm", "grpc", "jaeger", "opentelemetry", "otel-collector","prometheus", "docker"]
 status: "selesai"
 image: "https://github.com/MamangRust/movie-grpc/raw/main/images/prometheus.png?raw=true"
@@ -24,6 +26,20 @@ The **Movie GRPC** project is a **CRUD** application for managing movies, built 
 - **Observability**: 🐆 **Jaeger**, 🌐 **OpenTelemetry (Otel)**
 - **Monitoring**: 📊 **Prometheus**
 - **Containerization**: 🐋 **Docker**
+
+## Technical Decisions & Trade-offs
+
+**gRPC as the API surface for a CRUD app**
+Protobuf contracts give the movie endpoints typed messages and efficient binary serialization, which is the main reason to pick gRPC over REST here. The cost is tooling friction: no browser access, no quick curl against JSON, and any external consumer needs a generated client or grpcurl. For an internal service-to-service demo, that friction is the point being demonstrated.
+
+**Gin and GORM for speed of development**
+Gin keeps the HTTP layer thin and GORM removes hand-written SQL from the CRUD paths, so the app comes together quickly. The trade-off is that the ORM hides the actual queries, which complicates tuning and can behave unexpectedly under load. At movie-catalog scale, convenience wins and the hidden SQL never becomes a real problem.
+
+**A tracing stack heavier than the app itself**
+OpenTelemetry feeds spans to Jaeger while Prometheus scrapes metrics, on a service with only a handful of endpoints. Honestly, the observability containers cost more resources than the application they watch. That is intentional: the project is a template for instrumenting a real service, where this overhead pays for itself the first time a request misbehaves.
+
+**Docker for the whole observability pipeline**
+Compose ties the app, collector, Jaeger, and Prometheus together so anyone can reproduce the full setup with one command. The cost is a stack of containers to keep running for a small service, plus image versions to pin. For a project that is about tooling, reproducibility across machines is worth that overhead.
 
 ## Demo
 

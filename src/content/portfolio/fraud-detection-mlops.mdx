@@ -2,6 +2,8 @@
 title: "MLOps Fraud Detection Platform"
 excerpt: "Platform deteksi penipuan tingkat produksi dengan MLOps, FastAPI, XGBoost, MLflow, dan Gradio."
 date: "2026-05-28"
+created_at: "2026-05-28"
+updated_at: "2026-05-28"
 tags: [
   "python", "fastapi", "mlops", "scikit-learn", "mlflow", "xgboost", "gradio", "docker", "kubernetes", "kafka"
 ]
@@ -160,6 +162,28 @@ sequenceDiagram
     end
     API-->>C: Return JSON Report with exact metrics
 ```
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Decoupled monolith vs microservices**
+Training, serving, auditing, and drift monitoring live in one deployable with strict module boundaries (the UI ships as a second container). You get zero inter-service latency between predictor → auditor → drift monitor, one CI pipeline, and no service-discovery or distributed-transaction problem. The cost: the layers can't scale or deploy independently, and a fault in one module can take the others down — the split into services is deferred until that actually hurts.
+
+**Tree ensembles (XGBoost fraud / RandomForest risk) on tabular data**
+Gradient boosting is the right default for tabular transaction features: strong non-linear performance, fast inference, and feature importances you can explain to a fraud reviewer. The real trade-off is not "model quality" — it's class imbalance: fraud is rare, so accuracy is meaningless and the threshold choice directly trades off blocking legitimate transactions (cost + support tickets) against missing fraud (loss). That's why the evaluation layer is recall/F1-centric with staging validation, and the threshold is treated as a tunable business decision, not a trained constant.
+
+**PSI drift monitoring vs performance-based monitoring**
+PSI compares live feature distributions against training-time baselines: label-free, cheap, and computable on the fly from the audit log. The honest limit: it detects *distribution* shift, not performance degradation — a model can silently lose precision while PSI stays calm. The thresholds (0.1 / 0.25) are heuristic tripwires, so "retrain triggered" is a signal to investigate, not an automated action.
+
+**SHA-256 hashed audit trail on plain JSON files**
+Hashing each input makes tampering with recorded payloads detectable, and JSON-lines files are the simplest log that the drift engine can parse directly. The trade-off: integrity without immutability — entries can still be deleted (there's no hash chain), and one shared file is a single write point that becomes a bottleneck and a parse-cost problem at high request volume. Kafka (in the stack tags) is the natural upgrade path when the local-first file stops scaling.
+
+**Local-first MLflow (SQLite) + local .joblib artifacts**
+A fully self-contained registry and tracking store: no infrastructure to run, everything reproducible from a fresh clone. The cost is team scale: no shared registry, no signed approval workflow, and model promotion is a manual stage change — fine for a solo pipeline, not for a fleet of producers.
+
+**Model caching in a single FastAPI process vs per-replica loading**
+The model loader caches each pipeline once, so predictions are sub-millisecond after the first call and no disk I/O sits in the request path. The trade-off multiplies with replicas: every pod/replica loads its own in-memory copy (acceptable for tree ensembles, not for heavyweight models), and swapping in a newly trained model means a reload/redeploy unless a hot-reload path is added.
 
 ---
 

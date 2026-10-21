@@ -2,6 +2,8 @@
 title: "Twitter Clone FastAPI"
 excerpt: "A project built with the Python framework FastAPI, chosen for its similarity to Express.js and high performance."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["python", "fastapi", "postgresql"]
 status: "selesai"
 image: "https://github.com/renaldyhidayatt/twitterclonefastapi/raw/main/database_file/Twitter-Fastapi.png"
@@ -20,6 +22,20 @@ This project is a clone of Twitter built using FastAPI. The framework was chosen
 
 - FastAPI
 - PostgreSQL
+
+## Technical Decisions & Trade-offs
+
+**FastAPI over a heavier framework**
+Route handlers with Pydantic-validated bodies and automatic OpenAPI docs make a small CRUD API fast to write and self-documenting, with the Express-style routing as a familiar bonus. The trade: no built-in admin, auth, or ORM — for a two-feature API that is exactly the right amount of framework.
+
+**JWT authentication**
+Stateless tokens let the API verify requests without a session store, keeping the deployment to two moving parts: the app and PostgreSQL. The cost is revocation — a leaked token stays valid until it expires, so the mitigation is short-lived access tokens, and a proper blacklist would reintroduce the state this design avoids.
+
+**PostgreSQL for posts**
+Posts, users, and their relations are naturally relational, and transactional guarantees keep counts and foreign keys honest. The honest caveat: the hard problem in a real Twitter is the timeline — fanning out on write versus on read at scale. A paginated SELECT is correct at clone scale, but a production feed would need materialized timelines and a cache layer this project deliberately does not build.
+
+**CRUD-only scope**
+No follow graph, no timeline assembly, no mentions — just post CRUD and authentication. That is a scope trade, not an oversight: it keeps the project an honest exercise in API design rather than a half-built feed engine, and anything added later (follows, timelines) grows out of the same user and post tables.
 
 ## Screenshots
 

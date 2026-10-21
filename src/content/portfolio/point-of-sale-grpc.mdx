@@ -2,6 +2,8 @@
 title: "Point of sale GRPC"
 excerpt: "A Point of sale example using Go, Sqlc, and Docker Compose."
 date: "2025-05-31"
+created_at: "2025-05-31"
+updated_at: "2025-05-31"
 tags: ["go", "docker", "sqlc", "postgres", "docker-compose"]
 status: "selesai"
 image: "/portofolio/pointofsale_grpc.png"
@@ -71,6 +73,28 @@ Aplikasi ini dirancang dengan arsitektur berorientasi layanan monolith (monolith
 Diagram ini menunjukkan struktur dan hubungan antar tabel dalam database.
 
 [![](https://mermaid.ink/img/pako:eNqlVlFvmzAQ_ivIz2lVkpAmvHVdu1VVp6qLpmmKhCxzCVbBZrZZm6X577UJAQNGWzae4L7v7r4722d2iPAYUIhAfKR4I3C2Yp5-CglCervDh3nuvixLY0Rj7_G-sX-7err-fPXkramQiuEM-lCKhxDIME375hxL-cJF3CDLu4ebr8urh0ePCMAK4ggrF1rkcQvdr9jhRfAUevUY41A9JdZW_d8iyv45ldRIV47d9tt7t_yjvSkW1gJkEin-DKxftY3-bb5jW0onV9HwmlOBFeWsIyYDQRLMVE_HEThVQmdRbr4vvRgkETRvstt8qbAqZEcVwTKhji1e2V2abL23_6TXyq5gwwUFR_4S2Q5ty5OLT4tNdAzaUZELHhekvzCV_dQe2NL_vG6HRJR0TIQXJjqLpOLkuSNYjwTHkpXW08XW62xDH-4-GVRxhdPIkteWEFEF2ZAODbnE1Cq7Sqxud6GfhVZP1Xawa7UsJTCTmJg90NNlYScJG2pfM6W3GWg4A5XwuO2LM7OOwz7OM3m4c97ezs74zp6VobdCCZYrZI9yN40ykhYxxB5lR3oramcydiK3qM3cMiz-wty0epCU6WtO4-3iQZanfDtMrk-mIUtI05pqTQ4Xl3CmMGXDkasjZLgCCNBfYIWuFPaph_uuZlaIzauORKehtbYBKpV6Rwjl8bU7dGtbd2L3SuuRdXYCUhrdaIQ2gsYoXONUwghpZ_3rob9ReVhWSCWgpxMybjEWzybJXjvlmP3gPEOhEoV2E7zYJHWQwz1f_TbVFGC6gmuz_VG4KCOgcIdeUXg2WZwHl-Pp2J8vLmYLfzJCW22dTs-DYDoL5rMLfz4PJpPZfoR-l0n98_Hcv5hfXgYzP5gtxv50_w4ii-0P?type=png)](https://mermaid.live/edit#pako:eNqlVlFvmzAQ_ivIz2lVkpAmvHVdu1VVp6qLpmmKhCxzCVbBZrZZm6X577UJAQNGWzae4L7v7r4722d2iPAYUIhAfKR4I3C2Yp5-CglCervDh3nuvixLY0Rj7_G-sX-7err-fPXkramQiuEM-lCKhxDIME375hxL-cJF3CDLu4ebr8urh0ePCMAK4ggrF1rkcQvdr9jhRfAUevUY41A9JdZW_d8iyv45ldRIV47d9tt7t_yjvSkW1gJkEin-DKxftY3-bb5jW0onV9HwmlOBFeWsIyYDQRLMVE_HEThVQmdRbr4vvRgkETRvstt8qbAqZEcVwTKhji1e2V2abL23_6TXyq5gwwUFR_4S2Q5ty5OLT4tNdAzaUZELHhekvzCV_dQe2NL_vG6HRJR0TIQXJjqLpOLkuSNYjwTHkpXW08XW62xDH-4-GVRxhdPIkteWEFEF2ZAODbnE1Cq7Sqxud6GfhVZP1Xawa7UsJTCTmJg90NNlYScJG2pfM6W3GWg4A5XwuO2LM7OOwz7OM3m4c97ezs74zp6VobdCCZYrZI9yN40ykhYxxB5lR3oramcydiK3qM3cMiz-wty0epCU6WtO4-3iQZanfDtMrk-mIUtI05pqTQ4Xl3CmMGXDkasjZLgCCNBfYIWuFPaph_uuZlaIzauORKehtbYBKpV6Rwjl8bU7dGtbd2L3SuuRdXYCUhrdaIQ2gsYoXONUwghpZ_3rob9ReVhWSCWgpxMybjEWzybJXjvlmP3gPEOhEoV2E7zYJHWQwz1f_TbVFGC6gmuz_VG4KCOgcIdeUXg2WZwHl-Pp2J8vLmYLfzJCW22dTs-DYDoL5rMLfz4PJpPZfoR-l0n98_Hcv5hfXgYzP5gtxv50_w4ii-0P)
+
+---
+
+## Technical Decisions & Trade-offs
+
+**REST at the edge, gRPC inside**
+The Echo REST gateway faces clients and translates HTTP requests into gRPC calls to the core server. This keeps browsers and Swagger integrators happy on the outside while internal calls stay typed, binary, and low-latency. The cost is two API layers to keep in sync and translation code that does nothing but forward — a fair price for getting both worlds.
+
+**SQLC instead of a full ORM**
+SQLC generates typed Go straight from hand-written SQL, so a bad query or a mismatched column fails at compile time. The trade-off is that every query is written and maintained by hand, with none of the dynamic query building an ORM gives you. For a POS domain where the queries are few and stability matters more than flexibility, explicit SQL is the better deal.
+
+**A monolith with service-shaped seams**
+Everything deploys as one server and one REST client, but modules for users, merchants, inventory, and transactions stay separated behind the gRPC boundary. Scaling is all-or-nothing, and an outage takes down every domain at once. The payoff is operational simplicity and a clean path to split into microservices later, which suits retail POS traffic.
+
+**PostgreSQL for stock and sales integrity**
+Inventory decrements and sales records must commit together or the till sells stock it no longer has. PostgreSQL's ACID guarantees cover that, and Goose keeps schema changes versioned. The cost is a fixed relational schema and migration ceremony on every model change — acceptable for financial and operational data.
+
+**Auto-generated Swagger for the REST surface**
+Swago turns Echo routes into Swagger 2.0 documentation, so integrators can discover and test endpoints without reading code. The limitation: it documents only the REST layer, while the gRPC contracts still require reading the proto files. That asymmetry is tolerable because external consumers only ever touch the gateway.
+
+**Docker Compose as the one-command environment**
+One make target builds the server, client, and migrate images, boots PostgreSQL, and applies migrations in order. The trade-off is that the whole stack must come up together locally, and image builds slow the edit-run loop. For a project with a migration step and two processes, that reproducibility is worth it.
 
 ---
 

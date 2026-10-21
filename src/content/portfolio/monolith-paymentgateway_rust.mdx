@@ -2,6 +2,8 @@
 title: 'Distributed Modular Monolith Payment Gateway Rust'
 excerpt: 'A Distributed Modular Monolith Payment Gateway Platform built with Rust, gRPC, PostgreSQL'
 date: '2025-08-27'
+created_at: "2025-08-27"
+updated_at: "2025-08-27"
 tags:
   [
     'rust',
@@ -80,6 +82,26 @@ The following diagram illustrates the relationships between tables in the databa
 
 - **Database**: PostgreSQL
 - **API Definition**: Protocol Buffers (gRPC)
+
+## Technical Decisions & Trade-offs
+
+**Modular monolith with a shared database**
+Users, balances, and transactions live in separate crates that talk over gRPC, but all of them read and write one PostgreSQL database. The upside is financial integrity: a transfer or withdrawal touching several domains runs in a single local transaction, with no sagas or two-phase commit. The downside is coupling - every crate is bound to the same schema, and splitting into true microservices later means untangling the data first. For a gateway at this scale, shared data with enforced code-level boundaries is the honest choice.
+
+**Rust and tokio for the runtime**
+No garbage collector means no unpredictable latency spikes, which matters when the endpoint is moving money. The price is paid up front: the borrow checker rejects designs a GC language would accept, and a workspace of this size means noticeable compile times on every change. Predictable tail latency is worth the slower iteration in this domain.
+
+**Tonic and prost for the internal contracts**
+Protocol Buffers are the single source of truth for what each module exposes, and generated types turn mismatched calls into compile errors. The cost is a codegen step in every build and a less forgiving workflow than passing JSON around. When money is on the line, contracts that cannot silently drift are the better default.
+
+**SQLx with compile-time checked queries**
+Queries are validated against the live schema at build time, so a renamed column breaks the build instead of the payment flow. The trade-off is that SQL lives as strings in the code: no entity relations or query builder, and anything dynamic gets verbose. For a gateway with a stable, well-defined schema, that is an acceptable price for the safety.
+
+**One React codebase for web and desktop via Tauri**
+The dashboard is React, TypeScript, Vite, and Tailwind, and Tauri wraps the same build into a desktop application with a Rust shell. One frontend instead of two is a real maintenance saving. The cost is that the desktop target ties releases to a Rust toolchain, and Tauri is a thinner ecosystem than Electron when native quirks appear.
+
+**k6 load testing as a published artifact**
+The repository documents smoke, capability, load, stress, and spike results per module, including where the system intentionally degrades around 1500 virtual users. That is more useful than a benchmark screenshot because it shows degradation is graceful and by design. The limitation is stated honestly too: the published runs cover read-only endpoints, so the write-heavy ledger paths remain untested under load.
 
 ## Installation & Setup
 

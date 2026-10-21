@@ -1,0 +1,988 @@
+---
+title: "C — Cheat Sheet"
+description: "Cheat sheet C11/C17: pipeline kompilasi, tipe & konversi, operator, fungsi & linkage, pointer, memory & ownership, undefined behavior, string, struct/union/bitfield, preprocessor, stdlib lengkap (stdio, stdlib, string, ctype, math, time, errno, setjmp, stdatomic, threads), serta jebakan bahasa yang paling mahal."
+date: "2026-10-22"
+created_at: "2026-10-22"
+updated_at: "2026-10-22"
+status: "verified"
+version: "C11/C17 · GCC 13+"
+order: 15
+tags:
+  - c
+  - language
+  - systems
+  - memory
+  - stdlib
+---
+
+# C — Cheat Sheet
+
+> Target: **C11/C17** (GCC 13+/Clang 17+, glibc). Fokus pada **bahasa** dan **standard library**.
+> Semua snippet memakai nama generik dan bisa ditempel ke proyek apa pun.
+
+**Isi sheet ini**
+
+- Mental model & pipeline kompilasi
+- Toolchain: gcc, make, sanitizer
+- Tipe dasar & konversi
+- Operator & control flow
+- Fungsi, scope, linkage
+- Pointer & array
+- Memory: alokasi & ownership
+- Undefined behavior
+- struct, union, bitfield, alignment
+- Preprocessor
+- stdlib: `stdio.h`
+- stdlib: `stdlib.h`
+- stdlib: `string.h` & `strings.h`
+- stdlib: `ctype.h` & `errno.h`
+- stdlib: `math.h` & `float.h`
+- stdlib: `time.h`
+- stdlib: `stddef` / `stdint` / `stdbool` / `limits`
+- stdlib: `assert` / `setjmp` / `signal`
+- stdlib: `stdatomic` & `threads.h`
+- Jebakan (wajib dibaca)
+
+---
+
+## Mental model & pipeline kompilasi
+
+```text
+main.c ──preprocessor──▶ main.i ──compiler──▶ main.s ──assembler──▶ main.o ──linker──▶ main
+         gcc -E                        gcc -S                   gcc -c                 gcc
+```
+
+| Tahap | Yang terjadi | Perhatikan |
+| :--- | :--- | :--- |
+| Preprocessor | `#include`/`#define` diganti **tekstual** | tidak ada scope; makro = substitusi teks |
+| Compiler | C → assembly; type checking, optimasi | `-O0` vs `-O2` bisa beda perilaku |
+| Assembler | assembly → object file | sudah ada kode mesin, symbol belum tersambung |
+| Linker | object + library → executable | resolving symbol (`main`, `printf`) |
+
+**Tiga aturan yang menjelaskan hampir semua bug C:**
+
+1. **Tidak ada batas objek yang diperiksa.** Array = pointer ke elemen pertama; index tidak
+   divalidasi. Pagar hanya compiler, dan bisa dilanggar lewat cast.
+2. **UB = "apa pun boleh terjadi"**, termasuk program yang tampak benar. Compiler berasumsi UB
+   tidak terjadi, jadi optimasi bisa mengubah arti program.
+3. **Tidak ada GC.** Ownership eksplisit: siapa `malloc`, siapa `free`.
+
+---
+
+## Toolchain: gcc, make, sanitizer
+
+```bash
+# WAJIB di setiap compile
+gcc -std=c11 -Wall -Wextra -g source.c -o prog
+
+# rilis
+gcc -std=c11 -Wall -Wextra -O2 -DNDEBUG source.c -o prog
+
+# sanitizer (wajib saat development)
+gcc -std=c11 -Wall -Wextra -g -O2 \
+    -fsanitize=address,undefined -fno-omit-frame-pointer \
+    source.c -o prog_asan
+./prog_asan          # harus 0 error DAN 0 leak
+
+# data race
+gcc -std=c11 -g -fsanitize=thread -pthread source.c -o prog_tsan
+```
+
+| Flag | Arti |
+| :--- | :--- |
+| `-std=c11` / `-std=c17` | standar bahasa (jangan pakai default gcc) |
+| `-Wall -Wextra -Wpedantic` | warning = bug yang belum meledak |
+| `-Wconversion -Wshadow` | konversi implisit & variabel bayangan |
+| `-g` | simbol debug (tanpa ini gdb/asan buta) |
+| `-O0`/`-O1`/`-O2`/`-O3` | level optimasi |
+| `-DNDEBUG` | matikan `assert()` |
+| `-fsanitize=address,undefined` | overflow, use-after-free, leak, UB |
+| `-fsanitize=thread` | data race |
+| `-fsanitize=memory` (clang) | baca memori uninitialized |
+| `-fno-omit-frame-pointer` | stack trace akurat |
+| `-pthread` | link POSIX threads |
+| `-lm` | link math library |
+| `-fanalyzer` | analisis statis gcc |
+
+```makefile
+# Makefile minimal — baris resep WAJIB pakai TAB
+CC     := gcc
+CFLAGS := -std=c11 -Wall -Wextra -g
+SAN    := -fsanitize=address,undefined -fno-omit-frame-pointer
+
+.PHONY: all asan clean
+
+all: prog
+
+prog: main.c util.c util.h
+	$(CC) $(CFLAGS) main.c util.c -o $@
+
+asan: main.c util.c util.h
+	$(CC) $(CFLAGS) $(SAN) main.c util.c -o prog_asan
+	./prog_asan
+
+clean:
+	rm -f prog prog_asan
+```
+
+> **Jebakan:** baris resep Makefile **harus** diawali TAB — spasi memunculkan
+> "missing separator" yang membingungkan.
+
+---
+
+## Tipe dasar & konversi
+
+```c
+#include <stdint.h>     /* int32_t, uint64_t, SIZE_MAX */
+#include <stddef.h>     /* size_t, ptrdiff_t, NULL, offsetof */
+#include <stdbool.h>    /* bool, true, false */
+#include <inttypes.h>   /* PRIu64, PRId32 */
+#include <limits.h>     /* INT_MAX, CHAR_BIT */
+```
+
+| Tipe | Ukuran (umum) | Catatan |
+| :--- | :--- | :--- |
+| `char` | 1 | signed/unsigned **implementation-defined** — jangan untuk aritmetika |
+| `signed char` / `unsigned char` | 1 | pakai ini untuk byte |
+| `int8_t`..`uint64_t` | 1..8 | fixed width, wajib di C99+ |
+| `size_t` | pointer size | **unsigned**; hasil `sizeof` |
+| `ptrdiff_t` | pointer size | *signed*; hasil pengurangan pointer |
+| `intptr_t`/`uintptr_t` | pointer size | konversi pointer ↔ integer |
+| `float`/`double`/`long double` | 4/8/≥8 | IEEE-754 (long double platform-dependent) |
+| `_Bool`/`bool` | 1 | nilai selain 0 = true |
+| `void *` | — | pointer generik, tanpa aritmetika |
+
+```c
+size_t n = (size_t)count;              /* eksplisit = dokumentasi */
+uint64_t bytes = 1024;
+printf("%" PRIu64 " bytes\n", bytes);  /* format macro, bukan %llu */
+
+if (value > INT32_MAX) return -1;      /* cek range SEBELUM cast */
+int32_t v = (int32_t)value;
+```
+
+| Konversi | Perilaku |
+| :--- | :--- |
+| integer → integer (lebih kecil) | implementasi-defined kalau tidak muat |
+| `int` → `double` | presisi hilang di > 2^53 |
+| `double` → `int` | **UB** kalau di luar range / NaN |
+| `unsigned` → `signed` | implementasi-defined kalau tidak muat |
+| pointer → integer | implementasi-defined (butuh `uintptr_t`) |
+| integer → pointer | implementasi-defined |
+
+> **Jebakan:** cast float→int yang overflow bukan "nilai aneh" — itu **UB**, dan compiler
+> boleh menghapus seluruh cabang. Selalu cek range dulu.
+
+---
+
+## Operator & control flow
+
+```c
+if (p != NULL && p->len > 0) { ... }      /* short-circuit: kanan tidak dievaluasi */
+
+for (int i = 0, j = n - 1; i < j; i++, j--) { ... }
+
+unsigned m = 0xF0F0u;
+m &= ~0x00FFu;         /* clear   */
+m |= 0x0001u;          /* set     */
+m ^= 0x0100u;          /* toggle  */
+
+switch (op) {
+    case 'a': case 'b': handle(); break;
+    default: break;    /* selalu ada default; jangan lupa break */
+}
+
+int rc = work(&state);
+if (rc < 0) goto cleanup;                  /* goto untuk cleanup: idiomatik di C */
+
+cleanup:
+    release(&state);
+    return rc;
+```
+
+| Operator | Waspadai |
+| :--- | :--- |
+| `a & b` vs `a && b` | bitwise vs logika (boolean) |
+| `<<`/`>>` | shift signed negatif / ≥ lebar tipe = UB |
+| `/`, `%` | bagi nol = UB; `INT_MIN / -1` = UB |
+| `++`, `--` | unsequenced modify+access = UB |
+| `sizeof` | hasil `size_t`; pada array = seluruh array |
+| `,` | operator koma, bukan pemisah argumen |
+
+> **Jebakan:** `a[i] = i++` dan `f(i++, i++)` adalah **UB** — urutan evaluasi tidak dijamin.
+
+---
+
+## Fungsi, scope, linkage
+
+```c
+static int helper(int x);       /* internal linkage: hanya file ini */
+extern int shared_global;       /* deklarasi, definisi di file lain */
+static int counter;             /* static storage, nol-inisialisasi */
+volatile int hw_register;       /* jangan di-cache compiler */
+
+static inline int max2(int a, int b) { return a > b ? a : b; }
+
+_Static_assert(sizeof(int32_t) == 4, "int32_t harus 4 byte");
+
+_Noreturn void die(const char *msg);   /* C11 */
+
+#define type_name(x) _Generic((x),      /* C11 */
+    int: "int", double: "double", char *: "char*", default: "lain")
+```
+
+| Kualifikasi | Arti |
+| :--- | :--- |
+| `static` (file scope) | simbol internal, tidak terekspor |
+| `static` (variabel lokal) | lifetime = program, nilai persist antar panggilan |
+| `extern` | deklarasi tanpa definisi |
+| `const` | tidak boleh diubah lewat nama itu |
+| `volatile` | akses tidak boleh di-cache/hilang (register hardware) |
+| `restrict` | satu-satunya pointer ke objek itu (optimasi) |
+| `inline` | saran; `static inline` di header paling aman |
+
+> **Jebakan:** `volatile` **bukan** sinkronisasi thread. Untuk itu pakai
+> `<stdatomic.h>` atau mutex.
+
+---
+
+## Pointer & array
+
+```c
+int a[5] = {1, 2, 3, 4, 5};
+int *p = a;                    /* decay ke &a[0] */
+p[2] = *(p + 2) = 30;          /* identik */
+ptrdiff_t d = &a[3] - &a[0];   /* 3, satuan elemen */
+
+int *arr[5];                   /* array berisi 5 pointer */
+int (*parr)[5];                /* pointer ke array 5 elemen */
+int (*fp)(int, int);           /* pointer fungsi */
+
+typedef int (*cmp_fn)(const void *, const void *);
+int my_sort(void *base, size_t n, size_t sz, cmp_fn cmp);
+```
+
+| Konsep | Perhatikan |
+| :--- | :--- |
+| Array decay | ke pointer di ekspresi, **kecuali** `sizeof` dan `&` |
+| `p + 1` | maju `sizeof(*p)` byte |
+| Pointer − pointer | hanya valid dalam satu array |
+| `NULL` / `nullptr` | `NULL` di C; bukan alamat 0 secara harfiah |
+| `(*fp)(a,b)` = `fp(a,b)` | dereference opsional |
+| `const char *` vs `char * const` | data const vs pointer const |
+
+```c
+size_t len = 0;
+
+/* JANGAN */
+size_t last = len - 1;      /* len==0 -> SIZE_MAX */
+
+/* BENAR */
+size_t last = (len > 0) ? len - 1 : 0;
+```
+
+> **Jebakan:** aritmetika `size_t` unsigned → `0 - 1` jadi `SIZE_MAX`, bukan `-1`.
+
+---
+
+## Memory: alokasi & ownership
+
+```c
+#include <stdlib.h>
+
+int *buf = malloc(n * sizeof *buf);     /* sizeof *buf, jangan sizeof(int) */
+if (!buf) return -1;
+
+int *tmp = realloc(buf, bigger * sizeof *buf);
+if (!tmp) { free(buf); return -1; }     /* buf masih valid bila realloc gagal */
+buf = tmp;
+
+free(buf);
+buf = NULL;                             /* cegah double free / use-after-free */
+```
+
+| Fungsi | Arti |
+| :--- | :--- |
+| `malloc(n)` | n byte, tidak diinisialisasi |
+| `calloc(cnt, sz)` | cnt×sz byte, semua nol |
+| `realloc(p, n)` | ubah ukuran; memindah & membebaskan `p` bila perlu |
+| `free(p)` | lepas; `free(NULL)` aman |
+| `aligned_alloc(a, n)` | alignment khusus (C11) |
+
+```c
+/* pola grow-2x */
+int push(IntVec *v, int x) {
+    if (v->len == v->cap) {
+        size_t cap = v->cap ? v->cap * 2 : 4;
+        int *data = realloc(v->data, cap * sizeof *data);
+        if (!data) return -1;
+        v->data = data;
+        v->cap = cap;
+    }
+    v->data[v->len++] = x;
+    return 0;
+}
+
+/* multi-alokasi + goto cleanup */
+int load(Config *cfg) {
+    char *host = NULL, *port = NULL;
+    int rc = -1;
+
+    host = strdup(cfg->host); if (!host) goto out;
+    port = strdup(cfg->port); if (!port) goto out;
+    rc = connect_to(host, port);
+out:
+    free(host);
+    free(port);
+    return rc;
+}
+```
+
+| Aturan ownership | Kenapa |
+| :--- | :--- |
+| Satu alokasi = satu `free` yang jelas pemiliknya | hindari kebocoran/double free |
+| Fungsi `*_create` mengembalikan pointer milik pemanggil | kontrak eksplisit |
+| Fungsi `*_destroy` aman pada `NULL` | cleanup sederhana |
+| Dokumentasikan "transfer ownership" di header | cegah kebingungan |
+
+> **Jebakan:** `realloc` **membebaskan** pointer lama saat berhasil — jangan simpan hasilnya
+> langsung ke variabel yang masih dipakai untuk cleanup.
+
+---
+
+## Undefined behavior
+
+UB = compiler boleh mengasumsikan hal itu tidak terjadi, lalu mengoptimasi berdasarkan asumsi itu.
+
+| Sumber UB | Contoh | Sanitizer |
+| :--- | :--- | :--- |
+| Index di luar array | `buf[10]` untuk `buf[5]` | ASan |
+| Use-after-free | akses pointer setelah `free` | ASan |
+| Double free | `free` dua kali | ASan |
+| Return alamat lokal | `return &local;` | ASan |
+| Signed integer overflow | `INT_MAX + 1` | UBSan |
+| Bagi nol | `x / 0` | UBSan |
+| Shift terlalu jauh | `1 << 40` pada `int` | UBSan |
+| Dereference NULL | `*p` saat `p == NULL` | ASan |
+| Strict aliasing dilanggar | akses `int` lewat `float *` | UBSan (parsial) |
+| Unsequenced modify/access | `i++` + `i` di satu ekspresi | UBSan |
+| Baca memori uninitialized | `int x; if (x)` | MSan |
+| Mengubah string literal | `char *s = "hi"; s[0] = 'H';` | crash |
+
+```c
+int i = 1;
+float f;
+memcpy(&f, &i, sizeof f);        /* OK: bit copy legal */
+
+float *pf = (float *)&i;         /* UB: aliasing int lewat float* */
+*pf = 2.0f;
+```
+
+> **Jebakan:** kode yang "aman" di `-O0` bisa hilang di `-O2` karena ada UB di dalamnya.
+> Selalu uji dengan sanitizer **dan** `-O2`.
+
+---
+
+## struct, union, bitfield, alignment
+
+```c
+typedef struct {
+    uint32_t id;
+    char     name[32];
+    double   score;
+} User;
+
+User u = { .id = 1, .name = "budi", .score = 99.5 };   /* designated initializer */
+
+typedef struct {
+    uint32_t type;
+    union {
+        uint32_t as_int;
+        float    as_float;
+        uint8_t  as_bytes[4];
+    } value;
+} Variant;
+
+/* flexible array member: elemen terakhir, tanpa ukuran */
+typedef struct {
+    size_t count;
+    int    items[];
+} IntArray;
+
+struct Packed {
+    uint32_t a;
+    uint8_t  b;
+};   /* sizeof mungkin 8 karena padding */
+```
+
+| Aturan layout | Detail |
+| :--- | :--- |
+| Alignment | tiap member mulai di offset kelipatan alignment-nya |
+| Ukuran struct | kelipatan alignment terbesar → ada padding |
+| `offsetof(S, member)` | dari `<stddef.h>` |
+| Reorder field | mengurangi padding tanpa mengubah semantik |
+| Bitfield | urutan & ukuran **implementation-defined** |
+| `__attribute__((packed))` | hilangkan padding → akses unaligned (mahal/larang) |
+
+| struct A (padding di tengah) | struct B (dirapikan) |
+| :--- | :--- |
+| `{ int32_t; int64_t; }` → 16 byte | `{ int64_t; int32_t; }` → 16 byte |
+| `{ int8_t; int32_t; int8_t; }` → 12 byte | `{ int32_t; int8_t; int8_t; }` → 8 byte |
+
+> **Jebakan:** `memcpy(&a, &b, sizeof a)` menyalin pointer internal apa adanya — kalau ada
+> pointer milik, hasilnya dua pemilik untuk satu blok memori → double free.
+
+---
+
+## Preprocessor
+
+```c
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define MAX_ITEMS 128
+#define SQUARE(x) ((x) * (x))          /* SELALU kurung parameter & hasil */
+#define STR(x) #x                       /* stringify */
+#define CAT(a, b) a##b                  /* concat */
+
+#if defined(DEBUG) && DEBUG >= 2
+#  define LOG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#  define LOG(...) ((void)0)
+#endif
+
+/* makro variadik */
+#define COUNT_ARGS(...) COUNT_ARGS_IMPL(__VA_ARGS__, 5,4,3,2,1)
+#define COUNT_ARGS_IMPL(_1,_2,_3,_4,_5,N,...) N
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+/* header yang bisa dipakai C++ */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CONFIG_H */
+```
+
+| Directive | Kegunaan |
+| :--- | :--- |
+| `#include "x.h"` / `<x.h>` | header project (via `-I`) vs sistem |
+| `#define` / `#undef` | makro objek / fungsi |
+| `#ifdef`/`#ifndef`/`#if`/`#elif` | kompilasi kondisional |
+| `#pragma once` | de facto, bukan ISO C — tetap pakai include guard |
+| `__FILE__`, `__LINE__`, `__func__` | lokasi untuk log/assert |
+| `__VA_ARGS__`, `##__VA_ARGS__` | makro variadik |
+
+> **Jebakan:** `#define SQUARE(x) x*x` tanpa kurung membuat `SQUARE(1+2)` = `1+2*1+2`.
+> Makro juga dievaluasi **berulang** kalau parameternya dipakai dua kali.
+
+---
+
+---
+
+## stdlib: `stdio.h`
+
+```c
+#include <stdio.h>
+
+FILE *f = fopen("data.txt", "r");
+if (!f) { perror("fopen"); return 1; }    /* perror: cetak strerror(errno) */
+
+char line[256];
+while (fgets(line, sizeof line, f)) {      /* termasuk '\n', NUL-terminated */
+    fputs(line, stdout);
+}
+if (ferror(f)) { /* error saat baca */ }
+fclose(f);
+
+/* mode fopen */
+fopen("a.txt", "r");    /* baca */
+fopen("a.txt", "w");    /* tulis, truncate */
+fopen("a.txt", "a");    /* append */
+fopen("b.bin", "rb");   /* binary (penting di Windows) */
+fopen("b.bin", "w+b");  /* read/write, truncate */
+
+/* formatted & unformatted */
+printf("%-10s|%05d|%.2f|%c|%p\n", name, id, price, ch, (void *)ptr);
+int n = snprintf(buf, sizeof buf, "%s-%d", name, id);   /* cek n >= (int)sizeof buf */
+fprintf(stderr, "error: %s\n", strerror(errno));
+fputs("text", stdout); fputc('x', stdout);
+
+size_t got = fread(buf, 1, sizeof buf, f);    /* return ITEM */
+size_t put = fwrite(buf, 1, got, f);
+
+int ch = fgetc(f); fputc(ch, f);              /* return int: bisa EOF */
+int c2 = getchar(); putchar('x');
+```
+
+| Fungsi | Catatan |
+| :--- | :--- |
+| `fopen`/`fclose` | selalu cek `NULL`; `fclose` juga bisa gagal |
+| `fgets` | batas aman; berhenti di `\n` atau `size-1` |
+| `fread`/`fwrite` | jumlah **item**, bukan byte |
+| `fseek`/`ftell`/`rewind` | posisi; `fseek(f, 0, SEEK_SET)` |
+| `fflush` | paksa tulis buffer (termasuk `fflush(NULL)`) |
+| `ferror`/`feof` | `feof` hanya true **setelah** baca gagal |
+| `rename`/`remove` | operasi file dasar |
+| `tmpfile` | file sementara terhapus saat ditutup |
+| `setvbuf` | atur buffering (`_IONBF`, `_IOLBF`, `_IOFBF`) |
+| `perror` | satu baris: pesan + `strerror(errno)` |
+
+| Specifier | Argumen |
+| :--- | :--- |
+| `%d %u %ld %lld %zu` | `int`, `unsigned`, `long`, `long long`, `size_t` |
+| `%x %o %#x` | hex, octal, hex dengan prefix 0x |
+| `%f %e %g` | float/double (fixed, exponent, ringkas) |
+| `%c %s %p` | char, string, pointer (cast ke `void *`) |
+| `%.*s` | presisi dari argumen |
+| `%" PRIu64` | portable `uint64_t` |
+
+> **Jebakan:** `fflush` lalu `fork`/`_exit` — child yang memanggil `exit()` akan men-flush
+> buffer turunan parent sehingga baris tercetak dua kali.
+
+---
+
+## stdlib: `stdlib.h`
+
+```c
+#include <stdlib.h>
+
+/* memory */
+void *p = malloc(64);
+p = realloc(p, 128);
+free(p);
+void *z = calloc(10, sizeof *z);        /* nol-inisialisasi */
+
+/* konversi string ↔ angka */
+long v   = strtol("42abc", &end, 10);    /* end menunjuk 'a' */
+if (*end != '\0') { /* ada sisa, input tidak valid */ }
+unsigned long ul = strtoul("0x1f", NULL, 16);
+long long ll = strtoll("-9000", NULL, 10);
+double d = strtod("3.14e2", &end);
+
+char buf[32];
+snprintf(buf, sizeof buf, "%ld", v);     /* angka -> string (pakai snprintf) */
+
+/* angka acak (bukan kripto) */
+srand((unsigned)time(NULL));
+int r = rand() % 100;                    /* bias modulo; pakai RAND_MAX-based bila penting */
+#define RAND_RANGE(n) ((int)((double)rand() / RAND_MAX * (n)))
+
+/* environment & proses */
+char *home = getenv("HOME");
+if (setenv("APP_ENV", "prod", 1) != 0) { /* error */ }
+exit(EXIT_SUCCESS);      /* flush & atexit */
+_Exit(1);                /* tanpa flush */
+if (atexit(cleanup) != 0) { /* error */ }
+abort();                 /* SIGABRT, tanpa cleanup */
+
+/* pencarian & pengurutan generik */
+qsort(arr, n, sizeof *arr, cmp_int);
+void *found = bsearch(&key, arr, n, sizeof *arr, cmp_int);
+int abs(int); long labs(long); long long llabs(long long);
+int cmp_int(const void *a, const void *b) {
+    int x = *(const int *)a, y = *(const int *)b;
+    return (x > y) - (x < y);            /* hindari overflow */
+}
+```
+
+| Fungsi | Catatan |
+| :--- | :--- |
+| `strtol`/`strtoul`/`strtoll` | satu-satunya parsing yang bisa mendeteksi error |
+| `strtod` | parsing float, mendukung `inf`/`nan` |
+| `atoi`/`atol` | **tanpa** deteksi error — hindari |
+| `qsort`/`bsearch` | comparator mengembalikan negatif/0/positif |
+| `exit`/`_Exit`/`abort` | flush+atexit / langsung / SIGABRT |
+| `getenv` | pointer ke string internal — jangan `free` |
+| `setenv`/`unsetenv` | POSIX, bukan ISO C |
+| `system` | shell injection — hindari untuk input pengguna |
+
+> **Jebakan:** `rand()` punya `RAND_MAX` yang bisa 32767 — untuk simulasi berbutir halus
+> tidak cukup. Untuk keamanan pakai `getrandom`/OS entropy.
+
+---
+
+## stdlib: `string.h` & `strings.h`
+
+```c
+#include <string.h>
+
+size_t n = strlen(s);                       /* O(n), simpan di variabel */
+char *dup = malloc(n + 1);
+memcpy(dup, s, n + 1);                      /* salin termasuk NUL */
+memmove(buf, buf + 4, len);                 /* aman untuk overlap */
+int is_eq = memcmp(a, b, n) == 0;
+
+strcpy(dst, src);                           /* tidak aman: tanpa batas */
+strncpy(dst, src, sizeof dst - 1);          /* tidak menjamin NUL */
+dst[sizeof dst - 1] = '\0';
+strcat(lhs, rhs);                           /* tanpa batas */
+strncat(lhs, rhs, sizeof lhs - strlen(lhs) - 1);
+
+int same = strcmp(a, b) == 0;
+int ci   = strcasecmp(a, b) == 0;           /* POSIX/<strings.h> */
+char *at = strchr(s, '@');
+char *last = strrchr(path, '/');
+char *needle = strstr(hay, "needle");
+size_t span = strspn(s, "0123456789");
+
+char *copy = strdup(s);                     /* POSIX: malloc + copy */
+memset(buf, 0, sizeof buf);                 /* memset 0x20, BUKAN 20 */
+```
+
+| Fungsi | Jebakan |
+| :--- | :--- |
+| `strlen` | O(n); di dalam loop = O(n²) |
+| `strcpy`/`strcat` | overflow tanpa batas |
+| `strncpy` | tidak NUL-terminate bila sumber ≥ n; isi padding nol (mahal) |
+| `strcmp` | hasil bukan sekadar -1/0/1 |
+| `strtok` | tidak reentrant — pakai `strtok_r` |
+| `memcpy` | **tidak boleh** overlap; pakai `memmove` |
+| `memset` | argumen kedua adalah **byte** (`int`), bukan nilai |
+| `strdup` | hasil harus `free` |
+
+> **Jebakan:** `memset(arr, 1, n)` pada `int arr[]` mengisi byte `0x01`, bukan nilai 1.
+> Untuk array angka pakai loop atau `calloc`.
+
+---
+
+## stdlib: `ctype.h` & `errno.h`
+
+```c
+#include <ctype.h>
+#include <errno.h>
+#include <string.h>
+
+/* WAJIB cast ke unsigned char untuk input non-ASCII */
+for (const char *p = s; *p; p++) {
+    if (isalpha((unsigned char)*p)) { ... }
+}
+int d = isdigit((unsigned char)c);
+int sp = isspace((unsigned char)c);
+int up = toupper((unsigned char)c);
+int lo = tolower((unsigned char)c);
+
+/* errno: simpan value SEKARANG */
+errno = 0;
+FILE *f = fopen(path, "r");
+if (!f) {
+    int err = errno;                    /* copy sebelum fungsi lain */
+    fprintf(stderr, "open %s: %s\n", path, strerror(err));
+}
+```
+
+| Fungsi `ctime` | Cek |
+| :--- | :--- |
+| `isalpha`, `isdigit`, `isalnum`, `isxdigit` | kelas karakter (locale-dependent) |
+| `isspace` | ` `, `\t`, `\n`, `\v`, `\f`, `\r` |
+| `isupper`, `islower`, `isprint`, `iscntrl` | klasifikasi |
+| `toupper`, `tolower` | nilai `int`, bukan `char` |
+| `isblank` | spasi/tab (C99) |
+
+| `errno` | Arti |
+| :--- | :--- |
+| `EACCES` | izin ditolak |
+| `ENOENT` | path tidak ada |
+| `EINTR` | syscall terputus signal — **retry** |
+| `ERANGE` | overflow hasil konversi |
+| `ENOMEM` | kehabisan memori |
+| `EINVAL` | argumen tidak valid |
+
+> **Jebakan:** `isdigit(c)` dengan `c` bertipe `char` yang bernilai negatif (≥0x80) = UB.
+> Selalu cast ke `unsigned char`.
+
+---
+
+## stdlib: `math.h` & `float.h`
+
+```c
+#include <math.h>
+#include <float.h>
+
+double r = sqrt(2.0);
+double p = pow(2.0, 10.0);
+double e = exp(1.0), lg = log(10.0), lg2 = log2(8.0), lg10 = log10(1000.0);
+double s = sin(0.5), c = cos(0.5), t = tan(0.5);
+double sd = sin(M_PI / 6);
+double a = fabs(-3.5), f = floor(2.7), ce = ceil(2.1);
+double rt = round(2.5);                 /* half away from zero */
+double tr = trunc(-2.7);
+double mod = fmod(7.0, 2.0);            /* tanda mengikuti pembilang */
+double rem = remainder(7.0, 2.0);       /* IEEE remainder */
+int ex; double mant = frexp(6.5, &ex);
+double l = ldexp(0.8125, 3);
+
+/* classifier (untuk hasil komputasi) */
+int nan = isnan(NAN);
+int inf = isinf(INFINITY);
+int fin = isfinite(1.0);
+/* jangan bandingkan float dengan == */
+
+/* pembulatan float → int yang aman */
+if (x > INT_MAX || x < INT_MIN) { /* tolak */ }
+int i = (int)x;
+```
+
+| Konstanta `float.h` | Arti |
+| :--- | :--- |
+| `FLT_EPSILON`, `DBL_EPSILON` | selisih terkecil > 1 |
+| `FLT_MAX`, `DBL_MAX` | nilai maksimum |
+| `DBL_DIG`, `FLT_DIG` | digit desimal yang dijamin |
+| `DBL_MANT_DIG` | bit mantissa |
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| Bandingkan dengan epsilon | `a == b` hampir selalu salah |
+| `fabs(a-b) < eps` | perbandingan float |
+| Uang: integer cents / decimal | float membulatkan salah |
+| `-lm` saat link | math tidak otomatis ditautkan |
+
+> **Jebakan:** `sqrt(-1)` menghasilkan NaN tanpa error (errno `EDOM` hanya bila diminta
+> dan implementasi mendukung). Periksa dengan `isnan()` di batas domain bisnis.
+
+---
+
+## stdlib: `time.h`
+
+```c
+#include <time.h>
+
+time_t now = time(NULL);                /* epoch detik */
+struct tm local;
+localtime_r(&now, &local);              /* POSIX, reentrant; localtime() pakai buffer static */
+struct tm utc;
+gmtime_r(&now, &utc);
+
+char out[32];
+strftime(out, sizeof out, "%Y-%m-%d %H:%M:%S", &local);   /* UTC / local sesuai struct */
+mktime(&local);                         /* struct tm -> time_t (local) */
+
+/* device monotonic (bukan jam dinding) */
+struct timespec t0, t1;
+clock_gettime(CLOCK_MONOTONIC, &t0);
+/* ... kerja ... */
+clock_gettime(CLOCK_MONOTONIC, &t1);
+double ms = (t1.tv_sec - t0.tv_sec) * 1e3 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
+
+clock_t cpu0 = clock();                 /* CPU time, bukan wall clock */
+```
+
+| API | Catatan |
+| :--- | :--- |
+| `time_t` | detik sejak epoch (bisa signed/unsigned) |
+| `struct tm` | field: `tm_year` = tahun-1900, `tm_mon` = 0..11 |
+| `localtime`/`gmtime` | statis — tidak thread-safe; pakai `_r` |
+| `strftime` | format `%Y %m %d %H %M %S %Z %z` |
+| `mktime` | `tm` dianggap **waktu lokal** |
+| `CLOCK_MONOTONIC` | untuk mengukur durasi |
+| `CLOCK_REALTIME` | jam dinding, bisa mundur |
+| `nanosleep` | sleep presisi (POSIX) |
+
+> **Jebakan:** `tm_mon` dimulai dari 0 dan `tm_year` = tahun − 1900 — bug tanggal paling
+> umum di C adalah lupa `+1900`.
+
+---
+
+## stdlib: `stddef` / `stdint` / `stdbool` / `limits`
+
+```c
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <limits.h>
+
+size_t sz = sizeof(int);
+ptrdiff_t diff = &arr[3] - &arr[0];
+size_t off = offsetof(MyStruct, field);
+void *nullp = NULL;
+
+uint8_t b = 0xFF;  int16_t s = -1;  uint32_t u = UINT32_MAX;  int64_t q = INT64_MIN;
+uintptr_t ip = (uintptr_t)ptr;      /* pointer -> integer, sudah tersedia uintptr_t */
+int64_t big = INT64_C(9000000000000);
+uint32_t mask = UINT32_C(0xFFFFFFFF);
+
+bool ok = true;
+bool no = false;
+
+INT_MAX; INT_MIN; UINT_MAX; LONG_MAX; CHAR_BIT;       /* CHAR_BIT biasanya 8 */
+SIZE_MAX;                                             /* dari <stdint.h> */
+```
+
+| Header | Isi penting |
+| :--- | :--- |
+| `stddef.h` | `size_t`, `ptrdiff_t`, `NULL`, `offsetof`, `max_align_t` |
+| `stdint.h` | fixed-width int, `intmax_t`, `SIZE_MAX`, `INT64_C` |
+| `stdbool.h` | `bool`, `true`, `false` |
+| `limits.h` | batas `int`, `char`, `long` |
+| `inttypes.h` | `PRIu64`, `SCNd32` (format makro) |
+
+> **Jebakan:** `sizeof` menghasilkan `size_t` (unsigned). Membandingkan dengan `int` negatif
+> diam-diam mengubahnya jadi unsigned raksasa.
+
+---
+
+## stdlib: `assert` / `setjmp` / `signal`
+
+```c
+#include <assert.h>
+
+assert(ptr != NULL);            /* mati di rilis dengan -DNDEBUG */
+static_assert(sizeof(int) == 4, "int harus 4 byte");   /* C11, compile-time */
+```
+
+```c
+#include <setjmp.h>
+
+/* error handling tanpa goto/exception — pakai HATI-HATI */
+jmp_buf env;
+
+int try_run(void) {
+    if (setjmp(env) != 0) {
+        /* kembali ke sini setelah longjmp */
+        return -1;
+    }
+    risky_work();               /* boleh longjmp(env, 1) di dalam */
+    return 0;
+}
+```
+
+```c
+#include <signal.h>
+
+static volatile sig_atomic_t stop = 0;
+
+static void on_term(int sig) {
+    (void)sig;
+    stop = 1;                   /* HANYA set flag — jangan printf/malloc */
+}
+
+struct sigaction sa = {0};
+sa.sa_handler = on_term;
+sigemptyset(&sa.sa_mask);
+sa.sa_flags = SA_RESTART;
+sigaction(SIGINT, &sa, NULL);
+sigaction(SIGTERM, &sa, NULL);
+
+raise(SIGTERM);
+```
+
+| API | Catatan |
+| :--- | :--- |
+| `assert(expr)` | abort bila false dan `NDEBUG` tidak didefinisikan |
+| `static_assert` | dicek saat compile (C11) |
+| `setjmp`/`longjmp` | lompat lintas fungsi; **tidak** menjalankan cleanup |
+| `signal` | API lama; perilaku beda antar platform |
+| `sigaction` | API modern (blocking mask, flags) |
+| `volatile sig_atomic_t` | satu-satunya tipe aman di handler |
+
+> **Jebakan:** `longjmp` melewati frame yang punya alokasi → bocor. Dan `setjmp` hanya
+> boleh dipakai di ekspresi kondisional tertentu (`if`, `switch`, `while`).
+
+---
+
+## stdlib: `stdatomic.h` & `threads.h`
+
+```c
+#include <stdatomic.h>
+
+atomic_int counter = 0;
+atomic_fetch_add(&counter, 1);
+int val = atomic_load(&counter);
+atomic_store(&counter, 0);
+
+atomic_bool ready = false;
+atomic_store_explicit(&ready, true, memory_order_release);
+while (!atomic_load_explicit(&ready, memory_order_acquire)) { }
+
+atomic_flag flag = ATOMIC_FLAG_INIT;
+while (atomic_flag_test_and_set(&flag)) { /* spin */ }
+atomic_flag_clear(&flag);
+
+/* compare-and-swap */
+int expected = 5;
+atomic_compare_exchange_strong(&counter, &expected, 6);
+```
+
+| Memory order | Arti |
+| :--- | :--- |
+| `memory_order_relaxed` | atomik saja, tanpa urutan |
+| `memory_order_acquire` | load: baca setelahnya tidak boleh naik |
+| `memory_order_release` | store: tulis sebelumnya tidak boleh turun |
+| `memory_order_acq_rel` | keduanya (RMW) |
+| `memory_order_seq_cst` | urutan total — default, paling aman |
+
+```c
+#include <threads.h>
+
+int worker(void *arg) {
+    int *n = arg;
+    *n += 1;
+    return 0;
+}
+
+thrd_t t;
+int result;
+if (thrd_create(&t, worker, &result) != thrd_success) return 1;
+thrd_join(t, NULL);
+
+mtx_t mtx;
+if (mtx_init(&mtx, mtx_plain) != thrd_success) return 1;
+mtx_lock(&mtx);
+/* critical section */
+mtx_unlock(&mtx);
+mtx_destroy(&mtx);
+
+cnd_t cond;
+cnd_init(&cond);
+mtx_lock(&mtx);
+while (!ready) cnd_wait(&cond, &mtx);   /* selalu loop: spurious wakeup */
+mtx_unlock(&mtx);
+```
+
+| Hal | Catatan |
+| :--- | :--- |
+| `threads.h` (C11) | opsional; dukungan implementasi bervariasi |
+| `pthread` (POSIX) | paling umum di Linux — lebih lengkap |
+| `volatile` | **bukan** sinkronisasi |
+| Data race | UB, bukan "hasil tak terduga" — pakai TSan |
+| `_Atomic` tipe | bisa tanpa `stdatomic` untuk deklarasi data |
+
+> **Jebakan:** membaca variabel non-atomic yang ditulis thread lain = **data race** = UB,
+> meski tipenya `int` dan tampak "atomik" di CPU tertentu.
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| `char` signed/unsigned beda platform | `char c = 200` beda hasil | `int8_t`/`uint8_t` |
+| `size_t` unsigned | `len - 1` saat 0 → `SIZE_MAX` | cek `len > 0` |
+| `realloc` membebaskan pointer lama | use-after-free | lewat variabel temporer |
+| `malloc` tanpa cek NULL | crash | cek & kembalikan error |
+| `free` lalu pakai pointer | use-after-free | `free` lalu set `NULL` |
+| Double free | crash (ASan) | pointer di-`NULL`-kan |
+| `strncpy` tanpa NUL | string bocor | set `dst[n-1] = '\0'` |
+| `snprintf` return diabaikan | output terpotong | cek `n < 0 \|\| n >= size` |
+| `strlen` di loop | O(n²) | simpan panjang |
+| `strcmp(...) == 1` | bug logika | `== 0` untuk sama |
+| Signed overflow | **UB**, cabang bisa dihapus | `uint32_t` / cek range |
+| Shift ≥ lebar tipe | **UB** | tipe 64-bit |
+| float → int overflow | **UB** | cek range |
+| struct copy berisi pointer | double free | transfer ownership eksplisit |
+| padding struct | memori terbuang | reorder field |
+| bitfield untuk wire format | layout beda per compiler | serialisasi manual |
+| makro tanpa kurung | `SQUARE(1+2)` salah | kurung parameter & hasil |
+| `memset(arr,1,n)` pada int | isi byte, bukan nilai | loop / `calloc` |
+| `volatile` untuk sinkronisasi | data race | `stdatomic`/mutex |
+| `localtime` di multithread | hasil tercampur | `localtime_r` |
+| `tm_year`/`tm_mon` | tanggal meleset | `+1900`, `+1` |
+| `errno` dibaca belakangan | diagnosis salah | simpan segera |
+| `fclose` tidak dicek | data tidak ter-flush | cek return |
+| `fflush` sebelum fork | baris tercetak dua kali | `fflush` sebelum `fork`/`_exit` |
+| `feof` sebagai kondisi loop | iterasi ekstra | cek hasil baca |
+| `rand()` untuk keamanan | token mudah diprediksi | OS entropy |
+| `-Wall -Wextra` dimatikan | bug tak terdeteksi | wajib nyalakan |
+| sanitizer tidak dipakai | UB baru muncul di produksi | `-fsanitize=address,undefined` |

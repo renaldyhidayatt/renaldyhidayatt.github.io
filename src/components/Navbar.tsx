@@ -28,6 +28,7 @@ const Navbar = () => {
     const isActive = (path: string) =>
         location.pathname === path ||
         (path === "/blog" && location.pathname.startsWith("/blog/")) ||
+        (path === "/cheatsheet" && location.pathname.startsWith("/cheatsheet/")) ||
         (path === "/portfolio" && location.pathname.startsWith("/portfolio/"));
 
     return (
@@ -60,7 +61,9 @@ const Navbar = () => {
                     {[
                         { path: "/", label: "Home" },
                         { path: "/blog", label: "Blog" },
+                        { path: "/cheatsheet", label: "Cheatsheet" },
                         { path: "/portfolio", label: "Portfolio" },
+                        { path: "/sertifikat", label: "Sertifikat" },
                         { path: "/about", label: "About" },
                     ].map((item) => {
                         const active = isActive(item.path);

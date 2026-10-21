@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, FileText, Briefcase, User, Palette, Check, X } from "lucide-react";
+import { Home, FileText, Briefcase, User, Award, Palette, Check, X, BookMarked } from "lucide-react";
 import { useTheme } from '@/hooks/use-theme';
 import { useState } from 'react';
 
@@ -30,12 +30,15 @@ const BottomNav = () => {
     const isActive = (path: string) =>
         location.pathname === path ||
         (path === "/blog" && location.pathname.startsWith("/blog/")) ||
+        (path === "/cheatsheet" && location.pathname.startsWith("/cheatsheet/")) ||
         (path === "/portfolio" && location.pathname.startsWith("/portfolio/"));
 
     const navItems = [
         { path: "/", icon: Home, label: "Home" },
         { path: "/blog", icon: FileText, label: "Blog" },
+        { path: "/cheatsheet", icon: BookMarked, label: "Cheat" },
         { path: "/portfolio", icon: Briefcase, label: "Portfolio" },
+        { path: "/sertifikat", icon: Award, label: "Sertifikat" },
         { path: "/about", icon: User, label: "About" },
     ];
 

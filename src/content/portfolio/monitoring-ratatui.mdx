@@ -2,6 +2,8 @@
 title: "Example System Monitoring Ratatui"
 excerpt: "System monitoring application built with Ratatui."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["rust", "ratatui", "system-monitoring", "sysinfo"]
 status: "selesai"
 image: "https://github.com/MamangRust/example-monitoring-ratatui/raw/main/image/example.png?raw=true"
@@ -24,6 +26,19 @@ Example System Monitoring Ratatui is a terminal-based system monitoring applicat
 - ⌨️ **Crossterm** - Library for handling keyboard input and terminal display
 - 🖥️ **Sysinfo** - Library for retrieving system information
 
+## Technical Decisions & Trade-offs
+
+**Ratatui immediate mode vs a heavier TUI framework**
+Ratatui keeps the loop explicit: every tick, sample the metrics and rebuild the screen from widgets like gauges and bar charts. The cost is that nothing updates incrementally, so refresh timing, layout, and all application state live in hand-written code instead of a framework's model. For a dashboard that repaints constantly anyway, that simplicity is the right trade.
+
+**Sampling frequency vs observer effect**
+A monitor built on Sysinfo measures the same machine it runs on, so the poll rate is a genuine compromise: refresh too fast and the app's own CPU usage shows up in the graphs it draws; refresh too slow and short spikes vanish between samples. The interval favors a lively display over perfect fidelity, and that is a judgment call, not a correct answer.
+
+**Crossterm and a minimal input surface**
+All interaction is keyboard-driven through Crossterm, and the only binding that matters is quitting with `q`. That keeps the event loop a few lines long, at the price of no mouse support and little room to grow interactions without restructuring the loop.
+
+**Sysinfo crate vs parsing system tools**
+Pulling CPU, RAM, and network numbers from Sysinfo means typed, in-process data instead of scraping the output of `top` or `ps` differently per platform. The trade is trusting one more dependency's abstraction, in exchange for a single portable binary that builds anywhere Rust does.
 
 ## Demo
 

@@ -2,6 +2,8 @@
 title: 'Ecommerce GRPC'
 excerpt: 'A ecommerce example using Go, Sqlc, and Docker Compose.'
 date: '2025-05-31'
+created_at: "2025-05-31"
+updated_at: "2025-05-31"
 tags: ['go', 'docker', 'sqlc', 'postgres', 'docker-compose']
 status: 'selesai'
 image: '/portofolio/ecommerce_grpc.png'
@@ -67,6 +69,26 @@ This application is designed with a service-oriented monolith architecture. The 
 Below is the ERD illustrating the database schema of this project, rendered using Mermaid.js.
 
 [![](https://mermaid.ink/img/pako:eNqtWG1v2joU_iuRP7dVoUAp37gt06qt27Rxr6YJKXJtA1YTO7OdUdb1v88OIXH8Qkt1-VTO6-Nzjh8f-gQQxwRMABE3FK4EzBcs0Z9SEiGTp90X87n9NK-EKcXJlw-t_L_p1-v306_JkgqpGMyJr8pgTENySLPk30C4Akq54QLvNM8LtvtD8Ix4sIwwBqvSmeRNliZWdZpgwEbjRrWL8O5DGMU7N48gS0HkOlX8gTAfvK19bb796SqnTv3mt3ezb_Pp3ZeEPBZUQEU5c_DkRKA1ZMqDslcci6Lb2_ns-zzBRCJBiza7bS8VVKV0UCGoyIoL6nej1mxjLQ6PlszKVbp39ZtfCI5L5NeglodKYJfHbb6N8eUS7RJR5IgQL010lkrF0UPkSDVA_0QIChWonVDHDLF1fFf1s9Rnp2rrpNV3NMAUlfSYxIeKq7iCWWoVrJs8pYrkMQRaFYLR4HtzAQJ9bGDJNS0KylYpxFhfbunPtGvxaozV7YIZzKHyB0QPkL5AolXczK5v76Yf23SIS-WAVQIyCZG5qh5MS3dUFWPdbNl9mxOtzolac9z1hbm5BnGfIHsI8ouSTYBcjfh_uABV2RHPDQInhaZYtgrCSTFR-n2LodppQ-Ba2EHS3xYu3ZYii5B8el9KyqoJY0su8upBiBJ_x_gYDtxjawJ0QTbQ4aP2jEFFRCi6pKjCKFPIcAo3UOD4Q9XxeAtefZ-zAE4qZUlwer-NQS14RlHgreoabN8CqfaMFLDF64OKjJujfwsmTGWRwW3aPmN-dskR1TSdE0xhmlH2EAdSmx4C0mIN1iiDykzzi9dAZjT0PO3Exy0UNIcr9_D3kLFA-J34deFvpvOZ2Yj0O431EuEoiL4DXfE_nz9_nE0_6RFNDTH_IoGtViZ__pye8id7xZ0kC7CGcgHsRfpFs040Z5E9ZNrumMaKb1jYbLezHApUrxfGRDcdkRiyHf0bs43Qj35l5q67tXGz-hlrSbKsiemZWtkFQURXO27beUcrvIKj6vGPuhwmaacsce84b746RMNnxgOTpUHzsteecKw0EUpyPQNk4QWxfhGEOoc407GZ5dCovenSWxbBeo_cH8m1tPdIY08ZykrjQlnMxR65Dux6ZiKRbdS-dWBxrIZUi6UFv-vkDV4Hzh5nB7bfOXACVoJiMFnCTJIToDulf5vr76DitgVQa6JpC1TzAcWDSfCsnQrIfnCeg4kSpXYTvFytmyBlYbir_r9CY6I5jYhrs-SBSX9YhQCTJ_AIJqcXV2fDy_6g3xtfnY-uehcnYKulg8HZcDgYDcej8954PLy4GD2fgN9V1t5Zf9w7H19eDke94eiq3xs8_wUFDSmw?type=png)](https://mermaid.live/edit#pako:eNqtWG1v2joU_iuRP7dVoUAp37gt06qt27Rxr6YJKXJtA1YTO7OdUdb1v88OIXH8Qkt1-VTO6-Nzjh8f-gQQxwRMABE3FK4EzBcs0Z9SEiGTp90X87n9NK-EKcXJlw-t_L_p1-v306_JkgqpGMyJr8pgTENySLPk30C4Akq54QLvNM8LtvtD8Ix4sIwwBqvSmeRNliZWdZpgwEbjRrWL8O5DGMU7N48gS0HkOlX8gTAfvK19bb796SqnTv3mt3ezb_Pp3ZeEPBZUQEU5c_DkRKA1ZMqDslcci6Lb2_ns-zzBRCJBiza7bS8VVKV0UCGoyIoL6nej1mxjLQ6PlszKVbp39ZtfCI5L5NeglodKYJfHbb6N8eUS7RJR5IgQL010lkrF0UPkSDVA_0QIChWonVDHDLF1fFf1s9Rnp2rrpNV3NMAUlfSYxIeKq7iCWWoVrJs8pYrkMQRaFYLR4HtzAQJ9bGDJNS0KylYpxFhfbunPtGvxaozV7YIZzKHyB0QPkL5AolXczK5v76Yf23SIS-WAVQIyCZG5qh5MS3dUFWPdbNl9mxOtzolac9z1hbm5BnGfIHsI8ouSTYBcjfh_uABV2RHPDQInhaZYtgrCSTFR-n2LodppQ-Ba2EHS3xYu3ZYii5B8el9KyqoJY0su8upBiBJ_x_gYDtxjawJ0QTbQ4aP2jEFFRCi6pKjCKFPIcAo3UOD4Q9XxeAtefZ-zAE4qZUlwer-NQS14RlHgreoabN8CqfaMFLDF64OKjJujfwsmTGWRwW3aPmN-dskR1TSdE0xhmlH2EAdSmx4C0mIN1iiDykzzi9dAZjT0PO3Exy0UNIcr9_D3kLFA-J34deFvpvOZ2Yj0O431EuEoiL4DXfE_nz9_nE0_6RFNDTH_IoGtViZ__pye8id7xZ0kC7CGcgHsRfpFs040Z5E9ZNrumMaKb1jYbLezHApUrxfGRDcdkRiyHf0bs43Qj35l5q67tXGz-hlrSbKsiemZWtkFQURXO27beUcrvIKj6vGPuhwmaacsce84b746RMNnxgOTpUHzsteecKw0EUpyPQNk4QWxfhGEOoc407GZ5dCovenSWxbBeo_cH8m1tPdIY08ZykrjQlnMxR65Dux6ZiKRbdS-dWBxrIZUi6UFv-vkDV4Hzh5nB7bfOXACVoJiMFnCTJIToDulf5vr76DitgVQa6JpC1TzAcWDSfCsnQrIfnCeg4kSpXYTvFytmyBlYbir_r9CY6I5jYhrs-SBSX9YhQCTJ_AIJqcXV2fDy_6g3xtfnY-uehcnYKulg8HZcDgYDcej8954PLy4GD2fgN9V1t5Zf9w7H19eDke94eiq3xs8_wUFDSmw)
+## ⚖️ Technical Decisions & Trade-offs
+
+**gRPC + Protobuf vs plain REST between modules**
+Typed, versioned contracts; binary + HTTP/2 is lighter and faster than JSON for internal calls; the generated code keeps every consumer compiling against the same schema. The costs: payloads are not human-readable in transit (inspect with `grpcurl` or the gateway), no browser can call it directly, and schema evolution must stay backward-compatible (add fields, never rename) or every downstream service breaks at once.
+
+**REST gateway (Echo) in front of gRPC**
+External clients keep a friendly JSON/HTTP surface plus Swaggo-generated docs, while the core logic speaks gRPC. The trade-off: a second code path to maintain, and gRPC status codes have to be mapped to HTTP semantics deliberately — error handling now exists in two dialects.
+
+**sqlc vs an ORM**
+sqlc generates type-safe Go code from hand-written SQL: no reflection, no magic query building, and the queries are explicit and easy to audit with `EXPLAIN`. The cost is that every query is written by hand and schema changes need a code-generation step — upfront work that buys the predictable performance the load tests below care about.
+
+**Goose migrations vs auto-migration**
+Version-controlled, ordered migrations: reviewable in PRs and safe to run in production; auto-migration's habit of silently altering (or dropping) columns never applies. The trade-off: every schema change needs a new migration file, and dev/prod databases must apply the same set in order or they drift.
+
+**Service-oriented monolith, not microservices**
+The honest positioning: modules are separated by gRPC contracts, but it's one deployable plus a gateway. You get contract discipline and a clear path to split services later, without paying for service discovery, distributed transactions, or multi-service CI/CD. The cost: one shared process lifecycle and one Postgres — schema coupling remains, and scaling is coarse-grained.
+
+**Load testing as a design tool (and its trade-off)**
+Running capability/load/stress/spike profiles with k6 is what surfaces the numbers in the tables below: the user module hits a 25% error rate under sustained load (a consistently failing `GET /user/41`), while the role module holds near zero errors at 1500 VUs. Stress testing deliberately breaks the system to find where — the trade-off is that the results document a real limit (likely the DB connection pool or a missing index on that user query), which is valuable to publish but requires fixing before the system is called production-ready.
+
 
 ## 🚀 Getting Started
 

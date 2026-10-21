@@ -2,6 +2,8 @@
 title: "PIERO AI-ERP Platform — Multi-Module Observable Reactive ERP & MLOps Engine"
 excerpt: "An enterprise-grade, production-scale AI-Native Manufacturing ERP & MLOps Orchestration platform bridging transactional workflows with adaptive, real-time auditable pipelines."
 date: "2026-05-29"
+created_at: "2026-05-29"
+updated_at: "2026-05-29"
 tags: [
   "java",
   "quarkus",
@@ -300,6 +302,25 @@ The client cockpit dashboard (`/ai-dashboard.html`) is built as a responsive, lo
 * **Visual Ergonomics:** Soft warm colors off-white (`#f5f7fa`) with Slate-800 text reduce ocular fatigue for operators during long operational shifts.
 * **Mock Data Seeding:** Integrates a preloaded seeding switch that automatically initializes test cases for demo purposes.
 * **Deep Telemetry Integration:** Displays real-time **Trace ID** and **Span ID** values mapped through OpenTelemetry context propagation, enabling operators to instantly trace actions from the UI down to specific PostgreSQL database transactions.
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Quarkus modular monolith vs microservices**
+Keeping Manufacturing, Purchasing, Approval, Inventory, and Costing as DDD-bounded Maven modules inside one Quarkus deployable preserves transactional integrity across ERP flows and avoids the operational tax of a dozen services. The trade-off is coupled deployment: one module's regression ships with every release, and hot domains cannot scale independently.
+
+**Java transactions and Python ML behind a gRPC bridge**
+Splitting the transactional core (Java 21) from model serving (FastAPI) lets each side use its native ecosystem, but it creates a hard network boundary with serialization overhead, a second deployment unit, and schema drift risk between bridge contracts on both sides. The Vert.x event bus keeps routing reactive, yet the seam still needs deliberate versioning discipline.
+
+**Feast's dual PostgreSQL-Redis feature store**
+Materializing features into Redis for online inference while PostgreSQL holds offline training data is the standard answer to training-serving skew, and point-in-time-correct joins make leaky training sets far less likely. The cost is real: two stores to keep in sync, a materialization pipeline that can lag, and sub-millisecond online reads that are only as fresh as the last sync.
+
+**PSI-triggered retraining with a human-gated closed loop**
+Using Population Stability Index drift (thresholds around 0.20) to trigger MLflow retraining keeps models honest as manufacturing data shifts, and the agentic loop writes draft Purchase Orders rather than committing them. That human approval gate is deliberate: full autonomy in purchasing is a credibility and compliance risk no SHAP narrative fully retires, at the price of the loop stalling whenever no operator is available.
+
+**XGBoost, Tree SHAP, and LoRA-tuned Qwen over larger or hosted models**
+Tree SHAP turns each delay prediction into an explanation an operator can act on, and locally served XGBoost plus a LoRA-adapted Qwen 2.5 keeps inference cheap and data in-house. The trade-off is a capability ceiling: small local models and a SQLite-backed MLflow registry are fine at plant-floor scale but would need real replacements — managed registries, stronger models — before growing beyond it.
 
 ---
 

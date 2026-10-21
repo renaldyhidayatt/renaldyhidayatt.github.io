@@ -2,6 +2,8 @@
 title: "Spring Boot Payment Gateway API"
 excerpt: "API Payment Gateway tangguh yang dibangun dengan Java 21, Spring Boot, Spring Security & JWT, PostgreSQL, dan didokumentasikan menggunakan Swagger OpenAPI."
 date: "2026-05-21"
+created_at: "2026-05-21"
+updated_at: "2026-05-21"
 tags: ["java", "springboot", "springsecurity", "jwt", "postgresql", "maven", "swagger", "openapi"]
 status: "selesai"
 image: "/portofolio/SpringBootPaymentGateway/SpringBootPaymentGateway.png"
@@ -182,6 +184,28 @@ erDiagram
     CARDS ||--o{ TRANSACTIONS : made
     MERCHANTS ||--o{ TRANSACTIONS : receives
 ```
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Spring Boot on the JVM vs lighter stacks**
+For a payment API the argument is less about raw throughput and more about correctness tooling: declarative transactions, a mature security filter chain, and a consistent configuration model reduce the chance of hand-rolled mistakes in money paths. The trade is a heavyweight runtime — hundreds of megabytes of RAM before serving the first request — and configuration ceremony that Go or Node would not impose. For a system whose bottleneck is trust rather than speed, that trade is easy to defend.
+
+**Spring Data JPA (Hibernate) over hand-written SQL**
+Entities and repositories keep persistence consistent across users, cards, merchants, and the movement tables, and transactional method boundaries come nearly free. The cost: Hibernate hides the exact SQL and locking behavior, which is precisely where payment bugs live — a missing lock on a balance row or an unintended flush order is invisible at the code level. Worth it at this scale, but it demands discipline around transaction boundaries.
+
+**PostgreSQL as the ledger**
+Every movement — topup, transfer, withdrawal, merchant payment — is its own row with a UUID reference number and a status column, which is the right shape for an audit trail: foreign keys tie movements to cards, and ACID commits make a half-applied transfer impossible at the storage layer. The trade-off is write amplification (each balance change produces movement rows plus a saldo update) and a schema that must be migrated carefully, because financial columns are the hardest thing in the system to change.
+
+**JWT plus RBAC in a money API**
+Stateless tokens scale horizontally and keep the contract clean for third-party integrators using merchant API keys, while role checks gate the sensitive admin, merchant, and user endpoints. The honest weakness: bearer tokens cannot be instantly revoked, and in a payment system a leaked token with minutes of validity is a bigger deal than on a content site. Refresh-token rotation narrows the window; closing it requires token introspection or very short TTLs, both of which cost infrastructure.
+
+**One deployable vs service-per-domain**
+Auth, cards, saldo, topups, transfers, withdrawals, and merchants run in a single Spring Boot process, so a transfer can debit one card and credit another inside one local database transaction — the exact operation that becomes a saga once services split. The cost is a shared failure domain and no per-domain scaling, acceptable while the whole system fits one database.
+
+**Idempotency and balance consistency (the core domain risk)**
+Each operation carries a unique reference — topup_no, withdraw_no, transfer_no, transaction_no — which is the foundation for idempotent retries instead of double charges. What the implementation still has to guarantee is conditional balance mutation: saldo updates need a row lock or an atomic compare-and-update that rejects insufficient funds, because two concurrent transfers against one card will race otherwise. The status columns also imply a reconciliation story for movements stuck in a non-final state — a defined retry or expiry path, not just a row that sits there.
 
 ---
 

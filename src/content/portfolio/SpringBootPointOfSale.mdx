@@ -2,6 +2,8 @@
 title: "Spring Boot Point of Sale API"
 excerpt: "API Point of Sale komprehensif yang dibangun dengan Java 21, Spring Boot, Spring Security & JWT, PostgreSQL, dan didokumentasikan menggunakan Swagger OpenAPI."
 date: "2026-05-21"
+created_at: "2026-05-21"
+updated_at: "2026-05-21"
 tags: ["java", "springboot", "springsecurity", "jwt", "postgresql", "maven", "swagger", "openapi"]
 status: "selesai"
 image: "/portofolio/SpringBootPointOfSale/SpringBootPointOfSale.png"
@@ -163,6 +165,28 @@ erDiagram
     CASHIERS ||--|{ ORDERS : creates
     PRODUCTS ||--o{ ORDER_ITEMS : in
 ```
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Spring Boot and the JVM vs lighter stacks**
+A POS backend is CRUD plus transactions, which is exactly the workload Spring Boot is built for: Spring Security for the admin, merchant, and cashier role model, Springdoc for the Swagger UI a register client would be developed against, and one consistent repository layer. The cost is a JVM process idling at a memory level a Go binary would not reach, plus generous boilerplate. For a back-office API where correctness and documentation matter more than cold starts, the trade is reasonable.
+
+**Spring Data JPA (Hibernate) vs SQL-first development**
+Entities mirror the schema — merchants, cashiers, products, orders, order items, transactions — and repositories remove most hand-written persistence code. The trade-off is that Hibernate decides when stock decrements and totals actually hit the database, and a wrong flush order can silently change which value wins. Keeping writes short and explicitly transactional is the discipline that makes the abstraction safe here.
+
+**PostgreSQL vs lighter storage options**
+Checkout is a multi-table write: create the order, decompose order items, record a transaction with amount and change, all under one ACID commit. PostgreSQL also enforces the foreign keys between merchants, cashiers, products, and orders that keep per-merchant reporting trustworthy. The cost is running and backing up a real database server where an embedded store would be simpler — justified, because sales records are exactly the data you cannot afford to lose or corrupt.
+
+**JWT roles on shared register hardware**
+Stateless tokens fit POS clients that reconnect often and should not need server-side session affinity, and RBAC keeps a cashier token away from merchant and admin endpoints. The weak spot is revocation: a cashier token stays valid until expiry even if the employee is deactivated mid-shift, and refresh tokens only shorten that window when rotation is enforced. For internal staff devices the blast radius is contained, but it is a real limitation to design around.
+
+**Single service vs splitting merchant, catalog, and sales**
+Everything from product management to transaction processing runs in one deployable, so an order and its stock update commit atomically in one database transaction — no sagas, no eventual consistency in the checkout path. What is lost is isolation: a heavy admin report can slow the register lane, and the whole API redeploys as one unit. At the scale of a handful of merchants per instance, that is the right trade.
+
+**Cash handling and register integrity (the core domain risk)**
+Transactions store the paid amount and a computed change amount, which moves cash math into application code — change must be validated against the amount paid inside the same transaction that records the sale, or the till drifts. Attribution matters just as much: every order carries a cashier id so end-of-day reconciliation is possible, but only if voids and failed payments are persisted as first-class records rather than silent edits. A POS that lets a sale and its payment record diverge is worse than one that refuses the sale.
 
 ---
 

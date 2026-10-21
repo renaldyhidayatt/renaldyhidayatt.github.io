@@ -2,6 +2,8 @@
 title: "Example Payment Gateway Salvo + SeaORM"
 excerpt: "A payment gateway example using Salvo, SeaORM, and Docker Compose."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["rust", "salvo", "sea-orm", "docker-compose", "postgres"]
 status: "selesai"
 image: "https://github.com/MamangRust/payment-gateway-salvo/raw/main/images/example.png?raw=true"
@@ -39,8 +41,22 @@ sea-orm-cli migrate up
 sea-orm-cli migrate down
 ```
 
+## Technical Decisions & Trade-offs
 
+**Salvo instead of the mainstream Actix-web or Axum picks**
+Salvo offers a compact API, macro-based routing, and a wide set of built-in middleware, which keeps a small service tidy with few external dependencies. The honest cost is ecosystem weight: a much smaller community than Axum or Actix-web means fewer examples, fewer third-party middleware, and more problems solved by reading the source. Choosing it is the point of the exercise - finding out how far a less-mainstream framework carries a real domain before the missing ecosystem starts to hurt.
 
+**SeaORM as the data layer**
+The gateway tables are modeled as typed entities with relations, so most query errors are caught at compile time rather than in production SQL. That is considerably less work than hand-writing queries for CRUD-heavy endpoints. The cost is a layer of generated SQL to trust and occasionally inspect, and less of a raw-SQL escape-hatch culture than SQLx.
+
+**sea-orm-cli for schema and entities**
+Migrations run up and down through the CLI, and entities are generated from the database rather than maintained by hand, keeping the schema authoritative and boilerplate low. The discipline cost: every migration must be followed by entity regeneration, or the code drifts from the database with only runtime errors to show for it.
+
+**PostgreSQL for the money tables**
+The domain is balances and transaction history, which demands ACID transactions and referential integrity. The trade-off is schema rigidity and a migration on every model change. Alternatives give up exactly the guarantees payment data cannot give up, so the choice is easy even though the schema becomes a contract.
+
+**Docker Compose and a deliberately minimal scope**
+One command brings up the database and the service identically everywhere, and the repository stops at the framework skeleton - routing, ORM wiring, migrations - rather than deep payment machinery. The trade-off is that it demonstrates integration, not production hardening. Keeping it small is what makes the comparison against the Actix-web and Axum siblings meaningful.
 
 ## 🔗 Source Code & Repository
 [📌 View on GitHub](https://github.com/MamangRust/payment-gateway-salvo)

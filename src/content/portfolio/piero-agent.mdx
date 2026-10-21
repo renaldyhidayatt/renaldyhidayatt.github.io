@@ -2,6 +2,8 @@
 title: "PIERO Master Orchestration Agent"
 excerpt: "The core runtime daemon responsible for host-level security orchestration, dynamic eBPF driver injection, PID self-immunity enforcement, and real-time cognitive system intelligence analysis."
 date: "2026-02-10"
+created_at: "2026-02-10"
+updated_at: "2026-02-10"
 tags:
   - rust
   - ebpf
@@ -72,6 +74,25 @@ Provides continuous visibility into software integrity and dependency vulnerabil
 - **Policy Engine**: Open Policy Agent (OPA) with Rego policy language
 - **Communication Protocol**: Low-latency gRPC telemetry synchronization
 - **System Integration**: systemd watchdog for high-availability daemon supervision
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Kernel-resident eBPF/XDP sensors vs user-space agents**
+Injecting more than 32 sensor drivers directly into the kernel buys visibility no user-space agent can match — syscalls, packet paths, and privilege transitions are seen at the source. The cost is that a buggy sensor can destabilize the whole host rather than one process, which is why the agent carries an explicit map-clearing and stale-XDP cleanup layer: a security tool that bricks the machine on a bad deploy is worse than no tool.
+
+**PID self-immunity vs enforcement completeness**
+Locking the agent's own PIDs, threads, and parent processes into a kernel immunity map prevents the classic feedback loop where the security tool blocks its own telemetry and looks like an attack in progress. The trade-off is deliberate: that allowlist is also a bypass channel, so whatever can write to the immunity map effectively mutes enforcement — the map's write access is the real trust boundary, not the agent binary.
+
+**OPA/Rego for policy decisions**
+Declarative Rego policies mean enforcement rules change without recompiling the Rust daemon, and policies stay auditable as data instead of buried in code. The price is an extra evaluation hop on every decision and a policy language with a real learning curve; at single-host scale the flexibility is worth it, but Rego evaluation is the first thing to profile under load.
+
+**Trust decay on a fixed 10-second clock**
+Atomically degrading trust scores every 10 seconds lets anomalies fade naturally instead of leaving a host permanently flagged after one false positive. The flip side is that a patient attacker can simply idle and watch the score recover, so decay has to be paired with hard invariants that never decay — the system buys forgiveness at the cost of some persistence against slow attacks.
+
+**Continuous SBOM generation and OSV matching**
+Periodically rebuilding an SPDX JSON bill of materials and matching it against OSV catches vulnerable dependencies while they are still deployed, not at the next scheduled audit. The cost is periodic CPU spend and a noisy match stream when many packages share fingerprints; for a fleet-wide security anchor, live exposure data outweighs the noise.
 
 ---
 

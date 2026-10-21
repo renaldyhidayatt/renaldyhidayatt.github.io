@@ -9,3 +9,6 @@ export declare const posts: Post[]
 
 export type Portofolio = Collections['portofolio']['schema']['_output']
 export declare const portofolio: Portofolio[]
+
+export type Cheatsheet = Collections['cheatsheet']['schema']['_output']
+export declare const cheatsheet: Cheatsheet[]

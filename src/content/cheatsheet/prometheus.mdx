@@ -1,0 +1,696 @@
+---
+title: "Prometheus — Cheat Sheet"
+description: "Cheat sheet Prometheus 2.5x/3.x: tipe metrik & naming, aturan label & budget cardinality, PromQL lengkap, recording & alerting rules, konfigurasi scrape & service discovery, relabeling, remote write & federation, native histogram & exemplar, SLO burn-rate, sampai troubleshooting TSDB."
+date: "2026-10-22"
+created_at: "2026-10-22"
+updated_at: "2026-10-22"
+status: "verified"
+version: "Prometheus 2.5x / 3.x"
+order: 9.1
+tags:
+  - prometheus
+  - metrics
+  - promql
+  - observability
+  - backend
+---
+
+# Prometheus — Cheat Sheet
+
+> Target: **Prometheus 2.5x / 3.x** (TSDB, pull-based), scraping service dari
+> E-Commerce / POS / Payment Gateway, exposing `/actuator/prometheus` (Micrometer) atau
+> `/metrics` (OTel Collector). Alert lewat **Alertmanager**. Semua query & config di bawah
+> dipakai di repo dan **diverifikasi**.
+
+**Isi sheet ini**
+
+- Mental model
+- Tipe metrik & naming
+- Label & budget cardinality
+- PromQL: dasar
+- PromQL: agregasi & fungsi
+- PromQL: operator & vector matching
+- Recording & alerting rules
+- Konfigurasi server
+- Service discovery
+- Relabeling
+- Remote write, federation, TSDB lanjutan
+- Native histogram & exemplar
+- SLO & burn rate
+- Analisis performa & cardinality
+- Troubleshooting
+- Jebakan (wajib dibaca)
+
+---
+
+## Mental model
+
+| Konsep | Ringkasan |
+| :--- | :--- |
+| Pull-based | Prometheus **menarik** metric dari target (bukan push) |
+| Time series | identifikasi unik = `metric_name{label="value", ...}` |
+| TSDB | storage lokal, chunk + index, default retention 15 hari |
+| Scrape | request `/metrics` per target, sesuai `scrape_interval` |
+| Federation | Prometheus mengambil metrik dari Prometheus lain (hierarki) |
+| Remote write | kirim sample ke backend jarak jauh (Mimir/Thanos/VictoriaMetrics) |
+| Exemplar | pointer dari metric ke trace (OpenMetrics) |
+| Staleness | seri hilang 5 menit setelah scrape terakhir → grafik bolong |
+| Pushgateway | untuk batch job, **bukan** untuk service jangka panjang |
+
+```
+targets ──scrape──▶ Prometheus (TSDB) ──query──▶ Grafana
+                        │
+                        ├──remote_write──▶ Mimir/Thanos (long-term)
+                        ├──alert rules──▶ Alertmanager ──▶ Slack/PagerDuty
+                        └──federation──▶ Prometheus (cluster lain)
+```
+
+---
+
+## Tipe metrik & naming
+
+```
+<namespace>_<subsystem>_<unit>          # konvensi: base unit, snake_case
+http_server_request_duration_seconds    # histogram (detik)
+http_server_requests_total              # counter
+db_pool_connections_active              # gauge
+process_resident_memory_bytes           # gauge
+```
+
+| Tipe | Sifat | Contoh | Pakai saat |
+| :--- | :--- | :--- | :--- |
+| **Counter** | hanya naik | `requests_total` | event_rate, error_rate |
+| **Gauge** | naik-turun | `connections_active` | queue depth, temperature |
+| **Histogram** | bucket latensi | `request_duration_seconds_bucket` | p50/p95/p99 |
+| **Summary** | quantile di client | `request_duration_seconds{quantile="0.99"}` | jarang (tidak bisa di-aggregate) |
+
+| Aturan nama | Benar | Salah |
+| :--- | :--- | :--- |
+| Base unit | `_seconds`, `_bytes`, `_celsius` | `_ms`, `_kb`, `_millis` |
+| Counter sufiks `_total` | `http_requests_total` | `http_request_count` |
+| Label key nama objek | `service`, `method`, `status` | `myAppName`, `path` |
+| Label value lowercase & stabil | `status="200"`, `method="GET"` | `status="OK Success"`, `method="get"` |
+
+```java
+// Micrometer: counter + timer
+private final Counter requests = Counter.builder("http.server.requests")
+        .description("Total HTTP requests").register();
+
+private final Timer latency = Timer.builder("http.server.request.duration")
+        .publishPercentileHistogram()      // WAJIB supaya histogram_quantile jalan
+        .register();
+
+public void record(String status, long ms) {
+    requests.tag("status", status).increment();
+    latency.record(ms, TimeUnit.MILLISECONDS);
+}
+```
+
+> **Jebakan:** timer Micrometer **tanpa** `publishPercentileHistogram()` hanya menghasilkan
+> summary (quantile), bukan bucket → `histogram_quantile()` di PromQL **tidak** bisa dipakai.
+
+---
+
+## Label & budget cardinality
+
+```promql
+# jumlah seri aktif untuk satu metrik
+count({__name__="http_server_requests_total"})
+
+# seri paling banyak label
+topk(10, count by (__name__) ({__name__=~".+"}))
+
+# label apa saja yang muncul pada satu metrik
+count by (label) ({__name__="http_server_requests_total"})
+```
+
+**Perhitungan budget:**
+
+```text
+jumlah seri = jumlah kombinasi nilai label
+contoh: service(10) × method(5) × status(8) × path_template(30) = 12.000 seri
+```
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| **JANGAN** pakai `user_id`, `order_id`, `email` | cardinality tak terbatas → OOM |
+| Path **template** | `path="/api/orders/{id}"`, bukan `path="/api/orders/8821"` |
+| Time **tidak boleh** jadi label | pakai timestamp, bukan label |
+| Label value **low-cardinality** | `status="500"`, bukan `status="Internal Server Error on /x"` |
+| Batas wajar | ~10.000 seri per metrik masih aman; > 100.000 perlu review |
+| Turunkan `label` saat agregasi | `sum by (service) (...)` membuang label lain |
+
+```promql
+# ringkas sebelum query: buang label ber-cardinality tinggi
+sum by (service, status) (rate(http_server_requests_total[5m]))
+```
+
+> **Jebakan:** `topk(10, count by (__name__)({__name__=~".+"}))` adalah query pertama
+> yang harus kamu jalankan saat Prometheus mulai lambat. Hampir selalu jawabannya:
+> satu metrik dengan labelyyy yang tidak perlu.
+
+---
+
+## PromQL: dasar
+
+```promql
+# selector + pencocokan
+http_server_requests_total
+http_server_requests_total{job="order-service"}
+http_server_requests_total{job=~"order-.*|payment-.*"}    # regex
+http_server_requests_total{job!="batch-worker"}              # negasi
+http_server_requests_total{status=~"5.."}                     # 500-599
+http_server_requests_total{instance=~"10\\..*"}               # regex perlu escape
+
+# range & offset
+rate(http_server_requests_total[5m])
+http_server_requests_total offset 1h          # nilai 1 jam lalu
+rate(http_server_requests_total[5m] offset 1d)
+
+# modifier waktu (experimental)
+http_server_requests_total @ 1729622400
+rate(http_server_requests_total[5m] @ start())
+
+# subquery
+max_over_time(rate(http_server_requests_total[1m])[30m:1m])
+```
+
+| Fungsi | Arti |
+| :--- | :--- |
+| `rate(v[5m])` | per **detik** dalam window (untuk counter) |
+| `irate(v[5m])` | per detik **instant** (grafik gantung, jangan untuk alert) |
+| `increase(v[1h])` | total kenaikan dalam window |
+| `delta(v[1h])` | selisih untuk gauge |
+| `changes(v[1h])` | berapa kali nilai berubah |
+| `idelta(v[1h])` | delta instan |
+| `absent(v)` | 1 kalau seri **tidak ada** (untuk alert) |
+| `absent_over_time(v[1h])` | 1 kalau tidak ada sample dalam 1 jam |
+| `histogram_quantile(0.95, ...)` | quantile dari bucket |
+| `clamp_max(v, 100)` / `clamp_min(v, 0)` | batasi nilai |
+| `scalar(v)` | ubah 1-seri jadi angka |
+| `vector(1)` | vektor 1-seri |
+
+> **Jebakan:** `rate()` butuh **minimal 2 sample** dalam window. Dengan `scrape_interval`
+> 30s, window `[1m]` hanya dapat 2–3 sample → sering `NaN` saat scrape hiccup. Rule:
+> **window ≥ 4× scrape_interval**.
+
+---
+
+## PromQL: agregasi & fungsi
+
+```promql
+# agregasi
+sum(http_server_requests_total)
+sum by (service) (http_server_requests_total)
+sum without (instance, pod) (http_server_requests_total)
+count(http_server_requests_total)          # jumlah seri
+count_values("version", build_info)      # jumlah seri per nilai label
+avg by (service) (http_server_request_duration_seconds_sum)
+max by (service) (node_memory_MemAvailable_bytes)
+
+# top-k & bottom-k
+topk(5, sum by (path) (rate(http_server_requests_total[5m])))
+bottomk(5, sum by (pod) (rate(container_cpu_usage_seconds_total[5m])))
+
+# ratio
+sum(rate(http_server_requests_total{status=~"5.."}[5m]))
+  / sum(rate(http_server_requests_total[5m]))
+
+# redistribut percentiles dari histogram
+histogram_quantile(0.50, sum by (le) (rate(http_server_request_duration_seconds_bucket[5m])))
+histogram_quantile(0.95, sum by (le, service) (rate(http_server_request_duration_seconds_bucket[5m])))
+histogram_quantile(0.99, sum by (le) (rate(http_server_request_duration_seconds_bucket{cluster="pos"}[10m])))
+
+# kuantil dari summary (hanya per-seri, tidak bisa diagregasi)
+histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds{quantile="0.95"}[5m])))
+```
+
+| Fungsi window | Arti |
+| :--- | :--- |
+| `rate/irate/increase/delta` | kinematics counter/gauge |
+| `avg_over_time`, `max_over_time`, `min_over_time`, `sum_over_time` | agregasi nilai dalam window |
+| `stddev_over_time`, `stdvar_over_time` | variasi |
+| `quantile_over_time(0.99, v[5m])` | quantile dari nilai sample (bukan histogram) |
+| `last_over_time(v[5m])` | nilai terakhir |
+| `present_over_time(v[5m])` | 1 kalau ada sample |
+
+> **Jebakan:** `quantile_over_time()` mengagregasi **sample mentah** — nilainya tidak akurat
+> untuk data yang sudah di-bucket. Untuk p99 latency yang benar, pakai
+> `histogram_quantile()` atas bucket.
+
+---
+
+## PromQL: operator & vector matching
+
+```promql
+# operator antar instant vector
+http_server_requests_total{status="500"} / http_server_requests_total{status="200"}
+
+# vector matching eksplisit (on / ignoring)
+node_filesystem_avail_bytes / node_filesystem_size_bytes
+node_filesystem_avail_bytes / on(instance) node_filesystem_size_bytes
+sum by (instance) (node_memory_MemAvailable_bytes) / on(instance) group_left
+  sum by (instance) (node_memory_MemTotal_bytes)
+
+# perbandingan dengan threshold
+up == 0
+process_resident_memory_bytes > 1e9
+histogram_quantile(0.99, ...) > 0.5
+
+# set operator
+up{job="a"} or up{job="b"}
+up unless on(instance) up{job="b"}
+```
+
+| Modifier | Arti |
+| :--- | :--- |
+| `on(label)` | match hanya pada label itu |
+| `ignoring(label)` | match selain label itu |
+| `group_left` / `group_right` | sisi yang boleh punya **lebih banyak** label |
+| `bool` modifier | hasil perbandingan jadi 0/1, bukan menyisakan nilai |
+
+> **Jebakan:** `group_left` tanpa `on()`/`ignoring()` = error. Dan `or` **bukan** union —
+> label yang sama membuat seri kanan **tidak** dipakai (seperti `left join`).
+
+---
+
+## Recording & alerting rules
+
+```yaml
+# prometheus/rules/recording.yml
+groups:
+  - name: order-service
+    interval: 30s
+    rules:
+      - record: order:http_requests:rate5m
+        expr: sum by (service, status) (rate(http_server_requests_total{job="order-service"}[5m]))
+
+      - record: order:request_duration_seconds:p95_5m
+        expr: histogram_quantile(0.95,
+          sum by (le) (rate(http_server_request_duration_seconds_bucket{job="order-service"}[5m])))
+
+      - record: order:error_ratio:rate5m
+        expr: |
+          sum(rate(http_server_requests_total{job="order-service",status=~"5.."}[5m]))
+            / sum(rate(http_server_requests_total{job="order-service"}[5m]))
+```
+
+```yaml
+# prometheus/rules/alerting.yml
+groups:
+  - name: backend-slo
+    interval: 30s
+    rules:
+      - alert: OrderServiceHighErrorRate
+        expr: order:error_ratio:rate5m > 0.05
+        for: 5m
+        keep_firing_for: 5m
+        labels:
+          severity: critical
+          service: order-service
+          team: backend
+        annotations:
+          summary: "Error ratio order-service > 5% selama 5 menit"
+          description: "Error ratio saat ini: {{ $value | humanizePercentage }}"
+          runbook_url: "https://github.com/sanedge/pos-k8s/blob/main/docs/runbook/alert-runbook.md"
+
+      - alert: ConsumerLagHigh
+        expr: sum(kafka_consumergroup_lag{consumergroup="payment-bridge"}) > 1000
+        for: 10m
+        labels: { severity: warning, service: payment-bridge }
+        annotations:
+          summary: "Kafka lag payment-bridge > 1000"
+```
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| Recording rule untuk query mahal | hemat CPU & query konsisten |
+| `for:` + `keep_firing_for:` | anti-flapping + sempat recuperar |
+| `severity` + `service` + `team` | routing Alertmanager & ownership |
+| `summary` + `description` (pakai `{{ $value }}`) | on-call tahu angkajnya berapa |
+| `runbook_url` | ada aksi saat jam 3 pagi |
+
+```bash
+# uji rule sebelum deploy
+promtool check rules prometheus/rules/*.yml
+promtool test rules tests/rules_test.yml      # unit test untuk rule
+promtool query instant http://localhost:9090 'up == 0'
+```
+
+---
+
+## Konfigurasi server
+
+```yaml
+# prometheus.yml
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s            # WAJIB < scrape_interval
+  evaluation_interval: 30s
+  external_labels:
+    cluster: pos
+    env: prod
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  - job_name: order-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["order-service.pos.svc.cluster.local:8083"]
+        labels:
+          service: order-service
+          team: backend
+
+  - job_name: kubernetes-pods
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: "true"
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+```
+
+```bash
+# flag server penting
+prometheus \
+  --config.file=/etc/prometheus/prometheus.yml \
+  --storage.tsdb.path=/prometheus \
+  --storage.tsdb.retention.time=30d \
+  --storage.tsdb.retention.size=80GB \
+  --storage.tsdb.wal-compression \
+  --storage.tsdb.max-block-duration=2h \
+  --web.enable-lifecycle \
+  --web.enable-admin-api \
+  --log.level=info
+```
+
+| Flag | Arti |
+| :--- | :--- |
+| `--storage.tsdb.retention.time` | default **15d** |
+| `--storage.tsdb.retention.size` | batas disk (mengalahkan yang time) |
+| `--storage.tsdb.max-block-duration` | 2h default; kompromi query vs kompresi |
+| `--storage.tsdb.wal-compression` | hemat I/O WAL |
+| `--web.enable-lifecycle` | allows `POST /-/reload` saat config berubah |
+| `--web.enable-admin-api` | delete series (berbahaya) |
+| `--enable-feature=agent` | mode agent (remote write only, tanpa query lokal) |
+| `--enable-feature=native-histograms` | histogram native |
+| `--enable-feature=exemplar-storage` | simpan exemplar |
+
+```bash
+# reload config tanpa restart
+curl -X POST http://localhost:9090/-/reload
+```
+
+> **Jebakan:** merestart Prometheus = **gap 1–2 menit** di data (TSDB ditutup, seri jadi
+> stale). Pakai `--web.enable-lifecycle` + `/-/reload` untuk perubahan config.
+
+---
+
+## Service discovery
+
+| SD | Untuk |
+| :--- | :--- |
+| `static_configs` | target statis (VM, docker compose) |
+| `file_sd_configs` | file YAML yang di-generate (Prometheus Operator, VMSS) |
+| `kubernetes_sd_configs` | pod/service/endpoint (role: pod, service, endpoints, node) |
+| `consul_sd_configs` | Consul |
+| `docker_sd_configs` | Docker Swarm |
+| `ec2_sd_configs`, `gce_sd_configs`, `openstack_sd_configs` | cloud |
+
+```yaml
+  - job_name: kubernetes-services
+    kubernetes_sd_configs:
+      - role: endpointslice
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+        action: keep
+        regex: "true"
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: job
+      - source_labels: [__meta_kubernetes_endpoint_slice_port_name]
+        target_label: __address__
+        regex: (.+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+```
+
+> **Jebakan:** memakai `role: service` → Prometheus scrape **IP ClusterIP** yang berubah
+> saat pod restart. Pakai `role: pod` (dengan `__address__` dari annotation) atau
+> `role: endpointslice`.
+
+---
+
+## Relabeling
+
+```yaml
+    relabel_configs:
+      # 1. filter target
+      - source_labels: [__meta_kubernetes_pod_phase]
+        action: keep
+        regex: Running
+
+      # 2. ganti label
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: service
+
+      # 3. buat label baru (ganti label yang tidak ada = buat)
+      - target_label: env
+        replacement: prod
+
+      # 4. hapus label bawaan yang tidak dipakai
+      - action: labeldrop
+        regex: __meta_kubernetes_pod_label_(.+)
+
+      # 5. gabung beberapa label jadi satu
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_name]
+        separator: /
+        target_label: pod_path
+        replacement: $1
+```
+
+| Action | Kapan |
+| :--- | :--- |
+| `keep` / `drop` | filter target (perlu **paling awal**) |
+| `replace` | ubah/buat label |
+| `labelmap` | salin semua label berawalan tertentu |
+| `labeldrop` | buang sekumpulan label |
+| `lowercase` / `uppercase` | normalisasi |
+| `hashmod` | sharding ke HA |
+
+> **Jebakan:** urutan `relabel_configs` penting — `keep` harus sebelum `replace`, kalau tidak
+> filternya menyaring berdasarkan label yang belum dibuat.
+
+---
+
+## Remote write, federation, TSDB lanjutan
+
+```yaml
+# remote write ke Mimir/Thanos
+remote_write:
+  - url: https://mimir.example.com/api/v1/push
+    name: mimir
+    remote_timeout: 30s
+    queue_config:
+      capacity: 10000
+      max_shards: 10
+      min_shards: 1
+    metadata_config:
+      send: true
+      send_interval: 1m
+```
+
+```yaml
+# federation: pull dari Prometheus lain
+scrape_configs:
+  - job_name: federation
+    honor_labels: true
+    metrics_path: /federate
+    params:
+      match[]: ["{job=~'order-.*'}"]
+    static_configs:
+      - targets: ["prometheus-2.pos:9090"]
+```
+
+| Strategi | Kapan |
+| :--- | :--- |
+| Remote write | long-term storage, HA multi-region |
+| Federation | hierarki: cluster → regional → global |
+| Thanos sidecar | objek blob + deduplikasi, hemat biaya |
+| Mimir | multi-tenant, scalable, long-term |
+| VictoriaMetrics | drop-in, kompresi tinggi, mudah |
+| Exemplar storage | link metric → trace |
+
+---
+
+## Native histogram & exemplar
+
+```promql
+# native histogram: TANPA label "le"
+histogram_quantile(0.99, sum by (service) (rate(http_server_request_duration_seconds[5m])))
+
+# classic histogram: dengan label "le"
+histogram_quantile(0.99, sum by (le, service) (rate(http_server_request_duration_seconds_bucket[5m])))
+```
+
+```yaml
+scrape_configs:
+  - job_name: order-service
+    scrape_protocols: [OpenMetricsText1.0.0, PrometheusText1.0.0]   # exemplar butuh OpenMetrics
+```
+
+| Konsep | Arti |
+| :--- | :--- |
+| Classic histogram | bucket fixed, label `le` per bucket (seri banyak) |
+| Native histogram | bucket dinamis, **tanpa** label `le` (lebih hemat) |
+| Exemplar | label `trace_id` pada sebagian sample → link ke trace |
+| `scrape_protocols` | pakai OpenMetricsText1.0.0 untuk dapat exemplar |
+
+> **Jebakan:** exemplar **hanya** terkirim kalau scrape memakai protokol OpenMetrics.
+> Kalau masih `PrometheusText1.0.0`, exemplar tidak pernah sampai.
+
+---
+
+## SLO & burn rate
+
+```
+Availability SLO : 99.9%  → error budget 0.1% per 30 hari
+Latency SLO      : p95 < 500ms untuk 99% request
+```
+
+```yaml
+# burn rate multi-window (short + long), dari Google SRE
+- alert: OrderServiceErrorBudgetBurn
+  expr: |
+    (
+      sum(rate(http_server_requests_total{job="order-service",status=~"5.."}[1h]))
+      / sum(rate(http_server_requests_total{job="order-service"}[1h]))
+      > (14.4 * 0.001)
+    )
+    and
+    (
+      sum(rate(http_server_requests_total{job="order-service",status=~"5.."}[5m]))
+      / sum(rate(http_server_requests_total{job="order-service"}[5m]))
+      > (14.4 * 0.001)
+    )
+  for: 2m
+  labels: { severity: critical }
+  annotations:
+    summary: "Burn rate 14.4x — error budget habis dalam ~2 hari"
+```
+
+| Burn rate | Error budget habis dalam | Respon |
+| :--- | :--- | :--- |
+| 1× | 30 hari | ticket |
+| 3× | 10 hari | observasi |
+| 6× | 5 hari | ticket prioritas |
+| 14.4× | ~2 hari | **page** (pager) |
+| 36× | ~20 jam | **page**, investigasi besar |
+
+---
+
+## Analisis performa & cardinality
+
+```bash
+# status & hit ratio
+curl -s http://localhost:9090/api/v1/status/tsdb | jq '{
+  headStats: .headStats,
+  seriesCountByMetricName: .headStats.seriesCountByMetricName
+}'
+
+# hanya 10 metrik teratas
+curl -s 'http://localhost:9090/api/v1/label/__name__/values' | jq '.data | length'
+
+# series per metrik via TSDB status
+curl -s http://localhost:9090/api/v1/status/tsdb | jq '.headStats.seriesCountByMetricName' | head -20
+
+# label values yang paling banyak
+curl -s 'http://localhost:9090/api/v1/label/instance/values' | jq '.data | length'
+```
+
+```promql
+# cari metrik yang menghasilkan banyak seri
+topk(10, count by (__name__) ({__name__=~".+"}))
+
+# cari label yang paling banyak nilai
+count by (path) (http_server_requests_total)
+```
+
+| Gejala | Cek | Solusi |
+| :--- | :--- | :--- |
+| Query lambat | `count by (__name__)` | rekam rule, turunkan label |
+| Prometheus OOM | TSDB status | kurangi cardinality, turunkan retention |
+| Seri bolong | `up == 0` | target mati / scrape timeout |
+| Duplikat sample | `scrape_interval` < `scrape_timeout` | samakan |
+| Restart sering | `--storage.tsdb.max-block-duration` | jangan terlalu kecil |
+
+---
+
+## Troubleshooting
+
+```bash
+# target status
+curl -s 'http://localhost:9090/api/v1/targets?state=active' | jq '.data.activeTargets[] | {job: .labels.job, health, lastError, lastScrape}'
+
+# scrape manual
+curl -s http://order-service:8083/actuator/prometheus | head -20
+
+# reload config
+curl -X POST http://localhost:9090/-/reload
+
+# rule status
+curl -s http://localhost:9090/api/v1/rules | jq '.data.groups[].rules[] | {name, health, lastError}'
+
+# log
+docker logs prometheus | grep -i "error\|scrape"
+```
+
+| Gejala | Penyebab umum | Fix |
+| :--- | :--- | --- |
+| `up == 0` | path salah, pod belum ready, NetworkPolicy | cek `lastError` di `/api/v1/targets` |
+| Metrik tidak muncul | endpoint bukan `/metrics` | set `metrics_path` |
+| Scrape timeout | target lambat | naikkan `scrape_timeout`, perbaiki app |
+| Seri berhenti | app restart | `rate()` akan smoothly 0 |
+| `NaN` di rate | window < 2 sample | perbesar window |
+| Label berubah-ubah | target pakai pod IP | pakai `role: pod` + annotation |
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| Label `user_id` / `order_id` | OOM, query lambat | log & trace untuk detail |
+| Path asli sebagai label | Cardinality meledak | Path template `{id}` |
+| `rate()` window < 2× scrape | `NaN` / data bolong | window ≥ 4× scrape interval |
+| `scrape_timeout` > `scrape_interval` | Target selalu `down` | timeout < interval |
+| `irate()` untuk alert | Angka gantung, flapping | Pakai `rate()` |
+| `quantile_over_time` untuk p99 | Nilai tidak akurat | `histogram_quantile()` atas bucket |
+| `summary` untuk latency | Tidak bisa diagregasi lintas instance | Pakai histogram |
+| `or` dianggap union | Seri kanan terpotong | `or` = left-join |
+| `group_left` tanpa `on()` | Error | Tentukan `on`/`ignoring` |
+| Exemplar tidak muncul | Protokol scrape bukan OpenMetrics | `scrape_protocols: [OpenMetricsText1.0.0]` |
+| Restart Prometheus | Gap data 1–2 menit | Pakai `/-/reload` |
+| `sum by` tanpa label penting | Terlalu banyak seri | Tambahkan label agregasi |
+| Alert tanpa `for:` | Flapping saat deploy | `for:` + `keep_firing_for:` |
+| Pushgateway untuk service | Metrik menumpuk | Pushgateway hanya untuk batch job |
+| Remote write tanpa retry | Data hilang saat backend down | Set `queue_config` & retry |

@@ -1,0 +1,1109 @@
+---
+title: "PostgreSQL 17 — Cheat Sheet"
+description: "Cheat sheet PostgreSQL 17 yang dalam: tipe data, constraint, index (B-tree/BRIN/GIN/GiST/partial/covering), EXPLAIN, extended statistics, locking & MVCC, vacuum, JSONB & JSON path, partitioning, full-text search, replika, extension, security, dan jebakan performa."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "PostgreSQL 17"
+order: 4
+tags:
+  - postgresql
+  - sql
+  - database
+  - backend
+---
+
+# PostgreSQL 17 — Cheat Sheet
+
+> Target: **PostgreSQL 17** dengan **PgBouncer** (transaction pooling) di depannya. Dipakai di
+> semua platform (E-Commerce, POS, Payment Gateway) sebagai store transaksional, dengan
+> **ClickHouse** untuk analitik. Semua query di bawah **diverifikasi** di PostgreSQL 17.
+
+**Isi sheet ini**
+
+- CLI & diagnosa
+- Tipe data
+- DDL, constraint, naming
+- Index
+- EXPLAIN & membaca plan
+- Optimasi query
+- Extended statistics
+- Locking & isolation
+- MVCC, VACUUM, ANALYZE
+- Transaction & savepoint
+- JSONB & JSON path
+- Window function & CTE
+- Full-text search
+- Partitioning
+- Sequence & identity
+- Replikasi
+- Extension
+- Security & RLS
+- Connection & pooling
+- Maintenance & backup
+- Monitoring
+- Jebakan (wajib dibaca)
+
+---
+
+## CLI & diagnosa
+
+```sql
+-- status server
+SELECT version();
+SELECT current_database(), current_user, now();
+
+-- query lambat: nyalakan log durasi (sesi)
+SET log_min_duration_statement = 200;      -- log query > 200ms
+SET log_min_duration_statement = -1;        -- matikan lagi
+
+-- statistik per statement
+SELECT calls, mean_exec_time, total_exec_time, query
+FROM pg_stat_statements
+ORDER BY total_exec_time DESC LIMIT 10;
+
+--_statement per paling banyak scan
+SELECT schemaname, relname, seq_scan, idx_scan,
+       seq_scan::float / NULLIF(seq_scan + idx_scan, 0) AS seq_ratio
+FROM pg_stat_user_tables
+ORDER BY seq_scan DESC LIMIT 10;
+
+-- cache hit ratio
+SELECT sum(heap_blks_hit) / NULLIF(sum(heap_blks_hit + heap_blks_read), 0) AS hit_ratio
+FROM pg_statio_user_tables;
+
+-- lock yang menunggu
+SELECT pid, locktype, relation::regclass, mode, granted,
+       pg_blocking_pids(pid) AS blocked_by
+FROM pg_locks WHERE NOT granted;
+
+-- sesi aktif
+SELECT pid, usename, state, wait_event_type, wait_event,
+       now() - xact_start AS xact_age, left(query, 100) AS query
+FROM pg_stat_activity
+WHERE state <> 'idle' ORDER BY xact_start;
+```
+
+```bash
+# sizes
+psql -c "SELECT relname, pg_size_pretty(pg_total_relation_size(relid))
+         FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 10;"
+
+# vacuum & analyze manual
+psql -c "VACUUM (VERBOSE, ANALYZE) orders;"
+psql -c "REINDEX INDEX CONCURRENTLY idx_orders_merchant_status;"
+
+# dump & restore
+pg_dump -Fc -d pos_sales -f pos_sales.dump
+pg_restore -d pos_sales_restore --jobs=4 pos_sales.dump
+
+# explain analyze
+psql -c "EXPLAIN (ANALYZE, BUFFERS, VERBOSE) SELECT ...;"
+```
+
+---
+
+## Tipe data
+
+| Tipe | Pakai untuk | Catatan |
+| :--- | :--- | :--- |
+| `bigint` / `integer` | id, counter | `bigserial`/`GENERATED ... AS IDENTITY` |
+| `numeric(p,s)` | uang, angka presisi | **tak perlu** float untuk uang |
+| `double precision` | FLOAT | pembulatan tidak terjamin |
+| `real` | FLOAT | 7 digit presisi, jangan untuk uang |
+| `money` | legacy |CHF; **jangan** pakai (locale-dependent) |
+| `text` | string | `varchar(n)` == `text` + CHECK |
+| `varchar(n)` | string dengan batas | `n` tidak pernah dipotong otomatis |
+| `char(n)` | kode fixed | padding spasi — hindari |
+| `bytea` | binary | hex atau base64 |
+| `boolean` | flag | `t/f/true/false/yes/no/1/0` |
+| `date` | tanggal tanpa jam | |
+| `timestamp` | tanpa zona | **jangan** untuk momen absolut |
+| `timestamptz` | momen absolut | disimpan UTC, ditampilkan sesuai `TimeZone` |
+| `interval` | durasi | `interval '1 day 3 hours'` |
+| `uuid` | id eksternal | `gen_random_uuid()` (bawaan sejak PG13) |
+| `json` | JSON mentah | teks, **tidak** di-index | 
+| `jsonb` | JSON terstruktur | biner, bisa di-index, key unik |
+| `xml` | XML | butuh `xml` extension untuk operator |
+| `inet` / `cidr` | alamat IP | `inet '10.0.0.0/8'` |
+| `macaddr` | MAC address | |
+| `bit(n)` / `bit varying(n)` | bit fix | jarang dipakai |
+| `tsvector` / `tsquery` | full-text search | buat kolom generated |
+| `int4range`, `tstzrange` | range | multirange di PG14+ |
+| `ARRAY` | array 1-dimensi | multidimensional(array) lambat |
+| `enum` | status tertutup | tambah nilai = `ALTER TYPE ... ADD VALUE` (tidak dalam transaksi di < PG12) |
+| `composite` | anonymous record | untuk fungsi |
+| `domain` | typedef + constraint | seperti CHECK tapi reusable |
+
+**Aturan praktis:**
+
+| Situasi | Pilihan |
+| :--- | :--- |
+| Uang | `numeric(18,2)` |
+| Timestamp event | `timestamptz` |
+| Status | `text` + CHECK, atau `enum` |
+| Config fleksibel | `jsonb` + index GIN |
+| Array | sparingly; kalau > 20 elemen → tabel anak |
+| UUID | `uuid` v4 (acak) atau v7 (urut waktu) |
+
+```sql
+-- generated column: hitung otomatis, selalu konsisten
+ALTER TABLE orders
+  ADD COLUMN total_with_tax numeric(18,2)
+  GENERATED ALWAYS AS (total * 1.11) STORED;   -- STORED = dihitung saat write
+
+-- generated dari jsonb
+ALTER TABLE products
+  ADD COLUMN brand text
+  GENERATED ALWAYS AS (attributes ->> 'brand') STORED;
+
+-- identity column (pengganti serial, lebih modern)
+CREATE TABLE orders (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  order_no text NOT NULL
+);
+-- GENERATED BY DEFAULT = boleh insert nilai manual (berguna saat restore/migrasi)
+```
+
+> **Jebakan:** `numeric` tanpa presisi (`numeric`) bisa menyimpan skala berbeda-beda antar baris
+> (mis. `1.5` dan `1.50`) — `=` tetap true tapi `ORDER BY` dan index unik والسل strictly
+> bisa Tenn. Selalu tulis presisi eksplisit.
+
+---
+
+## DDL, constraint, naming
+
+```sql
+CREATE TABLE orders (
+  id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  order_no      text        NOT NULL,
+  merchant_id   bigint      NOT NULL REFERENCES merchants (id) ON DELETE RESTRICT,
+  customer_id   bigint           NULL REFERENCES customers (id) ON DELETE SET NULL,
+  status        text        NOT NULL DEFAULT 'PENDING',
+  total         numeric(18,2) NOT NULL DEFAULT 0,
+  notes         text,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT orders_total_non_negative CHECK (total >= 0),
+  CONSTRAINT orders_status_valid CHECK (status IN ('PENDING','PAID','FAILED','CANCELLED')),
+  CONSTRAINT orders_total_upper CHECK (total <= 1000000000000)
+);
+
+-- unique
+CREATE UNIQUE INDEX orders_order_no_key ON orders (order_no);
+
+-- FK yang bisa ditunda (untuk urutan insert)
+ALTER TABLE orders ADD CONSTRAINT orders_merchant_fk
+  FOREIGN KEY (merchant_id) REFERENCES merchants (id)
+  DEFERRABLE INITIALLY DEFERRED;
+
+-- exclude constraint: cegah rentang yang tumpang tindih
+ALTER TABLE reservations
+  ADD CONSTRAINT no_overlap
+  EXCLUDE USING gist (room_id WITH =, during WITH &&);
+
+-- trigger: updated_at otomatis
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER orders_set_updated_at
+  BEFORE UPDATE ON orders
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+```
+
+| Constraint | Fungsi | unenforceable |
+| :--- | :--- | :--- |
+| `NOT NULL` | wajib ada | ya (kecuali NOT NULL kolom virtual) |
+| `CHECK` | aturan nilai | ya (tidak dicek saat `COPY`? — dicek) |
+| `UNIQUE` | tidak ada duplikat | ya |
+| `PRIMARY KEY` | identitas + index | ya |
+| `FOREIGN KEY` | integritas referensi | ya |
+| `EXCLUDE` | tidak ada overlap (range) | ya |
+
+**Naming convention** (konsisten = easier debugging):
+
+| Objek | Pola | Contoh |
+| :--- | :--- | :--- |
+| Tabel | plural, snake_case | `order_items` |
+| Kolom PK | `id` | `orders.id` |
+| FK | `<tabel>_id` | `merchant_id` |
+| Index | `idx_<tabel>_<kolom>` | `idx_orders_merchant_status` |
+| Unique | `uq_<tabel>_<kolom>` | `uq_orders_order_no` |
+| Check | `ck_<tabel>_<aturan>` | `ck_orders_total_non_negative` |
+| FK | `fk_<tabel>_<referensi>` | `fk_orders_merchant` |
+| Trigger | `trg_<tabel>_<aksi>` | `trg_orders_set_updated_at` |
+
+> **Jebakan:** `ON DELETE CASCADE` pada tabel besar = menghapus millions of rows dalam satu
+> statement → lock panjang & log bengkak. Pakai `ON DELETE SET NULL` + soft delete kalau
+> datanya perlu disimpan.
+
+---
+
+## Index
+
+```sql
+-- B-tree: default. equality, range, ORDER BY
+CREATE INDEX idx_orders_merchant_created ON orders (merchant_id, created_at DESC);
+
+-- Unique
+CREATE UNIQUE INDEX uq_orders_order_no ON orders (order_no);
+
+-- Partial: hanya sebagian baris (paling hemat untuk status non-terminal)
+CREATE INDEX idx_orders_pending ON orders (created_at)
+  WHERE status = 'PENDING';
+
+-- Covering (INCLUDE): index-only scan
+CREATE INDEX idx_orders_cover ON orders (merchant_id, created_at DESC)
+  INCLUDE (status, total);
+
+-- Expression: index atas hasil ekspresi
+CREATE INDEX idx_orders_lower_order_no ON orders (lower(order_no));
+
+-- Hash: equality saja
+CREATE INDEX idx_users_token_hash ON users USING hash (token);
+
+-- BRIN: untuk data terurut alami (time series, log) — sangat kecil
+CREATE INDEX idx_logs_created_brin ON logs USING brin (created_at) WITH (pages_per_range = 64);
+
+-- GIN: array, jsonb, full text
+CREATE INDEX idx_products_attrs ON products USING gin (attributes);
+CREATE INDEX idx_products_name_trgm ON products USING gin (name gin_trgm_ops);
+
+-- GiST: range type, geometri, full text
+CREATE INDEX idx_reservations_during ON reservations USING gist (during);
+
+-- SP-GiST: prefix, nearest neighbor
+CREATE INDEX idx_docs_trie ON documents USING spgist (body);
+
+-- index sebagian dengan sorting support
+CREATE INDEX idx_orders_merchant_partial ON orders (merchant_id, created_at DESC)
+  WHERE deleted_at IS NULL;
+
+-- opclass khusus
+CREATE INDEX idx_orders_status ON orders (status COLLATE "C");
+```
+
+| Jenis | Cocok untuk | Ukuran | Catatan |
+| :--- | :--- | :--- | :--- |
+| B-tree | `=`, `>`, `<`, `ORDER BY` | besar | 1 index = 1 kolom (kolom composite) |
+| Hash | `=` saja | kecil | tidak bisa sort |
+| BRIN | range pada data terurut | **sangat kecil** | untuk log/time-series |
+| GIN | array, jsonb, full-text | besar | build lambat |
+| GiST | range, geometri, FTS | besar | lossy, perlu recheck |
+| SP-GiST | prefix, nearest | sedang | teks panjang |
+
+**Aturan index yang sering dilanggar:**
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| Kolom composite: **urutan = urutan query** | `INDEX (a,b)` tidak melayani `WHERE b=?` |
+| Index untuk setiap `WHERE` dan `ORDER BY` | planner butuh |
+| Partial index kalau subset kecil | hemat tulis & disk |
+| Jangan index kolom dengan few distinct values | `status` dengan 4 nilai → indexbz Pendek |
+| Jangan indeks dua-duanya (prefix) | `idx(a)` sudah melayani `WHERE a=?` |
+| `CREATE INDEX CONCURRENTLY` di produksi | tanpa lock tulis, tapi lebih lambat & bisa gagal → invalid |
+
+```sql
+-- index yang tidak terpakai (idx_scan = 0)
+SELECT s.relname AS table_name, s.indexrelname AS index_name, s.idx_scan
+FROM pg_stat_user_indexes s
+WHERE s.idx_scan = 0 AND s.indexrelname NOT LIKE '%_pkey';
+
+-- index invalid (build CONCURRENTLY gagal)
+SELECT n.nspname, c.relname FROM pg_index i
+JOIN pg_class c ON c.oid = i.indexrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE NOT i.indisvalid;
+```
+
+> **Jebakan:** `CREATE INDEX` (bukan CONCURRENTLY) mengunci tabel **tulis** selama build.
+> Di tabel besar itu bisa beberapa menit. Di produksi: `CREATE INDEX CONCURRENTLY`.
+> Kalau gagal, index jadi `invalid` —-drop dan ulangi.
+
+---
+
+## EXPLAIN & membaca plan
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS, VERBOSE, SETTINGS) SELECT ...;
+EXPLAIN (COSTS OFF) SELECT ...;      -- plan saja, tanpa eksekusi
+```
+
+| Baris plan | Artinya | Tindakan |
+| :--- | :--- | :--- |
+| `Seq Scan` | scan seluruh tabel | Normal di tabel kecil (< 10k baris). Di tabel besar → butuh index |
+| `Index Scan` | baca index lalu row | Bagus |
+| `Index Only Scan` | baca index saja | **Terbaik** — butuh index covering |
+| `Bitmap Index Scan` | index → bitmap → heap | Bagus untuk selectivity rendah |
+| `Bitmap Heap Scan` | bagian heap acak | Pasangan di atas |
+| `Nested Loop` | loop per baris outer | Bagus kalau inner kecil; **mahal** kalau outer besar |
+| `Hash Join` | build hash table | Bagus untuk join besar |
+| `Merge Join` | merge dua stream terurut | Perlu kedua sisi terurut |
+| `Sort Method: external merge` | Sort spill ke disk | Kurangi `work_mem` atau pakai index |
+| `rows=1` tapi actual 50000 | Statistik stale | `ANALYZE` |
+| `Buffers: shared hit=0 read=900` | Banyak baca dari disk | Tambah index / perbesar cache |
+| `Heap Blocks: exact=… lossy=…` | Bitmap lossy (approx) | `work_mem` kecil |
+| `Planning Time` >> `Execution Time` | Query "pelit" (banyak variant) | Simplify query, kurangi parameter |
+| `JIT` | Just-in-time compile | Bisa lebih lambat untuk query pendek |
+
+```sql
+-- logical reading: EXPLAIN (ANALYZE) SELECT pg_stat_reset_single_table_counters('pg_stat_user_tables');
+-- kontensi lock
+SELECT pid, wait_event_type, wait_event, state, query FROM pg_stat_activity WHERE wait_event IS NOT NULL;
+```
+
+> **Jebakan:** `EXPLAIN ANALYZE` **mengeksekusi** statement. Untuk `UPDATE`/`DELETE`, bungkus
+> dalam `BEGIN; ... ROLLBACK;`.
+
+---
+
+## Optimasi query
+
+```sql
+-- keyset pagination (JAUH lebih baik dari OFFSET)
+SELECT id, order_no, total FROM orders
+WHERE (created_at, id) < ($1, $2)
+ORDER BY created_at DESC, id DESC
+LIMIT 20;
+
+-- EXISTS lebih baik dari IN untuk subquery besar
+SELECT id FROM orders o
+WHERE EXISTS (SELECT 1 FROM order_items i WHERE i.order_id = o.id);
+
+-- NOT IN + NULL = results kosong (jebakan klasik!)
+-- ❌ SELECT id FROM t WHERE id NOT IN (SELECT id FROM u WHERE flag = false)
+-- ✅ pakai NOT EXISTS
+SELECT id FROM orders o
+WHERE NOT EXISTS (SELECT 1 FROM deleted_items d WHERE d.order_id = o.id);
+
+-- rewrite OR jadi UNION ALL (planner sering lebih baik)
+SELECT ... WHERE status = 'PAID'
+UNION ALL
+SELECT ... WHERE status = 'PENDING';
+
+-- lateral join — korelasi per baris
+SELECT o.id, p.name
+FROM orders o
+CROSS JOIN LATERAL (
+  SELECT p.name FROM order_items i JOIN products p ON p.id = i.product_id
+  WHERE i.order_id = o.id LIMIT 3
+) p;
+
+-- filter paling awal di pipeline
+SELECT ... FROM orders o
+JOIN merchants m ON m.id = o.merchant_id
+WHERE o.created_at > now() - interval '7 days'   -- filter dulu, baru join
+
+-- count dengan filter: pakai filter, bukan subquery
+SELECT count(*) FROM orders WHERE status = 'PAID';
+-- ❌ SELECT count(*) FROM orders WHERE id IN (SELECT order_id FROM paid);
+```
+
+| Masalah | Solusi |
+| :--- | :--- |
+| `OFFSET 100000` | keyset pagination |
+| `LIKE '%foo%'` | `pg_trgm` + GIN |
+| `NOT IN` dengan subquery nullable | `NOT EXISTS` |
+| Filter setelah join | filter di stage paling awal |
+| `count(*)` di tabel besar | approximate / counter table |
+| Fungsi pada kolom index | index expression (`lower(x)`) |
+| `OR` antar kolom berbeda | `UNION ALL` |
+| Parametric query banyak varian | `PREPARE` / plan cache |
+| Statistics stale | `ANALYZE` + `default_statistics_target` lebih tinggi |
+
+```sql
+-- naikkan target statistik untuk kolom yang sering bermasalah
+ALTER TABLE orders ALTER COLUMN status SET STATISTICS 500;
+ANALYZE orders;
+
+-- plan cache per prepared statement
+PREPARE q (bigint, text) AS SELECT ... ;
+EXPLAIN (ANALYZE) EXECUTE q(1, 'PAID');
+```
+
+---
+
+## Extended statistics
+
+```sql
+-- statistik antar kolom: korelasi tinggi
+CREATE STATISTICS stat_orders_merchant_status (dependencies, ndistinct)
+  ON merchant_id, status FROM orders;
+
+-- MCV: nilai yang sering muncul
+CREATE STATISTICS stat_orders_merchant_status_mcv (mcv)
+  ON merchant_id, status FROM orders;
+
+ANALYZE orders;
+
+-- cek
+SELECT * FROM pg_stats_ext WHERE statistics_name = 'stat_orders_merchant_status';
+```
+
+| Jenis | Membantu |
+| :--- | :--- |
+| `ndistinct` | estimasi jumlah distinct gabungan (multi-column) |
+| `dependencies` | korelasi antar kolom ( planner jadi lebih pintar) |
+| `mcv` | daftar nilai yang paling sering —-plan default 100 |
+
+> Plan yang salah sering bukan karena index kurang, tapi karena **statistik tidak tahu**
+> bahwa dua kolom itu berkorelasi. `CREATE STATISTICS` jauh lebih murah daripada
+> membuat index.
+
+---
+
+## Locking & isolation
+
+| Isolation level | Mencegah | Ainda bisa terjadi |
+| :--- | :--- | :--- |
+| `READ UNCOMMITTED` | — | practically sama dengan RC di PostgreSQL |
+| `READ COMMITTED` (default) | dirty read | non-repeatable read, phantom |
+| `REPEATABLE READ` | dirty + non-repeatable | phantom (serialization error saat write) |
+| `SERIALIZABLE` | semua | perlu retry saat `40001` |
+
+```sql
+-- lock baris untuk update
+SELECT * FROM accounts WHERE id = 1 FOR UPDATE;
+
+-- skip yang sudah di-lock (worker queue!)
+UPDATE jobs SET status = 'RUNNING'
+WHERE id IN (SELECT id FROM jobs WHERE status = 'QUEUED' ORDER BY created_at LIMIT 10 FOR UPDATE SKIP LOCKED)
+RETURNING *;
+
+-- advisory lock: mutex antar tabel / lintas instance
+SELECT pg_advisory_xact_lock(4711);    -- dilepas otomatis saat COMMIT
+SELECT pg_try_advisory_lock(4711);     -- bool, tidak menunggu
+
+-- lock timeout supaya tidak menggantung
+SET lock_timeout = '3s';
+SET statement_timeout = '30s';
+```
+
+| Lock | Ditunggu oleh | Solusi deadlock |
+| :--- | :--- | :--- |
+| `RowExclusiveLock` (INSERT/UPDATE/DELETE) | tulis lain di baris sama | Urutan update konsisten |
+| `ShareUpdateExclusiveLock` (VACUUM, DDL ringan) | UPDATE, DELETE, VACUUM | Jadwalkan |
+| `AccessExclusiveLock` (ALTER/DROP/TRUNCATE) | **semua** | Lakukan di luar jam sibuk |
+| `ShareLock` (CREATE INDEX CONCURRENTLY) | writes |jadualkan |
+| `AccessShareLock` (SELECT) | DDL | Hindari DDL saat traffic |
+
+```sql
+-- deteksi & atasi deadlock
+SELECT pid, locktype, relation::regclass, mode, granted FROM pg_locks WHERE NOT granted;
+SELECT pid, pg_blocking_pids(pid) FROM pg_stat_activity WHERE cardinality(pg_blocking_pids(pid)) > 0;
+
+-- log deadlock
+ALTER SYSTEM SET log_lock_waits = on;
+ALTER SYSTEM SET deadlock_timeout = '1s';
+SELECT pg_reload_conf();
+```
+
+> **Jebakan:** di `READ COMMITTED`, dua transaksi bisa **deadlock** kalau mengunci baris
+> dengan urutan berbeda. Selalu kunci dalam **urutan yang sama** (mis. `ORDER BY id`).
+
+---
+
+## MVCC, VACUUM, ANALYZE
+
+PostgreSQL memakai MVCC: pembaca tidak memblokir penulis. Yang memblokir adalah **row
+lock** (write lock).
+
+```sql
+-- lihat versi & status
+SELECT xmin, xmax, cmin, cmax, ctid, * FROM orders LIMIT 1;
+
+-- vacuum verbose
+VACUUM (VERBOSE, ANALYZE) orders;
+VACUUM (VERBOSE, FULL, ANALYZE) orders;   -- rewrite tabel + LOCK EXCLUSIVE (jangan saat traffic)
+
+-- freeze transaksi yang lama (menghentikan vacuum tertahan)
+VACUUM FREEZE orders;
+
+-- autovacuum lebih agresif untuk tabel write-heavy
+ALTER TABLE orders SET (
+    autovacuum_vacuum_scale_factor  = 0.02,   -- default 0.2 (20%)
+    autovacuum_analyze_scale_factor = 0.01,   -- default 0.1
+    autovacuum_vacuum_insert_scale_factor = 0.05,
+    autovacuum_vacuum_cost_limit = 2000
+);
+
+-- monitor
+SELECT relname, n_dead_tup, n_live_tup,
+       round(100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0), 1) AS dead_pct
+FROM pg_stat_user_tables WHERE n_dead_tup > 1000 ORDER BY n_dead_tup DESC;
+```
+
+| Gejala | Penyebab | Aksi |
+| :--- | :--- | :--- |
+| Tabel membengkak | dead tuple | `VACUUM` (otomatis) + autovacuum aktif |
+| `xmin` lama masih terlihat | snapshot panjang menahan vacuum | Kurangi durasi transaksi |
+| Plan meleset | statistik stale | `ANALYZE` |
+| Index besar & lambat | bloat index | `REINDEX CONCURRENTLY` |
+| HOT update tidak dipakai | fillfactor penuh | `ALTER TABLE ... SET (fillfactor = 80)` |
+| Update baris sama berulang | HOT update butuh ruang di halaman | `fillfactor` 70–90 |
+
+```sql
+-- cek transaksi panjang yang menahan vacuum
+SELECT pid, state, xact_start, now() - xact_start AS age, left(query, 80)
+FROM pg_stat_activity
+WHERE xact_start IS NOT NULL AND now() - xact_start > interval '5 minutes'
+ORDER BY xact_start;
+
+-- kill (b dosis)
+SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE ...;
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE ...;
+```
+
+> **Jebakan:** `VACUUM FULL` mengunci tabel **tulis** selama menulis ulang seluruh tabel.
+> Di produksi = downtime. Gunakan `pg_repack` (extension) untuk online rewrite.
+
+---
+
+## Transaction & savepoint
+
+```sql
+BEGIN;
+    INSERT INTO orders (...) VALUES (...);
+    SAVEPOINT sp1;
+    INSERT INTO order_items (...) VALUES (...);   -- gagal
+    ROLLBACK TO SAVEPOINT sp1;                    -- batalkan item, order tetap
+COMMIT;
+
+-- DEFERRED constraint: dicek saat COMMIT
+SET CONSTRAINTS ALL DEFERRED;
+```
+
+| Isolation | Perilaku |
+| :--- | :--- |
+| `READ COMMITTED` | tiap statement snapshot baru (default) |
+| `REPEATABLE READ` | snapshot tetap selama transaksi |
+| `SERIALIZABLE` | snapshot + deteksi conflict → error `40001` |
+
+```sql
+-- retry untuk serialization failure
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+...
+COMMIT;
+-- kalau error 40001 → ulangi seluruh transaksi
+```
+
+> **Jebakan:** di `SERIALIZABLE`, transaksi yang gagal harus **diulang seluruhnya** — bukan
+> dilanjutkan.retry loop wajib ada kalau isolation level ini dipakai.
+
+---
+
+## JSONB & JSON path
+
+```sql
+ALTER TABLE products ADD COLUMN attributes jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+-- ambil & ubah
+SELECT id, attributes->>'color' AS color FROM products;
+SELECT attributes->'size'->>'unit' FROM products;
+UPDATE products SET attributes = jsonb_set(attributes, '{color}', '"blue"') WHERE id = 1;
+UPDATE products SET attributes = attributes || '{"tag":"sale"}'::jsonb WHERE id = 1;
+UPDATE products SET attributes = attributes - 'internal' WHERE id = 1;
+
+-- contain
+SELECT * FROM products WHERE attributes @> '{"color":"red","size":"L"}'::jsonb;
+SELECT * FROM products WHERE attributes ? 'brand';        -- key ada
+SELECT * FROM products WHERE attributes ?| ARRAY['brand','color'];
+
+-- index
+CREATE INDEX idx_products_attrs ON products USING gin (attributes);
+CREATE INDEX idx_products_brand ON products ((attributes->>'brand'));
+
+-- JSON path (SQL/JSON)
+SELECT jsonb_path_query(attributes, '$.variants[*].sku') FROM products;
+SELECT attributes @@ '$.price > 100' FROM products;
+```
+
+| Operator | Arti |
+| :--- | :--- |
+| `->` | elemen (JSON) |
+| `->>` | elemen (text) |
+| `#>` | path (JSON) |
+| `#>>` | path (text) |
+| `@>` | contain (JSONB) |
+| `<@` | contained by |
+| `?` `?|` `?&` | key ada / salah satu / semua |
+| `@@` | JSON path predicate |
+| `jsonb_path_query` | kueri path (SQL/JSON) |
+
+> **Jebakan:** kolom JSONB yang sering berubah bikin **bloat** (dead tuple). Partial index +
+> vacuum rutin, atau better pakai kolom reguler kalau skirt-nya stabil.
+
+---
+
+## Window function & CTE
+
+```sql
+-- top N per grup
+SELECT * FROM (
+  SELECT o.*,
+         row_number() OVER (PARTITION BY o.merchant_id ORDER BY o.created_at DESC) AS rn
+  FROM orders o
+) t WHERE t.rn <= 3;
+
+-- ranking
+SELECT id, total,
+       rank()       OVER (ORDER BY total DESC) AS rnk,   -- 1,2,2,4
+       dense_rank() OVER (ORDER BY total DESC) AS drnk,  -- 1,2,2,3
+       percent_rank() OVER (ORDER BY total DESC) AS prank
+FROM orders;
+
+-- running total & frame
+SELECT id, created_at,
+       sum(total) OVER (ORDER BY created_at
+         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running,
+       sum(total) OVER (ORDER BY created_at
+         RANGE BETWEEN INTERVAL '7 days' PRECEDING AND CURRENT ROW) AS moving_7d
+FROM orders;
+
+-- lag/lead
+SELECT id, total,
+       total - lag(total)  OVER (ORDER BY created_at) AS delta,
+       lead(total)        OVER (ORDER BY created_at) AS next_total
+FROM orders;
+```
+
+```sql
+-- CTE (CTE2005+ di-inline; CTE1991 selalu materialized)
+WITH RECURSIVE tree AS (
+  SELECT id, parent_id, 1 AS depth FROM categories WHERE parent_id IS NULL
+  UNION ALL
+  SELECT c.id, c.parent_id, t.depth + 1 FROM categories c JOIN tree t ON c.parent_id = t.id
+)
+SELECT * FROM tree ORDER BY depth;
+
+-- CTE + DML
+WITH updated AS (
+  UPDATE orders SET status = 'EXPIRED' WHERE created_at < now() - interval '30 days'
+  RETURNING id
+)
+INSERT INTO audit_log (entity_id, action) SELECT id, 'expire' FROM updated;
+```
+
+| Window frame | Arti |
+| :--- | :--- |
+| `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` | running total |
+| `RANGE BETWEEN n PRECEDING AND CURRENT ROW` | moving average berbasis nilai |
+| `GROUPS` | berbasis kelompok |
+
+> **Jebakan:** window function di `WHERE` **tidak boleh** (SQL menguji window setelah
+> `WHERE`). Bungkus di subquery/CTE dulu.
+
+---
+
+## Full-text search
+
+```sql
+-- kolom tsvector generated
+ALTER TABLE products
+  ADD COLUMN search_vector tsvector
+  GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple', coalesce(name,'')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(description,'')), 'B')
+  ) STORED;
+
+CREATE INDEX idx_products_search ON products USING gin (search_vector);
+
+-- query
+SELECT id, name, ts_rank(search_vector, q) AS rank
+FROM products, websearch_to_tsquery('simple', 'sepatu sport') q
+WHERE search_vector @@ q
+ORDER BY rank DESC LIMIT 20;
+
+-- stemming + dictionary bawaan
+SELECT to_tsvector('english', 'running shoes');    -- 'run' 'shoe'
+
+-- unaccent + trigram untuk typo
+CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+SELECT similarity(name, 'sepatu') FROM products WHERE name % 'sepatu';
+```
+
+| Tool | Untuk |
+| :--- | :--- |
+| `to_tsvector` / `to_tsquery` | FTS native, cepat, stemming + stopword |
+| `websearch_to_tsquery` | syntax pencarian web (`"frasa" -kecualikan`) |
+| `pg_trgm` | LIKE fuzzy / typo |
+| `unaccent` | ignore aksen (`"cafe" ~ "café"`) |
+
+---
+
+## Partitioning
+
+```sql
+-- declarative partitioning by RANGE (waktu)
+CREATE TABLE orders (
+  id bigint GENERATED ALWAYS AS IDENTITY,
+  created_at timestamptz NOT NULL,
+  total numeric(18,2) NOT NULL,
+  ...
+) PARTITION BY RANGE (created_at);
+
+CREATE TABLE orders_2026_10 PARTITION OF orders
+  FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+CREATE TABLE orders_2026_11 PARTITION OF orders
+  FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
+
+-- default partition untuk data yang tidak cocok
+CREATE TABLE orders_default PARTITION OF orders DEFAULT;
+
+-- partisi baru (hemat: data lama tidak di-move)
+CREATE TABLE orders_2027_01 PARTITION OF orders
+  FOR VALUES FROM ('2027-01-01') TO ('2027-02-01');
+
+-- detach partisi lama (data tetap ada, tabel dilepas)
+ALTER TABLE orders DETACH PARTITION orders_2026_10;
+
+-- partisi hash
+CREATE TABLE events (...) PARTITION BY HASH (user_id);
+CREATE TABLE events_p0 PARTITION OF events FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+
+-- partisi list
+CREATE TABLE regions (...) PARTITION BY LIST (region);
+```
+
+| Jenis | Untuk |
+| :--- | :--- |
+| `RANGE` | waktu (bulan/hari) — paling umum |
+| `LIST` | nilai diskret (region, tenant) |
+| `HASH` | sebaran merata, jumlah partisi tetap |
+
+| Keuntungan | Detail |
+| :--- | :--- |
+| Pruning | query hanya menyentuh partisi relevan |
+| Retensi | `DROP TABLE` partisi lama = instan (vs `DELETE` millions of rows) |
+| Index per partisi | index lokal, lebih kecil |
+
+> **Jebakan:** partisi **tidak** otomatis yearly. Partisi lama yang tidak di-drop = data
+> menumpuk. Automatisasi pembuatan partisi (pg_partman / cron) atau data sisa menumpuk.
+
+---
+
+## Sequence & identity
+
+```sql
+-- identity (modern, recommended)
+CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY);
+
+-- sequence manual + DEFAULT
+CREATE SEQUENCE order_no_seq START 1000;
+ALTER TABLE orders ALTER COLUMN order_no SET DEFAULT 'ORD-' || nextval('order_no_seq');
+
+-- gap & cache
+ALTER SEQUENCE order_no_seq RESTART WITH 1;
+SELECT setval('order_no_seq', 5000, true);   -- next value = 5001
+SELECT last_value FROM order_no_seq;
+
+-- skiplocked: aman untuk antrean parallel worker
+SELECT nextval('order_no_seq');             -- gap normal setelah rollback
+```
+
+| Perilaku | Penjelasan |
+| :--- | :--- |
+| Gap | Sequence tidak rollback → nomor berlubang (normal) |
+| `CACHE n` | cache n nilai di memori; crash = kehilangan n nomor |
+| `NO CYCLE` | error kalau sudah max (default) |
+| `CYCLE` | kembali ke min (untuk ID yang boleh dipakai ulang) |
+
+> **Jebakan:** `SERIAL` = sequence + default. Sequence milik tabel, tapi **tidak**-drop saat
+> tabel drop. Pakai `IDENTITY` untuk tabel baru.
+
+---
+
+## Replikasi
+
+```sql
+-- status replika
+SELECT client_addr, state, sent_lsn, write_lsn, flush_lsn, replay_lsn, sync_state FROM pg_stat_replication;
+SELECT * FROM pg_stat_replica;
+
+-- logical replication
+CREATE PUBLICATION my_pub FOR TABLE orders, order_items;
+CREATE SUBSCRIPTION my_sub CONNECTION 'host=primary dbname=pos_sales' PUBLICATION my_pub;
+SELECT * FROM pg_stat_subscription;
+
+-- slot (mencegah WAL hilang saat subscriber lagging)
+SELECT slot_name, active, restart_lsn FROM pg_replication_slots;
+```
+
+```bash
+pg_basebackup -D /var/lib/postgresql/backup -Fp -Xs -P -R -D /var/lib/postgresql/data
+pg_controldata /var/lib/postgresql/data | grep -E "state|Latest checkpoint"
+```
+
+| Jenis | Untuk |
+| :--- | :--- |
+| Streaming replication | HA + read replica, full physical |
+| Logical replication | subset tabel, lintas versi, ke external |
+| Synchronous commit | sinkron (data tidak hilang) tapi latency++ |
+| WAL archiving (`archive_mode`) | point-in-time recovery |
+
+> **Jebakan:** replication slot yang tidak aktif menahan WAL → **disk penuh**. Monitor
+> `pg_replication_slots` dan `wal_size`.
+
+---
+
+## Extension
+
+```sql
+-- ekstensi populer
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";      -- digest, encrypt/decrypt, hmac, random
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";       -- fuzzy search + GIN
+CREATE EXTENSION IF NOT EXISTS "btree_gin";     -- GIN gabungan btree
+CREATE EXTENSION IF NOT EXISTS "unaccent";      -- ignore aksen
+CREATE EXTENSION IF NOT EXISTS "vector";        -- pgvector: embedding + HNSW/IVFFlat
+CREATE EXTENSION IF NOT EXISTS "postgis";       -- geospatial
+CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";  -- statistik query (perlu shared_preload_libraries)
+CREATE EXTENSION IF NOT EXISTS "hstore";        -- key-value typed
+```
+
+```sql
+-- pgvector: contoh Hybrid Search (embedding + full text, RRF)
+CREATE TABLE products (
+  id bigint PRIMARY KEY,
+  name text,
+  embedding vector(768),
+  search_vector tsvector
+);
+CREATE INDEX idx_products_vec ON products USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_products_fts ON products USING gin (search_vector);
+
+-- hybrid search: gabung skor full-text & vector
+WITH fts AS (
+  SELECT id, ts_rank(search_vector, websearch_to_tsquery('simple', $1)) AS score
+  FROM products WHERE search_vector @@ websearch_to_tsquery('simple', $1)
+  LIMIT 50
+), vec AS (
+  SELECT id, 1 - (embedding <=> $2::vector) AS score
+  FROM products ORDER BY embedding <=> $2::vector LIMIT 50
+)
+SELECT id, sum(score) AS rrf_score
+FROM (SELECT * FROM fts UNION ALL SELECT * FROM vec) x
+GROUP BY id ORDER BY rrf_score DESC LIMIT 20;
+```
+
+> `pg_stat_statements` **harus** diaktifkan lewat `shared_preload_libraries` + restart —
+> `CREATE EXTENSION` saja tidak cukup.
+
+---
+
+## Security & RLS
+
+```sql
+-- role & hak akses
+CREATE ROLE app_user LOGIN PASSWORD '...' ;
+GRANT SELECT, INSERT, UPDATE ON orders TO app_user;
+GRANT USAGE, SELECT ON SEQUENCE orders_id_seq TO app_user;
+REVOKE ALL ON SCHEMA public FROM PUBLIC;      -- best practice
+
+-- view dengan security definer (RLS-friendly)
+CREATE VIEW order_summary WITH (security_invoker = true) AS
+SELECT merchant_id, count(*), sum(total) FROM orders GROUP BY merchant_id;
+
+-- Row Level Security: tenant isolation per baris
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders FORCE ROW LEVEL SECURITY;   -- berlaku juga untuk owner tabel
+
+CREATE POLICY orders_tenant_policy ON orders
+  USING (tenant_id = current_setting('app.tenant_id')::uuid)
+  WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
+
+-- set tenant per transaksi
+SET LOCAL app.tenant_id = '11111111-1111-1111-1111-111111111111';
+```
+
+| Kontrol | Cara |
+| :--- | :--- |
+| Password | SCRAM-SHA-256 (default PG14+) |
+| Host auth | `pg_hba.conf` + `scram-sha-256` |
+| TLS | `ssl = on`, `ssl_cert_file`, `clientcert=verify-full` |
+| RLS | isolasi baris per tenant |
+| Column privilege | `GRANT SELECT (col1, col2) ON t TO u` |
+| `SECURITY DEFINER` | function elevated — **wajib** `SET search_path = ''` |
+| Audit | `pgaudit` extension |
+
+```sql
+-- function elevated: amankan search_path
+CREATE FUNCTION get_secret() RETURNS text
+LANGUAGE sql SECURITY DEFINER
+SET search_path = ''
+AS $$ SELECT value FROM private.secrets LIMIT 1 $$;
+```
+
+> **Jebakan:** `SECURITY DEFINER` tanpa `SET search_path` = pengguna bisa membuat objek
+> di `public` yang men-shadow fungsi sistem → privilege escalation.
+
+---
+
+## Connection & pooling
+
+```
+App (HikariCP 20) ──▶ PgBouncer (transaction) ──▶ PostgreSQL
+```
+
+```ini
+# pgbouncer.ini
+[pgbouncer]
+pool_mode = transaction
+max_client_conn = 500
+default_pool_size = 25
+reserve_pool_size = 5
+reserve_pool_timeout = 3
+server_reset_query = DISCARD ALL
+ignore_startup_parameters = extra_float_digits
+max_prepared_statements = 200        # prepared statement support (PgBouncer 1.21+)
+
+[databases]
+pos_sales = host=postgres port=5432 dbname=pos_sales
+```
+
+```yaml
+# aplikasi
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      max-lifetime: 900000
+      idle-timeout: 300000
+      pool-name: pos-sales-pool
+```
+
+| Mode PgBouncer | Izinkan | Kapan |
+| :--- | :--- | :--- |
+| `session` | session state | tooling/admin |
+| `transaction` | **tidak boleh** session state | default aplikasi |
+| `statement` | satu statement | batch/CLI |
+
+**Yang tidak boleh di transaction pooling:** `PREPARE` (versi lama), `LISTEN/NOTIFY`,
+`SET` session, temp table, advisory lock session-level, `WITH HOLD` cursor.
+
+> **Jebakan:** total koneksi = `replica × pool_size`. 10 pod × 20 = 200 koneksi per host —
+> cek `max_connections` (default 100) sebelum naikkan pool size. exceeding → `FATAL: sorry,
+> too many clients already`.
+
+---
+
+## Maintenance & backup
+
+```sql
+VACUUM (ANALYZE) t;                    -- reclaim + statistik
+VACUUM (FULL, ANALYZE) t;              -- rewrite tabel (LOCK!)
+REINDEX INDEX CONCURRENTLY idx;         -- rebuild index tanpa lock tulis
+REINDEX TABLE t;                        -- semua index (lock)
+CLUSTER t USING idx;                   -- reorder baris (lock, tulis ulang penuh)
+ANALYZE t;                              -- statistik saja
+```
+
+```bash
+# backup
+pg_dump -Fc -d pos_sales -f pos_sales.dump          # custom format (kompres)
+pg_dump -d pos_sales -Fp -f pos_sales.sql            # plain SQL
+pg_dumpall --globals-only -f globals.sql             # role & tablespace
+
+# restore
+pg_restore -d pos_sales --clean --if-exists --jobs=4 pos_sales.dump
+psql -d pos_sales -f pos_sales.sql
+
+# upgrade major
+pg_upgrade --check -d /var/lib/postgresql/17 -D /var/lib/postgresql/18
+```
+
+| Tool | Kapan |
+| :--- | :--- |
+| `pg_dump` | backup logis, restore ke versi lain |
+| `pg_basebackup` | backup fisik,PgBouncer/replica |
+| WAL archiving | point-in-time recovery |
+| `pg_dumpall --globals-only` | role & tablespace |
+
+> **Jebakan:** `pg_dump` **tidak** bisa restore ke DB yang lebih tua (fitur baru). Dan
+> dump logical di DB besar butuh waktu lama — pakai physical backup + WAL untuk produksi.
+
+---
+
+## Monitoring
+
+```sql
+-- slow query & paling mahal
+SELECT calls, mean_exec_time, max_exec_time, rows, query
+FROM pg_stat_statements WHERE query NOT LIKE '%pg_stat%'
+ORDER BY mean_exec_time DESC LIMIT 20;
+
+-- urutan query
+SELECT calls, query FROM pg_stat_statements ORDER BY calls DESC LIMIT 10;
+
+-- tabel & index
+SELECT relname, seq_scan, idx_scan, n_live_tup, n_dead_tup,
+       pg_size_pretty(pg_total_relation_size(relid)) AS size
+FROM pg_stat_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 15;
+
+-- index size
+SELECT indexrelname, pg_size_pretty(pg_relation_size(indexrelid)) AS size, idx_scan
+FROM pg_stat_user_indexes ORDER BY pg_relation_size(indexrelid) DESC LIMIT 15;
+
+-- checkpoint & buffer
+SELECT * FROM pg_stat_bgwriter;
+SELECT * FROM pg_stat_checkpointer;
+
+-- vacuum
+SELECT relname, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze
+FROM pg_stat_user_tables;
+
+-- longest transaction
+SELECT pid, now()-xact_start AS age, state, left(query,80)
+FROM pg_stat_activity WHERE xact_start IS NOT NULL ORDER BY xact_start LIMIT 5;
+
+-- replication lag
+SELECT application_name, state, sync_state,
+       pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) AS lag_bytes
+FROM pg_stat_replication;
+```
+
+| Metrik | Alert |
+| :--- | :--- |
+| Replication lag | > 30 detik |
+| `n_dead_tup` | > 20% dari live |
+| Cache hit ratio | < 99% |
+| Longest transaction | > 5 menit |
+| `max_connections` | > 80% |
+| WAL size | naik terus (slot tertinggal) |
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| `OFFSET 10000` | Makin dalam makin lambat | Keyset pagination |
+| `NOT IN` + subquery nullable | Hasil kosong tanpa error | `NOT EXISTS` |
+| `LIKE '%x%'` | Full scan | `pg_trgm` + GIN |
+| `numeric` tanpa presisi | Skala berbeda antar baris | `numeric(18,2)` |
+| `float` untuk uang | Selisih pembulangan | `numeric` |
+| `timestamp` (bukan `timestamptz`) | Konflik zona waktu | `timestamptz` + `SET TIME ZONE` |
+| `SELECT *` | I/O & memory mubazir | Pilih kolom |
+| Transaction panjang | Lock menahan, vacuum macet | Batch kecil, commit sering |
+| `UPDATE` semua baris 1 stmt | Bloat + lock panjang | Batch 1000–5000 baris |
+| `count(*)` tabel besar | Scan penuh | Estimasi / counter |
+| UUID v4 sebagai PK | Index page split, insert lambat | UUIDv7 atau bigint |
+| Index pada kolom low-cardinality | Wasteful, write lambat | Partial index |
+| `CREATE INDEX` saat traffic | Lock tulis | `CONCURRENTLY` |
+| `VACUUM FULL` saat traffic | Lock penuh | `pg_repack` |
+| Trust `search_path` | Objek salah schema | Set per role/app |
+| `SECURITY DEFINER` tanpa search_path | Privilege escalation | `SET search_path = ''` |
+| Prepared statement + PgBouncer transaction mode | "prepared statement does not exist" | `prepareThreshold=0` atau PgBouncer 1.21+ |
+| Connection pool melebihi `max_connections` | `too many clients` | Turunkan pool size |
+| `GRANT ALL` ke app user | Pelanggaran least privilege | Grant per tabel/kolom |
+| Replication slot tertinggal | Disk penuh | Monitor `pg_replication_slots` |
+| Partisi lama tidak di-drop | Data menumpuk | Automasi drop partisi |
+| `ALTER TYPE ... ADD VALUE` dalam transaksi | Error di versi lama | Commit dulu, baru dipakai |

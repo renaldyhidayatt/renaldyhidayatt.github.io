@@ -2,6 +2,8 @@
 title: "Distributed Modular Microservice Payment Gateway"
 excerpt: "Decentralized financial orchestration platform optimized for extreme reliability, horizontal scalability, and real-time observability with AI security and ClickHouse analytics."
 date: "2026-02-14"
+created_at: "2026-02-14"
+updated_at: "2026-02-14"
 tags: [
   "golang", "python", "grpc", "postgresql", "clickhouse", "kafka", "redis",
   "docker", "kubernetes", "prometheus", "grafana", "opentelemetry", "loki"
@@ -653,6 +655,37 @@ flowchart TD
     PROM -.-> GRAFANA
     MIGRATE --> PG
 ```
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Fourteen microservices vs a modular monolith**
+Every financial domain (saldo, topup, transfer, withdraw, …) is a self-contained, micro-deployable Go binary with its own gRPC boundary: fault containment, independent HPA scaling for financial traffic, and no shared-process risk between, say, auth and the ledger. The honest cost: 14 deployables, 11 isolated Redis instances, Kafka, PgBouncer, and a full observability suite is a heavy local stack — a modular monolith would give the same boundaries with none of the wiring. For a payment system the split is a deliberate bet that the critical ledger gets isolation, resourcing, and release cadence of its own.
+
+**Synchronous gRPC + asynchronous Kafka, split by interaction type**
+Balance checks and card lookups stay synchronous gRPC: immediate, typed, and easy to reason about. Side effects (emails, OLAP ingestion) flow through Kafka so consumers can lag or restart without blocking a transaction. In a payment context the async trade-off is sharper than anywhere else: Kafka is at-least-once, so a redelivered `transfer.created` event can double-book a ledger entry unless consumers key on an idempotency token and check before applying — that's the price of decoupling financial side effects.
+
+**Optimistic concurrency on the Saldo (balance) service**
+Real-time balance math uses versioned optimistic locks instead of long-held row locks: a transfer reads the balance, applies debit/credit with a `WHERE version = N` guard, and retries on conflict. The trade-off: under heavy contention on one hot account, retries churn and some requests visibly fail-then-retry, whereas pessimistic locking would serialize them silently. Optimistic is the right call for read-mostly accounts with bursty writes; a truly hot account would need queueing or sharding instead.
+
+**CQRS read path: ClickHouse instead of querying Postgres**
+Analytics (monthly/yearly volumes, payment-method breakdowns) hit a column-oriented ClickHouse fed asynchronously by the stats-writer, keeping heavy aggregations off the OLTP ledger. The costs: the analytics view lags real time (a just-settled transfer is not yet in the dashboard) and the pipeline adds surface area — a Kafka topic, a writer service, and a second database with its own ops. Acceptable for BI; never use it for "state of this order right now," which must always read the ledger.
+
+**Eleven isolated Redis databases, one per service**
+Per-service isolation means no cross-service key collisions and independent flush/scale, but eleven containers in compose, each carrying its own baseline memory — isolation bought with resource duplication.
+
+**PgBouncer between services and PostgreSQL**
+Many concurrent Go services would exhaust Postgres's connection limit, so all SQL goes through a PgBouncer pool. Trade-off: transaction-mode pooling is the safe default, but session-level features (server-side cursors, per-connection state) stop working across the pooler — queries have to stay pooler-friendly.
+
+**Full observability suite (Prometheus + Loki + Jaeger + Pyroscope + Alertmanager)**
+All three pillars plus continuous profiling, wired through OpenTelemetry — a slow transfer can be followed from the REST edge across gRPC boundaries down to SQL. The cost is a resident footprint of collectors and dashboards, justified only if someone actually operates them; in a payment system, alerting on ledger-state divergence and Kafka lag is exactly the part you'd never run without.
+
+**Docker Compose + Kubernetes as two first-class targets**
+Local parity with prod (same split, HPA manifests, PVCs) plus rolling updates/autoscaling from the orchestrator. The trade-off: two deployment artifacts that must stay in sync — compose and K8s manifests are where configuration drift lives, and both must be reviewed on every infra change.
+
+**sqlc + Goose for the data layer**
+Type-safe, compiler-checked SQL and version-ordered migrations: predictable performance and no auto-migration surprises on a financial schema. The cost: every query is hand-written and a code-generation step sits between schema and code.
 
 ---
 

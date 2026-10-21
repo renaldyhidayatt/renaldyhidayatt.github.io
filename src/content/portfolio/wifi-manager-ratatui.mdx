@@ -2,6 +2,8 @@
 title: "Example WiFi Manager"
 excerpt: "A terminal-based WiFi manager built with Rust and Ratatui."
 date: "2025-02-09"
+created_at: "2025-02-09"
+updated_at: "2025-02-09"
 tags: ["rust", "ratatui", "nmcli"]
 status: "selesai"
 image: "https://github.com/MamangRust/example-wifi-manager-ratatui/raw/main/image/example.png?raw=true"
@@ -21,6 +23,20 @@ urlProject: "https://github.com/MamangRust/example-wifi-manager"
 - 🦀 **Rust** - Main programming language
 - 🎨 **Ratatui** - Library for creating terminal-based UI
 - ⌨️ **Crossterm** - Library for handling keyboard input and terminal display
+
+## Technical Decisions & Trade-offs
+
+**Wrapping nmcli vs binding NetworkManager directly**
+All the hard network work, from scanning to association and WPA handshakes, stays inside nmcli, so the app is a keyboard-driven front end rather than a second implementation of WiFi logic. The cost: parsing nmcli output is brittle across versions and locales, errors arrive as exit codes and stderr text, and nmcli must be installed for the app to function at all.
+
+**A TUI for a job with a GUI incumbent**
+Choosing a network with arrow keys works over SSH on a headless box, which is exactly where a terminal manager earns its keep. The trade-off is scope: NetworkManager still owns connection state, saved profiles, and auto-reconnect, so this tool orchestrates connections instead of replacing the daemon behind them.
+
+**Masked password input and its limits**
+Password entry is masked on screen, the right call for a shared or recorded terminal. The honest boundary: masking is all the TUI can promise, because once the passphrase is handed to nmcli, storage and protection of the key belong to NetworkManager, outside the app's control.
+
+**Slow subprocess inside a fast redraw loop**
+A WiFi scan takes seconds while a Ratatui redraw takes milliseconds, so either the interface blocks while nmcli works or the shell-out moves to another thread with results fed back through a channel. That added concurrency is exactly what a small tool resists, and where the line falls is the core architectural decision of any nmcli-driven TUI.
 
 ## Installation & Usage
 ### Prerequisites

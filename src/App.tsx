@@ -9,9 +9,12 @@ import BlogPost from "./pages/BlogPost";
 import Portfolio from "./pages/Portfolio";
 import PortfolioProject from "./pages/PortfolioProject";
 import About from "./pages/About";
+import Sertifikat from "./pages/Sertifikat";
 import NotFound from "./pages/404";
 import { ThemeProvider } from "./hooks/use-theme";
 import Stats from "./pages/Stats";
+import Cheatsheet from "./pages/Cheatsheet";
+import CheatsheetDoc from "./pages/CheatsheetDoc";
 
 const queryClient = new QueryClient();
 
@@ -26,9 +29,12 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/cheatsheet" element={<Cheatsheet />} />
+            <Route path="/cheatsheet/*" element={<CheatsheetDoc />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/portfolio/:slug" element={<PortfolioProject />} />
             <Route path="/about" element={<About />} />
+            <Route path="/sertifikat" element={<Sertifikat />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

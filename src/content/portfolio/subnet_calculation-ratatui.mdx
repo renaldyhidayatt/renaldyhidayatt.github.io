@@ -2,6 +2,8 @@
 title: "Subnet Calculation Ratatui"
 excerpt: "A subnet calculation application built with Ratatui."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["rust", "ratatui", "crossterm"]
 status: "selesai"
 image: "https://github.com/MamangRust/example-subnet-calculation-ratatui/raw/main/image/example.png?raw=true"
@@ -24,7 +26,19 @@ image: "https://github.com/MamangRust/example-subnet-calculation-ratatui/raw/mai
 - 📦 **Crossterm** - Terminal handling library
 - 🎨 **Ratatui** - TUI framework for interactive CLI applications
 
+## Technical Decisions & Trade-offs
 
+**Hand-rolled bit math vs a subnetting library**
+The dependency list is only Rust, Ratatui, and Crossterm, so network address, broadcast address, and host counts come from bit arithmetic written into the app itself. That buys full control and makes the math the point of the exercise; the cost is that correctness is self-certified, and prefix extremes like /31 and /32 are exactly where hand-rolled subnet math slips. A library such as ipnetwork already encodes those edge cases.
+
+**Interactive input vs CLI flags**
+Typing an IP and mask interactively suits what-if editing: change the prefix and watch the network and broadcast bounds update in place. The trade-off is scripting, since a TUI cannot be piped into other tools the way a one-shot command line calculator can.
+
+**Ratatui for structured results**
+Laying results out in a structured terminal display makes the relationship between network address, broadcast address, and host range readable at a glance. The cost is layout code for output that a plain CLI could produce with two print statements.
+
+**Validation as the front line**
+A calculator is only as good as its rejection of malformed input, and interactive entry makes that validation the app's job rather than the shell's. The upside is tight control over what reaches the math; the cost is input-handling code that a flag-parsing CLI would inherit from an argument library.
 
 ## Screenshot
 ![Example Screenshot](https://github.com/MamangRust/example-subnet-calculation-ratatui/raw/main/image/example.png?raw=true)

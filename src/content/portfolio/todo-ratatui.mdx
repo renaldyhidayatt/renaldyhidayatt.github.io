@@ -2,6 +2,8 @@
 title: "Example Todo Ratatui"
 excerpt: "Todo application built with Ratatui."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["rust", "ratatui", "crossterm"]
 status: "selesai"
 image: "https://github.com/MamangRust/example-todo-pomodoro-ratatui/raw/main/image/example.png?raw=true"
@@ -21,7 +23,19 @@ Example Todo Ratatui is a terminal-based todo application built using Rust and t
 - 🎨 **Ratatui** - Library for creating terminal-based UI
 - ⌨️ **Crossterm** - Library for handling keyboard input and terminal display
 
+## Technical Decisions & Trade-offs
 
+**One screen for tasks and timer**
+Putting the todo list and the Pomodoro timer in a single Ratatui view keeps them synchronized by construction: every redraw draws both from the same state, so they cannot disagree. The cost is coupling, since input handling and screen space are shared and each feature complicates the other.
+
+**A timer that lives in the event loop**
+The Pomodoro advances only while the app is open in a terminal; there is no daemon counting in the background or firing alerts after you switch away. That is the classic terminal-tool trade: complete simplicity and transparency in exchange for background behavior that phone and desktop timers provide for free.
+
+**Immediate mode without a framework model**
+Nothing sits between the keyboard and the screen: each event mutates plain Rust structs and the UI is rebuilt from them. That is direct and easy to debug, but task state, selection, and timer phase all depend on hand-maintained code paths, and an Elm-style model would hold up better if the feature set grows.
+
+**Keyboard-only interaction**
+Adding, deleting, and navigating are all shortcuts, with `q` to quit, which is fast for touch typists. The trade-off is discoverability: nothing on screen teaches the bindings, the usual price of a keyboard-first TUI.
 
 ## Demo
 

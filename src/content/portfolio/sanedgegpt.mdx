@@ -2,6 +2,8 @@
 title: "SanedgeGPT"
 excerpt: "Implementasi model Generative Pre-trained Transformer (GPT) yang ringan dan berkinerja tinggi, dibangun dari nol menggunakan bahasa Rust dengan tumpukan observabilitas modern."
 date: "2025-11-08"
+created_at: "2025-11-08"
+updated_at: "2025-11-08"
 tags: ["rust", "ndarray", "axum", "tokio", "docker", "prometheus", "grafana", "jaeger", "opentelemetry", "loki"]
 status: "selesai"
 image: "/portofolio/llmfromscratch/llm_training_monitoring.png"
@@ -94,6 +96,25 @@ The application exposes a RESTful interface for interaction and management.
   "temperature": 0.7
 }
 ```
+
+---
+
+## Technical Decisions & Trade-offs
+
+**From scratch in Rust instead of PyTorch or an LLM framework**
+Multi-head attention, feed-forward blocks, layer normalization, residual connections, and positional embeddings are implemented by hand on `ndarray`, so every internal is inspectable and nothing is hidden behind a framework. The cost is exactly what the big frameworks provide: no mature autograd, no GPU path, and far slower training. As a vehicle for understanding LLM internals, the slower road is the point.
+
+**CPU-bound linear algebra**
+`ndarray` keeps the numerics dependency-light and memory behavior predictable, which suits a lightweight, self-contained service. The ceiling is real: training and generation speed are bounded by CPU cores, and no accelerator can be dropped in. For a demonstration-scale model that ceiling is acceptable; for competitive training throughput it would not be.
+
+**A minimalist model, honestly scoped**
+The architecture is deliberately small but complete, which buys fast iteration and single-service operational simplicity. It costs output quality: a small from-scratch model will not approach production LLM coherence, and exposed parameters like `temperature` and `max_tokens` let callers see that directly rather than papering over it. The project sells understanding of the mechanism, not generation quality, and the scope matches.
+
+**Axum and Tokio for serving**
+Inference sits behind an asynchronous REST layer, so concurrent generate requests do not block the runtime. The trade-off is developer friction: Rust's async semantics and the borrow checker slow iteration compared to a Python service, in exchange for memory safety and predictable latency under load. For a project whose pitch is performance, that exchange is the point.
+
+**A production observability stack for one model service**
+Prometheus, Grafana, Loki, and Jaeger behind OpenTelemetry is a lot of infrastructure for a single-service application, costing containers and configuration before the first token. But training and inference are where black-box failures hide — latency spikes, memory growth, slow generations — and traces, metrics, and logs make them visible. Sized against what the project demonstrates, the stack is proportionate rather than decorative.
 
 ---
 

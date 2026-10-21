@@ -2,6 +2,8 @@
 title: "Example Payment Gateway Axum + SeaORM"
 excerpt: "A payment gateway example using Axum, SeaORM, and Docker Compose."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["rust", "axum", "sea-orm", "docker-compose", "postgres"]
 status: "selesai"
 image: "https://github.com/MamangRust/payment-gateway-axum/raw/main/images/example.png?raw=true"
@@ -14,7 +16,25 @@ image: "https://github.com/MamangRust/payment-gateway-axum/raw/main/images/examp
 - ⚡ **Axum** - Web framework for Rust.
 - 🐳 **Docker Compose** - Container orchestration.
 
+## Technical Decisions & Trade-offs
 
+**Axum over Actix-web for this baseline**
+Axum is maintained by the tokio team, builds handlers from composable extractors, and plugs into the tower middleware ecosystem, which makes cross-cutting concerns like tracing, timeouts, and limits uniform. The honest cost is raw throughput: Actix-web still wins head-to-head benchmarks. For an example whose value is readable, idiomatic code rather than last-millisecond latency, ergonomics win.
+
+**SeaORM for the data layer**
+The schema is modeled as Rust entity types with relations, so query mistakes surface at compile time instead of as runtime SQL errors. sea-orm-cli generates and migrates the entity layer, keeping boilerplate low for a gateway's straightforward CRUD tables. The price is indirection: the SQL SeaORM produces is not always the SQL you would have written, and debugging means reading generated queries.
+
+**sea-orm-cli migrations with explicit up and down**
+Every schema change is a versioned migration that can be applied or reverted, so environments stay reproducible. The trade-off is process discipline: entities must be regenerated after each migration, and skipping that leaves the code desynced from the database in ways only runtime catches.
+
+**PostgreSQL as the system of record**
+Cards, balances, and transaction history need transactions and referential integrity, which rules out document stores for the core ledger. The cost is a migration on every model change and a single database to scale first. For payment data, ACID guarantees are the reason the database is there at all.
+
+**Docker Compose for local reproducibility**
+The whole stack - application and PostgreSQL - comes up with one command on any machine. It gives up what a real deployment would need: orchestration across hosts, secrets handling, and scaling. As a baseline meant to be cloned and compared against sibling frameworks, that is the right scope.
+
+**Same domain, different framework**
+The project shares its payment-gateway domain and minimal footprint with the Actix-web and Salvo variants, so reading the three side by side isolates what the framework itself contributes: handler signatures, middleware wiring, and project structure. The limitation is depth - production payment concerns such as idempotency and reconciliation are out of scope by design.
 
 ## How the Payment Gateway Works (Using Axum + SeaORM)
 

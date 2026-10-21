@@ -1,0 +1,82 @@
+---
+title: "Kenapa Saya Bikin Halaman Cheatsheet (dan Kenapa Bukan Blog)"
+excerpt: "Blog menjawab 'kenapa', cheat sheet menjawab 'kapan dan bagaimana'. Saya bikin section cheatsheet terpisah supaya tidak perlu scouring artikel panjang hanya untuk mengingat satu perintah."
+readTime: "5 min read"
+tags: ["cheatsheet", "writing", "backend", "productivity"]
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "selesai"
+---
+
+# Kenapa Saya Bikin Halaman Cheatsheet (dan Kenapa Bukan Blog)
+
+Ada satu masalah yang tidak pernah selesai kalau cuma punya blog: **niat saya menulis
+penjelasan, kebutuhan saya sering kali cuma satu baris**.
+
+Contoh nyata: saya lagi debug deadlock di service payment dan butuh ingat cara cek lock
+PostgreSQL. Blog saya tentang *transactional outbox* ada di sana — tapi 3.000 kata, 8
+heading, dan tidak ada cara cepat menuju `pg_locks`. Yang saya butuhkan saat itu: satu
+query, satu output, dan konteks kapan query itu dipakai.
+
+Saya jadi punya tiga kebutuhan berbeda yang saling menimpa kalau dipaksakan jadi satu
+halaman:
+
+| | Blog | Portfolio | Cheatsheet |
+| :--- | :--- | :--- | :--- |
+| Bentuk | esai, cerita, yang menjelaskan *kenapa* | studi kasus + harga keputusan | kamus cepat: *kapan & bagaimana* |
+| Penanda | tanggal tulis | tanggal proyek | **versi yang dikunci** (`Spring Boot 3.5.6`, `PostgreSQL 17`) |
+| Isi | trade-off, sejarah, kegagalan | arsitektur + konsekuensi | **tabel lookup + snippet siap salin + jebakan** |
+| Arah baca | linear, dari atas ke bawah | linear, dari atas ke bawah | **non-linear, langsung ke tabel** |
+| Umur | tetapvalid sebagai catatan sejarah | frozen per versi project | **kedaluwarsa kalau versinya_major berubah** |
+
+Jadi saya bikin section baru: [Cheatsheet](/cheatsheet).
+
+## Aturan yang saya pakem sendiri
+
+Supaya ini tidak berubah jadi blog kedua, ada empat aturan yang saya tegakkan.
+
+**1. Versi di-pin, tidak ada "terbaru".**
+Setiap sheet buka dengan versi yang persis dipakai di repo saya saat itu. Kalau versi
+library sudah lewat satu major, sheet-nya ditandai usang — bukan saya tulis ulang diam-diam
+dan dianggap usang. Cheatsheet yang diam-diam salah lebih berbahaya daripada tidak ada.
+
+**2. Tidak ada narasi.**
+Kalau sebuah paragraf butuh konteks lebih dari dua kalimat, itu bukan tugas cheatsheet
+— itu artikel blog. Cheatsheet menjawab pertanyaan, blog menjawab pertanyaan *plus* cerita
+di baliknya.
+
+**3. Setiap jebakan harus punya gejala.**
+Tabel "Jebakan" di tiap sheet tidak boleh berhenti di "ini salah". Formatnya selalu:
+
+> Jebakan → gejala yang terlihat → solusi.
+
+"Jebakan: `@Transactional` tidak jalan kalau self-invocation" tanpa gejala = catatan
+pribadi, bukan referensi.
+
+**4. Snippet harus dijalankan.**
+Aturan mainnya: kalau belum pernah `mvn test` atau `zig test`-kan,.snippet itu tidak
+masuk sheet. Bedanya dengan blog: di blog saya boleh salah lalu dikoreksi di artikel
+berikutnya (itu bagian dari proses). Di cheatsheet, kesalahan langsung dipakai orang lain.
+
+## Kenapa backend, bukan bahasa saja
+
+Zig cheat sheet saya jadi titik awal, tapi isinya justru yang paling sering saya buka:
+bukan sintaks bahasa, tapi **pola yang berulang di backend**:
+
+- Satu pattern transaksi: `BEGIN → ubah data → tulis outbox → COMMIT → relay`.
+- Satu pola idempotensi: unique constraint di DB, bukan lock di memori.
+- Satu pola observability: metric untuk agregat, log untuk detail, trace untuk alur.
+
+Pola-pola itu muncul di project Java, Go, dan MongoDB alike — dan itulah yang bikin
+saya butuh cheatsheet **backend**, bukan cheatsheet per bahasa.
+
+## Yang akan menyusul
+
+enam sheet backend sudah ada (Java/Spring Boot, gRPC/Protobuf, Kafka, PostgreSQL,
+Docker/Kubernetes, Observability) plus satu sheet bahasa (Zig). Yang masih di daftar:
+Redis, MongoDB, ClickHouse, Go, dan satu sheet "Linux & CLI harian" untuk yang paling
+sering dipakai waktu debug.
+
+Kalau nanti tiap project punya bagian **"jebakan yang saya temui"**, sheet-sheet ini yang
+menampungnya — dan artikel blog cukup, membahas *mengapa* saya memilih jalan itu.

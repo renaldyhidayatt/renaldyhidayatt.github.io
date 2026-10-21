@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith E-Commerce Quarkus"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan REST API Gateway, gRPC, Quarkus, Kafka, dan PostgreSQL."
 date: "2026-05-26"
+created_at: "2026-05-26"
+updated_at: "2026-05-26"
 tags: [
   "java", "quarkus", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "flyway"
@@ -839,6 +841,28 @@ flowchart TB
 | **Observability** | OpenTelemetry + Jaeger | Distributed telemetry tracing pipeline and visualization. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Quarkus with Mutiny reactive over Spring Boot**
+Twenty-plus services sharing one cluster makes per-pod memory and startup time the dominant cost, and Quarkus is markedly leaner than a Spring Boot fat jar. The price is developer ergonomics: Mutiny chains are harder to read and debug than blocking code, the ecosystem is smaller, and one accidental blocking call stalls an event loop. At this service count the runtime savings justify the steeper style.
+
+**Modular monolith with gRPC between Maven modules**
+Protobuf contracts keep the 21 module boundaries honest without paying for real network topology: no service discovery, no cross-service auth, one deployment unit. The costs are binary payloads you cannot inspect with curl, stub regeneration on every contract change, and boundaries that stay clean only through discipline. A REST gateway remains the single public surface, which adds a translation layer to maintain but keeps browsers and mobile clients on plain JSON.
+
+**PostgreSQL 17 with PgBouncer and Flyway**
+Orders, carts, and the transaction audit ledger need ACID and referential integrity, so a relational store was never in question. PgBouncer exists because reactive pools across many modules would exhaust Postgres connections, and Flyway means schema changes are reviewable, versioned artifacts. The trade-offs: transaction-mode pooling limits session-level features, startup migrations can race when several pods launch together, and one shared database is a shared failure domain.
+
+**Kafka event pipeline for the email worker**
+Checkout and order flows publish events and move on; SMTP delivery, retries, and backpressure belong to a worker that scales independently. The cost is at-least-once semantics, meaning duplicate invoice or OTP emails are possible unless consumers deduplicate, plus another stateful broker to operate. For notifications that must never block the order path, the decoupling is worth the operational weight.
+
+**Redis Cluster (6 nodes) read-through caching**
+Sub-second RBAC checks and catalog reads come from cache instead of Postgres, which matters when permission evaluation sits on every request. The price is staleness by design, invalidation logic scattered across modules, and a six-node cluster that is heavy machinery for this dataset's size. It is as much a deliberate exercise in running a real caching topology as a performance necessity.
+
+**Checkout as a cross-module flow**
+Placing an order hops through cart, shipping, and transaction modules over gRPC, and no database transaction spans those boundaries. The order lifecycle states plus the centralized transaction ledger are what keep the audit trail coherent when a step fails midway. That is the honest cost of module isolation: consistency is enforced by flow design and ledgers, not by a transaction manager.
 
 ---
 

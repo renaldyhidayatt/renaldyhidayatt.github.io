@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith Payment Gateway - GraphQL"
 excerpt: "Implementasi backend aman, modular, dan scalable menggunakan GraphQL API Gateway, gRPC, Go, Kafka, dan PostgreSQL."
 date: "2026-05-21"
+created_at: "2026-05-21"
+updated_at: "2026-05-21"
 tags: [
   "golang", "graphql", "grpc", "postgresql", "kafka", "docker", "kubernetes",
   "prometheus", "grafana", "opentelemetry", "jaeger", "redis", "loki", "sqlc"
@@ -614,6 +616,28 @@ flowchart TD
 | **Continuous Profiler**| Pyroscope | Real-time memory allocation tracker to identify hot paths. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Ledger-first PostgreSQL**
+Top-ups, transfers, and withdrawals all write through an audit ledger on PostgreSQL, where ACID transactions make double-spending a database constraint instead of an application hope. The cost: every new financial instrument is a schema migration, and a relational ledger is the hardest store to scale horizontally — acceptable at this volume, a genuine question at scale.
+
+**Optimistic locking on the Saldo service**
+Balance updates use optimistic concurrency so two simultaneous debits cannot silently clobber each other. That buys correctness without distributed lock infrastructure; the price is retry-on-conflict behavior under heavy contention instead of clean queueing — the right trade until transfer throughput itself becomes the bottleneck.
+
+**GraphQL edge over gRPC internals**
+One flexible endpoint in front of twelve finance domains lets clients pull exactly the fields they need, and the Playground documents the API for free. The exposure: resolver fan-out can multiply gRPC hops per request, and because every call is a POST to a single route, conventional HTTP caching is off the table — per-service Redis read-through caches absorb the repeated reads instead.
+
+**PgBouncer between services and PostgreSQL**
+Independently deployed modules each holding their own connection pool would exhaust Postgres sockets quickly; a shared pooler keeps that bounded. The cost is an extra network hop and stricter pooling semantics — session state that survives across transactions is off-limits by design.
+
+**Kafka-driven notification pipeline**
+OTP mails, transfer invoices, and login alerts are published as events and consumed by a dedicated email worker, so dispatching a message never blocks settling a fund movement. At-least-once delivery means a duplicated email can happen, but the ledger, not the inbox, is the source of truth — that inversion is what makes eventual consistency acceptable here.
+
+**Pyroscope continuous profiling**
+Continuous CPU and memory profiling is an unusual commitment for a portfolio backend, but allocation leaks in transaction loops are exactly the failure mode that surfaces weeks after launch. The trade: one more stateful component and dashboard to maintain, in exchange for hot-path evidence instead of speculation.
 
 ---
 

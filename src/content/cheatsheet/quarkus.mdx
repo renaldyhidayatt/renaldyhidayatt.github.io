@@ -1,0 +1,551 @@
+---
+title: "Quarkus 3.x — Cheat Sheet"
+description: "Cheat sheet Quarkus 3.x: CLI & Dev Mode, CDI simplified, Panache, REST, reactive & virtual thread, config, native image, testing, observability, dan jebakan build-time yang mahal."
+date: "2026-10-21"
+created_at: "2026-10-21"
+updated_at: "2026-10-21"
+status: "verified"
+version: "Quarkus 3.17 (LTS line)"
+order: 18
+tags:
+  - java
+  - quarkus
+  - jvm
+  - native
+  - backend
+---
+
+# Quarkus 3.x — Cheat Sheet
+
+> Target: **Java 21 (Temurin)** + **Quarkus 3.17** + **GraalVM 21**.
+> Quarkus beda fundamental dengan Spring: **sebagian besar kerja terjadi saat build**, bukan
+> saat boot. Kalau mental model ini tidak dipegang, hampir semua error akan membingungkan.
+
+**Isi sheet ini**
+
+- CLI & Dev Mode
+- Mental model build-time (baca ini dulu)
+- CDI simplified & injeksi
+- REST (RESTEasy Reactive / Jackson)
+- Validasi & error handling
+- Panache (Active Record & Repository)
+- Konfigurasi & profil
+- Reactive vs virtual thread
+- Testing
+- Native image
+- Observability & health
+- Container & JVM tuning
+- Perbandingan singkat dengan Spring Boot
+- Jebakan (wajib dibaca)
+
+---
+
+## CLI & toolchain
+
+```bash
+# project baru — pilih extension dari awal, bukan belakangan
+quarkus create app com.example:order-service \
+  --extension='rest-jackson,rest-qute,hibernate-orm-panache,jdbc-postgresql,flyway,smallrye-health,micrometer-registry-prometheus,opentelemetry'
+
+cd order-service && ./mvnw quarkus:dev      # dev mode + live reload + Dev UI di /q/dev
+
+# tambah / hapus extension (langsung ubah pom.xml)
+quarkus extension add hibernate-validator
+quarkus extension remove resteasy-classic
+
+# build
+./mvnw clean package                        # jar biasa (JVM mode)
+./mvnw clean package -Dnative               # native executable (butuh GraalVM)
+```
+
+| Perintah | Fungsi |
+| :--- | :--- |
+| `quarkus dev` | live reload, continuous testing, Dev UI, Dev Services (DB/Kafka otomatis) |
+| `quarkus build` | build biasa (Maven/Gradle di belakang) |
+| `quarkus info` | versi Quarkus, Java, GraalVM |
+| `quarkus ext ls` | extension terpasang |
+
+> **Dev mode adalah tempat debugging pertama.** Saat kode berubah, Quarkus hanya mengulang
+> augmentasi yang terdampak — bukan boot ulang penuh. Di atas 10 detik per reload, biasanya
+> ada masalah di extension/build step, bukan di mesin Anda.
+
+---
+
+## Mental model build-time (baca ini dulu)
+
+Quarkus menggeser pekerjaan dari **runtime** ke **build time**: classpath tetap, CDI resolved,
+config dibaca, reflection diganti generated code. Konsekuensinya:
+
+| Yang terjadi saat build | Konsekuensi saat runtime |
+| :--- | :--- |
+| Penemuan bean CDI (`@ApplicationScoped`, dsb.) | Bean tidak dikenal saat build = **tidak ada** saat runtime |
+| Pemindaian endpoint REST | Endpoint tidak ada di build = 404, tanpa error |
+| Serialisasi Jackson (reflection-free) | DTO tidak dikenal = field hilang / error deserialisasi |
+| Konfigurasi dipetakan ke `@ConfigMapping` | Nilai env dibaca saat boot, sebagian saat build |
+| Bytecode diubah / reflect didaftarkan | Library tanpa metadata Quarkus = gagal di native |
+
+```text
+mvn package  ──> augmentation ──> quarkus-app/quarkus-run.jar  (JVM)
+                               └> <app>-runner (native)
+```
+
+> **Jebakan #1:** hampir semua "kenapa tidak jalan" di Quarkus berakar dari sesuatu yang
+> **tidak terlihat saat build**. Kalau runtime tidak menemukan sesuatu, periksa log build —
+> extension mana yang aktif dan apa yang di-augment.
+
+---
+
+## CDI simplified & injeksi
+
+Quarkus memakai Jakarta CDI, tapi dengan building block yang disederhanakan. Tanpa
+`beans.xml`, tanpa proxy-heavy bean, dan default scope yang berbeda dari Jakarta EE.
+
+```java
+@ApplicationScoped                        // default yang dipakai 90% waktu
+public class OrderService {
+
+    private final PaymentGateway gateway;
+
+    @Inject                                 // satu constructor = @Inject otomatis
+    public OrderService(PaymentGateway gateway) {
+        this.gateway = gateway;
+    }
+}
+```
+
+| Anotasi | Scope | Catatan |
+| :--- | :--- | :--- |
+| `@ApplicationScoped` | singleton | default pilihan; proxy lazy |
+| `@Singleton` | singleton | tanpa proxy sama sekali — paling cepat, jangan simpan state mutable |
+| `@RequestScoped` | per request | butuh konteks aktif (HTTP Vert.x) |
+| `@Dependent` | per injection point | **default CDI class biasa** — instance baru tiap injeksi |
+| `@IfBuildProperty` / `@UnlessBuildProperty` | conditional bean | bean ada/tidak ada berdasarkan property **saat build** |
+| `@LookupIfProperty` | conditional bean | dicek saat runtime, bean tetap ada di build |
+
+```java
+// Bean alternatif berdasarkan build property — bukan if-else di runtime
+@ApplicationScoped
+@IfBuildProperty(name = "app.payment.provider", stringValue = "midtrans", enableIfMissing = true)
+public class MidtransGateway implements PaymentGateway { ... }
+```
+
+> **Jebakan #2:** `@Dependent` (scope default class biasa) membuat instance baru setiap kali
+> diinjeksi. Library yang menyimpan cache di `@Dependent` bean tidak akan pernah memanfaatkan
+> cache-nya. Kalau butuh state, pakai `@ApplicationScoped`.
+
+---
+
+## REST (RESTEasy Reactive / Jackson)
+
+```java
+@Path("/api/orders")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class OrderResource {
+
+    @Inject OrderQueryService query;
+
+    @GET
+    @Path("/{id}")
+    public OrderResponse findById(@PathParam("id") long id) {
+        return query.findById(id);
+    }
+
+    @POST
+    public RestResponse<OrderResponse> create(@Valid CreateOrderRequest request) {
+        OrderResponse created = query.create(request);
+        return RestResponse.status(Status.CREATED, created);   // 201 + body
+    }
+
+    @GET
+    @Path("/stream")
+    public Multi<OrderResponse> stream() {                     // streaming, bukan list
+        return query.streamAll();
+    }
+}
+```
+
+```java
+// REST Client (MicroProfile) — declare, bukan RestTemplate
+@RegisterRestClient(configKey = "payment-api")
+@Path("/v1/charges")
+public interface PaymentClient {
+
+    @POST
+    Uni<ChargeResponse> charge(ChargeRequest request);
+
+    @GET @Path("/{id}")
+    ChargeResponse find(@PathParam("id") String id);
+}
+```
+
+```properties
+# application.properties
+payment-api/mp-rest/url=https://api.payment.example
+payment-api/mp-rest/timeout=5000
+```
+
+| Hal | Quarkus | Spring MVC |
+| :--- | :--- | :--- |
+| Panggilan method resource | dijalankan di **event loop** secara default | thread pool servlet |
+| Blocking DB call di resource | harus `@Blocking` atau `@Transactional` | aman (thread per request) |
+| Body besar / streaming | `Multi<T>` / `InputStream` | `StreamingResponseBody` |
+| Client | MicroProfile REST Client | `RestClient` / `WebClient` |
+
+> **Jebakan #3:** resource non-`Uni` yang memanggil JDBC harus `@Blocking`
+> (method `@Transactional` biasanya sudah otomatis dianggap blocking). Tanpa itu, request
+> blocking di event loop → semua request lain di worker yang sama ikut tertahan.
+
+---
+
+## Validasi & error handling
+
+```java
+public record CreateOrderRequest(
+    @NotNull Long productId,
+    @Min(1) @Max(100) int quantity
+) {}
+
+// Mapper exception global — satu class untuk seluruh aplikasi
+@Provider
+public class DomainExceptionMapper implements ExceptionMapper<DomainException> {
+
+    @Override
+    public Response toResponse(DomainException e) {
+        return Response.status(Status.UNPROCESSABLE_ENTITY)
+            .entity(Map.of("error", e.code(), "message", e.getMessage()))
+            .build();
+    }
+}
+
+// Mapper untuk kegagalan Bean Validation
+@Provider
+public class ValidationExceptionMapper implements ExceptionMapper<ConstraintViolationException> {
+    @Override
+    public Response toResponse(ConstraintViolationException e) {
+        Map<String, String> fields = e.getConstraintViolations().stream()
+            .collect(Collectors.toMap(
+                v -> v.getPropertyPath().toString(),
+                ConstraintViolation::getMessage,
+                (a, b) -> a));
+        return Response.status(400).entity(Map.of("fields", fields)).build();
+    }
+}
+```
+
+---
+
+## Panache (Active Record & Repository)
+
+Panache menghapus boilerplate CRUD. Pilih **satu** gaya per bounded context — jangan campur.
+
+```java
+// Gaya A - Active Record: entity tahu cara memuat dirinya
+@Entity
+public class Order extends PanacheEntity {          // field id (Long) sudah ada
+
+    public Long merchantId;
+    @Enumerated(EnumType.STRING) public OrderStatus status;
+    public BigDecimal totalPrice;
+
+    public static List<Order> byMerchantAndStatus(Long merchantId, OrderStatus status) {
+        return list("merchantId = ?1 and status = ?2", merchantId, status);
+    }
+
+    public static Optional<Order> byIdWithItems(Long id) {
+        return find("select o from Order o join fetch o.items where o.id = ?1", id)
+            .singleResultOptional();
+    }
+}
+
+// Gaya B - Repository (pakai kalau entity dipakai lintas service)
+@ApplicationScoped
+public class OrderRepository implements PanacheRepository<Order> {
+
+    public List<Order> byStatus(OrderStatus status) {
+        return list("status", status);
+    }
+}
+```
+
+```java
+@ApplicationScoped
+public class OrderService {
+
+    @Inject OrderRepository repository;
+
+    @Transactional                              // wajib untuk operasi tulis
+    public OrderResponse create(CreateOrderRequest req) {
+        Order order = new Order();
+        order.merchantId = req.productId();
+        order.status = OrderStatus.PENDING;
+        order.persist();                        // Active Record
+        return OrderResponse.from(order);
+    }
+}
+```
+
+| Hal | Active Record | Repository |
+| :--- | :--- | :--- |
+| Boilerplate | paling sedikit | satu class per entity |
+| Uji unit | susah (static) | mudah (mock) |
+| Entity di layer lain | entity "tahu DB" | entity tetap bodoh |
+| Cocok untuk | service kecil, CRUD | domain kompleks |
+
+> **Jebakan #4:** Panache melakukan **bytecode rewrite** saat build — itu sebabnya
+> `order.persist()` bekerja tanpa `EntityManager`. Karena itu juga, entity Panache tidak bisa
+> dipakai sebagai entity Hibernate biasa di modul lain; semuanya harus lewat Quarkus build.
+
+---
+
+## Konfigurasi & profil
+
+```properties
+# application.properties
+quarkus.http.port=8083
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:pos_sales}
+quarkus.datasource.username=${DB_USER:mqr_user}
+quarkus.datasource.password=${DB_PASS:mqr_pass}
+quarkus.hibernate-orm.database.generation=validate
+quarkus.flyway.migrate-at-start=true
+quarkus.flyway.baseline-on-migrate=true
+
+# profil: %dev / %test / %prod%
+%dev.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/pos_sales_dev
+%dev.quarkus.hibernate-orm.log.sql=true
+%prod.quarkus.datasource.jdbc.max-size=20
+%prod.quarkus.http.header."Strict-Transport-Security".value=max-age=31536000
+```
+
+```java
+// Typed config — divalidasi saat boot, bukan NPE di tengah request
+@ConfigMapping(prefix = "app.ratelimit")
+public interface RateLimitConfig {
+
+    @WithDefault("true") boolean enabled();
+    @WithDefault("60") int maxPerMinute();
+
+    Optional<String> allowlist();        // tanpa default = opsional
+}
+
+@ApplicationScoped
+public class RateLimiter {
+    @Inject RateLimitConfig config;
+}
+```
+
+| Aturan | Kenapa |
+| :--- | :--- |
+| Pakai `@ConfigMapping` (interface), bukan `@ConfigProperty` bertaburan | tervalidasi saat boot, satu tempat |
+| Env var = `APP_RATELIMIT_MAXPERMINUTE` | Quarkus memetakan otomatis (uppercase + `_`) |
+| Sebagian `quarkus.*` bersifat **build-time fixed** | diubah saat deploy = tidak ada efek |
+| Jangan taruh secret di `application.properties` | pakai env / Vault / secret manager |
+| `%prod` mengalahkan nilai tanpa profil | audit ulang saat menaikkan versi Quarkus |
+
+> **Jebakan #5:** mengenali build-time vs runtime config itu wajib. `quarkus.datasource.db-kind`
+> dan `quarkus.hibernate-orm.database.generation` dibaca **saat build** — mengubahnya di
+> deployment tidak berpengaruh, image harus di-rebuild. Yang biasanya runtime: URL koneksi, port,
+> credential, log level.
+
+---
+
+## Reactive vs virtual thread
+
+Quarkus 3 mendukung dua gaya; **pilih per endpoint**, jangan campur dalam satu method.
+
+```java
+// Gaya 1 - Reactive (Uni/Multi). Non-blocking, satu event loop untuk banyak request.
+@GET
+public Uni<List<OrderResponse>> list() {
+    return Order.<Order>listAll()
+        .map(orders -> orders.stream().map(OrderResponse::from).toList());
+}
+
+// Gaya 2 - Virtual thread (Java 21). Kode blocking biasa, tanpa menghabiskan thread pool.
+@RunOnVirtualThread
+@Transactional
+@GET
+@Path("/heavy")
+public List<ReportRow> heavyReport() {
+    return reportService.compute();        // boleh blocking
+}
+```
+
+| Gaya | Kapan | Trade-off |
+| :--- | :--- | :--- |
+| `Uni`/`Multi` | I/O banyak, throughput tinggi, streaming | rantai mutasi; stack trace lebih panjang |
+| `@RunOnVirtualThread` | kode blocking/legacy, JDBC driver biasa | pinning jika ada `synchronized` panjang |
+| `@Blocking` | blocking di worker pool | throughput dibatasi `quarkus.vertx.worker-pool-size` |
+
+> **Jebakan #6:** mencampur `Uni` dengan panggilan blocking tidak menghasilkan error — hanya
+> event loop tersendat dan latensi semua endpoint naik. Aturannya: **event loop tidak boleh
+> blocking, titik.**
+
+---
+
+## Testing
+
+```java
+// 1. Unit test murni — tanpa Quarkus sama sekali
+@ExtendWith(MockitoExtension.class)
+class OrderServiceTest {
+    @Mock OrderRepository repository;
+    @InjectMocks OrderService service;
+}
+
+// 2. Integration test — Quarkus start sekali untuk seluruh class
+@QuarkusTest
+class OrderResourceTest {
+
+    @Test
+    void shouldReturn400OnInvalidQuantity() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"productId\": 1, \"quantity\": 0}")
+        .when()
+            .post("/api/orders")
+        .then()
+            .statusCode(400);
+    }
+}
+
+// 3. Native test — jalankan suite yang sama di binary (butuh GraalVM)
+// @QuarkusIntegrationTest
+```
+
+```properties
+# Dev Services: DB/Kafka otomatis saat dev & test (butuh Docker)
+%test.quarkus.datasource.devservices.enabled=true
+%test.quarkus.datasource.devservices.init-script-path=src/test/resources/seed.sql
+```
+
+| Test | Cost | Dipakai untuk |
+| :--- | :--- | :--- |
+| Unit (Mockito) | milidetik | logika bisnis |
+| `@QuarkusTest` | 1 JVM boot | resource, repository, config, wiring |
+| `@QuarkusIntegrationTest` | native/jar boot | memastikan native image tidak kehilangan reflection |
+| Continuous testing (`quarkus dev` → `r`) | otomatis saat save | loop cepat |
+
+> **Jebakan #7:** `@QuarkusTest` **tidak** memuat ulang konteks antar test class. Bean
+> `@ApplicationScoped` yang menyimpan state terbawa ke test berikutnya — reset di
+> `@BeforeEach`, atau pakai `@TestProfile` untuk konfigurasi berbeda.
+
+---
+
+## Native image
+
+```bash
+# Build native (container build, tanpa GraalVM lokal)
+./mvnw package -Dnative -Dquarkus.native.container-build=true
+
+# Ukuran & startup yang realistis
+ls -lh target/*-runner
+./target/*-runner      # start ~20-60 ms, RSS ~40-80 MB untuk service REST kecil
+```
+
+```properties
+# Native: apa pun yang diakses lewat reflection / resource harus didaftarkan
+quarkus.native.resources.includes=db/migration/*.sql,templates/**
+quarkus.native.additional-build-args=-H:+ReportExceptionStackTraces
+```
+
+| Sumber masalah native | Gejala | Perbaikan |
+| :--- | :--- | :--- |
+| Reflection ke class library | `ClassNotFoundException` hanya di native | `@RegisterForReflection` / config |
+| Resource (file, template) | template kosong, migration tidak jalan | `quarkus.native.resources.includes` |
+| Dynamic proxy / ServiceLoader | `ServiceConfigurationError` | extension biasanya menangani; library asing perlu config |
+| Serialization Jackson | field hilang / error parse | daftarkan DTO atau pakai DTO kelas biasa |
+| Startup cepat tapi error | JVM lolos, native gagal | jalankan `@QuarkusIntegrationTest` |
+
+> **Jebakan #8:** tes hijau di JVM tidak menjamin native jalan. **Selalu** jalankan suite
+> integration test native di CI sebelum rilis — satu-satunya cara menangkap reflection yang hilang
+> adalah menjalankan binary-nya.
+
+---
+
+## Observability & health
+
+```properties
+quarkus.smallrye-health.liveness-path=/q/health/live
+quarkus.smallrye-health.readiness-path=/q/health/ready
+quarkus.micrometer.export.prometheus.path=/q/metrics
+quarkus.otel.exporter.otlp.endpoint=http://alloy:4317
+quarkus.otel.service.name=order-service
+quarkus.log.console.json=true
+quarkus.log.category."org.hibernate".level=INFO
+```
+
+| Endpoint | Isi |
+| :--- | :--- |
+| `/q/health/live` | proses hidup — jangan cek dependency di sini |
+| `/q/health/ready` | siap menerima trafik — DB, Kafka, cache |
+| `/q/metrics` | Micrometer → Prometheus |
+| `/q/dev` | Dev UI (hanya dev) |
+| `/q/openapi` | OpenAPI + Swagger UI (extension `smallrye-openapi`) |
+
+> **Jebakan #9:** readiness check yang membuka koneksi baru tiap 1 detik dari Kubernetes akan
+> menguras pool kecil. Gunakan health check bawaan extension (sudah berbagi pool) atau beri cache.
+
+---
+
+## Container & JVM tuning
+
+```dockerfile
+# Multi-stage: build di image Maven, jalankan di JRE minimal
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /src
+COPY pom.xml .
+RUN mvn -q dependency:go-offline
+COPY src src
+RUN mvn -q clean package -DskipTests
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /src/target/quarkus-app/ /app/
+EXPOSE 8080
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/quarkus-run.jar"]
+```
+
+| Mode | Startup | RSS | Image |
+| :--- | :--- | :--- | :--- |
+| JVM (`quarkus-run.jar`) | ~300-800 ms | ~120-200 MB | ~200 MB (JRE) |
+| Native executable | ~20-60 ms | ~40-80 MB | ~80-120 MB |
+| Native distroless/scratch | ~20 ms | ~40 MB | ~50 MB |
+
+> **Jebakan #10:** `quarkus-app/` adalah **direktori**, bukan satu fat jar. Menyalin
+> `quarkus-run.jar` saja akan gagal (`lib/` dan `quarkus/` tidak ikut). Salin seluruh direktori,
+> atau pakai `quarkus.package.jar.type=uber-jar` bila memang harus satu file.
+
+---
+
+## Perbandingan singkat dengan Spring Boot
+
+| Aspek | Quarkus | Spring Boot |
+| :--- | :--- | :--- |
+| Waktu boot JVM | ratusan ms | 1-5 detik |
+| Native image | first-class | didukung, butuh hint tambahan |
+| DI | CDI, sebagian besar build-time | Spring container, runtime proxy |
+| Model HTTP | Vert.x event loop, reactive-first | servlet thread-per-request (atau WebFlux) |
+| Live reload | built-in Dev Mode | DevTools (restart terbatas) |
+| Ekosistem | lebih kecil, cukup untuk REST/DB/messaging | paling besar |
+| Debug "bean tidak ketemu" | cek output build | cek component scan |
+
+---
+
+## Jebakan (wajib dibaca)
+
+| Jebakan | Gejalanya | Solusinya |
+| :--- | :--- | :--- |
+| Bean tidak ter-discover | `UnsatisfiedResolutionException` saat boot | cek `@ApplicationScoped`, jangan class `private`, cek `quarkus.index-dependency` |
+| Blocking di event loop | Latensi semua endpoint naik, warning BlockedThreadChecker | `@Blocking` / `Uni` / `@RunOnVirtualThread` |
+| `@Transactional` di method non-public | Transaksi diam-diam tidak aktif | taruh di method public bean |
+| Lupa `@Transactional` pada tulis Panache | `TransactionRequiredException` | anotasi di batas service |
+| Ubah config build-time saat deploy | Tidak ada efek | rebuild image |
+| Reflection di native | jalan di JVM, gagal di native | `@RegisterForReflection` + integration test |
+| Dev Services di produksi | Container DB tak terduga | matikan eksplisit di `%prod` |
+| DTO `record` di native | response kosong | daftarkan reflection atau pakai DTO kelas biasa |
+| Fat jar diharapkan | `quarkus-run.jar` gagal start | salin `quarkus-app/` atau `jar.type=uber-jar` |
+| State di `@Dependent` bean | Cache tidak pernah kena | `@ApplicationScoped` |
+| `database.generation=update` | Schema berubah diam-diam | `validate` + Flyway |
+| Health check menembak DB terus | Pool penuh, request gagal | readiness ringan / cache |

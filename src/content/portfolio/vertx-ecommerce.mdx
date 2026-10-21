@@ -2,6 +2,8 @@
 title: "Distributed Modular Monolith E-Commerce - Vertx"
 excerpt: "REST API E-Commerce komprehensif berskala mikro dengan arsitektur reaktif Java 17, Vert.x, PostgreSQL, Redis, serta integrasi observabilitas penuh via OpenTelemetry."
 date: "2026-05-21"
+created_at: "2026-05-21"
+updated_at: "2026-05-21"
 tags: ["java", "vertx", "postgresql", "redis", "docker", "prometheus", "grafana", "loki", "jaeger", "opentelemetry", "flyway"]
 status: "selesai"
 image: "/portofolio/Vert.xEcommerce/VertxEcommerce.png"
@@ -529,6 +531,28 @@ flowchart TD
 | **Continuous Profiler** | Pyroscope | Real-time memory allocation tracker to identify hot paths. |
 | **Docker Engine** | Compose | Local environment virtualization orchestration. |
 | **Orchestrator** | Kubernetes | Production-scale auto-scaling pod clustering infrastructure. |
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Vert.x event-loop instead of a thread-per-request stack**
+The non-blocking event loop lets a handful of threads push high throughput through all 22 services with a small memory footprint. The cost is discipline: any blocking call that lands on the loop, such as a synchronous wait or a CPU-heavy transform, stalls every request sharing it, so the codebase has to stay reactive end to end. For an API backend whose work is mostly I/O proxying, that trade is worth it.
+
+**gRPC between modules rather than plain method calls**
+Contract-first protobuf gives every domain a typed, versioned boundary and cheap serialization, and it keeps the option of splitting modules into real deployables later. The cost is that even inside one binary, each call crosses a socket with marshalling overhead, plus proto codegen in the build. That overhead buys enforceable boundaries that method calls would let erode.
+
+**Modular monolith over full microservices**
+One deployment unit with 22 isolated Maven modules keeps operations simple while preserving logical ownership per domain. The honest downside: despite the Kafka, Redis Cluster, and Kubernetes scaffolding, everything still scales together, and a bad deploy affects all domains at once. At this project's scale, running 22 real services would cost more than it returns.
+
+**Kafka for email side effects**
+Checkout and merchant onboarding publish events and move on; the Email worker consumes them and talks to SMTP. This keeps the write path non-blocking, but it means notification delivery is eventual — a failed SMTP host surfaces later, not at checkout time. That is the right trade for invoices and OTP mails, which must not sit on the order path.
+
+**Redis Cluster as a read-through cache**
+Permissions and hot catalog reads resolve from the cluster in sub-second time instead of hitting PostgreSQL on every request. The price is a 6-node cluster to operate and a stale-window problem: after a permission or product change, cached values linger until invalidated. For read-heavy storefront traffic this is a net win.
+
+**PostgreSQL with PgBouncer for order integrity**
+Order, order-item, and stock writes must commit atomically or the store oversells, so ACID PostgreSQL is the safe choice; PgBouncer keeps the many services from exhausting database connections. The cost is a rigid schema where every catalog change is a Flyway migration, which is acceptable at this data volume.
 
 ---
 

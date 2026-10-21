@@ -2,6 +2,8 @@
 title: "Inventory Django"
 excerpt: "An inventory management project built with Django, known for its simplicity and comprehensive features."
 date: "2025-01-31"
+created_at: "2025-01-31"
+updated_at: "2025-01-31"
 tags: ["django", "python", "postgres", "bootstrap"]
 status: "selesai"
 image: "https://github.com/renaldyhidayatt/inventorydjango/blob/main/images/Demo.png?raw=true"
@@ -22,6 +24,22 @@ This project is built using **Django** as the main framework. Django was chosen 
 - **Django** 🦄
 - **PostgreSQL** 🗃️
 - **Bootstrap** ⚙️
+
+## Technical Decisions & Trade-offs
+
+**Django (batteries-included) vs API-first frameworks (FastAPI)**
+An inventory tool with a dashboard is exactly Django's sweet spot: the admin panel, ORM, auth, and form validation all ship out of the box, so a working internal app is days, not weeks. The cost of convenience: Django renders server-side HTML pages, so it's not a JSON API — feeding it to a modern SPA later means adding DRF or a second service. You also inherit its conventions, including the synchronous WSGI request model (a fine default, just not the async ceiling of ASGI).
+
+**Django ORM vs raw SQL**
+The ORM gives safe, relation-aware queries with no injection risk and minimal boilerplate. The trade-off: generated SQL is opaque until you turn on the query logger, and unguarded relation access causes N+1 queries — which is why an inventory dashboard must be built with `select_related`/`prefetch_related` on purpose, not by accident.
+
+**Bootstrap for the dashboard UI**
+Off-the-shelf tables, forms, and cards are fast to assemble for a dense admin interface. The cost: it looks like every other Bootstrap admin panel — visual identity takes deliberate effort to escape the framework's defaults.
+
+**Session-based auth out of the box**
+Django's session + auth system works immediately (login, logout, password reset, admin). The trade-off: sessions are server-side state, so scaling to multiple replicas requires shared session storage (Redis or the database); a stateless JWT approach scales more freely but gives up instant revocation.
+
+
 
 ## 📸 Screenshots
 

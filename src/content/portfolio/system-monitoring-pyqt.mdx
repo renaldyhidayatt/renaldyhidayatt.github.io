@@ -2,6 +2,8 @@
 title: "System Monitoring with PyQt"
 excerpt: "A real-time system monitoring dashboard using PyQt and PyQtGraph for visualizing CPU, RAM, network, and hardware statistics."
 date: "2025-02-05"
+created_at: "2025-02-05"
+updated_at: "2025-02-05"
 tags: ["python", "psutil", "pyqt", "pyqtgraph"]
 status: "selesai"
 image: "https://github.com/MamangRust/example-monitoring-pyqt/raw/main/images/image.png?raw=true"
@@ -34,6 +36,20 @@ image: "https://github.com/MamangRust/example-monitoring-pyqt/raw/main/images/im
 - ⚙️ **Subprocess** - Managing subprocesses and executing shell commands
 - 🔍 **Re (Regex)** - Regular expressions for pattern matching
 - 📊 **PyQtGraph** - Scientific and engineering plotting library for PyQt
+
+## Technical Decisions & Trade-offs
+
+**Psutil first, subprocess where it falls short**
+Psutil covers CPU, RAM, network, and battery as clean in-process calls, but some metrics, temperatures and frequencies in particular, still arrive by running shell commands and matching their output with regex. The mix is pragmatic; the cost is that regex over command output breaks quietly whenever a tool changes its format across distros or versions.
+
+**Polling rate vs self-reported load**
+The dashboard samples the same machine it runs on, so its own CPU usage lands in the very graphs it draws. Polling aggressively makes the charts feel live but adds measurable load; polling lazily misses short spikes between samples. The cadence is a compromise between fidelity and footprint, not a setting with a right answer.
+
+**The GIL and the GUI thread**
+Python's GIL rules out parallel CPU-bound collection, and any heavy processing that lands on Qt's GUI thread would stutter the PyQtGraph redraws. It stays manageable here because psutil calls are short, but the architecture caps how much per-tick number crunching the app can afford.
+
+**PyQtGraph over matplotlib for live plots**
+PyQtGraph renders inside Qt with fast repaints and built-in pan and zoom, which suits graphs that refresh every fraction of a second. The trade-off is aesthetics and ecosystem: its charts look more utilitarian than matplotlib's and its community is smaller, an easy price where responsiveness is the point.
 
 ## 📸 Screenshots
 

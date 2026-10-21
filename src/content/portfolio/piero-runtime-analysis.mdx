@@ -2,6 +2,8 @@
 title: "PIERO Runtime Analysis & AI Decompiler"
 excerpt: "A GPU-accelerated reverse engineering platform built with the Zed GPUI framework, combining static binary disassembly, real-time eBPF runtime tracing, and local Edge-AI semantic analysis."
 date: "2026-03-10"
+created_at: "2026-03-10"
+updated_at: "2026-03-10"
 tags:
   - rust
   - gpui
@@ -84,6 +86,25 @@ The binary parsing engine is optimized to maintain responsive GPU-rendered user 
 - **AI Integration**: Local Edge-AI semantic reasoning SDK
 - **Binary Formats**: ELF analysis pipeline with asynchronous parsing
 - **Concurrency Runtime**: Tokio asynchronous runtime
+
+---
+
+## Technical Decisions & Trade-offs
+
+**Hybrid static-dynamic correlation vs either alone**
+Static disassembly shows what code could do; eBPF runtime tracing shows what it actually does — syscall patterns, socket creation, privilege escalation attempts. Correlating the two in real time is the product's entire value, and the cost is that dynamic analysis needs kernel access on the analyzed host, kernel compatibility for eBPF, and the right to instrument the machine at that level.
+
+**Local Edge-AI decompilation vs cloud models**
+Keeping model inference local means binary artifacts, symbols, and telemetry never leave the analyst's machine — a hard requirement when reverse engineering untrusted or sensitive samples. The trade-off is quality: local small models are weaker than frontier cloud services at semantic reconstruction, and their natural-language explanations can be confidently wrong, so every AI summary stays a lead to verify, not a verdict.
+
+**GPUI rendering while parsing large binaries**
+Asynchronous parsing in isolated workers keeps the GPU-rendered UI at 60-120 FPS even while ELF headers, symbol tables, and relocation data are being decoded for large executables. The cost is engineering discipline: every view must tolerate partial data, and results stream in progressively rather than appearing complete.
+
+**Rust for binary inspection tooling**
+Parsing untrusted binaries is exactly where memory-corruption vulnerabilities live in traditional reverse engineering tooling, so Rust's memory safety is a security property of the analyzer itself, not just an implementation preference. The trade-off is a smaller ecosystem of existing RE libraries compared to Python-centric toolchains, which means more of the parsing layer is built in-house.
+
+**Dual-use positioning**
+The same disassembly, syscall tracing, and AI summarization that serve malware analysts serve offensive researchers, and the tool does not distinguish between them. That is inherent to reverse engineering software; authorization responsibility sits with the operator, and the fully local inference design at least keeps analyzed samples from leaking to third parties.
 
 ---
 
