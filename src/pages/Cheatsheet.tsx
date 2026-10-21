@@ -129,12 +129,12 @@ const Cheatsheet = () => {
     const handlePrev = () => page > 1 && setPage(page - 1);
     const handleNext = () => page < totalPages && setPage(page + 1);
 
-    // filter berubah -> kembali ke halaman pertama
+    // filters changed -> back to the first page
     useEffect(() => {
         setPage(1);
     }, [searchTerm, selectedTags]);
 
-    // halaman valid setelah jumlah hasil berubah (mis. tag dilepas)
+    // keep the page valid after the result count changes (e.g. a tag is removed)
     useEffect(() => {
         if (totalPages > 0 && page > totalPages) setPage(totalPages);
     }, [page, totalPages]);
@@ -174,7 +174,7 @@ const Cheatsheet = () => {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-foreground" />
                         <input
                             type="text"
-                            placeholder="Cari topik, versi, atau tag... (mis. kafka, grpc, postgres)"
+                            placeholder="Search topics, versions, or tags... (e.g. kafka, grpc, postgres)"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-11 pr-4 py-2.5 border-2 border-ink bg-surface text-foreground placeholder:text-muted-foreground shadow-retro-sm focus:outline-none focus:shadow-retro font-mono text-xs md:text-sm transition-all"
@@ -185,7 +185,7 @@ const Cheatsheet = () => {
                         <div className="flex flex-wrap items-center gap-2 mt-4 animate-fade-in" style={{ animationDelay: "0.3s" }}>
                             <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mr-1 inline-flex items-center gap-1">
                                 <Tag className="w-3 h-3" />
-                                Filter tag:
+                                Filter tags:
                             </span>
                             {allTags.map((tag) => {
                                 const active = selectedTags.includes(tag);
@@ -220,7 +220,7 @@ const Cheatsheet = () => {
                         <div className="text-left py-16 px-8 retro-card border-2 border-ink shadow-retro">
                             <h3 className="text-xl font-black mb-2 text-foreground">No sheets found</h3>
                             <p className="text-sm text-muted-foreground">
-                                Coba keyword lain — atau cek ulang nanti, cheatsheet baru menyusul.
+                                Try a different keyword — or check back later, new cheatsheets are on the way.
                             </p>
                         </div>
                     ) : (
@@ -277,7 +277,7 @@ const Cheatsheet = () => {
                             <div className="space-y-2">
                                 <div className="retro-badge inline-flex items-center gap-2">
                                     <FileCode2 className="w-3.5 h-3.5" />
-                                    Cara kerja
+                                    How it works
                                 </div>
                                 <h2 className="text-xl font-black text-foreground">
                                     Blog explains <em className="text-primary">why</em>, cheatsheets remember{" "}
@@ -294,7 +294,7 @@ const Cheatsheet = () => {
                                 className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 bg-foreground text-background text-sm font-black uppercase tracking-wider transition-all hover:-translate-y-0.5"
                                 style={{ border: "2px solid hsl(var(--border))", boxShadow: "3px 3px 0 hsl(var(--border))" }}
                             >
-                                Baca Blog
+                                Read the Blog
                                 <ArrowRight className="w-4 h-4" />
                             </Link>
                         </div>

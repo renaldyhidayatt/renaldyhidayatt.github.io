@@ -318,7 +318,7 @@ ansible-inventory --host web-01 --yaml
 ansible-playbook site.yml -vv --check
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
 | `-e` wins over everything, including `defaults` | useful for overrides; dangerous when used carelessly |
 | Do not use play-level `vars:` for values that can change | hard to trace; use group_vars/host_vars |
@@ -528,7 +528,7 @@ ansible-vault encrypt_string --name 'db_password' 'S3cret'   # a single variable
 security find-generic-password -a ansible-vault -s my-project -w
 ```
 
-| Aturan | Kenapa |
+| Rule | Why |
 | :--- | :--- |
 | Secrets only in a separate vault file | easy auditing, not mixed with config values |
 | `no_log: true` on tasks that touch secrets | prevents leaking into logs |

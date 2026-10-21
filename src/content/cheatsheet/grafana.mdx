@@ -480,7 +480,7 @@ Explore ── query Loki ──► log lines ──► click trace_id ──►
    └─── Trace to metrics ──► from a Jaeger span ──► query Prometheus
 ```
 
-| Integrasi | Cara |
+| Integration | How |
 | :--- | --- |
 | Loki → Jaeger | `derivedFields` with `matcherRegex` trace_id + `datasourceUid` |
 | Jaeger → Prometheus | Trace view → "Trace to metrics" |
@@ -569,11 +569,11 @@ curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
 curl -s http://localhost:3000/api/health
 ```
 
-| Endpoint | Fungsi |
+| Endpoint | Function |
 | :--- | --- |
-| `GET /api/search` | cari dashboard/data source/folder |
-| `GET /api/dashboards/uid/:uid` | ambil dashboard |
-| `POST /api/dashboards/db` | simpan dashboard |
+| `GET /api/search` | search dashboards/data sources/folders |
+| `GET /api/dashboards/uid/:uid` | fetch a dashboard |
+| `POST /api/dashboards/db` | save a dashboard |
 | `GET /api/datasources` | list datasources |
 | `GET /api/folders` | list folders |
 | `GET /api/annotations` | annotation (event deploy) |

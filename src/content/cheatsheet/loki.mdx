@@ -210,10 +210,10 @@ sum by (path) (
 )
 ```
 
-| Aturan `unwrap` | Detail |
+| `unwrap` rule | Detail |
 | :--- | --- |
 | Format | `unwrap field` or `unwrap label_format` |
-| Field must be **numeric** | string → error parse, seri hilang |
+| Field must be **numeric** | string → parse error, series dropped |
 | Error filter | `| __error__=""` (discard those that failed to parse) |
 | `le` label | `quantile_over_time` needs an `le` bucket |
 

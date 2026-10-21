@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { BookMarked, ArrowRight } from "lucide-react";
 
 /**
- * Banner ajakan ke section Cheatsheet — ditaruh di header halaman Blog & Portfolio.
+ * Call-to-action banner for the Cheatsheet section — placed in the Blog & Portfolio page headers.
  */
 const CheatsheetBanner = () => {
     return (
@@ -15,7 +15,7 @@ const CheatsheetBanner = () => {
                 Cheatsheet
             </span>
             <span className="hidden text-[10px] font-mono text-badge-ink/70 sm:inline">
-                versi terkunci &middot; snippet terverifikasi
+                pinned versions &middot; verified snippets
             </span>
             <ArrowRight className="h-3.5 w-3.5 text-badge-ink transition-transform group-hover:translate-x-0.5" />
         </Link>

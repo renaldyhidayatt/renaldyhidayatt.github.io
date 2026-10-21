@@ -160,7 +160,7 @@ const PortfolioProject = () => {
                     <div className="h-[3px] bg-border mb-14" />
 
                     <div className="mb-14">
-                        <RelatedCheatsheets tags={project.tags || []} title="Cheatsheet Untuk Proyek Ini" />
+                        <RelatedCheatsheets tags={project.tags || []} title="Cheatsheets For This Project" />
                     </div>
 
                     {latestProjects.length > 0 && (

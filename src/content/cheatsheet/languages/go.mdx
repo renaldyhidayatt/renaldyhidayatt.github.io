@@ -504,7 +504,7 @@ func (t Time) MarshalJSON() ([]byte, error) {
 | `json:"name"` | field name |
 | `json:"-"` | abaikan |
 | `json:"name,omitempty"` | omit when empty |
-| `json:"-"` + custom | field privat tetap diserialisasi lewat method |
+| `json:"-"` + custom | private field still serialized through a method |
 
 > `encoding/json/v2` is still **experimental** in 1.25–1.26 (enabled via `GOEXPERIMENT=jsonv2`).
 > Do not use it in production before it stabilizes.

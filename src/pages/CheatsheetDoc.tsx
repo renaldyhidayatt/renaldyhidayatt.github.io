@@ -112,7 +112,7 @@ const CheatsheetDoc = () => {
                                         style={{ boxShadow: "2px 2px 0 hsl(var(--border))" }}
                                     >
                                         <Flame className="w-3 h-3" />
-                                        Snippet Terverifikasi
+                                        Verified Snippet
                                     </span>
                                 )}
                             </div>
