@@ -9,40 +9,42 @@ status: "completed"
 image: "https://github.com/renaldyhidayatt/django_react_recommendation_product/raw/last_proyek/assets/diagram_proyek_akhi.png?raw=true"
 ---
 
+# E-commerce Product Recommendation System Based on Sentiment Analysis of User Reviews and Ratings
+
 ## Project Description
 
 This project aims to develop a product recommendation system for e-commerce platforms using sentiment analysis of user reviews and product ratings. The system helps customers find the most relevant products based on the opinions and experiences of other users.
 
 ### Key Features
-- 💬 **Sentiment Analysis:** Uses *Natural Language Toolkit* (NLTK) to perform sentiment analysis on user reviews, categorizing them as positive, neutral, or negative.
-- 🛍️ **Product Recommendations:** Provides product suggestions based on user reviews and product ratings.
-- 🔄 **Data Processing:** Utilizes Pandas to process review and rating data before performing further analysis.
+- **Sentiment Analysis:** Uses *Natural Language Toolkit* (NLTK) to perform sentiment analysis on user reviews, categorizing them as positive, neutral, or negative.
+- **Product Recommendations:** Provides product suggestions based on user reviews and product ratings.
+- **Data Processing:** Utilizes Pandas to process review and rating data before performing further analysis.
 
 ### Technologies Used
-- 🖥️ **Backend:** Django for server-side and API development.
-- 🎨 **Frontend:** React JS with Bootstrap 5 for building a responsive user interface.
-- 💡 **Sentiment Analysis:** NLTK for analyzing product reviews and ratings.
-- 📊 **Data Processing:** Pandas for processing review and rating data.
-- 🖥️ **Desktop Design:** Tauri JS for building a lightweight desktop application based on web technologies.
+- **Backend:** Django for server-side and API development.
+- **Frontend:** React JS with Bootstrap 5 for building a responsive user interface.
+- **Sentiment Analysis:** NLTK for analyzing product reviews and ratings.
+- **Data Processing:** Pandas for processing review and rating data.
+- **Desktop Design:** Tauri JS for building a lightweight desktop application based on web technologies.
 
 ### Model Flow
 <img src="https://github.com/renaldyhidayatt/django_react_recommendation_product/raw/last_proyek/assets/diagram-export-11-4-2023-5_55_00-PM.png?raw=true" width="600" height="400"/>
 
 ## Technical Decisions & Trade-offs
 
-**Review sentiment as the recommendation signal**
+### Review sentiment as the recommendation signal
 Ranking products by the sentiment of user reviews and ratings means recommendations work even for items with no interaction history, because the signal lives in what people wrote rather than in who bought what. The cost: the system inherits whatever NLTK reads out of the text, misses taste patterns that never surface in words, and only improves when reviews are reprocessed. Without a large user-behavior dataset to learn from, starting from review content is the defensible choice.
 
-**NLTK over a custom-trained sentiment model**
+### NLTK over a custom-trained sentiment model
 Using an established NLP library for sentiment buys predictable, documented behavior and no training pipeline to maintain. The trade-off is generality: e-commerce reviews are full of slang, irony, and mixed opinions, and an off-the-shelf analyzer misclassifies those more often than a model trained on this domain would. At this project's scale, the simpler dependency wins.
 
-**Pandas preprocessing as a batch step**
+### Pandas preprocessing as a batch step
 Reviews and ratings are cleaned and shaped with Pandas before analysis, which keeps the pipeline transparent and easy to debug — every intermediate table can be inspected. The cost is freshness: this is batch processing, so recommendations are only as current as the last run, and there is no streaming path for new reviews. For a dataset of this size, batch is the right call.
 
-**One Django backend serving React and Tauri**
+### One Django backend serving React and Tauri
 A single Django API backs both the React web UI and the Tauri desktop build, so the recommendation logic exists in exactly one place. The trade-offs: the desktop app depends on the Django backend being reachable, and Tauri puts a Rust toolchain in the build in exchange for a lightweight shell around the same web UI. Covering web and desktop without duplicating the backend justifies both.
 
 ---
 
-## 🔗 Source Code & Repository
-[📌 View on GitHub](https://github.com/renaldyhidayatt/django_react_recommendation_product)
+## Source Code & Repository
+[ View on GitHub](https://github.com/renaldyhidayatt/django_react_recommendation_product)

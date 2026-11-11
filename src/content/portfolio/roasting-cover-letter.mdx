@@ -9,54 +9,56 @@ status: "completed"
 image: "/portofolio/roasting_.png"
 ---
 
-## 🚀 Key Features
+# Roasting CoverLetter OR CV
 
-### 1️⃣ Cover Letter Mode
+## Key Features
+
+### 1⃣ Cover Letter Mode
 - **Cover Letter Mode** → Delivers sharp and sarcastic criticism of job application letters.
 - **Every roast comes with constructive suggestions for improvement.**
 
-### 2️⃣ AI Technology with DeepSeek & Ollama
+### 2⃣ AI Technology with DeepSeek & Ollama
 - Uses **DeepSeek (deepseek-r1:1.5b)** to produce sharp & intelligent criticism.
 - Can be extended with other models through **Ollama** for deeper analysis.
 
-### 3️⃣ Support for Multiple File Formats
-✅ **.txt** – Plain text files.
-✅ **.docx** – Microsoft Word files.
-✅ **Easily uploaded directly through the Streamlit UI.**
+### 3⃣ Support for Multiple File Formats
+ **.txt** – Plain text files.
+ **.docx** – Microsoft Word files.
+ **Easily uploaded directly through the Streamlit UI.**
 
-### 4️⃣ Roasting in Indonesian
+### 4⃣ Roasting in Indonesian
 - Roasting output is **entirely in Indonesian**.
 - Uses language that is **sharp but still relevant and constructive**.
 
-### 5️⃣ Simple & Intuitive User Interface
+### 5⃣ Simple & Intuitive User Interface
 - **Built with Streamlit** for a lightweight & responsive user experience.
 - **Interactive design** → Select a mode, upload a file, and receive a roasting instantly!
 
-### 6️⃣ Sharp but Useful Criticism
+### 6⃣ Sharp but Useful Criticism
 - **The AI roast is crafted with creative metaphors and clever sarcasm.**
 - Criticism comes with **concrete solutions** to improve the quality of the writing.
 
-## 🎯 Benefits of the Application
-✅ **Helps job seekers improve their Cover Letter before applying.**
-✅ **Improves article quality with AI-based criticism.**
-✅ **Provides an objective point of view without human bias.**
-✅ **Can be used as a learning tool to write better.**
+## Benefits of the Application
+ **Helps job seekers improve their Cover Letter before applying.**
+ **Improves article quality with AI-based criticism.**
+ **Provides an objective point of view without human bias.**
+ **Can be used as a learning tool to write better.**
 
 ## Technical Decisions & Trade-offs
 
-**A local 1.5B model via Ollama**
+### A local 1.5B model via Ollama
 Running `deepseek-r1:1.5b` locally means zero API cost, no rate limits, and cover letters full of personal detail never leaving the machine. The cost is capability: a 1.5B model reasons and writes well below hosted large models, and output quality depends on the hardware it runs on. For a sarcasm-generation tool, local and free is the right trade against remote and better.
 
-**Tone control lives in the prompt**
+### Tone control lives in the prompt
 The sharp-but-constructive sarcasm is instructed behavior, not fine-tuned, which makes the persona cheap to iterate on. The risk is drift: a small model sometimes lands flat and sometimes overshoots into plain rudeness. Requiring every roast to come with concrete improvement suggestions is a prompt-level guardrail, and it mostly — not always — holds.
 
-**Streamlit as the fastest usable interface**
+### Streamlit as the fastest usable interface
 Streamlit turns the idea into an upload-and-submit application with minimal code, which is the right call for a single-purpose tool. The trade-off is that it stays demo-grade: limited layout control and no deployment story beyond running it locally.
 
-**Only .txt and .docx**
+### Only .txt and .docx
 Supporting plain text and Word documents covers where cover letters actually live while keeping parsing scope small. The cost is a document-parsing dependency and the format edge cases that .docx brings, and no PDF support, which is the obvious next request for a tool like this.
 
-## 📌 How to Use
+## How to Use
 1. **Select a mode** → Cover Letter or Article.
 2. **Upload a file** → `.txt` or `.docx` format.
 3. **Click Submit** → The AI will immediately analyze and deliver a roasting.

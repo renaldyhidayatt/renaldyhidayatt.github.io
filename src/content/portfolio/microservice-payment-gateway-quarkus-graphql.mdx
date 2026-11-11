@@ -488,16 +488,16 @@ Manifests live in a project namespace with Kustomize overlays, NGINX pods behind
 
 ### Technical Decisions & Trade-offs
 
-**Real microservices instead of a modular monolith**
+### Real microservices instead of a modular monolith
 Independent JVMs give fault containment — a runaway service cannot starve its neighbours — and per-service HPAs, so one hot domain scales without dragging the rest along. The honest cost: many deployables, many migration histories, many pools, and a heavy local footprint. For a payment ledger the isolation is worth the wiring bill; for a smaller domain the same split would be over-engineering.
 
-**Synchronous gRPC for authorization, Kafka for everything else**
+### Synchronous gRPC for authorization, Kafka for everything else
 Money movement must be decided now, so it stays on a typed synchronous call. Emails, analytics, and audit trails are side effects, so they flow through Kafka and can lag or restart without blocking a payment. The price is the usual at-least-once tax — deduplication keys and idempotent consumers are mandatory, not optional.
 
-**Transactional outbox over direct Kafka publishes**
+### Transactional outbox over direct Kafka publishes
 Publishing directly to Kafka from a service means a crash between commit and publish silently loses an event. Writing to the outbox inside the same transaction removes that failure mode, and gives the backfill job idempotency for free. The cost is a relay loop that must itself be monitored for lag, plus an extra collection/table per publishing service.
 
-**ClickHouse as a CQRS read model, never as the source of truth**
+### ClickHouse as a CQRS read model, never as the source of truth
 Aggregations over millions of rows stay off the OLTP database. In exchange, the analytics view lags real time — a just-settled transfer is not yet on the dashboard — and the pipeline adds a writer, a reader, a backfill job, and a second database to operate. Good for BI, wrong for \"what is this balance right now\", which always reads the transactional store.
 
 ---

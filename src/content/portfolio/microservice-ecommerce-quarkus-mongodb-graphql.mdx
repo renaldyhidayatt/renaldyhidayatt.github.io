@@ -495,16 +495,16 @@ Manifests live in a project namespace with Kustomize overlays, NGINX pods behind
 
 ### Technical Decisions & Trade-offs
 
-**One service per aggregate, not per table**
+### One service per aggregate, not per table
 Order, order-item, cart, product, and category are split because they change at different rates and have different read patterns — checkout writes heavily, the catalog reads heavily. Splitting per table instead would produce chatty joins across the network. The cost is that a single screen may need several gRPC calls, so the gateway has to batch and cache where it matters.
 
-**Synchronous gRPC for stock and checkout, Kafka for notifications**
+### Synchronous gRPC for stock and checkout, Kafka for notifications
 Stock checks and totals must be consistent at checkout, so they are synchronous. Emails, reviews-derived analytics, and merchant reports are side effects that can lag. The trade-off shows up under flash sales: synchronous stock validation concentrates load on the product service, which is exactly the service that also needs the highest read throughput.
 
-**Transactional outbox over direct Kafka publishes**
+### Transactional outbox over direct Kafka publishes
 Publishing directly to Kafka from a service means a crash between commit and publish silently loses an event. Writing to the outbox inside the same transaction removes that failure mode, and gives the backfill job idempotency for free. The cost is a relay loop that must itself be monitored for lag, plus an extra collection/table per publishing service.
 
-**ClickHouse as a CQRS read model for order and merchant reporting**
+### ClickHouse as a CQRS read model for order and merchant reporting
 Revenue by merchant, category price bands, and order volume over time are columnar workloads that would drag an OLTP store at scale. Moving them to ClickHouse keeps checkout fast. The cost is the same freshness gap: an order placed a second ago is not in the merchant's revenue chart yet.
 
 ---

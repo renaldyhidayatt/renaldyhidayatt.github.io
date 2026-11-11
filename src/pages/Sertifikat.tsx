@@ -22,37 +22,37 @@ type Certificate = {
 const CERTIFICATES: Certificate[] = [
     {
         file: "blue-team_renaldyhidayat.pdf",
-        title: "Blue Team Operations",
-        issuer: "Security Training Program",
+        title: "Certified Blue Team Fundamentals (BTF)",
+        issuer: "CyberWarfare Labs",
         year: "2026",
         icon: ShieldCheck,
     },
     {
         file: "ethical-hacking.pdf",
-        title: "Ethical Hacking",
-        issuer: "Offensive Security Track",
+        title: "Certified Cyber Security Analyst (C3SA)",
+        issuer: "CyberWarfare Labs",
         year: "2026",
         icon: ShieldAlert,
     },
     {
         file: "redteam.pdf",
-        title: "Red Team Engagements",
-        issuer: "Adversary Simulation",
+        title: "Certified Cybersecurity Educator Professional (CCEP)",
+        issuer: "Red Team Leaders",
         year: "2026",
         icon: Swords,
     },
     {
-        file: "RenaldyHidayat-CN1PMA202201-certificate-cisco.pdf",
-        title: "CCNA 1",
+        file: "RenaldyHidayat-CN2AZY202201-certificate_cisco.pdf",
+        title: "CCNA: Switching, Routing, and Wireless Essentials",
         issuer: "Cisco Networking Academy",
-        year: "2022",
+        year: "2023",
         icon: Award,
     },
     {
-        file: "RenaldyHidayat-CN2AZY202201-certificate_cisco.pdf",
-        title: "CCNA 2",
+        file: "RenaldyHidayat-CN1PMA202201-certificate-cisco.pdf",
+        title: "CCNA: Introduction to Networks",
         issuer: "Cisco Networking Academy",
-        year: "2023",
+        year: "2022",
         icon: Award,
     },
 ];
@@ -60,7 +60,7 @@ const CERTIFICATES: Certificate[] = [
 const CertificateCard = ({ cert, index }: { cert: Certificate; index: number }) => {
     const { ref, isVisible } = useReveal({ threshold: 0.1 });
     const Icon = cert.icon;
-    const href = "/sertifikat/" + cert.file;
+    const href = import.meta.env.BASE_URL + "sertifikat/" + cert.file;
 
     const cardClass =
         "group h-full transition-[transform,opacity] duration-500 transform-gpu " +

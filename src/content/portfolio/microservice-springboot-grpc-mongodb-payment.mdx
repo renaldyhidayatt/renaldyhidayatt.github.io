@@ -508,10 +508,10 @@ The platform uses **Apache Kafka** as the asynchronous event bus for inter-servi
 
 | Category | Topics | Producer → Consumer | Status |
 | :------- | :----- | :------------------ | :----- |
-| **Email Notifications (12)** | `email-service-topic-auth-register`, `-forgot-password`, `-verify-code-success`, `-saldo-create`, `-topup-create`, `-transaction-create`, `-transfer-create`, `-withdraw-create`, `-merchant-create`, `-merchant-update-status`, `-merchant-document-create`, `-merchant-document-update-status` | Multiple services → `email-service/EmailService` | ✅ 6 paired, 6 consumer-only |
-| **Saldo Lifecycle** | `saldo-service-topic-create-saldo` | `card/CardCommandImplService` → `saldo/SaldoConsumer` | ✅ paired |
-| **Fraud Scoring** | `card.txn.created` | `card/CardAuthServiceImpl` → `card/FraudScoringConsumer` | ✅ paired |
-| **Card Audit Trail** | `card.fraud.alert`, `card.payment.posted`, `card.statement.generated` | Card services → `card/CardEventLogConsumer` → `card_event_logs` DB | ✅ paired |
+| **Email Notifications (12)** | `email-service-topic-auth-register`, `-forgot-password`, `-verify-code-success`, `-saldo-create`, `-topup-create`, `-transaction-create`, `-transfer-create`, `-withdraw-create`, `-merchant-create`, `-merchant-update-status`, `-merchant-document-create`, `-merchant-document-update-status` | Multiple services → `email-service/EmailService` | 6 paired, 6 consumer-only |
+| **Saldo Lifecycle** | `saldo-service-topic-create-saldo` | `card/CardCommandImplService` → `saldo/SaldoConsumer` | paired |
+| **Fraud Scoring** | `card.txn.created` | `card/CardAuthServiceImpl` → `card/FraudScoringConsumer` | paired |
+| **Card Audit Trail** | `card.fraud.alert`, `card.payment.posted`, `card.statement.generated` | Card services → `card/CardEventLogConsumer` → `card_event_logs` DB | paired |
 
 ### Dead Letter Queue (DLQ)
 
@@ -823,7 +823,6 @@ flowchart TB
     WITHDRAW -->|Events| KAFKA
 
     KAFKA --> EMAIL
-
 
     AUTH -.->|"Metrics"| PROM
     USER -.->|"Metrics"| PROM

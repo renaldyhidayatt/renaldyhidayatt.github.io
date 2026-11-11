@@ -481,16 +481,16 @@ Manifests live in a project namespace with Kustomize overlays, NGINX pods behind
 
 ### Technical Decisions & Trade-offs
 
-**Microservices for a retail workload that fits on one box**
+### Microservices for a retail workload that fits on one box
 A POS chain has uneven scale: checkout volume is spiky while merchandising is quiet. Independent services let the order path scale on its own and let each team ship without coordinating a monolith release. The cost is operational — a shop-floor deployment that used to be one artifact is now a fleet, and every new service adds manifests, probes, and dashboards.
 
-**Synchronous gRPC for price lookup and checkout**
+### Synchronous gRPC for price lookup and checkout
 A cashier cannot wait for an eventually consistent price, so the order service resolves product prices synchronously. The cost is a hard dependency on the product service during checkout — mitigated by Redis caching price lookups, which introduces the classic staleness question when a price changes mid-shift.
 
-**Transactional outbox for receipts and audit**
+### Transactional outbox for receipts and audit
 A receipt or ledger row that exists without its event — or the reverse — is the classic retail inconsistency. Writing the outbox record inside the same transaction as the order removes it. The cost is an extra collection/table and a relay loop whose lag must be alerted on, which for a single-shop deployment is real operational weight.
 
-**ClickHouse for cashier and sales reporting**
+### ClickHouse for cashier and sales reporting
 Daily and monthly sales volumes, cashier performance, and sold-out product tracking are aggregations that must not compete with checkout for database capacity. ClickHouse handles them. The trade-off is that closing a shift and immediately seeing that shift's totals is inconsistent — the reporting must be explicit about its lag.
 
 ---

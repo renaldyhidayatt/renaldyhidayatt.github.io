@@ -10,32 +10,34 @@ image: "https://github.com/MamangRust/example-wifi-manager-ratatui/raw/main/imag
 urlProject: "https://github.com/MamangRust/example-wifi-manager"
 ---
 
+# Example WiFi Manager
+
 ## Description
 **Example WiFi Manager** is a terminal-based WiFi management application built using **Rust** and the **Ratatui** library. It allows users to scan, select, and connect to available WiFi networks directly from the terminal.
 
 ## Features
-- 🚀 **WiFi Scanning**: Lists available WiFi networks using `nmcli`.
-- 🎯 **Network Selection**: Navigate and select a WiFi network with keyboard controls.
-- 🔒 **Password Input**: Securely enter passwords for protected networks.
-- 🎨 **Minimalistic UI**: Built with Ratatui for a clean and efficient interface.
+- **WiFi Scanning**: Lists available WiFi networks using `nmcli`.
+- **Network Selection**: Navigate and select a WiFi network with keyboard controls.
+- **Password Input**: Securely enter passwords for protected networks.
+- **Minimalistic UI**: Built with Ratatui for a clean and efficient interface.
 
 ## Technologies Used
-- 🦀 **Rust** - Main programming language
-- 🎨 **Ratatui** - Library for creating terminal-based UI
-- ⌨️ **Crossterm** - Library for handling keyboard input and terminal display
+- **Rust** - Main programming language
+- **Ratatui** - Library for creating terminal-based UI
+- ⌨ **Crossterm** - Library for handling keyboard input and terminal display
 
 ## Technical Decisions & Trade-offs
 
-**Wrapping nmcli vs binding NetworkManager directly**
+### Wrapping nmcli vs binding NetworkManager directly
 All the hard network work, from scanning to association and WPA handshakes, stays inside nmcli, so the app is a keyboard-driven front end rather than a second implementation of WiFi logic. The cost: parsing nmcli output is brittle across versions and locales, errors arrive as exit codes and stderr text, and nmcli must be installed for the app to function at all.
 
-**A TUI for a job with a GUI incumbent**
+### A TUI for a job with a GUI incumbent
 Choosing a network with arrow keys works over SSH on a headless box, which is exactly where a terminal manager earns its keep. The trade-off is scope: NetworkManager still owns connection state, saved profiles, and auto-reconnect, so this tool orchestrates connections instead of replacing the daemon behind them.
 
-**Masked password input and its limits**
+### Masked password input and its limits
 Password entry is masked on screen, the right call for a shared or recorded terminal. The honest boundary: masking is all the TUI can promise, because once the passphrase is handed to nmcli, storage and protection of the key belong to NetworkManager, outside the app's control.
 
-**Slow subprocess inside a fast redraw loop**
+### Slow subprocess inside a fast redraw loop
 A WiFi scan takes seconds while a Ratatui redraw takes milliseconds, so either the interface blocks while nmcli works or the shell-out moves to another thread with results fed back through a channel. That added concurrency is exactly what a small tool resists, and where the line falls is the core architectural decision of any nmcli-driven TUI.
 
 ## Installation & Usage
@@ -57,5 +59,5 @@ cargo run
 
 <img src="https://github.com/MamangRust/example-wifi-manager-ratatui/raw/main/image/example.png?raw=true" alt="WiFi Manager Demo" />
 
-## 🔗 Source Code & Repository
-[📌 View on GitHub](https://github.com/MamangRust/example-wifi-manager-ratatui)
+## Source Code & Repository
+[ View on GitHub](https://github.com/MamangRust/example-wifi-manager-ratatui)

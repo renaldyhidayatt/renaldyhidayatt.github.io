@@ -9,35 +9,35 @@ status: "completed"
 image: "https://github.com/MamangRust/pomodoro_pyqt/blob/main/images/image.png?raw=true"
 ---
 
-# 🚀 Pomodoro Task QT
+# Pomodoro Task QT
 
 **Pomodoro Task QT** is a Pomodoro Timer application with task management features designed to enhance productivity.
 
-## ✨ Key Features
+## Key Features
 
-✅ **Tasks List & Pomodoro Timer** - Organize tasks and use the Pomodoro technique for focused work.
+ **Tasks List & Pomodoro Timer** - Organize tasks and use the Pomodoro technique for focused work.
 
-📊 **Monthly Visualization** - Analyze monthly productivity in graphical form.
+ **Monthly Visualization** - Analyze monthly productivity in graphical form.
 
-📆 **Weekly Visualization** - View weekly statistics to understand work patterns.
+ **Weekly Visualization** - View weekly statistics to understand work patterns.
 
 ## Technical Decisions & Trade-offs
 
-**Counting ticks vs reading the clock**
+### Counting ticks vs reading the clock
 In a GUI timer the countdown advances on framework timer events, and those events slip when the event loop is busy. Whether the app sums ticks or reads the system clock is the difference between a timer that drifts under load and one that stays honest; reading the clock costs a little extra bookkeeping and is what a 25-minute block ultimately depends on.
 
-**PyQt for an always-open desktop companion**
+### PyQt for an always-open desktop companion
 A Pomodoro tool wants to sit in the background while you work elsewhere, and a native Qt window with notifications through Plyer fits that better than a terminal tab or a browser page. The price is packaging: Qt binaries are heavy, and the tool only works while the process stays alive, so closing the window ends the session.
 
-**Pandas and matplotlib for personal statistics**
+### Pandas and matplotlib for personal statistics
 Weekly and monthly charts come from mature libraries rather than hand-rolled aggregation and plotting, which is fast to build and dependable to render. The trade is proportion: both are industrial-scale dependencies for a single user's task log, and their import time and memory are paid at every launch of a tool you open many times a day.
 
-**Notifications without per-platform code**
+### Notifications without per-platform code
 Plyer supplies platform-independent notifications from Python, sparing the project separate APIs for each operating system. The cost of that abstraction is shallow integration: notifications are basic, and their behavior varies by desktop environment in ways the library does not fully smooth over.
 
 ---
 
-## 🖼️ App Screenshots
+## App Screenshots
 
 <img src="https://github.com/MamangRust/pomodoro_pyqt/blob/main/images/image.png?raw=true" alt="Pomodoro Task QT" width={600} height={400} />
 
@@ -46,15 +46,14 @@ Plyer supplies platform-independent notifications from Python, sparing the proje
 <img src="https://github.com/MamangRust/pomodoro_pyqt/raw/main/images/Visualisasi_Tasks_2024.png?raw=true" alt="Monthly Visualization" width={600} height={400} />
 
 ## Technologies Used
-- 🐍 **Python** - High-level programming language for general-purpose programming
-- 📊 **Pandas** - Data manipulation and analysis library
-- 📉 **Matplotlib** - Plotting library for data visualization
-- 🖥️ **PyQt** - GUI framework for building cross-platform applications
-- 📄 **CV** - Cv
-- 📱 **Plyer** - Platform-independent API for accessing features like notifications and file system
+- **Python** - High-level programming language for general-purpose programming
+- **Pandas** - Data manipulation and analysis library
+- **Matplotlib** - Plotting library for data visualization
+- **PyQt** - GUI framework for building cross-platform applications
+- **CV** - Cv
+- **Plyer** - Platform-independent API for accessing features like notifications and file system
 
 ---
 
-
-## 🔗 Source Code & Repository
-[📌 View on GitHub](https://github.com/MamangRust/pomodoro_pyqt)
+## Source Code & Repository
+[ View on GitHub](https://github.com/MamangRust/pomodoro_pyqt)

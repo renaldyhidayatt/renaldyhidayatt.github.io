@@ -372,25 +372,25 @@ One security compromise is deliberately quarantined: `hs256` mode is available l
 
 ## Technical Decisions & Trade-offs
 
-**Autonomous domains with their own databases, not one shared cluster**
+### Autonomous domains with their own databases, not one shared cluster
 Four platforms are split into dozens of modules, each context with its own PostgreSQL cluster and PgBouncer. The effect is that cross-context coupling becomes unwritable, and a context changing its schema never surprises another context. The price is real: dozens of poolers to operate, migrations maintained per context, and queries that are "just one join" must be solved via gRPC or events. At this scale, that isolation is what keeps the system reason-able.
 
-**Kafka plus outbox/inbox, not cross-platform synchronous calls**
+### Kafka plus outbox/inbox, not cross-platform synchronous calls
 Flows such as payment requests, payment settlement, and accounting journals run as events on one bus, so a slow consumer never blocks checkout. The trade-off is *eventual consistency* everywhere: consumers must be idempotent, and debugging means correlating events instead of reading a single stack trace. For money moving across platforms, a durable log beats tight synchronous coupling.
 
-**Saga with explicit compensation, not distributed transactions**
+### Saga with explicit compensation, not distributed transactions
 Checkout touches the cart, shipping, order, stock, and payment without a single atomic transaction wrapping them. The order state machine CAS plus TTL worker plus `ReleaseStock` make a half-finished checkout *visible and recoverable* rather than silently lost. It is simpler to operate than a full saga engine — but the reconciliation burden shifts to the data model, so quality depends on state machine discipline.
 
-**Fail-open AI and shadow by default**
+### Fail-open AI and shadow by default
 Models are never on the critical path. The fraud scorer is called remote-first with local rule fallback; if the AI service is down, payments still proceed under deterministic rules. Anomaly detectors only observe. The consequence: a failed score is not shown as "safe" but as `UNAVAILABLE` — deliberately so, because an empty panel that looks "already checked" is far more dangerous than an honest failure.
 
-**Read-only agent console**
+### Read-only agent console
 `agentweb` exposes operational charts (Prometheus, with a PromQL whitelist **on the server side** — the client never sends queries) and business charts (POS/payment from ClickHouse, behind a JWT using a Keycloak service token via client-credentials). Everything is GET and read-only; no mutation can be triggered from the console. Capability limits are reported as-is — a dead source yields `error` + `UNAVAILABLE`, not an empty panel.
 
-**Kernel-level security enforcement, fail-open**
+### Kernel-level security enforcement, fail-open
 XDP gives packet rejection at the cheapest point and kprobes give connection visibility that a userspace agent cannot provide. The choice is deliberately fail-open: a bad config or empty map degrades to *allow*, never to a blackhole, because a misconfigured firewall can take down the whole system more effectively than an attack. Its limits are stated too: duty-cycle sampling means metrics are sample-based, and this is not an IDS/EDR — labels are limited to `rule_id`.
 
-**Per-module workspace builds, not one giant workspace**
+### Per-module workspace builds, not one giant workspace
 94 Go modules with relative `replace` directives that collide when loaded simultaneously. The root `go.work` is left empty and each module is built with `GOWORK=off` — the same as CI does. This adds a small step to every build command, traded for deterministic builds that don't interfere across platforms.
 
 ---

@@ -28,33 +28,33 @@ This project is a **simple payment system implementation** designed to mimic the
 
 The key components that form the core of this project include:
 
-- **🔐 User Authentication**
+- ** User Authentication**
   Supports new account registration, login with credentials, and JWT token issuance and validation. The system also includes refresh token management to maintain user session security.
 
-- **💳 Card Management**
+- ** Card Management**
   Each user can add cards to their account. Card details such as number, card type, expiration date, and CVV are stored securely and can be accessed for transactions.
 
-- **🏬 Merchant Management**
+- ** Merchant Management**
   Merchants can be created and managed through the system. Each merchant has a unique identity in the form of a UUID merchant number and an API key used to process transactions.
 
-- **💸 Transactions**
+- ** Transactions**
   Handles the payment process between a user's card and a merchant. Each transaction is recorded with a unique number, payment amount, and information about the receiving merchant.
 
-- **🔄 Fund Transfers**
+- ** Fund Transfers**
   Allows users to transfer balances between cards. The system records the source (from) and destination (to) of the transfer, ensuring sufficient balance before processing the transaction.
 
-- **📈 Balance Top-Up**
+- ** Balance Top-Up**
   Users can add funds to their cards through a top-up process. Each top-up has a unique identity and automatically updates the respective card's balance.
 
-- **🏧 Withdrawals**
+- ** Withdrawals**
   Users can withdraw funds from their cards. Like top-ups, this process is recorded, and the balance is updated according to the withdrawal amount.
 
-- **💰 Balance Management**
+- ** Balance Management**
   All cards are linked to a balance entity. The system is responsible for tracking, adding, and subtracting balances consistently after every financial operation (transaction, transfer, top-up, or withdrawal).
 
 ---
 
-## 🚀 Project Features
+## Project Features
 
 - **REST API Client**: A RESTful client that interacts with the gRPC server.
 - **gRPC Server**: The main server that handles all business logic.
@@ -64,36 +64,36 @@ The key components that form the core of this project include:
 - **Unit & Integration Tests**: Testing to ensure code reliability.
 - **CI/CD**: GitHub Actions workflows for automated builds, formatting, and testing.
 
-## 🧰 Technology Stack
+## Technology Stack
 
-- 🐹 **Go (Golang)** — Implementation language.
-- 🌐 **Echo** — A minimalist web framework for building REST APIs.
-- 🪵 **Zap Logger** — Structured logging for high-performance applications.
-- 📦 **SQLC** — Generates type-safe Go code from SQL queries.
-- 🚀 **gRPC** — High-performance RPC for internal service communication.
-- 🧳 **Goose** — A migration tool for managing database schema changes.
-- 🐳 **Docker** — A containerization platform for consistent development environments.
-- 📄 **Swago** — Generates Swagger 2.0 documentation for Echo routes.
-- 🔗 **Docker Compose** — Manages multi-container Docker applications.
+- **Go (Golang)** — Implementation language.
+- **Echo** — A minimalist web framework for building REST APIs.
+- **Zap Logger** — Structured logging for high-performance applications.
+- **SQLC** — Generates type-safe Go code from SQL queries.
+- **gRPC** — High-performance RPC for internal service communication.
+- **Goose** — A migration tool for managing database schema changes.
+- **Docker** — A containerization platform for consistent development environments.
+- **Swago** — Generates Swagger 2.0 documentation for Echo routes.
+- **Docker Compose** — Manages multi-container Docker applications.
 
 ## Technical Decisions & Trade-offs
 
-**Go with gRPC for the core**
+### Go with gRPC for the core
 The business logic lives in a gRPC server: typed proto contracts, compact HTTP/2 payloads, and generated code that turns client-server mismatches into build failures. The trade-offs are proto regeneration in every build and traffic that is harder to inspect than JSON. Go rather than Rust keeps iteration fast and the code approachable; the cost is giving up the compile-time guarantees a Rust implementation of this domain would add, plus garbage-collection pauses on the hot path.
 
-**Echo REST gateway in front of the gRPC server**
+### Echo REST gateway in front of the gRPC server
 Browsers, mobile clients, and the Tauri desktop app all speak HTTP and JSON to an Echo service that translates requests into gRPC calls. That keeps the public API conventional - with Swagger documentation generated straight from the Echo routes - while the internal protocol stays strict. The cost is two API layers for the same operations and a translation hop on every request.
 
-**SQLC instead of an ORM**
+### SQLC instead of an ORM
 Queries are written as SQL and compiled into type-safe Go code, so the SQL stays inspectable and there is no reflection or runtime mapping to surprise anyone. The trade-off is rigidity: every query needs a named entry in a SQL file, dynamic filtering gets awkward, and schema or query changes require regeneration. For a payment schema where the queries are few and well understood, explicit SQL is the better default.
 
-**JWT with refresh tokens**
+### JWT with refresh tokens
 Short-lived access tokens plus refresh token management keep API verification stateless while getting session semantics approximately right. The standard costs apply: a stolen access token remains valid until expiry, and the token logic is one more moving part to test. It remains the conventional choice for a REST client backed by an independent server.
 
-**Goose migrations and Zap logging**
+### Goose migrations and Zap logging
 Schema changes are versioned, reversible goose migrations, and Zap provides structured, low-overhead logging. Neither is exotic, and that is the point: boring, proven tools are what a payment project wants in its plumbing. The only real cost is workflow - migrations and generated artifacts add steps between editing code and running it.
 
-**Publishing the load-test failures, not just the wins**
+### Publishing the load-test failures, not just the wins
 The k6 section reports the card module holding a steady 12.5 percent error rate across every test type, alongside clean numbers for the user and role modules. Keeping that visible is worth more than a flattering benchmark: an error rate that stays constant while load scales points at a structural bug, not a capacity limit, and says exactly where to dig next. The cost is that the project documents its own flaws - which is the honest version of a performance section.
 
 ---
@@ -443,6 +443,6 @@ This is the easiest way to run all services.
 | Stress Test     | <img src="/portofolio/payment-gateway-grpc/user/user_rampling.png" alt="User module stress test behavior beyond capacity" width="500" /> |
 | Spike Test      | <img src="/portofolio/payment-gateway-grpc/user/user_spike.png" alt="User module spike test results" width="500" />                      |
 
-## 🔗 Source Code & Repository
+## Source Code & Repository
 
-[📌 View on GitHub (Backend)](https://github.com/MamangRust/payment-gateway-grpc)
+[ View on GitHub (Backend)](https://github.com/MamangRust/payment-gateway-grpc)

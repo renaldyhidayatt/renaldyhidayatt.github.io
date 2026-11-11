@@ -36,17 +36,17 @@ So I built a new section: [Cheatsheet](/cheatsheet).
 
 So this doesn't turn into a second blog, there are four rules I enforce.
 
-**1. Versions are pinned, no "latest".**
+### 1. Versions are pinned, no "latest".
 Every sheet opens with the exact version used in my repo at that time. If the
 library version has moved past one major, the sheet is marked outdated — I don't quietly rewrite it
 and consider it up to date. A cheatsheet that is quietly wrong is more dangerous than not having one.
 
-**2. No narrative.**
+### 2. No narrative.
 If a paragraph needs more than two sentences of context, that's not a cheatsheet's job
 — that's a blog article. A cheatsheet answers a question, a blog answers the question *plus* the story
 behind it.
 
-**3. Every pitfall must have a symptom.**
+### 3. Every pitfall must have a symptom.
 The "Pitfalls" table in each sheet must not stop at "this is wrong". The format is always:
 
 > Pitfall → visible symptom → solution.
@@ -54,7 +54,7 @@ The "Pitfalls" table in each sheet must not stop at "this is wrong". The format 
 "Pitfall: `@Transactional` doesn't work on self-invocation" without a symptom = a personal
 note, not a reference.
 
-**4. Snippets must be run.**
+### 4. Snippets must be run.
 The rule of thumb: if I have never run `mvn test` or `zig test` on it, the snippet doesn't
 go into the sheet. The difference from a blog: on a blog I'm allowed to be wrong and correct it in the next
 article (that's part of the process). In a cheatsheet, mistakes are immediately used by other people.

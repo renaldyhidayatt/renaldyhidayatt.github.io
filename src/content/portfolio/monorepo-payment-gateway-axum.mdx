@@ -13,21 +13,21 @@ status: "finished"
 image: "/portofolio/modular-monolith-payment-gateway-rust.png"
 ---
 
-## Example Sea Query Tonic Payment Gateway
+# Example Sea Query Tonic Payment Gateway
 
 This project is an example implementation of a **simple payment gateway system** built with the **Rust** programming language. Its main goal is to illustrate how to design financial services with a **service-oriented** approach, efficient communication via **gRPC**, and **observability** support from day one.
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
-### 🔐 1. User Management
+### 1. User Management
 
 * User registration & login.
 * User data stored in PostgreSQL.
 * Session tokenization can be combined with Redis for performance.
 
-### 💰 2. Balance Management
+### 2. Balance Management
 
 * Every user has a balance account in the database.
 * Supports the following operations:
@@ -36,19 +36,19 @@ This project is an example implementation of a **simple payment gateway system**
   * **Withdraw** (withdraw balance).
   * **Transfer** (between users, debit & credit in a single transaction).
 
-### 📑 3. Transactions
+### 3. Transactions
 
 * All financial activity is recorded in the **transaction history**.
 * Supports querying transactions per user.
 * Consistency is maintained with database transactions (SQLx).
 
-### ⚡ 4. Performance & Communication
+### 4. Performance & Communication
 
 * **Client → Server** uses gRPC (bandwidth-efficient & fast).
 * SQL queries are built dynamically with **SeaQuery**.
 * **sqlx** as the query runtime, supporting migrations & connection pooling.
 
-### 📊 5. Observability (Monitoring & Logging)
+### 5. Observability (Monitoring & Logging)
 
 * Request, error, and latency metrics are sent to **Prometheus**.
 * Request/response logs are sent to **Loki**.
@@ -56,7 +56,7 @@ This project is an example implementation of a **simple payment gateway system**
 
 ---
 
-## 🎯 Project Strengths
+## Project Strengths
 
 * **Lightweight & Fast** → Rust + gRPC for a high-performance backend.
 * **Scalable** → can grow from simple to complex (for example, adding fraud detection or notification services).
@@ -102,22 +102,22 @@ The project architecture follows a *microservices* approach, separating the publ
 
 ## Technical Decisions & Trade-offs
 
-**A monorepo split into a public REST edge and a private gRPC core**
+### A monorepo split into a public REST edge and a private gRPC core
 One workspace holds two services: an Axum client that validates and forwards external requests, and a Tonic server that owns the money logic. The split enforces a real boundary - the edge never touches the database directly - while a single repository keeps the proto contracts and both services in lockstep. The cost is a network hop plus serialization on every call that a single binary would not pay, and two deployables to run even in development. At this scale that overhead is paid deliberately, to keep the separation honest.
 
-**SeaQuery for dynamic queries, SQLx for execution**
+### SeaQuery for dynamic queries, SQLx for execution
 Filters and query shapes are composed programmatically with SeaQuery instead of concatenated SQL strings, then run through SQLx's pool, with migrations handled by sqlx-cli. The benefit is injection-safe, composable queries; the cost is two query layers to understand and generated SQL that occasionally needs inspecting before you trust it. For a payment schema with many filtered list endpoints, the composability earns its keep.
 
-**Tonic gRPC as the internal contract**
+### Tonic gRPC as the internal contract
 Protocol Buffers define the interface between client and server, so mismatches fail at compile time and payloads stay compact. The trade-off is workflow friction: contract changes mean proto regeneration in the shared crate, and debugging needs gRPC-specific tooling. Inside a monorepo the regeneration step is cheap, which is where this design is most comfortable.
 
-**Axum and utoipa on the public edge**
+### Axum and utoipa on the public edge
 The REST side speaks the HTTP and JSON that web and mobile clients expect, with OpenAPI documentation generated from the handlers. The cost is maintaining two views of the same operations - REST at the edge, gRPC in the core - and keeping the OpenAPI annotations truthful. Exposing REST externally while keeping the typed protocol internal is the standard shape for good reason.
 
-**Redis in front of PostgreSQL**
+### Redis in front of PostgreSQL
 Sessions and hot reads are served from Redis so the database is not hit for every token check. The trade-offs are cache invalidation and a second stateful service that can fail independently. At this traffic level Redis is more learning exercise than necessity - which is a fair thing for a project like this to be.
 
-**Database transactions for money movement**
+### Database transactions for money movement
 Transfers debit and credit inside one SQLx transaction against PostgreSQL, so a partial move can never be committed. The boundary of that guarantee is the single database: scaling writes eventually means distributing the transaction, which is a genuinely hard problem. One honest gap is retry safety - idempotency keys on the mutating endpoints - which this example does not implement.
 
 ## Entity-Relationship Diagram (ERD)
@@ -185,7 +185,6 @@ To run the services manually on your local machine.
         ```
     *   Now the `Client Service` will run at `http://127.0.0.1:8000` (or according to your configuration) and is ready to accept requests.
 
-
 ## Demo
 
 ### OpenApi Utoipa
@@ -204,7 +203,6 @@ To run the services manually on your local machine.
 #### Metrics server
 <img src="https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic/raw/main/images/metrics_server.png" />
 
-
 #### Metrics client
 <img src="https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic/raw/main/images/metrics_client.png" />
 
@@ -218,19 +216,14 @@ To run the services manually on your local machine.
 
 <img src="https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic/raw/main/images/grafana-server.png" />
 
-
 #### Client Metrics
 <img src="https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic/raw/main/images/grafana-client.png" />
-
 
 ### Node Exporter
 <img src="https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic/raw/main/images/node-expoter.png" />
 
-
 ### Otel Collectr
 <img src="https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic/raw/main/images/otel.png" />
 
-
-
-## 🔗 Source Code & Repository
-[📌 View on GitHub](https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic)
+## Source Code & Repository
+[ View on GitHub](https://github.com/MamangRust/example-axum-seaquery_payment_gateway-tonic)

@@ -9,7 +9,9 @@ status: "completed"
 image: "/portofolio/movie-grpc.png"
 ---
 
-## 🧩 Project Overview
+# Movie gRPC
+
+## Project Overview
 
 **Movie gRPC** is a lightweight **gRPC microservice** built using **Rust**, with **Tonic** for the gRPC layer and **Axum** as the HTTP gateway. The project demonstrates observability practices using **OpenTelemetry**, **Jaeger**, **Prometheus**, and **Node Exporter**, all running inside a **Dockerized** environment.
 
@@ -17,64 +19,64 @@ All movie data is stored **in-memory**, making it perfect for demos, testing obs
 
 ---
 
-## 🔧 Key Features
+## Key Features
 
-- 🧠 **In-Memory Movie CRUD**  
+- **In-Memory Movie CRUD** 
   Manage movie records without any external database — data resets on restart.
 
-- 🚀 **gRPC API with Tonic**  
+- **gRPC API with Tonic** 
   Built with `tonic`, a high-performance gRPC implementation in Rust.
 
-- 🌐 **Axum HTTP Gateway**  
+- **Axum HTTP Gateway** 
   REST endpoints, healthchecks, or service introspection via `axum`.
 
-- 🐾 **Distributed Tracing with OpenTelemetry + Jaeger**  
+- **Distributed Tracing with OpenTelemetry + Jaeger** 
   See request spans and traces for gRPC calls with full context propagation.
 
-- 📊 **Monitoring with Prometheus**  
+- **Monitoring with Prometheus** 
   Collect runtime and custom metrics from your gRPC service.
 
-- 🖥️ **System Metrics with Node Exporter**  
+- **System Metrics with Node Exporter** 
   Track CPU, memory, and system-level metrics from the host environment.
 
-- 🐳 **Fully Containerized**  
+- **Fully Containerized** 
   All components — app, Otel Collector, Jaeger, Prometheus, Node Exporter — run inside Docker.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer             | Technology                              |
 |------------------:|:-----------------------------------------|
-| Language           | 🦀 Rust                                  |
-| RPC Framework      | 🔌 Tonic (gRPC)                          |
-| HTTP Gateway       | ⚡ Axum                                  |
-| Tracing            | 🌐 OpenTelemetry, 🐆 Jaeger              |
-| Metrics            | 📊 Prometheus, 🖥️ Node Exporter         |
-| Containerization   | 🐋 Docker + Docker Compose              |
+| Language | Rust |
+| RPC Framework | Tonic (gRPC) |
+| HTTP Gateway | Axum |
+| Tracing | OpenTelemetry, Jaeger |
+| Metrics | Prometheus, Node Exporter |
+| Containerization | Docker + Docker Compose |
 
 ---
 
 ## Technical Decisions & Trade-offs
 
-**Tonic for the gRPC layer**
+### Tonic for the gRPC layer
 Tonic is the mature Rust gRPC stack: tower middleware, HTTP/2 multiplexing, and servers and clients generated from proto files. The costs are Rust's learning curve, slower compile cycles, and a protoc codegen step in the build. For a service whose point is demonstrating high-performance RPC with proper tracing, those costs land exactly where the value is.
 
-**In-memory storage instead of a database**
+### In-memory storage instead of a database
 Movie records live in process memory, so the container starts in seconds and the demo never fights a migration. The honest cost: every restart wipes the data, there is no crash recovery, and nothing here is a persistence reference. That is deliberate — the project exists to showcase observability plumbing, not storage.
 
-**Axum as an HTTP sidecar to the gRPC server**
+### Axum as an HTTP sidecar to the gRPC server
 Browsers, health probes, and curl speak HTTP, not gRPC, so a small Axum gateway on a second port exposes REST endpoints and service introspection. The price is two frameworks to maintain and response shapes kept in sync with the proto definitions by hand. For demo and tooling friendliness, the duplication is worth it.
 
-**Observability from the first commit**
+### Observability from the first commit
 OpenTelemetry spans flow through the OTel Collector into Jaeger, while Prometheus scrapes service metrics and Node Exporter covers the host. On a CRUD demo this stack is heavier than the application itself, and every container is one more thing to run. But the traces are the product here: seeing a gRPC call's full span tree is what the project teaches.
 
-**Contract-first API design**
+### Contract-first API design
 The movie schema is defined once in protobuf and drives both the wire format and the generated code, so server and clients cannot drift silently. The trade-off is friction outside the gRPC world: you cannot poke the API with a browser, and ad hoc testing needs grpcurl or a generated client rather than plain curl against JSON.
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 ### Jaeger - Distributed Tracing
 ![Jaeger](https://github.com/MamangRust/movie-grpc-tonic-axum/raw/main/image/example.png?raw=true)
@@ -85,10 +87,9 @@ The movie schema is defined once in protobuf and drives both the wire format and
 ### Node-Exporter
 ![Node-Exporter](https://github.com/MamangRust/movie-grpc-tonic-axum/raw/main/image/node-exporter.png?raw=true)
 
-
 ---
 
-## 🚀 Running Locally
+## Running Locally
 
 ```bash
 git clone https://github.com/MamangRust/movie-grpc-tonic-axum.git
@@ -96,7 +97,7 @@ cd movie-grpc-tonic-axum
 docker compose up --build
 ```
 
-## 🧪 Available Services
+## Available Services
 
 | Service       | URL / Port                                      |
 | ------------- | ----------------------------------------------- |
@@ -106,6 +107,5 @@ docker compose up --build
 | Jaeger UI     | [localhost:16686](http://localhost:16686)       |
 | Node Exporter | [localhost:9100](http://localhost:9100/metrics) |
 
-
-## 🔗 Source Code & Repository
-[📌 View on GitHub](https://github.com/MamangRust/movie-grpc-tonic-axum)
+## Source Code & Repository
+[ View on GitHub](https://github.com/MamangRust/movie-grpc-tonic-axum)

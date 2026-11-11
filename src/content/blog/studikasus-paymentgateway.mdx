@@ -9,7 +9,7 @@ readTime: "15 min read"
 published: true
 ---
 
-## Case Study: Payment Gateway
+# Case Study: Payment Gateway
 
 In this case study, we focus on designing a robust database system for a payment gateway platform. This system handles key operations such as user registration, balance management, fund transfers, and transaction history, ensuring both performance and data integrity.
 
@@ -20,13 +20,13 @@ The primary objective of a payment gateway is to facilitate seamless and secure 
 - **Fund Operations**: Handling top-ups, withdrawals, and fund transfers accurately and securely.
 - **Transaction Tracking**: Maintaining a reliable log of all transactions for auditing and user reference.
 
-#### **Key Challenges**
+#### Key Challenges
 - **Data Integrity**: Handling high volumes of transactions while ensuring that no data is lost or corrupted during the processes.
 - **Concurrency**: Managing simultaneous operations (like top-ups, transfers, and withdrawals) without causing conflicts or race conditions.
 - **Scalability**: Designing a system that can scale efficiently as the number of users and transactions grows.
 
 
-#### **Database Design**
+#### Database Design
 The database schema is designed to address the above challenges. Each key table corresponds to an essential part of the payment gateway’s functionality:
 
 1. Users Table: This table stores personal details and credentials, supporting unique identification of each user.

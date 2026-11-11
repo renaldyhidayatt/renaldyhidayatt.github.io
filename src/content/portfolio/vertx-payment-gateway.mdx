@@ -501,22 +501,22 @@ flowchart TD
 
 ## Technical Decisions & Trade-offs
 
-**A reactive stack with no room for blocking calls**
+### A reactive stack with no room for blocking calls
 Vert.x runs each service on a small number of event-loop threads, which is how the gateway keeps latency low under many concurrent connections. The flip side is that one careless blocking call freezes every in-flight request on that loop, so futures and callbacks must be composed carefully everywhere. For an I/O-heavy payment API, the throughput per core justifies that discipline.
 
-**Optimistic concurrency for the saldo ledger**
+### Optimistic concurrency for the saldo ledger
 Balance updates use optimistic locking instead of holding pessimistic row locks, so concurrent topups and transfers do not queue on a single hot balance row. The cost is retry logic on conflict: a busy account can fail and re-attempt rather than simply wait. At this traffic level, retries are cheaper than lock contention across the cluster.
 
-**PostgreSQL as the financial ledger**
+### PostgreSQL as the financial ledger
 Every topup, transfer, and withdrawal is recorded transactionally in one ACID store, which is the only acceptable basis for money movement; PgBouncer in front keeps the pooled connection count sane. The trade-off is vertical scaling limits and a schema that only changes through Flyway migrations — fine for a ledger, where stability beats flexibility.
 
-**Kafka between money movement and notifications**
+### Kafka between money movement and notifications
 Transfer and topup services publish events and return immediately; the Email worker sends invoices asynchronously. This keeps fund settlement off SMTP's clock, but it means a receipt can arrive noticeably after the ledger write, and the consumer has to tolerate duplicates and retries. Notifications are the right thing to make eventually consistent; the ledger itself is never touched this way.
 
-**gRPC contracts for the finance domains**
+### gRPC contracts for the finance domains
 Protobuf definitions give card, saldo, topup, transfer, and withdraw services explicit request and response types, so a malformed call fails at the boundary instead of inside business logic. The price is a build-time codegen step and a network hop per call even inside one deployment unit. Typed money APIs are worth both.
 
-**JWT for a payment API surface**
+### JWT for a payment API surface
 Stateless tokens let any replica authorize any request without a shared session store, which suits the horizontally scaled Kubernetes setup. The honest weakness is revocation: a leaked access token stays valid until expiry, so the design leans on short lifetimes plus refresh-token rotation rather than instant kill switches.
 
 ---

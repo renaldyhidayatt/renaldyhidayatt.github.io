@@ -10,8 +10,7 @@ image: "/portofolio/pointofsale_grpc.png"
 ---
 
 
-
-# 💳 Point of Sale (POS) gRPC Project
+# Point of Sale (POS) gRPC Project
 
 This project is a **backend implementation for a Point of Sale (POS) system** designed with a **structured monolithic** architecture. Although monolithic, the project is organized into clear modules so that each domain (users, merchants, inventory, and transactions, for example) remains easy to manage and can be extended further without losing order.
 
@@ -21,54 +20,52 @@ Communication between client and server happens over a **REST API**, while inter
 
 ### Scope and Key Features
 
-* **🔐 User & Role Management**
+* ** User & Role Management**
   The system supports authentication and authorization with different access levels (admin, merchant owner, cashier). This ensures that only authorized parties can perform certain actions according to their responsibilities.
 
-* **🏬 Merchant Management**
+* ** Merchant Management**
   Business owners can register a store/merchant, configure important information such as store name and API key, and set up their operational structure.
 
-* **👨‍💼 Cashier Management**
+* ** Cashier Management**
   Merchants can add cashier accounts, grant access as needed, and monitor their cashiers' activity in real time.
 
-* **📦 Inventory Management**
+* ** Inventory Management**
   Supports full CRUD for products and categories, covering stock details, price, description, and product category. With this system, stock is always up to date and can be controlled efficiently.
 
-* **💳 Transaction Processing**
+* ** Transaction Processing**
   The system provides a complete flow for creating orders, adding items to the cart, calculating the payment total, and recording transactions permanently in the database.
 
-* **⚡ Internal gRPC Communication**
+* ** Internal gRPC Communication**
   The API Gateway communicates with the core server over gRPC, which delivers high performance and makes future scaling easier if the system is later split into microservices.
 
-* **📖 Automatic API Documentation**
+* ** Automatic API Documentation**
   The REST API is automatically documented with Swagger (**Swago**), making it easier for developers and integration teams to understand and test the available endpoints.
 
-* **🐳 Containerization with Docker**
+* ** Containerization with Docker**
   The system is ready to run in an isolated environment with Docker & Docker Compose, making setup fast, consistent, and easy to deploy across platforms.
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
-- 🐹 **Go (Golang)** — Implementation language.
-- 🌐 **Echo** — Minimalist web framework for building REST APIs.
-- 🪵 **Zap Logger** — Structured logging for high-performance applications.
-- 📦 **SQLC** — Generates type-safe Go code from SQL queries.
-- 🚀 **gRPC** — High-performance RPC for internal service communication.
-- 🧳 **Goose** — Migration tool for managing database schema changes.
-- 🐳 **Docker** — Containerization platform for a consistent development environment.
-- 📄 **Swago** — Generates Swagger 2.0 documentation for Echo routes.
-- 🔗 **Docker Compose** — Manages multi-container Docker applications.
+- **Go (Golang)** — Implementation language.
+- **Echo** — Minimalist web framework for building REST APIs.
+- **Zap Logger** — Structured logging for high-performance applications.
+- **SQLC** — Generates type-safe Go code from SQL queries.
+- **gRPC** — High-performance RPC for internal service communication.
+- **Goose** — Migration tool for managing database schema changes.
+- **Docker** — Containerization platform for a consistent development environment.
+- **Swago** — Generates Swagger 2.0 documentation for Echo routes.
+- **Docker Compose** — Manages multi-container Docker applications.
 
 ---
-
 
 ## Architecture
 The application is designed with a service-oriented monolith architecture. The client-facing REST API acts as a gateway, translating HTTP requests into gRPC calls to the backend server. That server holds the core business logic and communicates with the PostgreSQL database.
 
 [![](https://mermaid.ink/img/pako:eNqdUl1vmzAU_SuWI02pRNIAgRg_TKqaaevWrazJ00IeLuGGoICNjGmbRfnvMx9ZO1WbtNqS4R7fe865to90IxOknKYKyh1ZziNBzKjquAMieiM0KthXGQlRpGktIKJdUjPOGBmNTO6n5TK8vP-wWJLh58Xdt4uIGvw9-ZJnKFbtenkV3pCPoPERDuuOBkUSiVeyt3AAAYJclXm2hyp7KdoydYrpfXhNhqGSWsb19iy4QPWAatV9SJOzfq7u0bZ88f22L5mDhhgqXA1DWelUodm6-KfDpnUsYhCpsfmO3JXmmP70-TVLG2hl7FVYncP136Rfi-lDjn232yzP-SBxmR_EVqWV3CMfuBuXuX4fjh6zRO-4Uz5ZG5lLxQcOa-ZLrr73joy54AXs7WRn3z1dzOLY8d9O1x9Pz7ZFNrGD_2OjlnnGWUL5FvIKLVqgKqCJ6bERiqjeYYER5eY3AbVv7upkikoQP6QsKNeqNmVK1unuN0ldJua5zjMw7p5TzC2hupa10JTbbktB-ZE-UT5yg7E3c6aOzYKJHzSbB4NOp2PPm_oe8yc2Y57r-ieL_mxV7bHD7AmbzTzf9vzAsaenX5TJG5I?type=png)](https://mermaid.live/edit#pako:eNqdUl1vmzAU_SuWI02pRNIAgRg_TKqaaevWrazJ00IeLuGGoICNjGmbRfnvMx9ZO1WbtNqS4R7fe865to90IxOknKYKyh1ZziNBzKjquAMieiM0KthXGQlRpGktIKJdUjPOGBmNTO6n5TK8vP-wWJLh58Xdt4uIGvw9-ZJnKFbtenkV3pCPoPERDuuOBkUSiVeyt3AAAYJclXm2hyp7KdoydYrpfXhNhqGSWsb19iy4QPWAatV9SJOzfq7u0bZ88f22L5mDhhgqXA1DWelUodm6-KfDpnUsYhCpsfmO3JXmmP70-TVLG2hl7FVYncP136Rfi-lDjn232yzP-SBxmR_EVqWV3CMfuBuXuX4fjh6zRO-4Uz5ZG5lLxQcOa-ZLrr73joy54AXs7WRn3z1dzOLY8d9O1x9Pz7ZFNrGD_2OjlnnGWUL5FvIKLVqgKqCJ6bERiqjeYYER5eY3AbVv7upkikoQP6QsKNeqNmVK1unuN0ldJua5zjMw7p5TzC2hupa10JTbbktB-ZE-UT5yg7E3c6aOzYKJHzSbB4NOp2PPm_oe8yc2Y57r-ieL_mxV7bHD7AmbzTzf9vzAsaenX5TJG5I)
 
-
-## 🗃️ ERD (Entity-Relationship Diagram)
+## ERD (Entity-Relationship Diagram)
 
 This diagram shows the structure and relationships between tables in the database.
 
@@ -78,27 +75,27 @@ This diagram shows the structure and relationships between tables in the databas
 
 ## Technical Decisions & Trade-offs
 
-**REST at the edge, gRPC inside**
+### REST at the edge, gRPC inside
 The Echo REST gateway faces clients and translates HTTP requests into gRPC calls to the core server. This keeps browsers and Swagger integrators happy on the outside while internal calls stay typed, binary, and low-latency. The cost is two API layers to keep in sync and translation code that does nothing but forward — a fair price for getting both worlds.
 
-**SQLC instead of a full ORM**
+### SQLC instead of a full ORM
 SQLC generates typed Go straight from hand-written SQL, so a bad query or a mismatched column fails at compile time. The trade-off is that every query is written and maintained by hand, with none of the dynamic query building an ORM gives you. For a POS domain where the queries are few and stability matters more than flexibility, explicit SQL is the better deal.
 
-**A monolith with service-shaped seams**
+### A monolith with service-shaped seams
 Everything deploys as one server and one REST client, but modules for users, merchants, inventory, and transactions stay separated behind the gRPC boundary. Scaling is all-or-nothing, and an outage takes down every domain at once. The payoff is operational simplicity and a clean path to split into microservices later, which suits retail POS traffic.
 
-**PostgreSQL for stock and sales integrity**
+### PostgreSQL for stock and sales integrity
 Inventory decrements and sales records must commit together or the till sells stock it no longer has. PostgreSQL's ACID guarantees cover that, and Goose keeps schema changes versioned. The cost is a fixed relational schema and migration ceremony on every model change — acceptable for financial and operational data.
 
-**Auto-generated Swagger for the REST surface**
+### Auto-generated Swagger for the REST surface
 Swago turns Echo routes into Swagger 2.0 documentation, so integrators can discover and test endpoints without reading code. The limitation: it documents only the REST layer, while the gRPC contracts still require reading the proto files. That asymmetry is tolerable because external consumers only ever touch the gateway.
 
-**Docker Compose as the one-command environment**
+### Docker Compose as the one-command environment
 One make target builds the server, client, and migrate images, boots PostgreSQL, and applies migrations in order. The trade-off is that the whole stack must come up together locally, and image builds slow the edit-run loop. For a project with a migration step and two processes, that reproducibility is worth it.
 
 ---
 
-## 🚀 How to Run the Project
+## How to Run the Project
 
 Follow these steps to run the project in your local environment.
 
@@ -150,27 +147,27 @@ make docker-down
 
 If you do not want to use Docker, follow these steps:
 
-**a. Start the Database**
+### a. Start the Database
 Make sure you have a PostgreSQL instance running locally and configure the connection in the `.env` file.
 
-**b. Run the Database Migrations**
+### b. Run the Database Migrations
 ```bash
 make migrate
 ```
 
-**c. Generate Protobuf Code**
+### c. Generate Protobuf Code
 If you change a `.proto` file, run this command:
 ```bash
 make generate-proto
 ```
 
-**d. Start the gRPC Server**
+### d. Start the gRPC Server
 ```bash
 make run-server
 ```
 The server will run on the port specified in `.env` (default: `50051`).
 
-**e. Start the Client (REST API)**
+### e. Start the Client (REST API)
 Open a new terminal and run:
 ```bash
 make run-client
@@ -179,14 +176,11 @@ The REST API client will run on the port specified in `.env` (default: `5000`).
 
 ---
 
-## 📚 API Documentation
+## API Documentation
 
 After starting the `client`, the Swagger API documentation will be available at:
 
 [http://localhost:5000/swagger/index.html](http://localhost:5000/swagger/index.html)
 
-
-
-
-## 🔗 Source Code & Repository
-[📌 View on GitHub](https://github.com/MamangRust/point-of-sale-grpc)
+## Source Code & Repository
+[ View on GitHub](https://github.com/MamangRust/point-of-sale-grpc)

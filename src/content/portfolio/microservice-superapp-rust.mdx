@@ -1,0 +1,866 @@
+---
+title: "Microservice Super App — A Federated Domain Platform in Rust"
+excerpt: "Six independent Cargo workspaces behind one edge gateway: identity verified once, gRPC between domains and REST to clients, a Kafka outbox with exactly-once refunds, and kernel-level enforcement from zero-dependency eBPF agents."
+date: "2026-11-11"
+created_at: "2026-11-11"
+updated_at: "2026-11-11"
+tags: [
+  "rust", "grpc", "kafka", "postgresql", "clickhouse", "redis", "keycloak",
+  "kubernetes", "argocd", "docker", "ebpf", "xdp", "opentelemetry",
+  "prometheus", "grafana", "loki", "jaeger", "pgbouncer", "sqlx", "tokio"
+]
+status: "ongoing"
+image: "/portofolio/microservice_superapp_go/microservice-super-app-go.png"
+---
+
+# Microservice Super App — A Federated Domain Platform in Rust
+
+A super-app backend built as a **federation of domains that never share code**: E-Commerce, Point of Sale, Payment Gateway, ERP, Identity, Logistics, Returns, and AI. Each one owns its own database, its own connection pool, and its own build. They meet at two places only — one edge gateway that verifies identity, and a Kafka backbone that carries events.
+
+The interesting parts are the boundaries. Code is not shared between platforms, so changing a crate in POS cannot break a build in ERP. Databases are not shared either, so a join that crosses a stack boundary simply cannot be written. Identity is verified once at the edge and stamped into headers, so no downstream service can be talked into trusting a client-supplied user id.
+
+Enforcement reaches further than the application. Two eBPF agents sit on the kernel: one drops packets at XDP and enforces a port policy, the other watches process and connection behaviour and applies detection rules. Both are written with **zero Cargo dependencies**, reaching libbpf through FFI, so the security layer has no supply chain of its own.
+
+---
+
+## Architecture Principles
+
+Six rules hold the federation together. Every section below is an instance of one of them.
+
+1. **Stack isolation is a build property.** Each platform is its own Cargo workspace with its own lockfile. There is no root manifest that could pull everything into one dependency graph.
+2. **One crate per domain.** A domain is a binary with a handler, a service, and a repository. Two domains that look alike do not merge; `auth`, `user`, and `role` stay separate in every stack.
+3. **gRPC inside, REST outside.** Services speak Protobuf. Clients speak REST through a per-stack gateway or the edge.
+4. **Identity is decided once.** The edge verifies and overwrites identity headers. A second verification downstream could disagree with the first, so it does not exist.
+5. **Claim before side effect.** Anything that leaves a transaction — deducting stock, crediting a balance — takes a database marker first, so a crash leaves the system in "not yet done", never "maybe twice".
+6. **Fail closed.** Unvalidated configuration stops the process. An authentication mode that is unsafe outside development refuses to start in production.
+
+---
+
+## Architecture Overview
+
+One edge, four platform stacks, three core services, two kernel agents, and a data layer no service can reach past its own context.
+
+```mermaid
+flowchart TB
+    Client["Browser / App<br/>Vue 3 + Vite"]
+
+    subgraph EDGE["Edge — trust boundary"]
+        GW["unified-api-gateway-rs<br/>:8080"]
+        GW_INFO["JWT verify once (HS256 / RS256 / JWKS)<br/>identity stamping, anti-forgery<br/>route table + rate limit per IP<br/>reverse proxy with prefix strip"]
+    end
+
+    subgraph PLATFORM["Platform stacks — REST to clients"]
+        EC["eCommerce<br/>apigateway :5000"]
+        POS["POS<br/>apigateway :8305"]
+        PAY["Payment<br/>apigateway :5000"]
+        ERP["ERP<br/>apigateway :8080"]
+    end
+
+    subgraph DOMAIN["gRPC domain services"]
+        EC_D["24 domain crates<br/>gRPC 52xxx"]
+        POS_D["13 domain crates<br/>gRPC 53xxx"]
+        PAY_D["10 domain crates<br/>gRPC 50xxx"]
+        ERP_D["18 domain crates<br/>gRPC 51xxx"]
+    end
+
+    subgraph CORE["Core — zero-dependency, HTTP/JSON"]
+        LG["logistics-rs<br/>:50131"]
+        RT["returns-rs<br/>:50132"]
+        AI["ai-rs<br/>:50121"]
+    end
+
+    subgraph DATA["Data layer"]
+        PG[("Postgres<br/>per context<br/>+ PgBouncer")]
+        RD[("Redis<br/>cache / session")]
+        KF[["Kafka<br/>outbox events"]]
+        CH[("ClickHouse<br/>stats-reader/writer")]
+    end
+
+    Client --> GW
+    GW --- GW_INFO
+    GW -->|"platform ecommerce"| EC
+    GW -->|"platform pos"| POS
+    GW -->|"platform payment"| PAY
+    GW -->|"15 ERP modules (REST to gRPC facade)"| ERP
+
+    EC --> EC_D
+    POS --> POS_D
+    PAY --> PAY_D
+    ERP --> ERP_D
+
+    EC_D --> PG
+    POS_D --> PG
+    PAY_D --> PG
+    ERP_D --> PG
+
+    EC_D --> RD
+    POS_D --> RD
+    PAY_D --> RD
+
+    EC_D --> KF
+    PAY_D --> KF
+    ERP_D --> KF
+
+    EC_D --> CH
+    POS_D --> CH
+    PAY_D --> CH
+
+    EC_D -->|"RMA approved, shipment opens"| LG
+    EC_D -->|"refund orchestration"| RT
+    RT --> LG
+    RT -->|"credit / debit"| PAY_D
+    LG -->|"exactly-once stock deduct"| ERP_D
+    AI -->|"forecast / fraud score"| ERP_D
+```
+
+A client call crosses three boundaries: the edge verifies the token, the stack gateway turns REST into gRPC, and the domain crate turns that into a query against its own database.
+
+### Platform Inventory
+
+| Platform | Domains | Gateway | Port block |
+| :--- | :--- | :--- | :--- |
+| **Edge gateway** | 1 binary | — | `:8080` |
+| **Payment Gateway** | 10 + 2 stats | `crates/apigateway` | `50xxx`, HTTP `:5000` |
+| **ERP** | 18 | `crates/apigateway` | `51xxx`, HTTP `:8080` |
+| **E-Commerce** | 24 + 2 stats | `crates/apigateway` | `52xxx`, HTTP `:5000` |
+| **Point of Sale** | 13 + 2 stats | `crates/apigateway` | `53xxx`, HTTP `:8305` |
+| **Identity** | 3 | — (Keycloak at the infra layer) | `54xxx`, HTTP `:8405` |
+| **Logistics** | 1 | — | `:50131` |
+| **Returns** | 1 | — | `:50132` |
+| **AI** | 1 | — | `:50121` |
+| **eBPF firewall** | 1 | — | exporter `:9096`, signal `:9097` |
+| **eBPF observability** | 1 | — | metrics + ingest |
+
+The port blocks let several stacks run on one machine at once: payment on `50xxx`, ERP on `51xxx`, eCommerce on `52xxx`, POS on `53xxx`, identity on `54xxx`.
+
+---
+
+## Workspace Layout
+
+Six workspaces, six lockfiles. This is what makes "building one stack cannot break another" a fact rather than a convention.
+
+```mermaid
+flowchart TB
+    subgraph WS_ROOT["service — combined workspace"]
+        ECOMMON["ebpf-common"]
+        EFW["ebpf-firewall-rs"]
+        EOBS["ebpf-observability-rs"]
+        TELC["telemetry-common"]
+        AIRS["ai-rs"]
+        LOGRS["logistics-rs"]
+        RETRS["returns-rs"]
+        UGW["unified-api-gateway-rs"]
+    end
+
+    subgraph WS_PAY["service/payment-gateway — own workspace"]
+        SHARED["crates/shared<br/>config · telemetry · error<br/>redis · kafka · http"]
+        GENPROTO["crates/genproto"]
+        CHAOS["crates/chaos"]
+    end
+
+    subgraph WS_OTHERS["Other workspaces"]
+        WS_EC["ecommerce"]
+        WS_POS["pointofsale"]
+        WS_ERP["erp"]
+        WS_IDN["identity-service"]
+    end
+
+    WS_EC -->|path dep| SHARED
+    WS_EC -->|path dep| GENPROTO
+    WS_EC -->|path dep| CHAOS
+    WS_POS -->|path dep| SHARED
+    WS_POS -->|path dep| CHAOS
+    WS_ERP -->|path dep| SHARED
+    WS_ERP -->|path dep| CHAOS
+    WS_IDN -->|path dep| SHARED
+    WS_IDN -->|path dep| CHAOS
+
+    LOGRS -->|"genproto shared with ecommerce"| WS_EC
+    WS_ROOT --- WS_PAY
+```
+
+`payment-gateway/crates/shared` is the one crate every business stack depends on: configuration, telemetry, error kinds, Redis, Kafka, and HTTP. Adding a dependency there means every stack carries it, which is why it stays thin.
+
+---
+
+## Domain Map
+
+Crates are grouped by responsibility rather than by table name, so the crate you want is where you expect it.
+
+```mermaid
+flowchart TB
+    subgraph ECOM["eCommerce — 24 crates + 2 stats"]
+        direction TB
+        EC1["identity<br/>auth · user · role"]
+        EC2["merchant<br/>merchant · detail · business<br/>document · policy · award · social_link"]
+        EC3["catalog<br/>product · category<br/>banner · slider"]
+        EC4["sales<br/>cart · order · order_item<br/>shipping_address · transaction"]
+        EC5["experience<br/>review · review_detail"]
+        EC6["infra<br/>email · stats-reader · stats-writer"]
+    end
+
+    subgraph PAY["Payment Gateway — 10 crates + 2 stats"]
+        direction TB
+        PY1["identity<br/>auth · user · role"]
+        PY2["payment<br/>card · merchant · saldo<br/>topup · transaction"]
+        PY3["financial<br/>transfer · withdraw"]
+        PY4["infra<br/>email · stats-reader · stats-writer"]
+    end
+
+    subgraph POS["Point of Sale — 13 crates + 2 stats"]
+        direction TB
+        PS1["identity<br/>auth · user · role"]
+        PS2["merchant<br/>merchant"]
+        PS3["catalog<br/>category · product"]
+        PS4["sales<br/>cashier · order · order_item · transaction"]
+        PS5["infra<br/>stats_events · stats-reader · stats-writer"]
+    end
+
+    subgraph ERP["ERP — 18 crates"]
+        direction TB
+        ER1["finance<br/>accounting · finance<br/>costing · reporting"]
+        ER2["supply<br/>inventory · purchasing<br/>manufacturing · subcontract<br/>master-data"]
+        ER3["sales<br/>sales · crm · approval"]
+        ER4["hr<br/>hris"]
+        ER5["platform<br/>auth · user · role<br/>ai-bridge · integration"]
+    end
+```
+
+---
+
+## Data Architecture
+
+Nothing is shared for convenience. A domain reads its own database, and anything that crosses a stack goes over gRPC or HTTP.
+
+```mermaid
+flowchart LR
+    subgraph ECDB["eCommerce"]
+        A1[("ec_identity")]
+        A2[("ec_merchant")]
+        A3[("ec_catalog")]
+        A4[("ec_sales")]
+        A5[("ec_experience")]
+        A6[("ec_email")]
+        A7[("logistics_db")]
+        A8[("returns_db")]
+    end
+
+    subgraph PAYDB["Payment"]
+        B1[("pg_identity")]
+        B2[("pg_payment")]
+        B3[("pg_financial")]
+    end
+
+    subgraph POSDB["POS"]
+        C1[("pos_identity")]
+        C2[("pos_merchant")]
+        C3[("pos_catalog")]
+        C4[("pos_sales")]
+        C5[("pos_email")]
+    end
+
+    subgraph ERPDB["ERP"]
+        D1[("erp_platform")]
+        D2[("erp_finance")]
+        D3[("erp_supply")]
+        D4[("erp_sales")]
+        D5[("erp_hr")]
+    end
+
+    subgraph IDDB["Identity"]
+        E1[("identity_db")]
+    end
+
+    POOLER{{"PgBouncer — one pool per context"}}
+    A1 & A2 & A3 & A4 & A5 & A6 --> POOLER
+    B1 & B2 & B3 --> POOLER
+    C1 & C2 & C3 & C4 & C5 --> POOLER
+    D1 & D2 & D3 & D4 & D5 --> POOLER
+    E1 --> POOLER
+```
+
+The boundary is the point: a join across stacks is not a performance trade-off to weigh, it is something the design does not allow. ClickHouse sits beside the transactional tier for analytics and is fed by consumers, so a dashboard query never loads a live database.
+
+---
+
+## Request Lifecycle
+
+Inside a domain crate, a request moves through the same four stages every time.
+
+```mermaid
+flowchart TB
+    ENV["env<br/>GRPC_PORT_METRIC_PORT<br/>DATABASE_URL · REDIS_*<br/>OTEL_EXPORTER_OTLP_ENDPOINT"]
+
+    subgraph BOOT["main.rs — bootstrap"]
+        CFG["config.rs<br/>parse + validate env"]
+        DI["di.rs<br/>wiring"]
+        ST["state.rs<br/>AppState"]
+    end
+
+    subgraph BIN["Runtime"]
+        GRPC["gRPC server<br/>PREFIX_GRPC_PORT"]
+        MET["/metrics<br/>PREFIX_METRIC_PORT"]
+    end
+
+    subgraph LAYERS["Layers inside AppState"]
+        H["handler/<br/>gRPC method"]
+        S["service/<br/>business rules"]
+        R["repository/<br/>SQLx"]
+    end
+
+    ENV --> CFG
+    CFG -->|"validation failure = non-zero exit"| DI
+    DI --> ST
+    ST --> GRPC
+    ST --> MET
+    GRPC --> H
+    H --> S
+    S --> R
+
+    R --> PG[("Postgres<br/>via PgBouncer")]
+    R --> RD[("Redis")]
+    S --> KF[["Kafka<br/>outbox publisher"]]
+    ST --> OTEL["OTel Collector"]
+
+    classDef fail fill:#B3261E,stroke:#7A1A14,stroke-width:2px,color:#FFFFFF
+    class CFG fail
+```
+
+**Fail closed.** A `config.rs` that cannot validate its environment stops the process with a non-zero exit. No default is quietly treated as safe for a secret.
+
+**Strict layering.** `repository/` only touches data, `service/` only holds business rules. A query in `service/` is a review rejection, not a style note.
+
+---
+
+## Authentication
+
+Identity is verified exactly once, at the edge, and the result is written into the request rather than added to it. A client that sends `x-user-id` never reaches a domain service with that value intact.
+
+```mermaid
+flowchart TB
+    START["Request enters the unified gateway"] --> ENV{"APP_ENV ?"}
+
+    ENV -->|"production"| MODE_P{"JWT_MODE ?"}
+    ENV -->|"local / test / development"| MODE_D{"JWT_MODE ?"}
+
+    MODE_P -->|"hs256"| DENY_ALL["denyAll<br/>'auth misconfiguration'<br/>+ startup refused"]
+    MODE_P -->|"rs256 / jwks"| JWKS{"verify token"}
+
+    MODE_D -->|"hs256"| HS_OK["HMAC-SHA256<br/>custom claims roles/tenant/merchant"]
+    MODE_D -->|"rs256 / jwks"| JWKS
+
+    JWKS -->|"unknown kid"| FETCH["fetch JWKS<br/>cache per kid, TTL 300s"]
+    FETCH -->|"fetch failed"| REJECT["401 — no fallback to HS256"]
+    FETCH --> VERIFY["RS256 verify<br/>PKCS#1 v1.5"]
+    JWKS -->|"known kid"| VERIFY
+
+    VERIFY -->|"iss / aud / exp / nbf failed"| REJECT
+    VERIFY -->|"ok"| STAMP["Identity.SetHeaders<br/>OVERWRITE x-user-id / x-roles<br/>x-tenant-id / x-merchant-id"]
+
+    HS_OK --> STAMP
+    STAMP -->|"empty value"| DEL["DELETE header"]
+    STAMP --> PROXY["reverse proxy to downstream"]
+    DEL --> PROXY
+
+    classDef bad fill:#B3261E,stroke:#7A1A14,stroke-width:2px,color:#FFFFFF
+    classDef good fill:#146C2E,stroke:#0B471D,stroke-width:2px,color:#FFFFFF
+    class DENY_ALL,REJECT bad
+    class STAMP,PROXY good
+```
+
+`JWT_MODE=hs256` exists for local and test environments only. In production the gateway refuses to start and denies every request. There is no fallback from JWKS to a shared secret, because a fallback that triggers on failure is one an attacker can trigger.
+
+---
+
+## Event Backbone — Outbox to Kafka
+
+A state change and its event are written in the same transaction to an outbox table; a separate publisher moves them to Kafka. No service writes to its database and calls another service in the same breath.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as Client
+    participant G as unified gateway
+    participant S as Shipment (logistics-rs)
+    participant DB as Postgres
+    participant ERP as ERP inventory
+    participant K as Kafka
+
+    U->>G: POST /v1/shipments/{id}/deliver
+    G->>G: verify JWT + stamp x-user-id / x-tenant-id
+    G->>S: forward (identity already overwritten)
+    S->>DB: guard state transition (PENDING to DELIVERED)
+    S->>DB: claim marker STOCK_DEDUCTED
+    alt claim succeeded
+        S->>ERP: DeductStock (idempotent per shipment)
+        ERP-->>S: ok
+    else claim already taken
+        S-->>S: skip deduction, still DELIVERED
+    end
+    S->>DB: enqueue outbox lifecycle event
+    DB-->>K: publish shipment.delivered
+    K-->>U: (async) tracking update / notification
+```
+
+The claim comes before the side effect. If the process dies between the two, the shipment stays "not yet deducted" — never "maybe deducted twice".
+
+---
+
+## Cross-Domain Flows
+
+Three flows carry the platform's promises: a shipment that deducts stock exactly once, a return that refunds exactly once, and a refund that survives a gateway outage.
+
+### Shipment
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: create (no driver)
+    PENDING --> ASSIGNED: assign driver
+    ASSIGNED --> PICKED_UP
+    PICKED_UP --> IN_TRANSIT
+    IN_TRANSIT --> DELIVERED: DeductStock exactly-once
+    ASSIGNED --> FAILED
+    PICKED_UP --> FAILED
+    IN_TRANSIT --> FAILED
+    PENDING --> FAILED
+    DELIVERED --> [*]
+    FAILED --> [*]
+
+    note right of DELIVERED
+        The STOCK_DEDUCTED marker is claimed
+        before ERP is called.
+        Failure lands on "not yet deducted".
+    end note
+
+    note right of FAILED
+        Never reached from DELIVERED.
+        The outbox event is released to Kafka.
+    end note
+```
+
+### Return / RMA
+
+```mermaid
+stateDiagram-v2
+    [*] --> REQUESTED: create (eCommerce needs order_id, POS needs transaction_id)
+    REQUESTED --> APPROVED: approve, opens a RETURN shipment
+    REQUESTED --> REJECTED: reject (reason recorded in notes)
+    REQUESTED --> CANCELLED
+    APPROVED --> IN_TRANSIT: mark-shipped
+    IN_TRANSIT --> RECEIVED: receive + restock per item
+    RECEIVED --> REFUND_PENDING
+    APPROVED --> REFUND_PENDING: refund from APPROVED
+    REFUND_PENDING --> REFUNDED: payment SUCCEEDED
+    REFUND_PENDING --> INSPECTION_FAILED
+    REFUNDED --> CLOSED: close
+    INSPECTION_FAILED --> CLOSED
+
+    note right of REFUND_PENDING
+        operationID = RMA-{id}-REFUND
+        SUCCEEDED gives AlreadyRefunded
+        FAILED or PROCESSING retries with the same ID
+    end note
+```
+
+### Refund Idempotency
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Buyer
+    participant R as returns-rs
+    participant DB as return DB
+    participant P as payment (balance)
+
+    B->>R: POST /v1/returns/{id}/refund
+    R->>DB: check status in APPROVED, RECEIVED, REFUND_PENDING
+    R->>DB: does a refund already exist for this RMA?
+    alt SUCCEEDED already recorded
+        R-->>B: 409 AlreadyRefunded (no double credit)
+    else none / FAILED / PROCESSING
+        R->>P: credit(saldo, amount, operationID=RMA-{id}-REFUND)
+        alt gateway ok
+            P-->>R: SUCCEEDED
+            R->>DB: refund = SUCCEEDED, RMA = REFUNDED
+            R-->>B: 200 OK
+        else gateway error
+            P-->>R: FAILED
+            R->>DB: refund = FAILED + failure_reason
+            R-->>B: 502 — safe to retry
+        end
+    end
+```
+
+The crash-recovery case is the one that matters: the RMA still reads `APPROVED` while a `SUCCEEDED` refund is already recorded. A repeat refund is refused. A retry after the gateway recovers sends the credit **exactly once**, because the `operationID` never changes.
+
+---
+
+## Kernel-Level Security
+
+Both agents are zero-dependency crates that reach libbpf through FFI, so the security layer carries no supply chain of its own.
+
+```mermaid
+flowchart LR
+    subgraph AGENTS["eBPF agents — zero-dep FFI to libbpf"]
+        FW["ebpf-firewall-rs<br/>exporter :9096 / signal :9097"]
+        OBS["ebpf-observability-rs<br/>TCP + process + Sigma rules"]
+        COMMON["ebpf-common<br/>object / ringbuf / metrics / http / json"]
+    end
+
+    KERNEL["Kernel<br/>XDP · kprobe · ringbuf · BTF"]
+    INGEST["Ingest endpoint<br/>canonical events"]
+
+    FW --> COMMON
+    OBS --> COMMON
+    COMMON --> KERNEL
+    FW -->|"runtime.endpoint.access"| INGEST
+    OBS -->|"runtime.policy.violation<br/>runtime.process.exec"| INGEST
+```
+
+The firewall drops packets at XDP, enforces port policy and rate limits, hooks L7 signals through kprobe, and reconciles against nft or iptables so the host ruleset and the BPF state never drift apart. The observability agent reports TCP connect and state metrics, enforces an egress policy, and runs Sigma-subset rules over process events, including escape detection.
+
+```mermaid
+flowchart LR
+    subgraph FW["ebpf-firewall"]
+        F1["spike<br/>self-test T1–T12<br/>veth + netns (root)"]
+        F2["test-run<br/>BPF_PROG_TEST_RUN"]
+        F3["sidecar eth0<br/>deployment mode"]
+        F4["sync nft / iptables<br/>ruleset reconciliation"]
+        F5["exporter :9096<br/>signal :9097"]
+        F6["dump<br/>inspect pinned maps"]
+    end
+
+    subgraph OBS["ebpf-observability"]
+        O1["agent<br/>TCP + process"]
+        O2["rules Sigma-subset<br/>EBPF_RULES_DIR"]
+        O3["sampling duty cycle<br/>10s on / 10s off"]
+    end
+
+    F1 --> F3
+    F2 --> F3
+    F4 --> F3
+    F3 --> F5
+    O1 --> O2
+    O2 --> O3
+    F6 -.->|"pinned maps"| F3
+```
+
+Both need Linux 5.10 or newer with BTF at `/sys/kernel/btf/vmlinux` and `libbpf.so.1` at runtime. Enforcement mode needs root or `CAP_BPF`.
+
+---
+
+## Observability
+
+Every service exposes Prometheus metrics and ships traces and logs over OTLP to a collector.
+
+```mermaid
+flowchart LR
+    subgraph SVC["Domain crates"]
+        M1["/metrics<br/>PREFIX_METRIC_PORT"]
+        M2["OTLP traces<br/>:4317"]
+        M3["structured logs"]
+    end
+
+    subgraph SHIP["Per stack"]
+        COL["OTel Collector"]
+    end
+
+    subgraph STORES["Storage"]
+        P1[("Prometheus ERP<br/>:9190")]
+        P2[("Prometheus eCom, CORE, eBPF<br/>:9191")]
+        P3[("Prometheus POS<br/>:9192")]
+        P4[("Prometheus payment, identity<br/>:9090")]
+        J[("Jaeger")]
+        L[("Loki")]
+    end
+
+    GW["prom-stack-gateway<br/>:9200"]
+    GF["Grafana<br/>datasource prometheus-stack"]
+
+    M1 -->|"scrape"| COL
+    M2 --> COL
+    M3 --> COL
+
+    COL --> P1
+    COL --> P2
+    COL --> P3
+    COL --> P4
+    COL --> J
+    COL --> L
+
+    P1 --> GW
+    P2 --> GW
+    P3 --> GW
+    P4 --> GW
+    GW -->|"query / query_range<br/>fan-out + merge"| GF
+    J --> GF
+    L --> GF
+```
+
+Each stack runs its own Prometheus, so no single instance holds the whole platform. Without `prom-stack-gateway`, a dashboard that spans two stacks renders **empty rather than wrong**, because no single Prometheus knows the answer.
+
+```mermaid
+mindmap
+  root((Super App<br/>observability))
+    Latency
+      gRPC histogram per method
+      ebpf_tcp_connect_latency_seconds
+    Traffic
+      HTTP requests per route
+      ebpf_tcp_connections_total
+    Errors
+      AppError kind to status
+      ebpf_events_dropped_total
+    Saturation
+      process memory used
+      Postgres pool per context
+      ebpf_sampling_gated_total
+    Security
+      ebpf_egress_policy_violations_total
+      ebpf_rule_hits_total
+      runtime.container.escape
+    Business
+      refund and settlement outcome
+      shipment delivery state
+```
+
+---
+
+## Frontend
+
+Six Vue 3.5 applications sit on top, all sharing one API client that attaches the token and refreshes it.
+
+```mermaid
+flowchart LR
+    subgraph FE["service/frontend — Vue 3.5 + Vite"]
+        ST["ecommerce-store<br/>:5178"]
+        ECD["ecommerce-dashboard<br/>:5174"]
+        POSD["pos-dashboard<br/>:5175"]
+        PAYD["payment-dashboard<br/>:5176"]
+        PAYB["payment-banking<br/>:5179"]
+        ERPD["erp-dashboard"]
+    end
+
+    LIB["lib/api.ts<br/>axios + JWT interceptor<br/>+ auto-refresh"]
+
+    subgraph BE["Backend"]
+        UGW["unified gateway<br/>:8080"]
+        ECA["eCommerce apigateway<br/>:5000"]
+        POSA["POS apigateway<br/>:8305"]
+        PAYA["Payment apigateway<br/>:5000"]
+        ERPA["ERP apigateway<br/>:8080"]
+    end
+
+    ST --> LIB
+    ECD --> LIB
+    POSD --> LIB
+    PAYD --> LIB
+    PAYB --> LIB
+    ERPD --> LIB
+
+    LIB -->|"storefront"| ECA
+    LIB -->|"merchant console"| ECA
+    LIB -->|"cashier"| POSA
+    LIB -->|"merchant payment"| PAYA
+    LIB -->|"banking portal"| PAYA
+    LIB -->|"15 ERP modules"| ERPA
+    UGW -.->|"alternate edge path"| LIB
+```
+
+---
+
+## Running Locally
+
+Every stack ships the same script and supports the same two shapes.
+
+```mermaid
+flowchart TB
+    subgraph MODE_A["Mode A — everything in Docker"]
+        direction LR
+        A1["Docker network"]
+        A1 --> A2["infra containers<br/>postgres · redis · kafka"]
+        A1 --> A3["Rust binaries<br/>inside containers"]
+        A1 --> A4["nginx / apigateway"]
+    end
+
+    subgraph MODE_B["Mode B — Docker infra, binaries on the host"]
+        direction LR
+        B1["host"]
+        B1 --> B2["cargo run / target debug<br/>hot-reload friendly"]
+        B2 -->|"localhost port"| B3["Docker network"]
+        B3 --> B4["infra containers"]
+    end
+
+    MODE_A -->|"closer to production"| USE_A["Full integration testing"]
+    MODE_B -->|"fast iteration"| USE_B["Day-to-day development"]
+```
+
+Mode A puts everything in containers. Mode B keeps only Postgres, PgBouncer, Redis, Kafka, ClickHouse, the collector, and the dashboards in Docker while the binaries run on the host, which is the mode used for daily iteration.
+
+```bash
+cd service/payment-gateway/deployments/local
+cp docker.env.example docker.env   # adjust credentials
+./run-local.sh up                  # infra + all binaries
+./run-local.sh smoke               # register, login, /api/auth/me, /api/cards
+./run-local.sh down                # add --docker to stop the infra too
+```
+
+The same script exists in `erp/`, `ecommerce/`, `pointofsale/`, and `identity-service/`, with `up`, `build`, `smoke`, `stop`, and `down` doing the same thing in each.
+
+### Build and Test
+
+```bash
+cd service && cargo build --release && cargo test     # eBPF, AI, core, gateway
+
+cd service/ecommerce && cargo build --release          # one stack at a time
+cargo build -p order --release                         # or one crate inside it
+cargo test  -p ebpf-common                             # from service/
+```
+
+On a machine short on RAM, cap parallelism and skip SQLx's compile-time query checking:
+
+```bash
+cargo build --release -j 2
+SQLX_OFFLINE=true cargo build --release   # needs .sqlx/ from cargo sqlx prepare
+```
+
+Integration tests live in `tests/` and cover state machines, idempotency, and header forgery.
+
+---
+
+## Technical Decisions and Trade-offs
+
+| Decision | Choice | Why |
+| :--- | :--- | :--- |
+| Kernel and core crates | **Zero Cargo dependencies**, HTTP/JSON plus FFI to libbpf | The security layer should not inherit a supply chain; a CVE in a transitive crate becomes a CVE in the sandbox |
+| Logistics, Returns, AI persistence | In-memory repositories behind a trait | Keeps the zero-dependency path; a Postgres implementation drops in behind the same trait |
+| ERP façade transport | An `ErpInvoker` trait, defaulting to 503 | The contract and validation are settled; only the transport is left to be fitted |
+| Build structure | Six workspaces, six lockfiles | Isolation by tooling instead of discipline; a stack cannot compile another by accident |
+| Identity | Verified once at the edge, headers overwritten | A second verification downstream can disagree with the first, and then nobody knows which answer is right |
+| Cross-domain writes | Outbox, never a dual write | An event that fails to publish is recoverable; a dual write that half-succeeds is not |
+| Side effects outside a transaction | Claim first, then act | A crash lands on "not yet done" instead of "maybe twice" |
+| Unsafe auth configuration | Refuse to start | A service that silently weakens its own auth is worse than one that does not boot |
+| Analytics | Separate ClickHouse tier fed by consumers | A dashboard query never loads a transactional database |
+| Entry ports | Service port versus gRPC port kept distinct | `PORT` is read by shared config but is not the gRPC listener; conflating them produces a service that starts on a port nothing connects to |
+
+---
+
+## Deployment
+
+```mermaid
+flowchart TB
+    ROOT["deployments/kubernetes/<br/>kustomization.yaml"]
+
+    ROOT --> CORE["core/"]
+    ROOT --> SVC["services/ — one dir per crate"]
+    ROOT --> DB["database/<br/>Postgres + PgBouncer"]
+    ROOT --> CACHE["cache/ — Redis"]
+    ROOT --> MSG["messaging/ — Kafka"]
+    ROOT --> SEC["security/ — NetworkPolicy"]
+    ROOT --> COMP["components/ — reusable patches"]
+    ROOT --> OBS["observability/<br/>node-exporter + netpol"]
+
+    SVC --> S1["accounting/"]
+    SVC --> S2["inventory/"]
+    SVC --> S3["sales/"]
+    SVC --> S4["apigateway/"]
+    SVC --> SN["... 18 crates"]
+
+    OVERLAY["overlays/production/"] -->|"kustomize build"| MANIFEST["Final manifests"]
+    ROOT --> OVERLAY
+    MANIFEST --> CLUSTER["kubectl apply / ArgoCD sync"]
+    SEC -.->|"deny by default<br/>explicit allow"| SVC
+```
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Dev as Developer
+    participant CI as CI build
+    participant Reg as Registry
+    participant Git as GitOps repo
+    participant Argo as ArgoCD
+    participant K8s as Cluster
+
+    Dev->>CI: push commit
+    CI->>CI: cargo build --release -j 2
+    CI->>CI: cargo test -p <crate>
+    CI->>Reg: push image tag
+    Dev->>Reg: ./promote-image.sh tag
+    Dev->>Git: update image tag in overlays/production
+    Argo->>Git: watch root-app.yaml
+    Argo->>Argo: kustomize build production/
+    Argo->>K8s: sync (rolling update)
+    K8s-->>Argo: health / readiness
+    Argo-->>Dev: status Synced + Healthy
+    Dev->>K8s: ./validate-production.sh
+```
+
+Only the `production` overlay exists today. A new environment is a new folder under `overlays/`, never an edit to `core/` or `services/`.
+
+---
+
+## Repository Conventions
+
+A few rules bind changes rather than describe them.
+
+| Rule | What breaks if it is ignored |
+| :--- | :--- |
+| No fallback that weakens authentication | An auth hole, by construction |
+| Never change ports in code to dodge a conflict | Every other environment breaks to solve one local problem |
+| Never commit `target/`, `node_modules/`, logs, or a `docker.env` with credentials | Leaked secrets and an inflated repository |
+| Do not invent a crate structure | Follow `service/ecommerce/crates/order` |
+| Never edit an applied migration | Two databases end up with different schemas from the same history |
+| Never rename a metric or label | Dashboards go quietly empty |
+
+Beyond the table: validation sits in the handler, invariants in the service, constraints in the database, and none of the three alone is treated as enough. Daily counters are atomic rather than `SELECT MAX() + 1`. Status timestamps are stamped on the first transition and never overwritten. Readiness dials the dependency it depends on, because reporting ready while that dependency is unreachable is a lie the cluster acts on.
+
+```mermaid
+flowchart LR
+    A["Change code<br/>+ tests"] --> B{"cargo build / test<br/>green in that workspace?"}
+    B -- no --> A
+    B -- yes --> C{"Behaviour changed?"}
+    C -- yes --> D["Update the crate README<br/>+ the decision table"]
+    C -- no --> E
+    D --> E{"Touches auth,<br/>payment, or stock?"}
+    E -- yes --> F["Security review<br/>+ idempotency check"]
+    E -- no --> G["Normal review"]
+    F --> H["Merge"]
+    G --> H
+```
+
+---
+
+## Verification and Status
+
+- **Build isolation** — six workspaces, six lockfiles; a build in one stack does not compile another.
+- **Integration tests** — state machine, idempotency, and header forgery suites live in `tests/` per crate.
+- **Local smoke** — `run-local.sh smoke` walks register, login, `/api/auth/me`, and `/api/cards` through the apigateway.
+- **Kernel track** — the eBPF agents build as zero-dependency crates and need a BTF-enabled kernel with `libbpf.so.1`; enforcement claims require a host that has both.
+
+What is not claimed: this is a learning project, not a production system. The in-memory repositories behind Logistics, Returns, and AI are a deliberate simplification, and no load or chaos numbers are quoted here that were not actually run.
+
+---
+
+## Technology Stack
+
+| Aspect | Choice |
+| :--- | :--- |
+| Toolchain | Rust stable; build image `rust:1.96.0-bookworm`, runtime `debian:bookworm-slim` |
+| Async runtime | Tokio |
+| Web and RPC | Axum and Tonic in business stacks; a zero-dependency HTTP server in eBPF, AI, and gateway crates |
+| Persistence | SQLx with Postgres behind PgBouncer |
+| Cache | Redis via `deadpool-redis` |
+| Messaging | Kafka with the outbox pattern for cross-domain events |
+| Analytics | ClickHouse through `stats-reader` and `stats-writer` |
+| Auth | JWT via `jsonwebtoken`, plus Keycloak for identity-service |
+| Telemetry | OpenTelemetry into a collector, then Prometheus, Jaeger, and Loki |
+| Allocator | mimalloc with the `secure` feature |
+
+---
+
+## Closing Notes
+
+The federation is the interesting part. Each platform can be replaced without touching the others, and the only things that hold them together are a contract and an event format.
+
+Two choices made that easier. Build isolation became a property of the tooling rather than a rule in a document, and the crates closest to the kernel gave up their dependency graphs entirely so the security layer has nothing to inherit from the ecosystem. Neither was free: the zero-dependency crates hand-roll HTTP, JSON, and the libbpf binding, and the trade-off is written down in each crate's README rather than hidden.

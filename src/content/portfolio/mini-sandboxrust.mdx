@@ -1,9 +1,10 @@
 ---
 title: "mini-sandbox-rust — Kernel-Enforced Security Platform"
-excerpt: "A Rust sandbox whose policy decisions are made by the Linux kernel: eBPF LSM enforcement, a fleet control plane, a durable telemetry engine, and domain crates fenced so nothing but the kernel can reach a verdict."
+excerpt: "A Rust sandbox where the Linux kernel makes the decision: eBPF LSM enforcement, a fleet control plane, a durable telemetry engine, and domain crates fenced off so only the kernel can reach a verdict."
 date: "2026-11-11"
 created_at: "2026-11-11"
 updated_at: "2026-11-11"
+updated_reason: "Rewritten for readability: prose-first, heavy tables and jargon flattened, diagrams kept."
 tags: [
   "rust", "ebpf", "lsm", "cgroup", "security", "observability", "opentelemetry",
   "fleet", "sbom", "xdp", "windows-wfp", "chaos-engineering"
@@ -14,25 +15,27 @@ image: "/portofolio/minisandbox-rust.png"
 
 # mini-sandbox-rust
 
-A Rust reimplementation of the Zig `mini-sandbox`: a small, policy-driven sandbox where the enforcement lives in the kernel, not in the application. Userspace parses a TOML policy and compiles roles into fixed-ABI values; Linux eBPF LSM programs and a Windows backend then enforce those exact values.
+Most sandboxes enforce their policy inside the application. This one hands the decision to the kernel.
 
-Around that runtime grew a platform: **Mini Fleet** (endpoint control plane), **Mini Observe** (telemetry engine), **Security Operations** (incidents, vulnerability intel, read-only AI), and a **Mini Firewall** module that extends the runtime with a host network contract. Six further domain crates — Cloud, Network, Supply Chain, Identity, Runtime, ML — sit around it, each one deliberately unable to touch enforcement.
+A TOML policy is parsed in userspace and compiled into fixed-layout values. Linux eBPF LSM programs then enforce exactly those values on every syscall, and a Windows backend enforces the same compiled policy through WFP. If the userspace daemon stops, runs out of memory, or is killed, enforcement does not change — it was never living there.
 
-The claim that matters is the one this project refuses to make: **host-track green is not live.** A capability is green when its logic, its refusals, and its CLI are proven against fixtures on a host — never when a lab, a kernel, or a device held it. Every capability on this page is held by a test that names it, and a skip is never counted as a pass.
+Around that runtime sits a full platform: **Mini Fleet** for endpoint control, **Mini Observe** for telemetry, **Security Operations** for incidents and vulnerability intel, and a **Mini Firewall** module that gives the runtime a real network contract. Six more domain crates — Cloud, Network, Supply Chain, Identity, Runtime, ML — sit around the edge, and every one of them is structurally unable to touch enforcement.
+
+The honest part matters as much as the engine. **Host-track green is not live.** A capability is green when its logic, its refusals, and its CLI are proven against fixtures on a normal machine — not when a lab, a kernel, or a device held it. Every claim on this page is held by a test that names it, and a skipped test is never counted as a pass.
 
 ---
 
-## The shape of the system
+## What the platform is made of
 
-Two crates carry every capability that can decide an outcome. Everything else observes, scores, or reports — and is structurally prevented from doing more.
+Two crates carry everything that can decide an outcome. Everything else observes, scores, or reports, and is prevented by design from doing more.
 
-| Component | Crate | Responsibility | Must never become |
-| :--- | :--- | :--- | :--- |
-| **mini-sandbox** | `crates/mini-sandbox-rust` | Local enforcement runtime: policy formats, eBPF LSM + cgroup enforcement, traces, observer, governance CLI | A central fleet controller or AI decision engine |
-| **platform-security** | `crates/platform-security` | Distributed layer: Mini Fleet hub, Mini Observe engine, Security Operations, network-policy distribution | A replacement for native MDM capability; an enforcement authority |
-| **mini-firewall** (module) | `crates/mini-sandbox-rust/src/firewall` | Host network policy: one TOML contract compiled once, consumed by eBPF (XDP + TC + cgroup), the iptables fallback tier, and Windows WFP | A second policy engine, an nftables parity chase, or a daemon of its own |
+**`mini-sandbox`** is the local enforcement runtime. It owns the policy formats, the eBPF LSM and cgroup enforcement, the traces, the observer, and the governance CLI. It is the only thing on a host that can say *no*.
 
-Ownership is one-way and pinned by a test: `platform-security` may depend on `mini-sandbox`, never the reverse.
+**`platform-security`** is the distributed layer: the Mini Fleet hub, the Mini Observe engine, Security Operations, and network-policy distribution. It moves signed artefacts and it records facts — it never compiles a policy and never attaches one.
+
+**`mini-firewall`** is a module inside the runtime, not a service. One TOML contract, compiled once, consumed by eBPF at XDP and TC, by the cgroup connect and bind hooks, by an iptables fallback tier, and by the Windows WFP backend.
+
+Ownership is one-way and held by a test: `platform-security` may depend on `mini-sandbox`, never the reverse.
 
 ```mermaid
 flowchart TB
@@ -73,30 +76,30 @@ flowchart TB
     PLANE -.->|"assigned · consent recorded<br/>the host still checks it"| TOML
 ```
 
-A running pod never asks the observer or the policy file how to decide a syscall — the kernel reads the pinned values. If the observer daemon dies, its rules disappear, or a model artifact is rejected, active enforcement is unchanged.
+A confined pod never asks the observer, the API, or the policy file how to decide a syscall. The kernel reads the pinned values and answers. Kill the observer, delete its rules, reject the model artefact — the verdicts stay the same.
 
 ---
 
 ## The fence: nine crates, one rule
 
-The crates that can say *no* to a syscall are the two above. Every other crate can only say *this is what I observed*.
+Only the two crates above can refuse a syscall. Every other crate can only report what it observed.
 
-Each domain crate depends on **nothing** in the workspace, and that emptiness is the guarantee. Its own `fence_crate_boundary.rs` reads its `Cargo.toml` and fails by name the moment a workspace dependency appears — so a refusal, a finding, or a score here has no compiled path to the kernel or the pins. That path does not exist by construction, not by discipline.
+Each domain crate depends on **nothing** in the workspace, and that emptiness is the guarantee. Its own `fence_crate_boundary.rs` parses its `Cargo.toml` and fails by name the moment a workspace dependency appears. A finding, a refusal, or a score produced by a domain crate has no compiled path to the kernel or the pins — the path does not exist by construction, not by discipline.
 
-| Domain crate | Responsibility | Position |
+| Crate | What it does | Where it stands |
 | :--- | :--- | :--- |
-| **mini-cloud** | Read-only libvirt inventory, `AssetIdentity` = hypervisor UUID, 12 posture checks (`CLOUD-001..012`), snapshot + per-field drift | Host-green C1–C3; live claim waits on the C0 VMs |
-| **mini-network** | RouterOS API protocol layer: sentence encode, reply parse, read-only command allowlist, bounded retry, credential redaction, non-IP device identity | Phase 1 **live** against chr-7.16.1; Phase 2 host-green |
-| **mini-supply-chain** | Artifact trust: signed manifests, provenance verified at insert, default-deny artifact policy, time-bounded audited exceptions | Host-green S1–S6; CI signing waits on S7 |
-| **mini-identity** | Subjects, authority-signed credentials, short-lived tokens, closed RBAC matrix (Analyst / Operator / Approver / Administrator), revocation on every verify | Host-green I1–I6; OIDC deferred (I7) |
-| **mini-runtime** | Container/Kubernetes posture: Docker CLI inventory, 9 checks (`RUNTIME-001..009`), a pure admission function with named denials | Host-green R1–R4; Kubernetes half fixture-only until R0 |
-| **mini-ml** | Feature schema v1, deterministic extraction over event windows, reproducible datasets, leakage-free splits, statistical baseline | Phase 7 host-green; **no model training**, no enforcement path |
+| **mini-cloud** | Read-only libvirt inventory, asset identity from the hypervisor UUID, 12 posture checks, snapshot and per-field drift | Host-green; live claim waits on the C0 VMs |
+| **mini-network** | RouterOS API layer: sentence encode, reply parse, read-only command allowlist, bounded retry, credential redaction | Stage 1 **live** against a CHR router; Stage 2 host-green |
+| **mini-supply-chain** | Signed manifests, provenance verified at insert, default-deny artefact policy, time-bounded audited exceptions | Host-green; CI signing still pending |
+| **mini-identity** | Subjects, authority-signed credentials, short-lived tokens, a closed four-role matrix, revocation on every verify | Host-green; OIDC deferred |
+| **mini-runtime** | Docker inventory, 9 posture checks, a pure admission function with named denials | Host-green; the Kubernetes half is fixture-only |
+| **mini-ml** | Feature schema, deterministic extraction over event windows, reproducible datasets, leakage-free splits, statistical baseline | Host-green; **no model training**, no path to enforcement |
 
 ---
 
-## Gate order — why the crates are green but unproven
+## Why the crates are green but unproven
 
-The domain crates were built *around* the gates, on the host track, because their fixtures do not need a lab. They are code-green and unproven where it counts. A milestone opens when its gate closes — never because a crate exists.
+The domain crates were built *around* the gates, on the host track, because their fixtures do not need a lab. They are code-green and unproven exactly where it counts: a milestone opens when its gate closes, never because a crate exists.
 
 ```mermaid
 flowchart LR
@@ -107,7 +110,7 @@ flowchart LR
         SUPPLY["mini-supply-chain<br/>manifests · provenance · exceptions"]
         CLOUD["mini-cloud<br/>inventory · 12 checks · drift"]
         K8S["mini-runtime<br/>Docker posture · pure admission"]
-        NET["mini-network<br/>Phase 1 live · Phase 2 inventory"]
+        NET["mini-network<br/>Stage 1 live · Stage 2 inventory"]
         ML["mini-ml<br/>features · datasets · baseline"]
     end
 
@@ -125,11 +128,11 @@ flowchart LR
 
 ---
 
-## Session tenancy — attach owns, run and record join
+## One owner per session
 
-Before tenancy, every CLI invocation loaded its own maps and cleared the pins, so the verdicts a confined run produced never reached the map a separate `record` read.
+Before tenancy existed, every CLI invocation loaded its own maps and cleared the pins. The verdicts a confined run produced never reached the map a separate `record` read — the session had already been overwritten.
 
-Now `attach` is the one owner. It takes an ownership claim — a `flock` acquired before anything loads, released by the kernel when the process dies, SIGKILL included, so a recycled pid never inherits one. `run` and `record` become *tenants* of a live session: they open the pinned maps, never pin, never clear, never unpin. A tenant refuses by name unless the pinned policy equals its own compiled policy, compared through the role hash the trace header carries.
+Now `attach` is the single owner. It takes an ownership claim before anything loads: a `flock` that the kernel releases when the process dies, SIGKILL included, so a recycled pid never inherits a live claim. `run` and `record` become *tenants* of that session. They open the pinned maps, and they never pin, clear, or unpin. A tenant that finds a pinned policy different from its own compiled policy refuses by name, comparing through the role hash carried in the trace header.
 
 ```mermaid
 sequenceDiagram
@@ -155,15 +158,15 @@ sequenceDiagram
     Att-->>Op: exit 0 — every refusal above exited 1
 ```
 
-This closes `record → replay` over real kernel decisions: a joined `record` streams the same ring buffer the confined pods feed, and `replay` re-derives every recorded verdict through the mirror.
+This closes the loop from `record` to `replay` over real kernel decisions: a joined `record` streams the same ring buffer the confined pods feed, and `replay` re-derives every recorded verdict through the mirror.
 
-The VM track paid for itself twice already. A refused `attach` — and later a refused `run` — printed the refusal and **exited 0**, so a supervisor could not tell refusal from success; both now exit 1. And an event carried only a counter, so a dead host and a saturated ring buffer both looked like "nothing happened" — the ABI now carries a monotonic `seq` and `attach` reports the gap it found.
+The VM track already paid for itself twice. A refused `attach` — and later a refused `run` — printed its refusal and **exited 0**, so a supervisor could not tell refusal from success; both exit 1 now. And an event carried nothing but a counter, so a dead host and a saturated ring buffer both looked like "nothing happened" — the ABI now carries a monotonic sequence number and `attach` reports the gap it found.
 
 ---
 
-## Telemetry pipeline
+## Telemetry that survives a crash
 
-Every event is written to the WAL *before* its acknowledgment — a kill -9 lifecycle test holds that a crash between the two loses nothing acknowledged.
+Every event reaches the write-ahead log *before* it is acknowledged. A kill -9 lifecycle test holds that line: a crash between the write and the acknowledgment loses nothing already promised.
 
 ```mermaid
 flowchart LR
@@ -197,15 +200,15 @@ flowchart LR
     ALERTS -->|"evidence re-opens frames"| IDX
 ```
 
-Detection responsibilities are deliberately split so nothing detects twice: the runtime's local observer does host-level detection and immediate telemetry; Mini Observe does centralized detection and cross-host correlation; Security Operations owns the incident lifecycle.
+Detection is split so nothing detects twice. The runtime observer handles host-level detection and immediate telemetry. Mini Observe handles centralized detection and cross-host correlation. Security Operations owns the incident lifecycle.
 
-The fifth source is the firewall's own by-product — allowed and denied connections, refused connects and binds, each carrying the rule id and the tier the verdict came from. It is telemetry *about* enforcement, never an input to it: the kernel counters keep counting if the exporter dies, and the exporter reports the delta between two snapshots rather than narrating an absolute.
+The fourth source is the firewall's own by-product: allowed and denied connections, refused connects and binds, each tagged with the rule id and the tier that produced the verdict. It is telemetry *about* enforcement, never an input to it. The kernel counters keep counting if the exporter dies, and the exporter reports the delta between two snapshots instead of narrating an absolute.
 
 ---
 
-## Mini Firewall — one contract, one order, many tiers
+## One contract, one order, many backends
 
-No backend interprets the policy. The order is total and decided once — `priority` descending, then deny before allow, then rule id — so a rule that can never matter is refused at compile time instead of shipped as dead configuration.
+No backend interprets the policy. The precedence order is total and decided once — `priority` descending, deny before allow, then rule id — so a rule that could never matter is refused at compile time instead of shipped as dead configuration.
 
 ```mermaid
 flowchart TB
@@ -232,13 +235,13 @@ flowchart TB
     COMP --> SSH
 ```
 
-A generation swap is a pointer flip over `MapIo`, which is why replacing a live policy needs no window where nothing is enforced. The contract and every backend are host-green — 76 unit tests plus a 40-row golden corpus of 30 refusals and 10 compiles — and **no kernel-side or WFP claim is made** until the VM and Windows tracks hold them.
+Replacing a live policy is a pointer flip over the shared map, which is why no window exists where nothing is enforced. Contract and backends are host-green — 76 unit tests and a 40-row golden corpus of 30 refusals and 10 compiles — and **no kernel-side or WFP claim is made** until the VM and Windows tracks hold them.
 
 ---
 
-## Incident lifecycle and the vulnerability plane
+## Incidents and vulnerabilities
 
-The lifecycle is linear and refuses shortcuts by name. Containment and remediation need a recorded approval *before* the move; resolution needs a passed verification on record; the postmortem after RESOLVED is what makes an incident finished rather than merely closed.
+The incident lifecycle is linear and refuses shortcuts by name. Containment and remediation need a recorded approval *before* the move. Resolution needs a passed verification on record. The postmortem after RESOLVED is what makes an incident finished rather than merely closed.
 
 ```mermaid
 stateDiagram-v2
@@ -257,6 +260,8 @@ stateDiagram-v2
     VERIFICATION : a passed verification unlocks RESOLVED
     VERIFICATION --> REMEDIATION : verification failed — the named step back
 ```
+
+The vulnerability plane joins a CVE feed with the signed inventory each host reports on heartbeat, and answers one question: which machines are exposed to what.
 
 ```mermaid
 flowchart LR
@@ -277,11 +282,11 @@ flowchart LR
     REM -.->|"next heartbeat: package gone → exposure cleared"| FACTS
 ```
 
-Version ranges are decisive with a conservative direction: numeric dotted comparison (`8.5` equals `8.5.0`), and a comparison that cannot be decided — a distro suffix like `8.5.0-4ubuntu2` — *stays exposed*. A false positive costs a look; a false negative hides a vulnerable host.
+Version ranges resolve conservatively. Numeric dotted comparison treats `8.5` as equal to `8.5.0`, but a comparison that cannot be settled — a distro suffix like `8.5.0-4ubuntu2` — stays exposed. A false positive costs a look; a false negative hides a vulnerable host.
 
 ---
 
-## Fleet enrollment
+## Enrolling a host
 
 ```mermaid
 sequenceDiagram
@@ -298,47 +303,45 @@ sequenceDiagram
     Hub->>Hub: exposures = CVE store × signed facts
 ```
 
-Revoked identities are refused by name; a policy assigned to another tenant never reaches this agent; tasks are named kinds with idempotency keys, expiry, and — for isolation — a recorded approval whose execution *stages the policy path*, leaving a person to apply it with `check` → `attach`.
+Revoked identities are refused by name. A policy assigned to another tenant never reaches this agent. Tasks are named kinds with idempotency keys and expiry, and anything classified as isolation only *stages* the policy path — a person still has to apply it with `check`, then `attach`.
 
 ---
 
 ## What holds, and what does not
 
-Claims are tiered — **verified / compile-verified / pending** — and a skip narrows a result without becoming a pass.
+Every claim is tiered as verified, compile-verified, or pending. A skip narrows a result; it never becomes a pass.
 
 | Area | Position |
 | :--- | :--- |
-| Host workspace | fmt / clippy `-D warnings` / full suite green in CI |
-| Gate mirror parity | Conformance corpus, 255 rows, 0 divergences against the Zig reference |
-| Kernel: admission + fail-safe | Guest runs: `admission-flood.sh` 11 passed, `failsafe-kernel.sh` 11 passed |
-| Kernel: session tenancy | Ownership claim unit-held and record→replay gate kernel-held (6/6 on a 6.14 `bpf` LSM guest); session-chaos 10/15 awaiting a rerun on the fixed binary |
-| Windows backend | Native harness executed: 81 PASS / 0 FAIL / 2 named SKIP |
-| Policy schema & rollback | `v2` compiles to the same identity as `v1` — a rollback reproduces its trace header byte for byte |
-| Shared contracts | Eight contracts pinned to golden wire formats; renames fail CI by name |
-| Firewall — contract | Host-green: 76 unit tests, 40-row corpus over 14 named refusal codes |
-| Firewall — kernel attach | Guest phases went green on 2026-11-10 and hang intermittently — still pending a stable run |
+| Host workspace | fmt, clippy with `-D warnings`, and the full suite green in CI |
+| Gate mirror parity | 255-row conformance corpus, zero divergences from the Zig reference |
+| Kernel admission and fail-safe | Guest runs: 11 passed for admission flood, 11 for fail-safe |
+| Kernel session tenancy | Ownership and record→replay held on a 6.14 `bpf` LSM guest (6/6); session-chaos 10/15 awaiting a rerun on the fixed binary |
+| Windows backend | Native harness: 81 passed, 0 failed, 2 named skips |
+| Policy schema and rollback | `v2` compiles to the same identity as `v1` — a rollback reproduces its trace header byte for byte |
+| Shared contracts | Eight contracts pinned to golden wire formats; a rename fails CI by name |
+| Firewall contract | Host-green: 76 unit tests, 40-row corpus over 14 named refusal codes |
+| Firewall kernel attach | Guest stages went green on 2026-11-10 and hang intermittently — still waiting on a stable run |
 
-**Limits that matter more than the green rows:**
+The limits matter more than the green rows:
 
-- **Host-track green is not live.** `mini-cloud`, `mini-runtime`, and the library half of `mini-network` are proven against fixtures; no lab VM, no live container, and no lab router has been inventoried in the general case. The one live claim on this page is Phase 1 against chr-7.16.1.
-- Linux kernel enforcement requires `CONFIG_BPF_LSM`, an active `bpf` LSM, bpffs, and a delegated cgroup v2 subtree. Host tests exercise the mirror and observer without a BPF kernel; kernel verdict claims require the VM or a suitable host.
-- `mini-ml` does not train a model. It builds features, datasets, splits, and a statistical baseline — training arrives with Phase 8, only after the telemetry contracts are stable.
-- `MINI_SANDBOX_MAX_PODS` is scoped to one jailer's pod map, not the whole machine — a recorded design limit, not a bug waiting for a fix.
+- **Host-track green is not live.** `mini-cloud`, `mini-runtime`, and the library half of `mini-network` are proven against fixtures. No lab VM, no live container, and no lab router has been inventoried in the general case. The single live claim on this page is Stage 1 against a CHR router.
+- Kernel enforcement needs `CONFIG_BPF_LSM`, an active `bpf` LSM, bpffs, and a delegated cgroup v2 subtree. Host tests exercise the mirror and the observer without a BPF kernel; a kernel verdict claim needs the VM or a suitable host.
+- `mini-ml` does not train a model. It builds features, datasets, splits, and a statistical baseline. Training arrives in a later stage, only once the telemetry contracts stop moving.
+- `MINI_SANDBOX_MAX_PODS` is scoped to one jailer's pod map, not the whole machine. That is a recorded design limit, not a bug waiting for a fix.
 
 ---
 
-## Design boundaries
+## What this deliberately is not
 
-What this project deliberately does **not** do:
-
-- Not a FleetDM, osquery, Jamf, Kandji, or commercial EDR replacement.
-- No general-purpose SQL or columnar database before query requirements prove one.
-- No autonomous destructive response by an AI agent; no remote arbitrary shell as the default management mechanism.
-- No central control-plane dependency for local kernel enforcement — a dead hub changes nothing on a host.
-- No parity claims (full MDM/EDR/SIEM) based solely on a custom agent, an OTLP receiver, or Sigma support.
-- No domain crate that can reach enforcement — the path from any of them to the pins does not exist by construction.
+- Not a replacement for FleetDM, osquery, Jamf, Kandji, or a commercial EDR.
+- No general-purpose SQL or columnar database until query requirements prove one is needed.
+- No autonomous destructive response by an AI agent, and no remote arbitrary shell as the default management path.
+- No dependency on a central control plane for local enforcement — a dead hub changes nothing on a host.
+- No parity claims against full MDM, EDR, or SIEM products just because there is an agent, an OTLP receiver, and Sigma support.
+- No domain crate that can reach enforcement — that path does not exist by construction.
 - No model training before the telemetry contracts are stable.
-- No "runtime protection" claim from container scanning — findings are configuration risks, not evidence of escape resistance.
+- No "runtime protection" claim from container scanning — those findings are configuration risks, not evidence of escape resistance.
 
 ---
 
@@ -351,7 +354,7 @@ cargo fmt --all -- --check
 cargo clippy --lib --bins -- -D warnings
 ```
 
-The normal local gate then adds the conformance run and the regression corpus; `--all-targets` runs the domain crates' suites and their fences, so a new workspace dependency in any of them fails there by name. The kernel gates are separate and each one skips by name on a host without a BPF LSM.
+The normal local gate then adds the conformance run and the regression corpus. `--all-targets` also runs the domain crates and their fences, so a new workspace dependency in any of them fails there by name. Kernel gates are separate, and each one skips by name on a host without a BPF LSM.
 
 ---
 

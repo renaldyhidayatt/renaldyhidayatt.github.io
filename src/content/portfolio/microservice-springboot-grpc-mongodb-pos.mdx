@@ -395,10 +395,10 @@ accidentally "fix" the following behaviors:
 | OT-3 | Transaction status is **not locked** | `updateTransaction` can change `payment_status` at any time (from pending → success/failed and vice versa) without a transition state machine | Status audit is not considered critical for a POS of this scale; turning it into a state machine adds complexity without an explicit business need |
 | OT-4 | Stock edge case with **explicit item trash** after order trash | If an item is explicitly trashed after the order is trashed, that item's stock is **not decremented** when the order is restored (only items that are still active are restored) | Deliberate behavior: restore only processes active items; explicit item trash is a decision separate from the order lifecycle. Consequence: stock can drift from "active = stock used" in this scenario |
 
-**Phase 11–15 Notes (2026-08-14):** see `SUPER_PLANNING_MASTER.md` for
-checklist lengkap — transactional outbox + retry/DLQ (F11), idempotency key
-transaksi (F12), chaos & tracing Kafka (F13), SASL/TLS + acks=all + idempotent
-producer (F14), serta order stats by-id & OTP REST (F15).
+**Reliability hardening (2026-08-14):** transactional outbox with retry/DLQ,
+an idempotency key on transactions, Kafka chaos testing and tracing, SASL/TLS
+with `acks=all` and an idempotent producer, plus order stats by id and an OTP
+REST endpoint.
 
 ---
 

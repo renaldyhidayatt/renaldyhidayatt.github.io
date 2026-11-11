@@ -77,16 +77,16 @@ Provides continuous traffic simulation for observability and performance testing
 
 ## Technical Decisions & Trade-offs
 
-**Offline emulation vs testing against a real cloud provider**
+### Offline emulation vs testing against a real cloud provider
 Running every mitigation test — token revocation, key suspension, volume snapshots — against a local emulator means zero API cost, zero blast radius, and tests that run without network access. The honest cost is fidelity drift: the emulator mirrors documented provider behavior, not the undocumented edge cases, rate limits, and eventual-consistency quirks of the real service, so a green test here is necessary but not sufficient.
 
-**Three decoders (Query, JSON, CBOR) instead of one**
+### Three decoders (Query, JSON, CBOR) instead of one
 Supporting legacy query-protocol forms, REST JSON, and binary CBOR lets the emulator accept traffic from both modern SDKs and older authentication clients unchanged. The price is maintaining three parsers with their own edge cases, and CBOR's compactness only pays off once payloads are large enough for binary encoding savings to beat the added complexity.
 
-**In-memory atomic state with periodic disk snapshots**
+### In-memory atomic state with periodic disk snapshots
 Keeping the whole simulated infrastructure graph in memory makes every state transition immediate and every query fast, which is what distributed saga testing actually needs. Durability is bought with periodic snapshots rather than per-write persistence, so a crash loses work since the last snapshot — acceptable for a test fixture, unacceptable if this ever masqueraded as production storage.
 
-**Synthetic telemetry generation**
+### Synthetic telemetry generation
 Self-generated heartbeats and scheduled event streams let enforcement and observability pipelines be stress-tested on demand instead of waiting for organic traffic. The trade-off is that synthetic load is too regular: it validates throughput but hides the bursty, skewed patterns of real traffic, so results should be read as a floor, not a guarantee.
 
 ---

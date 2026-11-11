@@ -10,52 +10,52 @@ image: "https://github.com/MamangRust/example-monitoring-pyqt/raw/main/images/im
 ---
 
 
-# 🖥️ System Monitoring Dashboard
+# System Monitoring Dashboard
 
 **System Monitoring with PyQt** is a real-time monitoring application that provides insights into system performance, including CPU usage, RAM utilization, network activity, and hardware statistics. Built with PyQt and PyQtGraph, this dashboard presents data visually, making it easy to track system health.
 
-## ✨ Features
+## Features
 
-🚀 **Real-time CPU & RAM Monitoring** - Displays usage trends over time.
+ **Real-time CPU & RAM Monitoring** - Displays usage trends over time.
 
-📡 **Network Activity Tracking** - Monitors upload and download speeds dynamically.
+ **Network Activity Tracking** - Monitors upload and download speeds dynamically.
 
-🔥 **CPU Temperature & Frequency** - Visualizes thermal and performance metrics.
+ **CPU Temperature & Frequency** - Visualizes thermal and performance metrics.
 
-🔋 **Battery Status** - Provides information on power status and remaining battery life.
+ **Battery Status** - Provides information on power status and remaining battery life.
 
-📊 **Live Graphs with PyQtGraph** - Smooth and interactive visualization of system metrics.
+ **Live Graphs with PyQtGraph** - Smooth and interactive visualization of system metrics.
 
 ---
 
 ## Technologies Used
 
-- 🐍 **Python** - High-level programming language for general-purpose programming
-- 🖥️ **Psutil** - System and process utilities for retrieving system information
-- 💻 **Platform** - Fetching system and hardware details
-- ⚙️ **Subprocess** - Managing subprocesses and executing shell commands
-- 🔍 **Re (Regex)** - Regular expressions for pattern matching
-- 📊 **PyQtGraph** - Scientific and engineering plotting library for PyQt
+- **Python** - High-level programming language for general-purpose programming
+- **Psutil** - System and process utilities for retrieving system information
+- **Platform** - Fetching system and hardware details
+- **Subprocess** - Managing subprocesses and executing shell commands
+- **Re (Regex)** - Regular expressions for pattern matching
+- **PyQtGraph** - Scientific and engineering plotting library for PyQt
 
 ## Technical Decisions & Trade-offs
 
-**Psutil first, subprocess where it falls short**
+### Psutil first, subprocess where it falls short
 Psutil covers CPU, RAM, network, and battery as clean in-process calls, but some metrics, temperatures and frequencies in particular, still arrive by running shell commands and matching their output with regex. The mix is pragmatic; the cost is that regex over command output breaks quietly whenever a tool changes its format across distros or versions.
 
-**Polling rate vs self-reported load**
+### Polling rate vs self-reported load
 The dashboard samples the same machine it runs on, so its own CPU usage lands in the very graphs it draws. Polling aggressively makes the charts feel live but adds measurable load; polling lazily misses short spikes between samples. The cadence is a compromise between fidelity and footprint, not a setting with a right answer.
 
-**The GIL and the GUI thread**
+### The GIL and the GUI thread
 Python's GIL rules out parallel CPU-bound collection, and any heavy processing that lands on Qt's GUI thread would stutter the PyQtGraph redraws. It stays manageable here because psutil calls are short, but the architecture caps how much per-tick number crunching the app can afford.
 
-**PyQtGraph over matplotlib for live plots**
+### PyQtGraph over matplotlib for live plots
 PyQtGraph renders inside Qt with fast repaints and built-in pan and zoom, which suits graphs that refresh every fraction of a second. The trade-off is aesthetics and ecosystem: its charts look more utilitarian than matplotlib's and its community is smaller, an easy price where responsiveness is the point.
 
-## 📸 Screenshots
+## Screenshots
 
 <img src="https://github.com/MamangRust/example-monitoring-pyqt/raw/main/images/image.png?raw=true" alt="System Monitoring Dashboard" width={600} height={400} />
 
 ---
 
-## 🔗 Source Code & Repository
-[📌 View on GitHub](https://github.com/MamangRust/example-monitoring-pyqt)
+## Source Code & Repository
+[ View on GitHub](https://github.com/MamangRust/example-monitoring-pyqt)

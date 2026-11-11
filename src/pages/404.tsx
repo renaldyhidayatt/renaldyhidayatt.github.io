@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { Home, Search, FileQuestion } from "lucide-react";
 import Layout from "@/components/Layout";
+import { useNoindex } from "@/hooks/use-noindex";
 
 const NotFound = () => {
+    useNoindex();
+
     return (
         <Layout>
             <main className="flex-1 flex flex-col items-center justify-center px-6 text-center py-20 pb-32 md:pb-20 relative overflow-hidden">

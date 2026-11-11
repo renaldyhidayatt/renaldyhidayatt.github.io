@@ -531,28 +531,28 @@ Manifests live in the `payment-gateway` namespace with Kustomize overlays, NGINX
 
 ## Technical Decisions & Trade-offs
 
-**Real microservices instead of a modular monolith**
+### Real microservices instead of a modular monolith
 Fourteen independent JVMs mean fault containment — a runaway Saldo service cannot starve Auth — and per-service HPA, so card traffic scales without scaling withdrawals. The honest cost: fourteen deployables, fourteen sets of migrations, fourteen pools, and a much heavier local footprint. For a payment gateway the isolation of the ledger is worth that wiring bill; for a smaller domain this would be over-engineering.
 
-**JVM processes on the host in Compose, containers in K8s**
+### JVM processes on the host in Compose, containers in K8s
 Running services outside Compose gives fast startup and direct debugging during development, but it means two ways to run the same code, and local parity is only approximate. Containers are the only path where image configuration, health checks, and networking are actually exercised.
 
-**Synchronous gRPC for authorization, Kafka for everything else**
+### Synchronous gRPC for authorization, Kafka for everything else
 Authorization must be decided now, so it stays on a typed synchronous call. Emails, analytics, and audit trails are side effects, so they flow through Kafka and can lag without blocking a payment. The price is the usual at-least-once tax — deduplication keys and idempotent consumers are mandatory, not optional.
 
-**Transactional outbox over direct Kafka publishes**
+### Transactional outbox over direct Kafka publishes
 Publishing directly to Kafka from a service means a crash between commit and publish silently loses a ledger event. Writing to the outbox inside the same transaction removes that failure mode — and also gives the backfill job idempotency for free. The cost is a relay loop (`OutboxPublisher`) that must itself be monitored for lag, plus an extra table per publishing service.
 
-**Dual-path fraud scoring**
+### Dual-path fraud scoring
 Synchronous scoring can block before settlement, which is what a payment system needs. Asynchronous re-scoring catches cases the synchronous path can't evaluate in time — extra context, cross-event patterns — and can block the card after the fact. The trade-off: a transaction may be approved and later flagged, so REVIEW state has to be a first-class flow rather than an error.
 
-**ClickHouse as a CQRS read model**
+### ClickHouse as a CQRS read model
 Aggregations over millions of rows stay off the OLTP database. In exchange, the analytics view lags real time — a freshly settled transfer is not yet in the dashboard — and the pipeline adds a writer, a reader, a backfill job, and a second database to operate. Good for BI, wrong for "what is this account's balance right now", which always reads PostgreSQL.
 
-**Reactive throughput versus debuggability**
+### Reactive throughput versus debuggability
 Mutiny and non-blocking SQL keep resource usage low under high concurrency, but stack traces cross reactive boundaries and blocking calls hide easily. The team's answer is the chaos engine: inject latency and deadlocks deliberately rather than discovering them in production.
 
-**A built-in chaos engine, hot-reloaded from a file**
+### A built-in chaos engine, hot-reloaded from a file
 Being able to turn on a failure policy on a running system is the difference between claiming resilience and demonstrating it. The cost is that chaos code ships into production builds and must be guarded by default-off policies.
 
 ---

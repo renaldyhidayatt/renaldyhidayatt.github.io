@@ -9,45 +9,46 @@ status: "completed"
 image: "https://github.com/renaldyhidayatt/ecommerce_fiber_gorm/raw/grpc_fiber/images/home.png?raw=true"
 ---
 
-## 🛒 Project Description
+# Ecommerce Fiber with Midtrans and Raja Ongkir
 
-This project is an **e-commerce application** built with **Fiber** ⚡, a lightweight and fast Go framework for the backend. It integrates two essential services:
-1. **Midtrans** 💳 for payment processing.
-2. **Raja Ongkir** 📦 for shipping services.
+## Project Description
+
+This project is an **e-commerce application** built with **Fiber**, a lightweight and fast Go framework for the backend. It integrates two essential services:
+1. **Midtrans** for payment processing.
+2. **Raja Ongkir** for shipping services.
 
 The application provides a seamless shopping experience with a clean and functional user interface, as well as an admin panel for managing products and orders.
 
-### ✨ Key Features
-- **Backend** 💻: Built with **Fiber** ⚡, enabling fast and efficient data processing.
-- **Payment Integration** 💳: Uses **Midtrans** for secure transaction processing.
-- **Shipping Service** 📦: Integrated with **Raja Ongkir** to provide reliable shipping solutions.
-- **Frontend** 🖥️: Modern and responsive user interface.
+### Key Features
+- **Backend**: Built with **Fiber**, enabling fast and efficient data processing.
+- **Payment Integration**: Uses **Midtrans** for secure transaction processing.
+- **Shipping Service**: Integrated with **Raja Ongkir** to provide reliable shipping solutions.
+- **Frontend**: Modern and responsive user interface.
 
-### 🛠 Technologies Used
-- **Backend** 💻: **Fiber** ⚡ (Go)
-- **Payment** 💳: **Midtrans**
-- **Shipping** 📦: **Raja Ongkir**
-- **Frontend** 🖥️: **React.js** ⚛️, **Bootstrap 5** ⚙️, and **Tauri.js** 🦀
+### Technologies Used
+- **Backend**: **Fiber** (Go)
+- **Payment**: **Midtrans**
+- **Shipping**: **Raja Ongkir**
+- **Frontend**: **React.js**, **Bootstrap 5**, and **Tauri.js** 
 
 ## Technical Decisions & Trade-offs
 
-**Go + Fiber**
+### Go + Fiber
 A single static binary with a tiny footprint, which suits an API server well. The trade-off is that Fiber is built on `fasthttp`, not the stdlib `net/http`: Koa-style middleware and speed, but different server semantics (e.g., HTTP/2 support) and an ecosystem that mostly assumes the standard library.
 
-**GORM vs raw SQL**
+### GORM vs raw SQL
 GORM buys dev speed: associations, callbacks, and auto-migration. The costs are reflection overhead, opaque SQL generation (you need the logger to audit what it actually runs), N+1 risk on associations (deliberate `Preload`), and auto-migration being fine in dev but something you must not run in production.
 
-**Outsourcing payment to Midtrans**
+### Outsourcing payment to Midtrans
 You don't build payment infrastructure: PCI compliance, many payment methods, and a sandbox for free. The cost is a dependency on someone else's SLA — and because payment success arrives asynchronously (webhook), the order must sit in a *pending* state that transitions on notification. That forces idempotent webhook handling (retries and duplicates) plus a reconciliation fallback for callbacks that get lost.
 
-**RajaOngkir for shipping rates**
+### RajaOngkir for shipping rates
 Instant per-route shipping cost without implementing carrier pricing — but a second external dependency (rate limits, API changes), and the rate fetched at cart time can be stale by order confirmation, so it gets re-validated at checkout.
 
-**Tauri desktop shell around React**
+### Tauri desktop shell around React
 Tauri's Rust shell ships a fraction of an Electron binary's size. The trade-offs: per-OS packaging and signing, and distributing an e-commerce storefront as a desktop app is a demo choice, not a distribution channel. The backend is a separate process, so its URL/CORS must be configured per platform.
 
-
-## 📸 Demo
+## Demo
 
 ![Midtrans](https://github.com/renaldyhidayatt/ecommerce_fiber_gorm/raw/grpc_fiber/images/midtrans.png?raw=true)
 *Payment Integration with Midtrans*
@@ -61,5 +62,5 @@ Tauri's Rust shell ships a fraction of an Electron binary's size. The trade-offs
 ![Swagger](https://github.com/renaldyhidayatt/ecommerce_fiber_gorm/raw/grpc_fiber/images/swagger.png?raw=true)
 *API Documentation with Swagger*
 
-## 🔗 Source Code & Repository
-[📌 View on GitHub](https://github.com/renaldyhidayatt/ecommerce_fiber_gorm)
+## Source Code & Repository
+[ View on GitHub](https://github.com/renaldyhidayatt/ecommerce_fiber_gorm)
