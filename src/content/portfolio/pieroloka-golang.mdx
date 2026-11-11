@@ -1,10 +1,10 @@
 ---
 title: "Platform Labs — Sovereign Mini-Cloud Control Plane in Go"
-excerpt: "15 infrastructure control-plane domains — security, telemetry, delivery, intelligence — all in Go, connected through a single gRPC contract, and tested end-to-end against that same contract. Built on one principle: honesty."
+excerpt: "15 infrastructure control-plane domains — security, telemetry, delivery, intelligence — all in Go, wired through a single typed gRPC contract with 386 RPCs, and tested end-to-end against real kernel resources."
 date: "2026-01-15"
 created_at: "2026-01-15"
-updated_at: "2026-08-24"
-updated_reason: "Updated so it appears at the top of the portfolio (recently updated)."
+updated_at: "2026-11-11"
+updated_reason: "Rewritten for readability: prose-first, capability labels removed, diagrams kept."
 tags: [
   "go", "grpc", "ebpf", "kubernetes", "observability", "opentelemetry",
   "prometheus", "grafana", "sre", "devsecops", "mitre-attack", "mtls",
@@ -16,84 +16,51 @@ image: "/portofolio/PieroLokaGo/pieroloka-go.png"
 
 # Platform Labs — Sovereign Mini-Cloud Control Plane (Go)
 
-A **15-domain platform lab** that mirrors a modern infrastructure control plane
-— security, telemetry, delivery, and intelligence — entirely written in
-**Go**, where each domain is a **separate Go module**, and all of them are
-connected through a **gRPC contract** defined in one place
-(`GrpcConnect/proto/`) and then tested end-to-end against that same contract.
+A **15-domain platform lab** that mirrors a modern infrastructure control plane — security, telemetry, delivery, and intelligence — written entirely in **Go**. Each domain is a **separate Go module**, and all of them are connected through a **gRPC contract defined in one place**, then tested end-to-end against that same contract.
 
-The goal is not to replace Kubernetes or Kafka. The goal is different and
-deliberate: **understanding the control plane from the inside** — how reconcile loops,
-detection, enforcement, and actuation actually work — with one non-negotiable
-design commitment: **honesty**.
-
-> Real backends are reported as `real`, mock backends are reported as `model`, and
-> what cannot run is reported as `unavailable` — nothing masquerades. Every
-> domain exposes `GetCapabilities` / `GetFeatures` that state this status
-> as it is, and **tests enforce that honesty**.
+The goal is not to replace Kubernetes or Kafka. It is to **understand the control plane from the inside**: how reconcile loops, detection, enforcement, and actuation actually work when you have to build them yourself.
 
 ---
 
-## Position in the PIERO LOKA Ecosystem
+## Position in the PIERO LOKA ecosystem
 
-Platform Labs is the **Go embodiment of PIERO LOKA** — a high-performance
-eBPF-based security and FinOps monitoring platform — rendered here anew
-as a 15-domain mini-cloud control plane built from the ground up.
+Platform Labs is the Go embodiment of **PIERO LOKA**, a high-performance eBPF-based security and FinOps monitoring platform, rendered here anew as a 15-domain mini-cloud control plane.
 
-PIERO LOKA uses a **Core Dispatcher** pattern: more than 28 kernel hooks
-are consolidated into 6 high-performance kernel entry points, using
-zero-copy ring buffers and internal event correlation, so kernel overhead and
-context switches drop by 60–75% with system overhead below 1.5%.
-
-The discipline is the same: **system honesty** — kernel signals are the source
-of truth, and feature status is stated as it is. In this Go embodiment, that
-discipline
-is enforced as data (`common.Feature`) and tests, not merely convention.
+PIERO LOKA uses a **Core Dispatcher** pattern: more than 28 kernel hooks are consolidated into 6 high-performance kernel entry points with zero-copy ring buffers and internal event correlation, cutting kernel overhead and context switches by 60–75% with total system overhead under 1.5%. The same discipline carries into this Go version — kernel signals are the source of truth, and a capability is stated exactly as it behaves.
 
 ---
 
 ## Screenshots
 
-The cluster dashboard below reads a **real kind cluster** through
-`kubectl` (read-only), with write actions only via ArgoCD/Flux and going through
-the PDP console — pods showing `Running` are genuinely running, not sample
-data. The HITL panel on the right is deliberately empty and says so: *"Empty is
-honest"* — no high-risk approvals are pending. If any section cannot be
-accessed, it reports `unavailable` along with the reason, rather than
-being covered up with a fake green status.
+The cluster dashboard reads a **real kind cluster** through read-only `kubectl`; write actions only go through ArgoCD/Flux and the policy console. Pods showing `Running` are genuinely running, not sample data. Sections that cannot be reached say so instead of rendering a fake green status.
 
 ![PIERO LOKA dashboard — the cluster explorer reads a real kind cluster via read-only kubectl, write actions via ArgoCD/Flux + PDP](/portofolio/PieroLokaGo/dashboard-pieroloka.png)
 
-The agent console shows the same discipline in its UI: every answer
-carries an **honesty label** (REAL/MODEL) from the generator that produced it,
-and its limitations are stated in place — for example "session lost when the domain restarts"
-because sessions are kept in memory. The footer reminds you too: PDP default-deny,
-risky actions wait for HITL.
+The agent console carries the same discipline: every answer is labelled with how it was produced, and its limitations are stated in place — for example, that sessions live in memory and are lost when the domain restarts.
 
-![PIERO LOKA chat / agent console — every answer is labeled REAL/MODEL, in-memory session limits are stated openly](/portofolio/PieroLokaGo/chat.png)
+![PIERO LOKA chat / agent console — answers are labelled by how they were produced, in-memory session limits stated openly](/portofolio/PieroLokaGo/chat.png)
 
 ---
 
-## At a Glance
+## At a glance
 
 | | |
 | :--- | :--- |
-| **Domains** | 15 — each domain is a separate Go module, wired via `replace` in `GrpcConnect/go.mod` |
+| **Domains** | 15 — each a separate Go module, wired via `replace` in `GrpcConnect/go.mod` |
 | **Contract** | 18 `.proto` files (3 common + 15 domain) → **386 typed RPCs**, no `map<string,string>` |
-| **Streaming** | 14 server-streaming flows — telemetry & progress without polling |
-| **Substrate** | `grpcrun`: health v1, graceful stop, request-id/OTel/logging interceptors, TLS + mTLS domain CA, circuit breaker + retry, OTLP traces & metrics, cert auto-renewal |
-| **Observability** | Full OTel — one path: app → OTLP → Collector → Prometheus → Grafana; 27 provisioned dashboards + 8 alerts (active when `OTLP_ENDPOINT` is set) |
-| **Real actuation** | namespaced processes + cgroup v2 limits/OOM, sparse volumes + COW snapshots, eBPF modules, host links via rtnetlink |
-| **eBPF** | 16 CORE C modules (53 ELF objects) + loader, simulator, byte-accurate DWARF decoder, mapctl fastpath |
-| **Authorization** | local PEP (`WithGrants`) + default-DENY PDP, 4-role console, MSP-lite multi-tenancy |
-| **Testing** | `go test -race` green on 16/16 packages on the dev host · 18 cross-domain e2e scenario files (bufconn) |
+| **Streaming** | 14 server-streaming flows — telemetry and progress without polling |
+| **Substrate** | `grpcrun`: health v1, graceful stop, request-id/OTel/logging interceptors, TLS + mTLS domain CA, circuit breaker + retry, OTLP traces and metrics, cert auto-renewal |
+| **Observability** | One path — app → OTLP → Collector → Prometheus → Grafana; 27 dashboards + 8 alerts |
+| **Actuation** | Namespaced processes + cgroup v2 limits and OOM reporting, sparse volumes + COW snapshots, eBPF modules, host links via rtnetlink |
+| **eBPF** | 16 CO-RE C modules (53 ELF objects) + loader, simulator, byte-accurate DWARF decoder, mapctl fastpath |
+| **Authorization** | Local PEP with explicit grants + default-deny PDP, 4-role console, multi-tenancy |
+| **Testing** | `go test -race` green on 16/16 packages · 18 cross-domain e2e scenario files over bufconn |
 
 ---
 
-## 5-Layer Architecture
+## Five-layer architecture
 
-The lab is layered, from physical hardware up to the agent tool gateway. Each
-layer only talks to the layer below it through typed gRPC contracts.
+The lab is layered from physical hardware up to the agent tool gateway. Each layer only talks to the layer below through typed gRPC contracts.
 
 ```mermaid
 graph TB
@@ -109,7 +76,7 @@ graph TB
     end
 
     subgraph L3["Layer 3 — Telemetry & Detection"]
-        OPS["Operations :5008<br/>SLO · Insiden · Chaos · Right-size"]:::l3
+        OPS["Operations :5008<br/>SLO · Incident · Chaos · Right-size"]:::l3
         DET["Detection Platform :5009<br/>ingest → correlate → investigate"]:::l3
         EDR["Endpoint :5017<br/>Host sensor · Rule · Response"]:::l3
     end
@@ -130,60 +97,54 @@ graph TB
     subgraph L0["Layer 0 — Kernel & Security"]
         SEC["Security :5006<br/>PDP · Token · MFA · Audit"]:::l0
         CYB["Cyber :5013<br/>Red/Blue · ATT&CK Simulation"]:::l0
-        KF["KernelForge :5014<br/>16 CORE eBPF modules"]:::l0
+        KF["KernelForge :5014<br/>16 CO-RE eBPF modules"]:::l0
     end
 
     AI --> MCP
     MCP -->|PDP high-risk| SEC
     OPS --> CP
     DET --> KF
-    EDR -->|edrship --live| DET
+    EDR -->|"edrship --live"| DET
     EDR -->|BlockIP| NET
     CP -->|Actuator| CMP
     CP -->|Actuator| STO
-    NET -->|KFMapEnforcer UpdateMap| KF
-    CYB -->|ATT&CK campaign| KF
+    NET -->|"KFMapEnforcer UpdateMap"| KF
+    CYB -->|"ATT&CK campaign"| KF
     HW --> CMP
     CMP --> KF
     NET --> KF
     STO --> KF
 ```
 
-This layer separation principle is not just a diagram — it is **enforced by tests**.
-`TestArchitectureNoKernelForgeImport` fails if Detection imports
-`gen/kernelforge`: a semantic owner never imports another domain's types,
-and cross-domain connections only go through explicit bridges in `bridge/`.
+The layer separation is enforced by tests, not by discipline alone. A semantic owner never imports another domain's generated types — a test fails if Detection imports the KernelForge package — and cross-domain traffic only flows through explicit bridges in `bridge/`.
 
 ---
 
-## 15 Domains — What Actually Runs
+## The 15 domains
 
-> The **RPC** column numbers are generated from the `.proto` files — verify with
-> `cd GrpcConnect && make count-rpc`.
+RPC counts are generated from the `.proto` files with `make count-rpc`.
 
 | Domain | Port | RPC | What actually runs |
 | :--- | :--: | :--: | :--- |
-| **Hardware** | :5001 | 15 | Reads real `/proc`, `/sys`, `lspci`; NUMA PCI from sysfs; failed sections are reported per-section, not hidden; thermal/power sensors (hwmon + power_supply) |
-| **Compute** | :5002 | 21 | `RunPod` with real namespaced processes + **real cgroup v2** (`memory.max`/`cpu.max`/`pids.max`); `oom_killed`/`memory_peak` read from the kernel; pure-Go WASM interpreter; honest QEMU `RunVM` (kvm→host, tcg→MODEL) |
-| **Network** | :5003 | 28 | Decode Ethernet→IP→TCP/UDP/ICMP/ARP; deterministic persistent IPAM; **real rtnetlink** (bridge/veth/netns via `NETLINK_ROUTE`); NetFlow v5/IPFIX collector; `mikrotikforge` RouterOS CHR |
-| **Storage** | :5004 | 15 | Sparse volumes + COW snapshots + refcount (thin provisioning); MiniFS + fsck; SHA-256 object store + corruption scrub |
-| **ControlPlane** | :5005 | 15 | Deterministic reconcile + HIGH/MED/LOW drift; **real** pod & volume **actuators**; eBPF modules as desired state |
-| **Security** | :5006 | 14 | Ed25519/HMAC tokens + cert issuance; **default-DENY PDP** + rule engine; audit stream; **native TOTP MFA** (RFC 6238/4226, AEAD-sealed secrets, anti-replay) |
-| **Deliver** | :5007 | 17 | Real docker container builds (digest + SBOM); 8-stage pipeline; recreate/rolling/blue-green/canary deploys; **in-toto provenance + SLSA subset** (Ed25519/DSSE) + Merkle transparency log |
-| **Operations** | :5008 | 71 | Push/query metrics; SLO + error budget + burn-rate; incident war-room; chaos injection; **service map measured from traces**; pprof continuous profiling |
-| **Detection** | :5009 | 36 | ingest → normalize → enrich → dedup → index → search → rules → correlate → investigate; **Sigma** rule subset; syslog receiver; endpoint OTLP logs |
-| **MCP** | :5010 | 31 | default-deny capability tool gateway; real tool execution; high-risk tools → Security PDP + **HITL gate**; external MCP server bridges (stdio/HTTP/SSE) |
-| **AIAgent** | :5011 | 39 | Planner + reasoner; step actions via MCP; episodic memory; persona/profile, durable chat sessions, skill catalog, `MEMORY.md` org memory |
-| **PlatformForge** | :5012 | 33 | HCL parser + typed evaluator; mini ArgoCD (real git repos, wave/hook/canary); Flux CD model (real CRD manifests); catalog + scaffold |
-| **Cyber** | :5013 | 11 | Scope gate (loopback ok, external rejected); MITRE ATT&CK **Adversary Simulation**; BlueForge breach root-cause attribution |
-| **KernelForge** | :5014 | 19 | Load/attach to kernel (CAP_BPF) or simulator; typed oneof streams; lease auto-unload; `UpdateMap`/`DeleteMapKey`/`ReadMap` primitives; BpfJailer MAC |
-| **Endpoint** | :5017 | 21 | Real Linux host sensor (`/proc` poll, inotify FIM, `/proc/net`); local Sigma rules → ECS alerts; `edrship --live`; PDP-gated automatic response |
+| **Hardware** | :5001 | 15 | Reads real `/proc`, `/sys`, and `lspci`; NUMA PCI from sysfs; thermal and power sensors via hwmon and power_supply. Sections that fail are reported per section, never hidden. |
+| **Compute** | :5002 | 21 | `RunPod` spawns real namespaced processes under **real cgroup v2** (`memory.max`, `cpu.max`, `pids.max`); `oom_killed` and `memory_peak` read from the kernel. Includes a pure-Go WASM interpreter and QEMU-backed VMs with acceleration reported as it is. |
+| **Network** | :5003 | 28 | Decodes Ethernet → IP → TCP/UDP/ICMP/ARP; deterministic persistent IPAM; **real rtnetlink** for bridges, veths, and netns; NetFlow v5 and IPFIX collector; RouterOS CHR integration. |
+| **Storage** | :5004 | 15 | Sparse volumes, COW snapshots with refcount for thin provisioning; MiniFS with fsck; SHA-256 object store with corruption scrub. |
+| **ControlPlane** | :5005 | 15 | Deterministic reconcile with HIGH/MED/LOW drift classification and **real** pod and volume actuators; eBPF modules treated as desired state. |
+| **Security** | :5006 | 14 | Ed25519/HMAC tokens and certificate issuance; **default-deny PDP** with a rule engine; audit stream; native TOTP MFA (RFC 6238/4226) with AEAD-sealed secrets and anti-replay. |
+| **Deliver** | :5007 | 17 | Real Docker container builds with digest and SBOM; 8-stage pipeline; recreate, rolling, blue-green, and canary strategies; in-toto provenance with a SLSA subset and a Merkle transparency log. |
+| **Operations** | :5008 | 71 | Push and query metrics; SLOs with error budgets and burn rate; incident war-room; chaos injection; a service map measured from traces; continuous pprof profiling. |
+| **Detection** | :5009 | 36 | ingest → normalize → enrich → dedup → index → search → rules → correlate → investigate; a Sigma rule subset; syslog receiver; endpoint OTLP logs. |
+| **MCP** | :5010 | 31 | Default-deny capability tool gateway with real tool execution; high-risk tools route through the Security PDP and a human-in-the-loop gate; bridges to external MCP servers over stdio, HTTP, and SSE. |
+| **AIAgent** | :5011 | 39 | Planner and reasoner; step actions executed through MCP; episodic memory; persona, durable chat sessions, skill catalog, and org-level memory. |
+| **PlatformForge** | :5012 | 33 | HCL parser and typed evaluator; a mini ArgoCD working against real git repos with wave, hook, and canary support; a Flux CD model emitting real CRD manifests; catalog and scaffolding. |
+| **Cyber** | :5013 | 11 | Scope gate that accepts loopback and rejects external targets; MITRE ATT&CK adversary simulation; breach root-cause attribution. |
+| **KernelForge** | :5014 | 19 | Load and attach eBPF programs to the kernel or to a simulator; typed oneof event streams; lease-based auto-unload; `UpdateMap`, `DeleteMapKey`, `ReadMap` primitives; MAC policy enforcement. |
+| **Endpoint** | :5017 | 21 | Real Linux host sensor (`/proc` polling, inotify file integrity monitoring, `/proc/net`); local Sigma rules producing ECS alerts; live shipping; PDP-gated automatic response. |
 
-### RPC Distribution — The Weight of the Science Lies in Observability
+### Where the weight of the science sits
 
-RPCs are not spread evenly. **Observability & detection (Operations + Detection = 107
-RPCs)** is clearly the center of gravity — consistent with this lab's position as a
-control-plane learning exercise, not a generic orchestrator.
+RPCs are not spread evenly. Observability and detection — Operations plus Detection, 107 RPCs — is clearly the center of gravity, which is consistent with this lab being a control-plane learning exercise rather than a generic orchestrator.
 
 ```mermaid
 pie showData title RPC distribution per domain (make count-rpc)
@@ -206,11 +167,9 @@ pie showData title RPC distribution per domain (make count-rpc)
 
 ---
 
-## 60-Second Map — What Happens on `make run-lab`
+## Sixty seconds: what happens on `make run-lab`
 
-A single command boots the whole lab. **No Docker, no k8s, no
-external database** — 15 gRPC servers + cross-domain bridges live in
-a single Go process, then shut down cleanly on `Ctrl+C`:
+A single command boots the whole lab. No Docker, no Kubernetes, no external database — 15 gRPC servers plus the cross-domain bridges live in one Go process and shut down cleanly on `Ctrl+C`.
 
 ```mermaid
 sequenceDiagram
@@ -219,8 +178,8 @@ sequenceDiagram
     participant M as make run-lab
     participant L as labnet (single Go process)
     participant CA as domainca.go (per-domain CA)
-    participant D as 15 server gRPC :5001-:5017
-    participant B as bridge/ (konduktor)
+    participant D as 15 gRPC servers :5001-:5017
+    participant B as bridge/ (conductor)
     participant W as Console :5015 (optional)
 
     U->>M: make run-lab
@@ -228,103 +187,80 @@ sequenceDiagram
     L->>L: read flags + env + idempotent SetupMetrics
 
     rect rgb(232, 244, 255)
-        Note over L,D: Sequential boot following layers L0 -> L4
+        Note over L,D: Sequential boot following layers L0 → L4
         L->>D: listen + EnforceTLS + health v1 + interceptors per domain
         D-->>L: SERVING
     end
 
     loop each domain (15x)
-        L->>D: probe grpc.health.v1 before that domain is used as a client
+        L->>D: probe grpc.health.v1 before use as a client
         D-->>L: READY
     end
 
-    alt LABNET_MTLS=1
-        L->>CA: load CA + client cert for each domain (ECDSA P-256)
+    alt mTLS enabled
+        L->>CA: load CA + client cert per domain (ECDSA P-256)
         CA-->>L: 15 CA/client cert pairs
     else plaintext (dev default)
-        L->>L: closed internal compose network - a conscious dev decision
+        L->>L: closed internal compose network - a conscious dev choice
     end
 
     rect rgb(240, 255, 240)
-        Note over L,B: Bridges wired explicitly - semantic owners don't import other domains' gen
-        L->>B: GRPCActuator (ControlPlane -> Compute/Storage)
-        L->>B: ModuleReconciler (ControlPlane -> KernelForge)
-        L->>B: KFMapEnforcer (Network -> KernelForge UpdateMap)
+        Note over L,B: Bridges wired explicitly - semantic owners never import each other
+        L->>B: GRPCActuator (ControlPlane → Compute/Storage)
+        L->>B: ModuleReconciler (ControlPlane → KernelForge)
+        L->>B: KFMapEnforcer (Network → KernelForge UpdateMap)
     end
 
-    L->>D: GetCapabilities sweep across 15 domains - Feature real/model/unavailable
-    D-->>L: summary + mandatory reason for UNAVAILABLE
+    L->>D: capability sweep across 15 domains
+    D-->>L: summary + a reason for every capability the host cannot provide
 ```
 
-> `labnet` is a dev/lab tool, not a production topology. In production each domain
-> is a separate process on its own port — `make run-hardware` through
-> `make run-cyber` run each domain standalone.
+`labnet` is a development and lab tool, not a production topology. In production each domain is its own process on its own port, and each one can be started standalone during development.
 
 ---
 
-## Honesty as an Enforced Contract
+## Capability tracking, without the labels
 
-Honesty in this repo is not a culture, but a **mechanism**. This is the part I am
-most proud of, because it turns claims into something that can fail.
+A recurring theme in this lab is that a claim should be checkable. Instead of a boolean "done / not done", every domain reports structured capability data: what kind of implementation backs a feature, how it executes (in the OS, in the kernel, in a simulator, or as a model), and what it requires to run — a capability such as `CAP_BPF` or a device such as `/dev/kvm`. An aggregate call summarises the coverage per domain in one round trip, and a boot-time sweep produces the lab summary.
 
-Three components keep it from quietly shrinking:
-
-1. **Data model** — `common.Feature` carries `kind` (REAL/MODEL/UNAVAILABLE)
-   plus structured capability: `availability`, `execution_mode`
-   (OS/KERNEL/SIM/MODEL/NONE), and `requirements` (e.g. `CAP_BPF`, `/dev/kvm`).
-2. **Aggregate reporting** — `ListForgeSummaries` summarizes the
-   real/model/unavailable counts per domain in one call.
-3. **Enforcing tests** — e2e enforces the policy against real `GetFeatures`:
-   `availability` must come from the official vocabulary, `UNAVAILABLE` **must have
-   a `reason`** — the test fails if a capability is reported in a way that doesn't match reality.
+The important part is that **tests enforce the report**. A capability that cannot run must carry a stated reason; a value that is not part of the official vocabulary fails the suite; and an architecture test fails if a domain reaches into another domain's generated types. When a claim and the host disagree, the test wins — not the README.
 
 ```mermaid
 flowchart TD
-    subgraph HOST["Host conditions recorded at runtime"]
+    subgraph HOST["Host conditions, evaluated at runtime"]
         CAPB["CAP_BPF present?"]
         KVM["/dev/kvm present?"]
         K8S["k8s cluster reachable?"]
         SIGDIR["DETECTION_SIGMA_DIR set?"]
     end
 
-    subgraph FEAT["common.Feature - contract data, not a label"]
-        KIND["kind: REAL / MODEL / UNAVAILABLE"]
-        MODE["execution_mode: OS / KERNEL / SIM / MODEL / NONE"]
-        REASON["reason - MANDATORY when UNAVAILABLE"]
+    subgraph FEAT["Capability record — contract data, not a label"]
+        KIND["kind — how the feature is backed"]
+        MODE["execution_mode — OS / KERNEL / SIM / NONE"]
+        REQ["requirements — CAP_BPF, /dev/kvm, ..."]
+        REASON["reason — mandatory when it cannot run"]
     end
 
-    subgraph GATE["Enforced by tests - fails on masquerading"]
-        T1["capability_test.go<br/>availability vocabulary + mandatory reason"]
+    subgraph GATE["Enforced by tests — fails on masquerading"]
+        T1["capability_test.go<br/>vocabulary + mandatory reason"]
         T2["TestArchitectureNoKernelForgeImport"]
-        T4["GetCapabilities Compute<br/>cgroup_v2 + kvm as-is"]
+        T3["capability sweep<br/>cgroup_v2 + kvm reported as found"]
     end
 
     HOST -->|"evaluated, not assumed"| FEAT
     FEAT -->|"verified"| GATE
-    FEAT --> AGG["ListForgeSummaries + HTML Honesty Report + HonestyBadge"]
-    AGG --> UI["Console + dashboards: what is real, what is model, what is missing"]
+    FEAT --> AGG["Summaries + report + badge in the console"]
+    AGG --> UI["Console and dashboards: what runs, how, and what is missing"]
     GATE --> UI
-
-    EX1["Without CAP_BPF -> LoadModule FAILS as-is,<br/>modules run origin=SIMULATOR.<br/>No 'hide simulator' button."]:::ok
-    EX2["Without /dev/kvm -> RunVM reports acceleration=tcg (MODEL),<br/>never claims the VM is 'ready'."]:::ok
-    KIND --> EX1
-    MODE --> EX2
-    classDef ok fill:#0b1f14,stroke:#166534,color:#bbf7d0
 ```
 
-**Real example:** on a host without `CAP_BPF`, KernelForge still boots — the kernel
-loader fails as-is, modules run with `origin=SIMULATOR`, and `GetFeatures`
-says so. There is no "hide simulator" button.
-
-**Second example:** without `/dev/kvm`, `RunVM` reports `acceleration=tcg`
-(slow, MODEL) and never claims the VM is "ready"; with KVM → `host`.
+Concretely: on a host without `CAP_BPF`, KernelForge still boots — the kernel loader fails as-is, modules run under the simulator, and the capability report says exactly that. There is no "hide the simulator" switch. Without `/dev/kvm`, a VM reports software acceleration rather than claiming it is ready; with KVM it reports hardware acceleration.
 
 ---
 
-## Lifecycle of a Single Request
+## Lifecycle of a single request
 
-Every request goes through exactly one path: created at a certified client,
-classified at the gateway, executed with an explicit grant, and recorded.
+Every request follows one path: created at a certified client, classified at the gateway, executed with an explicit grant, and recorded.
 
 ```mermaid
 flowchart LR
@@ -336,9 +272,9 @@ flowchart LR
 
     C["Client / Console / Agent"]:::client
     MW["grpcrun interceptor<br/>request-id · OTel · logging · TLS"]:::gw
-    GRANT["local PEP WithGrants<br/>or PDP EvaluatePolicy (high-risk)"]:::sec
+    GRANT["local PEP with grants<br/>or PDP EvaluatePolicy (high-risk)"]:::sec
     SVC["Domain handler"]:::svc
-    STORE["Real Store / Actuator"]:::store
+    STORE["Store / Actuator"]:::store
     AUD["Bounded audit ring"]:::sec
 
     C -->|"mTLS"| MW
@@ -351,17 +287,13 @@ flowchart LR
     SVC --> C
 ```
 
-The design point: **authorization sits as close as possible to execution** — a local
-PEP in KernelForge + ControlPlane + MCP, and the PDP (`EvaluatePolicy`) in the
-Security domain for high-risk tools. There is no single "god gateway" judging everything;
-quite the opposite, each domain holds the decision over its own resources.
+The design point: **authorization sits as close as possible to execution**. A local policy enforcement point runs inside KernelForge, ControlPlane, and MCP, while the PDP in the Security domain evaluates high-risk tools. There is no single gateway judging everything; each domain holds the decision over its own resources.
 
 ---
 
-## Security Response Chain (S1) — Correct Ownership
+## Security response chain
 
-This is the core flow of the lab: a finding doesn't stop at an alert, it
-flows through until enforcement happens — and every step has a clear owner.
+This is the core flow of the lab: a finding does not stop at an alert — it flows through until enforcement happens, and every step has a clear owner.
 
 ```mermaid
 sequenceDiagram
@@ -372,34 +304,30 @@ sequenceDiagram
     participant NET as Network
     participant PDP as Security PDP
     participant OPS as Operations
-    participant HITL as HITL Gate
+    participant HITL as Human-in-the-loop gate
 
-    EDR->>DET: event / finding (edrship --live)
+    EDR->>DET: event / finding
     DET->>KF: correlation + kernel telemetry
-    KF-->>DET: BPFEvent (typed oneof)
-    DET->>OPS: finding -> automatic incident
-    OPS->>PDP: request response decision
-    PDP-->>OPS: ALLOW / DENY (default-DENY)
+    KF-->>DET: typed BPF event stream
+    DET->>OPS: finding becomes an incident
+    OPS->>PDP: request a response decision
+    PDP-->>OPS: allow / deny (default-deny)
     alt high-risk
-        OPS->>HITL: HITL gate (operator console)
+        OPS->>HITL: escalation to the operator console
         HITL-->>OPS: approve / reject
     end
     OPS->>NET: BlockIP
     NET->>KF: UpdateMap (network_block_list)
-    KF-->>NET: installed / failed (reported as-is)
+    KF-->>NET: installed or failed, reported as-is
 ```
 
-**This semantic ownership is strictly guarded:** Network owns `BlockIP`,
-KernelForge owns `UpdateMap`, Security owns the `EvaluatePolicy`
-decision. No domain touches another domain's maps
-directly — everything goes through contracts.
+Semantic ownership is strictly guarded: Network owns `BlockIP`, KernelForge owns `UpdateMap`, Security owns the policy decision. No domain touches another domain's maps directly — everything goes through contracts.
 
 ---
 
-## Observability — One Path, Period
+## Observability — one path, period
 
-The metrics in this lab are **not** a pile of generic gRPC blocks. Every number on the dashboards
-has a real source in code:
+The metrics in this lab are not a pile of generic gRPC blocks. Every number on the dashboards has a real source in code.
 
 ```mermaid
 graph TB
@@ -420,109 +348,67 @@ graph TB
     PROM --> AM
 ```
 
-What is exported is not just health. There is the **Go runtime** (GC pause histogram from
-`runtime/metrics`, heap, goroutines), **per-RPC** gRPC metrics with a `domain`
-attribute, and **per-domain business instruments** — all flowing into Prometheus
-and verified by tests (`grpcrun/metrics_otlp_test.go` decodes and
-asserts their contents) and by the `deploy/grafana/check_metrics.py` audit that
-ensures every metric on the dashboards is actually declared in the Go code.
+What is exported goes beyond health: the **Go runtime** (GC pause histogram from `runtime/metrics`, heap, goroutines), **per-RPC** gRPC metrics carrying a `domain` attribute, and **per-domain business instruments**. All of it is verified twice — once by tests that decode the OTLP payload and assert its contents, and once by an audit script that checks every metric on the dashboards is actually declared in Go code.
 
-**Honest OTLP status:** the exporter is active **only if `OTLPEndpoint` is set** to
-an external collector. Without that env var, spans are no-op and **metrics are completely dead** — stated
-honestly, not "as if recorded".
+The exporter only activates when an external collector endpoint is configured. Without it, spans are no-ops and metrics are not emitted at all, which the docs state plainly rather than implying the numbers exist.
 
 ---
 
-## Real Actuation — Not Just a Reconcile Diagram
+## Real actuation, not just a reconcile diagram
 
-What sets this lab apart from a mere "renamed CRD": several
-paths actually change the system state.
+What sets this lab apart from a renamed CRD: several paths genuinely change system state.
 
 | Path | What actually happens |
 | :--- | :--- |
-| `compute.pod` | Process with new namespaces (PID/UTS/IPC/Mount/User) + **cgroup v2** `memory.max`/`cpu.max`/`pids.max`; `oom_killed` read from `memory.events` |
-| `storage.volume` | **Sparse** volume + **COW** snapshots with refcount; `physical_size` = actual physical bytes |
-| rtnetlink | Create/delete bridges & veths, bring links up, move netns via `NETLINK_ROUTE` sockets (using `x/sys/unix`, no third-party libraries) |
-| eBPF | Load/attach to the kernel when `CAP_BPF` is available; otherwise an honest `origin=SIMULATOR` simulator |
-| Right-sizing | **Real cgroup v2** sampler → recommendation (percentile × headroom, clamp) → HITL-gated desired-state apply → **live cgroup resize** with a kill switch |
+| `compute.pod` | A process with new namespaces (PID/UTS/IPC/Mount/User) under **cgroup v2** `memory.max`, `cpu.max`, and `pids.max`; `oom_killed` read from `memory.events` |
+| `storage.volume` | **Sparse** volumes and **COW** snapshots with refcounting; `physical_size` reports actual physical bytes |
+| rtnetlink | Create and delete bridges and veths, bring links up, move netns via `NETLINK_ROUTE` sockets using `x/sys/unix`, no third-party libraries |
+| eBPF | Load and attach to the kernel when the capability is available; otherwise a simulator that is never disguised as the kernel |
+| Right-sizing | A real cgroup v2 sampler → recommendation (percentile × headroom, clamped) → human-gated desired state → live cgroup resize with a kill switch |
 
 ---
 
-## Tech & Stack
+## Tech stack
 
 | Category | Technology | Role |
 | :--- | :--- | :--- |
 | **Language** | Go 1.26 | One language for all 15 domains; each domain is a separate module |
 | **RPC** | gRPC + Protocol Buffers | Typed contracts, 386 RPCs, 14 streams |
 | **Bridges** | Pure Go modules | `bridge/` as the conductor; no cross-domain imports |
-| **Kernel** | eBPF (C + Go loader) | 16 CORE modules, 53 ELF objects, DWARF decoder |
-| **Telemetry** | OpenTelemetry | One path OTLP → Collector → Prometheus → Grafana |
+| **Kernel** | eBPF (C + Go loader) | 16 CO-RE modules, 53 ELF objects, DWARF decoder |
+| **Telemetry** | OpenTelemetry | One path: OTLP → Collector → Prometheus → Grafana |
 | **Visibility** | Prometheus + Grafana + Tempo | 27 dashboards, 8 alerts, trace-driven service map |
-| **Security** | mTLS domain CA (ECDSA P-256) | Cert auto-renewal; default-DENY PDP; TOTP MFA |
-| **Agent** | MCP + AI orchestration | default-deny tool gateway, HITL, external MCP bridges |
+| **Security** | mTLS domain CA (ECDSA P-256) | Certificate auto-renewal, default-deny PDP, TOTP MFA |
+| **Agent** | MCP + AI orchestration | Default-deny tool gateway, human-in-the-loop, external MCP bridges |
 | **Deploy** | Docker Compose (dev) | labnet + collector + tempo + prometheus + grafana |
 
 ---
 
-## Technical Decisions & Trade-offs
+## Technical decisions & trade-offs
 
-**One repo, 15 separate modules — not a mono-module.**
-Each domain is its own Go module with its own `go.mod`. This curbs
-the tendency toward cross-imports: if Detection wants to use a KernelForge type, it
-has to touch `gen/`, and **a test fails** (`TestArchitectureNoKernelForgeImport`).
-The cost is messier wiring via `replace` in `GrpcConnect/go.mod` — but
-the architectural boundaries become real, not just convention.
+**One repo, 15 separate modules — not one big module.** Each domain has its own `go.mod`, which curbs the pull toward cross-imports: if Detection wants a KernelForge type it has to reach into the generated package, and a test fails. The cost is messier wiring through `replace` directives, but the architectural boundaries become real instead of aspirational.
 
-**The `grpcrun` substrate used by every domain.**
-Health, TLS, breaker, retry, OTel, cert renewal — all in one place.
-Cross-domain consistency across 15 domains comes for free. The risk: a bug in the substrate
-spreads to every domain at once; the mitigation is that `grpcrun` itself is tested
-with an in-process OTLP receiver.
+**A shared `grpcrun` substrate.** Health, TLS, breaker, retry, OTel, and cert renewal live in one place, so consistency across 15 domains comes for free. The risk is that a bug there spreads everywhere at once; the mitigation is that the substrate itself is tested against an in-process OTLP receiver.
 
-**Typed contracts, no `map<string,string`.**
-Payloads are protobuf messages with typed fields. This makes contract
-errors fail at compile time, not at runtime. The cost is more
-`.proto` files and regeneration, but there are no more "magic fields" holding undocumented
-strings.
+**Typed contracts, no `map<string,string>`.** Payloads are protobuf messages with typed fields, so contract errors surface at compile time instead of at runtime. The cost is more `.proto` files and regeneration steps, but magic fields holding undocumented strings disappear.
 
-**Honesty made into data, not intent.**
-`common.Feature` carries `kind` + `availability` + `requirements` + `reason`.
-Consequently, every new feature must be honest about its requirements from the start —
-it cannot be deferred with "it'll be reported later". The trade-off is one extra
-level of boilerplate per feature; to me that is a fair price for claims
-that can be verified.
+**Capability as data, not intent.** Because every feature must declare its requirements from the start, capability cannot be deferred with "we'll report it later". The trade-off is one extra level of boilerplate per feature — a fair price for claims that can be verified.
 
-**The lab prefers "one process for everything" during dev.**
-`labnet` boots 15 domains in one process without Docker/k8s/external DB.
-This drastically speeds up iteration, but is consciously **not** a production topology —
-and the README states that plainly.
+**One process for everything during development.** `labnet` boots 15 domains in one process without Docker, Kubernetes, or an external database, which speeds up iteration dramatically — and it is consciously not a production topology, which the docs say outright.
 
 ---
 
-## What Already Works, What Is Half-Done, and What Is Missing
+## What works, what is simplified, what is missing
 
-I try not to oversell beyond what exists. Here is the honest map — what
-actually runs, what is deliberately simplified, and what is still
-pending.
+An honest map rather than a maximal one.
 
-**Genuinely running on a real host:** pods with their own namespaces + cgroup v2,
-sparse volumes + COW snapshots, an object store with SHA-256 scrub, network packet
-decoding, the full Detection pipeline, the Sigma rule subset, the host Endpoint sensor,
-mTLS domain CA, eBPF modules from loader to simulator, MCP tool execution, complete
-OTel metrics, and the cluster watcher via client-go.
+**Genuinely running on a real host:** pods with their own namespaces and cgroup v2, sparse volumes and COW snapshots, an object store with SHA-256 scrubbing, network packet decoding, the full detection pipeline, the Sigma rule subset, the host endpoint sensor, the mTLS domain CA, eBPF modules from loader to simulator, MCP tool execution, complete OTel metrics, and the cluster watcher via client-go.
 
-**Deliberately simplified:** network reconcile (its netlink is not fully
-wired), the `deploy` step in workflows (still a no-op), the k8s catalog in PlatformForge,
-and chaos targets (model only).
+**Deliberately simplified:** network reconcile (its netlink path is not fully wired), the deploy step inside workflows (still a no-op), the Kubernetes catalog in PlatformForge, and chaos targets.
 
-**Not there yet because the infrastructure isn't available:** a real k8s cluster
-(deliberately skipped), pushing to a registry, a production-grade OTLP collector (the compose file here
-is dev-grade), outgoing Alertmanager, the *live-root* gate for cgroup resize, and
-admission webhooks.
+**Not there yet because the infrastructure is not available:** a real Kubernetes cluster, registry pushing, a production-grade OTLP collector, outgoing Alertmanager, the live-root gate for cgroup resize, and admission webhooks.
 
-Every per-feature status is announced via `GetCapabilities`/`GetFeatures`, and it is the tests
-that keep those announcements from drifting from reality. If claim and
-reality differ, the test wins — not the README.
+Every per-feature status is announced through the capability API, and the tests keep those announcements from drifting from reality. If a claim and reality differ, the test wins — not the README.
 
 ---
 
@@ -539,26 +425,26 @@ make test-e2e       # 18 cross-domain e2e scenario files (bufconn, -race)
 make count-rpc      # count RPCs per domain from the .proto files
 make run-lab        # boot 15 domains + bridges (single process, dev)
 
-LABNET_MTLS=1 make run-lab   # same, with mTLS domain CA enabled
+LABNET_MTLS=1 make run-lab   # same, with the mTLS domain CA enabled
 make run-hardware            # Hardware :5001 (standalone)
 make run-compute             # Compute :5002
-# ... one target per domain, up to: make run-cyber (Cyber :5013)
-make run                      # KernelForge :5014 (cmd/bpfgrpc)
+# ... one target per domain, up through make run-cyber (Cyber :5013)
+make run                     # KernelForge :5014 (cmd/bpfgrpc)
 ```
 
-**Environment variables that change behavior (honestly reported in capabilities):**
+Environment variables that change behaviour:
 
 | Variable | Effect |
 | :--- | :--- |
-| `LABNET_MTLS=1` | All labnet clients load a client cert from their respective domain CA |
-| `OTLP_ENDPOINT=host:port` | Enable OTLP spans + metrics to the collector; **without it, metrics are completely dead** |
-| `NETWORK_IPAM_DIR=/path` | Persistent IPAM (atomic JSON snapshot); otherwise in-memory |
-| `DETECTION_SIGMA_DIR=/path` | Load Sigma rules; failed files are skipped + reported |
+| `LABNET_MTLS=1` | All labnet clients load a client certificate from their domain CA |
+| `OTLP_ENDPOINT=host:port` | Enable OTLP spans and metrics to the collector; without it, nothing is exported |
+| `NETWORK_IPAM_DIR=/path` | Persistent IPAM via atomic JSON snapshot; otherwise in-memory |
+| `DETECTION_SIGMA_DIR=/path` | Load Sigma rules; failed files are skipped and reported |
 | `PIEROLOKA_IFACE` / `PIEROLOKA_CGROUP2` / `PIEROLOKA_UPROBE` | eBPF attach targets (XDP/TC, cgroup_skb, SSL uprobe) |
 
 ---
 
-## Port Map Registry
+## Port map
 
 | Domain / Service | Port |
 | :--- | :--- |
@@ -573,7 +459,7 @@ make run                      # KernelForge :5014 (cmd/bpfgrpc)
 
 ---
 
-## Repo Structure
+## Repository structure
 
 ```text
 platformlab/
@@ -583,7 +469,7 @@ platformlab/
 │   ├── grpcrun/          server/client/interceptor/TLS/domainca/breaker/OTLP/metrics
 │   ├── bridge/           GRPCActuator, ModuleReconciler, KFMapEnforcer, ...
 │   ├── <domain>/         service implementation + service_test.go (bufconn)
-│   ├── console/          single-binary web console (REST/WS + embedded React in web/)
+│   ├── console/          single-binary web console (REST/WS + embedded React)
 │   ├── e2e/              18 files: S1-S5, B0-B8, capability, mTLS, kernel + harness
 │   └── capability/       official availability vocabulary - used by enforcing tests
 ├── Hardware/ Compute/ Network/ Storage/     domain engines (own Go module)
@@ -591,27 +477,20 @@ platformlab/
 ├── DetectionRuntime/                        Detection Platform (9 modules)
 ├── Security/ Mcp/ AIAgent/ Cyber/           ditto
 ├── PlatformDeveloper/                       PlatformForge (IaC, GitOps, portal)
-├── Endpoint/                                the 15th Domain: Endpoint (EDR)
-├── bpf/                 16 CORE C modules + bpfrun (loader/simulator/decoder)
+├── Endpoint/                                the 15th domain: Endpoint (EDR)
+├── bpf/                 16 CO-RE C modules + bpfrun (loader/simulator/decoder)
 ├── docker-compose.yml   labnet + collector + tempo + prometheus + grafana
 ├── deploy/              otel-collector, tempo, prometheus, grafana configs
-├── planning/            iteration documents (Planning*.md)
 └── MAPPING.md, Kritik.md  origin audit & architecture critique
 ```
 
 ---
 
-## Conclusion
+## Closing
 
-Platform Labs is an exercise in building a control plane from the bottom up with
-one hard discipline: **never claim more than what actually
-runs**. Every real/model/unavailable claim is data enforced by tests,
-every metric on the dashboards has a declaration in code, and every limit not yet
-reached is written out plainly instead of hidden.
+Platform Labs is an exercise in building a control plane from the bottom up with one hard discipline: never claim more than what actually runs. Every capability is reported as data and enforced by tests, every metric on the dashboards has a declaration in code, and every gap is written out plainly instead of hidden.
 
-The result is not a generic orchestrator, but something more useful for
-learning: a system where the architecture diagram, the real capabilities, and the
-runtime status **agree with each other** — and when they don't, the tests will catch it.
+The result is not a generic orchestrator but something more useful for learning: a system where the architecture diagram, the real capabilities, and the runtime status agree with each other — and when they do not, the tests catch it.
 
 <p align="center">
   Built with Go, gRPC, eBPF, OpenTelemetry, and an obsession with system honesty.
