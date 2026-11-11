@@ -60,7 +60,10 @@ const CERTIFICATES: Certificate[] = [
 const CertificateCard = ({ cert, index }: { cert: Certificate; index: number }) => {
     const { ref, isVisible } = useReveal({ threshold: 0.1 });
     const Icon = cert.icon;
-    const href = import.meta.env.BASE_URL + "sertifikat/" + cert.file;
+    // Hash routing owns the fragment, so the pathname stays at the origin root.
+    // Building the URL from the current origin guarantees the browser fetches
+    // the static file instead of handing the path to the router.
+    const href = new URL("sertifikat/" + cert.file, window.location.origin + "/").href;
 
     const cardClass =
         "group h-full transition-[transform,opacity] duration-500 transform-gpu " +
