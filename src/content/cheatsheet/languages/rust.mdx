@@ -1,9 +1,9 @@
 ---
 title: "Rust 1.99 Cheat Sheet"
-description: "Rust 1.99 cheat sheet (edition 2024): ownership & borrowing, traits & generics, error handling without panicking, async/await, collections, unsafe, Cargo, testing, plus the borrow checker pitfalls I run into most often."
+description: "Rust 1.99 cheat sheet (edition 2024): ownership & borrowing, traits & generics, error handling without panicking, async/await, collections, unsafe, Cargo, testing, Google's idiomatic style rules, plus the borrow checker pitfalls I run into most often."
 date: "2026-10-21"
 created_at: "2026-10-21"
-updated_at: "2026-10-21"
+updated_at: "2026-10-22"
 status: "verified"
 version: "Rust 1.99 (edition 2024)"
 order: 13
@@ -18,7 +18,9 @@ tags:
 
 > Target: **Rust 1.99** (stable October 2026) with **edition 2024**. Release 1.85 brought
 > `async fn` in traits, 1.88 brought *let chains* (edition 2024), and 1.99 is the latest
-> stable release. All snippets below are **compile-verified** with 1.99 + edition 2024.
+> stable release. Idioms follow the [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html)
+> wherever its rules are not Chrome/Fuchsia-specific. `...` elides a body; complete
+> snippets are checked on 1.99 + edition 2024.
 
 **What's in this sheet**
 
@@ -28,7 +30,7 @@ tags:
 - Trait, generic, enum
 - Error handling
 - Option, Result, pattern matching
-- Collection
+- Collections
 - String & formatting
 - Async & concurrency
 - Unsafe
@@ -40,6 +42,7 @@ tags:
 - std: thread, channel, Mutex, time
 - std: advanced testing & attributes
 - std: Display and commonly derived traits
+- Google Rust style (idiomatic)
 - Pitfalls (must read)
 
 ---
@@ -114,8 +117,8 @@ let n1 = 5;
 let n2 = n1;                 // copy (i32 = Copy)
 println!("{} {}", n1, n2);  // safe
 
-// borrow — not a move
-fn len(s: &String) -> usize { s.len() }
+// borrow — not a move; accept &str, not &String (Google style)
+fn len(s: &str) -> usize { s.len() }
 let s = String::from("hello");
 let l = len(&s);
 println!("{} {}", s, l);     // s is still usable
@@ -130,7 +133,7 @@ fn first_word(s: &str) -> &str {
     s.split_whitespace().next().unwrap_or("")
 }
 
-// implicit lifetime elision
+// explicit lifetime: the output borrows from one of the inputs
 fn longest<'a>(a: &'a str, b: &'a str) -> &'a str { ... }
 
 // explicit lifetime when the compiler needs it
@@ -184,7 +187,7 @@ fn longest<T: AsRef<str>>(items: &[T]) -> &str {
 // generic with a where clause
 fn show<T>(v: &T) -> String
 where
-    T: std::fmt::Display + Clone,
+    T: std::fmt::Display,
 { v.to_string() }
 
 // enum with data — the replacement for a tagged union
@@ -196,10 +199,10 @@ enum Message {
 }
 
 // impl trait in argument & return position
-fn print_it(item: &impl ToString) { println!("{}", item); }
+fn print_it(item: impl std::fmt::Display) { println!("{item}"); }
 fn make_iter() -> impl Iterator<Item = u32> { (0..10).map(|x| x * 2) }
 
-// trait statis (associated const/func)
+// trait statics (associated const/fn)
 trait Version { const MAJOR: u32; fn name() -> String; }
 ```
 
@@ -261,7 +264,7 @@ fn load(id: u64) -> Result<User, AppError> {
 }
 
 // anyhow for dynamic errors (an app, not a library)
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, bail};
 
 fn process() -> Result<()> {
     let cfg = std::fs::read_to_string("config.json")
@@ -302,7 +305,7 @@ enum ParseError {
 
 ```rust
 // Option
-let opt: Option<i32> = Some(5);
+let mut opt: Option<i32> = Some(5);
 match opt {
     Some(v) if v > 3 => println!("big: {v}"),
     Some(v) => println!("small: {v}"),
@@ -313,7 +316,7 @@ opt.map(|v| v * 2)
    .filter(|v| *v > 4)
    .unwrap_or(0);
 
-opt.as_ref().map(|v| &v.to_string());
+opt.as_ref().map(|v| v.to_string());
 opt.as_deref();                       // Option<&T> → Option<&U>
 opt.take();                           // take the value, leaving None (for &mut fields)
 
@@ -329,8 +332,8 @@ if let Some(user) = find_user(id)
     println!("active");
 }
 
-// Result
-let res: Result<i32, String> = "42".parse::<i32>().map_err(|e| e.to_string());
+// Result — annotate the binding, not a turbofish (Google style)
+let res: Result<i32, String> = "42".parse().map_err(|e| e.to_string());
 match res {
     Ok(v) => println!("{v}"),
     Err(e) => println!("{e}"),
@@ -378,10 +381,10 @@ let slice = v.get(0..2);                  // Option, safe
 // HashMap
 let mut m: HashMap<String, i32> = HashMap::new();
 m.insert("a".into(), 1);
-m.entry("b".or_default()).or_insert(0);
+m.entry("b".to_string()).or_insert(0);
 if let Some(v) = m.get_mut("a") { *v += 1; }
 let removed = m.remove("a");
-let (k, v) = m.get_key_value("a").unwrap_or((&"".to_string(), &0));
+let entry = m.get_key_value("b");        // Option<(&String, &i32)>
 
 // HashSet
 let mut s: HashSet<u32> = HashSet::new();
@@ -429,16 +432,17 @@ dq.pop_front();
 ## String & formatting
 
 ```rust
-let s = String::from("hello");
+let mut s = String::from("hello");
 let t = "world";                    // &str, literal
-let u = s.clone();                  // duplicate
-let v = s + t;                      // consumes s
-let w = format!("{s} {t}");         // interpolation (1.58+)
+let u = s.clone();                  // deep copy — only when you really need one
+let w = format!("{s} {t}");         // prefer format! over `+` for 3+ pieces
 
 s.push_str("!");
 s.len(); s.chars().count();          // len = bytes, chars = unicode characters
 s.contains("ha");
 s.split_whitespace().collect::<Vec<_>>();
+
+let consumed = s + t;               // `+` consumes s, and only accepts String + &str
 
 // &str → String
 let owned: String = t.to_owned();
@@ -459,7 +463,7 @@ format!("{name} {age}", name = "budi", age = 30);   // named arg
 // write! into a buffer without allocating
 use std::fmt::Write;
 let mut out = String::new();
-write!(out, "{}-{}", 1, 2).unwrap();
+write!(out, "{}-{}", 1, 2).expect("writing to a String cannot fail");
 ```
 
 | Type | Meaning |
@@ -542,19 +546,22 @@ let result = tokio::time::timeout(Duration::from_secs(5), slow_call()).await;
 ## Unsafe
 
 ```rust
-// unsafe block — you hold the responsibilities
-unsafe {
-    let p = raw_ptr::read(ptr);       // read without checks
-    raw_ptr::write(ptr, new_value);
-}
+// unsafe is a last resort; each block needs a SAFETY comment (Google style)
+let value = unsafe {
+    // SAFETY: `ptr` came from `Box::into_raw` and is still valid and aligned.
+    std::ptr::read(ptr)
+};
+// SAFETY: same allocation, still uniquely owned, so overwriting is sound.
+unsafe { std::ptr::write(ptr, new_value) };
 
 // the safety contract MUST be documented
 /// # Safety
 ///
-/// `ptr` must point to a valid `T` value and the caller must ensure there is no
-/// aliasing that violates the borrow rules.
+/// `ptr` must point to a valid, aligned `T` that is alive for the duration of the
+/// call, with no aliasing that violates the borrow rules.
 unsafe fn read_value<T>(ptr: *const T) -> T {
-    unsafe { *ptr }
+    // SAFETY: the caller upholds the contract above.
+    unsafe { ptr.read() }
 }
 
 // FFI
@@ -563,19 +570,25 @@ extern "C" {
 }
 
 let c = CString::new("hello")?;
+// SAFETY: `c` is NUL-terminated and outlives the call.
 let len = unsafe { strlen(c.as_ptr()) };
 
 // slice from raw parts
 let arr: [i32; 3] = [1, 2, 3];
+// SAFETY: `arr` outlives `slice`, and the length is exact.
 let slice = unsafe { std::slice::from_raw_parts(arr.as_ptr(), arr.len()) };
 ```
 
 | Rule | Detail |
 | :--- | :--- |
 | `unsafe` | the compiler cannot guarantee it; you are accountable |
+| Safe by default | if safe code can do it, don't use `unsafe` |
+| Isolation | hide it behind a safe abstraction, away from business logic |
 | Aliasing | no `&mut` and `&` to the same data at the same time |
 | Pointers must be valid | aligned, initialized, and alive while in use |
 | `# Safety` | mandatory in the doc comment of every `unsafe fn` |
+| `SAFETY:` | one comment per unsafe block explaining why it is sound |
+| Justification | why safe code can't do it; benchmarks if it's for speed |
 | Miri | a tool for finding UB — run it in CI |
 
 > **Pitfall:** `unsafe` does not mean "unchecked code" — it means "code that needs
@@ -663,9 +676,10 @@ mod tests {
 
     // async test
     #[tokio::test]
-    async fn async_case() {
+    async fn async_case() -> Result<(), Box<dyn std::error::Error>> {
         let v = fetch().await?;
-        assert!(!v.is_empty());
+        assert!(!v.is_empty(), "fetch returned an empty body");
+        Ok(())
     }
 
     // property test
@@ -682,8 +696,6 @@ mod tests {
 ```rust
 // mock a trait without a mocking framework
 trait Repo { fn get(&self, id: u64) -> Option<u8>; }
-struct Mock;
-impl Repo for Mock { fn get(&self, _: u64) -> Option<u8> { Some(7) } }
 
 #[cfg(test)]
 mod tests {
@@ -773,7 +785,7 @@ let got = v.get(10).copied().unwrap_or_default();
 | `SmallVec` (crate) | inline storage for small collections |
 
 > **Pitfall:** `sort()` cannot be used on `f64` (not `Ord`) — use
-> `sort_by(|a, b| a.partial_cmp(b).unwrap())`.
+> `sort_by(|a, b| a.partial_cmp(b).expect("compare only non-NaN floats"))`.
 
 ---
 
@@ -906,23 +918,23 @@ let h = thread::spawn(move || {
     thread::sleep(Duration::from_millis(10));
     42
 });
-let v = h.join().unwrap();
+let v = h.join().expect("worker thread panicked");
 
 // Arc<Mutex<T>>: shared mutable state
 let counter = Arc::new(Mutex::new(0u64));
 let handles: Vec<_> = (0..8).map(|_| {
     let c = Arc::clone(&counter);
     thread::spawn(move || {
-        let mut n = c.lock().unwrap();
+        let mut n = c.lock().expect("counter mutex poisoned");
         *n += 1;
     })
 }).collect();
-for h in handles { h.join().unwrap(); }
+for h in handles { h.join().expect("worker thread panicked"); }
 
 // RwLock: many readers
 let rw = Arc::new(RwLock::new(vec![1, 2, 3]));
-{ let guard = rw.read().unwrap(); assert_eq!(guard.len(), 3); }
-{ let mut guard = rw.write().unwrap(); guard.push(4); }
+{ let guard = rw.read().expect("rwlock poisoned"); assert_eq!(guard.len(), 3); }
+{ let mut guard = rw.write().expect("rwlock poisoned"); guard.push(4); }
 
 // atomic
 let hits = Arc::new(AtomicUsize::new(0));
@@ -932,7 +944,7 @@ hits.fetch_add(1, Ordering::Relaxed);
 let (tx, rx) = mpsc::channel();
 for i in 0..3 {
     let tx = tx.clone();
-    thread::spawn(move || tx.send(i).unwrap());
+    thread::spawn(move || tx.send(i).expect("receiver dropped"));
 }
 drop(tx);                                   // close the original sender
 for msg in rx { println!("{msg}"); }
@@ -981,7 +993,7 @@ mod tests {
     #[test]
     fn parses_valid_input() {
         assert_eq!(parse("42").unwrap(), 42);
-        assert!(parse("x").is_err());
+        assert!(parse("x").is_err(), "parse should reject non-numeric input");
     }
 
     #[test]
@@ -1083,10 +1095,231 @@ struct Priority(u8);
 
 ---
 
+## Google Rust style (idiomatic)
+
+> Source: [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html).
+> Rules tagged **chrome** / **fuchsia** are codebase-specific (no `async`, no
+> `std::thread`, `fuchsia_sync::Mutex`, per-codebase test frameworks). The rest is
+> portable and worth following in any Rust project.
+
+### Imports & code organization
+
+```rust
+use foo::Foo;
+use foo::bar::{Bar, Baz};   // group by module (rustfmt: imports_granularity = Module)
+
+// don't: use foo::{Foo, bar::Bar};  — `::` inside the braces
+// don't: use foo::*;                — glob imports
+// except: use super::*;             — only inside inline test modules
+
+fn parse_id(input: &str) -> u64 {
+    use std::str::FromStr;  // traits: import next to the code that uses them
+    u64::from_str(input).expect("id is numeric")
+}
+```
+
+| Rule | Do |
+| :--- | :--- |
+| Group by module | `use foo::bar::{Bar, Baz};`; never `::` inside `{...}` |
+| No glob imports | Explicit names; `use super::*` only in inline test modules |
+| Types unqualified | `use regex::Regex;` then `Regex`, not `regex::Regex` |
+| Functions qualified | `use std::mem;` then `mem::transmute(x)` |
+| Traits locally | `use std::str::FromStr;` inside the `fn` |
+
+### Function inputs & outputs
+
+```rust
+// accept the most flexible borrowed type
+fn len(s: &str) -> usize { s.len() }              // not &String
+fn sum(xs: &[i32]) -> i32 { xs.iter().sum() }     // not &Vec<i32>
+fn name(v: Option<&str>) -> &str { ... }          // not &Option<String>
+
+// library code: accept IntoIterator, return an iterator
+fn evens(xs: impl IntoIterator<Item = u32>) -> impl Iterator<Item = u32> {
+    xs.into_iter().filter(|x| x % 2 == 0)
+}
+
+// application code: a slice or Vec is fine when it is simpler
+fn parse_all(lines: &[String]) -> Vec<Item> { ... }
+
+// a bool argument hides intent — use an enum
+enum Visibility { Visible, Hidden }
+fn render(visibility: Visibility) { ... }
+
+// `impl Into<T>` only for library call-site ergonomics
+impl User {
+    pub fn set_name(&mut self, name: impl Into<String>) { self.name = name.into(); }
+}
+```
+
+| Use | Instead of | Why |
+| :--- | :--- | :--- |
+| `&T` | `&Box<T>` | borrow the data, not the box |
+| `&[T]` | `&Vec<T>` | accepts arrays, slices, vectors |
+| `&str` | `&String` | accepts literals and slices |
+| `Option<&T>` | `&Option<T>` | borrow the payload |
+| `impl IntoIterator` | `&[T]` | library code: any collection, no copy |
+| `impl Iterator` | `Vec<T>` | library code: caller decides how to consume |
+
+### Types & traits
+
+```rust
+// newtype for type safety and a changeable representation
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+struct UserId(u64);
+
+// named fields, not tuples
+struct Point { x: f64, y: f64 }
+
+// derive before writing a manual impl
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+struct User { id: UserId, name: String }
+
+// inherent impl for behavior; define a trait only for generics/dyn/extension
+impl User {
+    pub fn new(id: UserId, name: String) -> Self { Self { id, name } } // try_new() if fallible
+    pub fn display_name(&self) -> &str { &self.name }
+}
+
+// pair an important From impl with a named constructor
+impl From<(UserId, String)> for User {
+    fn from((id, name): (UserId, String)) -> Self { User::new(id, name) }
+}
+
+// extension trait: suffix `Ext`, owned by the type's team
+trait ForeignTypeExt { fn extra(&self); }
+```
+
+| Situation | Rule |
+| :--- | :--- |
+| Semantic difference, API of its own, type safety | newtype, not a `type` alias |
+| Struct with several fields | named fields, not a tuple |
+| `Debug` / `Clone` / `PartialEq` ... | `#[derive(...)]` if it can |
+| Behavior on your own type | inherent `impl`, not a trait |
+| Generic bound / `impl Trait` / `dyn Trait` | trait |
+| Methods on a foreign type | extension trait `FooExt` |
+| Options struct with public fields | implement `Default` |
+| Error type | `Copy` when possible |
+
+### Naming
+
+| Item | Convention |
+| :--- | :--- |
+| Constructor | `new()`, `new_with_foo()`, `try_new()` if fallible |
+| Conversion | `from_foo()` plus a `From` impl |
+| Getter | `foo()` returns `T` or `&T`; `foo_mut()` returns `&mut T` |
+| Take and clear | `take_foo()` |
+| Setter | `set_foo()` |
+| Setter returning the old value | `replace_foo()` |
+| Accessor via closure | `with_foo()` / `with_mut_foo()` |
+| Cheap conversions | `as_foo()` (borrow), `to_foo()` (copy), `into_foo()` (consume) |
+| Extension trait | `FooExt` |
+| Lifetimes | descriptive (`'input`, `'conn`); `'a` only for simple relations |
+| Generics | short and indicative (`T`, `K`, `V`) |
+| Abbreviations | avoid unless universally known (`IpAddr` is fine) |
+
+### Docs & API hygiene
+
+```rust
+//! Crate/module docs go at the top of the file.
+
+/// Finds the first item with `name`, or `None`.
+///
+/// # Panics
+///
+/// Panics if `items` is not sorted by `name`.
+pub fn find_named<'items>(items: &'items [Item], name: &str) -> Option<&'items Item> { ... }
+
+/// # Safety
+///
+/// `ptr` must be valid for reads of `T` and properly aligned.
+pub unsafe fn read_value<T>(ptr: *const T) -> T { ... }
+
+#[non_exhaustive]
+pub enum Shape { Circle, Square, Triangle }
+
+#[must_use]
+pub fn parse(input: &str) -> Result<Ast, ParseError> { ... }
+```
+
+| Rule | Why |
+| :--- | :--- |
+| `///` / `//!` for docs, `//` for implementation notes | rustdoc, IDE, and tooling read them |
+| Document `# Panics` and `# Safety` | callers need the contract |
+| Capitalize and punctuate; don't restate the name | docs should add information |
+| `#[non_exhaustive]` on public enums | adding a variant is not a breaking change |
+| `#[non_exhaustive]` on public-field structs | allows new fields (unless FRU is wanted) |
+| `#[must_use]` on pure / error / lazy results | ignoring the value is a bug |
+| `len()` comes with `is_empty()` | expected API set |
+| `const fn` only if it will stay `const` | un-consting is a breaking change |
+| No code before `main()` (no `ctor` crate) | startup order stays predictable |
+| No operator overloading for syntax sugar | `+` should mean addition |
+| Don't touch `#[doc(hidden)]` you don't own | it is private in practice |
+| Prefer functions/types over macros | macros hide structure from tools and LSCs |
+| No unstable features | they can break on any toolchain update |
+
+### Implementation concerns
+
+```rust
+// prove the invariant to the compiler — no check-then-unwrap
+if let Some(value) = option {
+    use_value(value);
+}
+
+// if a panic is unavoidable, say why
+let config = std::fs::read_to_string("config.toml")
+    .expect("config.toml is embedded at build time");
+
+// assertions: say why, and log the value
+assert!(
+    values.is_sorted(),
+    "values comes from a BinaryHeap, so it is sorted; got {values:?}"
+);
+
+// long chain with side effects → plain loop
+let mut errors = 0;
+let mut ok = Vec::with_capacity(items.len());
+for item in items {
+    match transform(item) {
+        Ok(value) => ok.push(value),
+        Err(_) => errors += 1,
+    }
+}
+
+// combinators are fine when they carry real logic
+let has_big = values.iter().any(|&v| v > threshold);
+```
+
+| Don't | Do |
+| :--- | :--- |
+| `if x.is_some() { x.unwrap() }` | `if let Some(v) = x { ... }` |
+| `unwrap()` on an invariant | `expect("why this cannot fail")` |
+| `.into()` / `.parse()` with no visible type | annotate the binding |
+| Long combinator chain with side effects | `for` loop |
+| Chain built in a `for` header | assign it to a named variable first |
+| `panic::catch_unwind` in first-party code | avoid panics; don't rely on unwinding |
+| `a + b + c` or `str::replace` for templating | `format!` / `write!` |
+| `Rc` / `Arc` by default | unique ownership + borrows |
+| `.clone()` to silence the borrow checker | borrow; clone only for real deep copies |
+| `PoisonError::into_inner()` | let the panic happen; never inspect poisoned state |
+
+> **Scope note:** Google's guide also says "no `async` / `.await`", "don't start
+> threads through `std`", and "use `fuchsia_sync::Mutex`", but those rules are
+> tagged **chrome** / **fuchsia**. They are not general Rust advice — this sheet
+> keeps `tokio` and `std::thread` for ordinary projects.
+
+---
+
 ## Pitfalls (must read)
 
 | Pitfall | Symptom | Fix |
 | :--- | :--- | :--- |
+| `&String` / `&Vec<T>` parameters | Callers must own the exact wrapper | `&str` / `&[T]` |
+| `is_some()` then `unwrap()` | Panic risk hidden behind a check | `if let Some(v) = x` |
+| `bool` parameter | Call site reads as `f(true)` | enum with named variants |
+| Public enum without `#[non_exhaustive]` | Adding a variant breaks users | Annotate the enum |
+| Glob import `use foo::*` | Unclear names, painful refactors | Explicit imports |
+| `Rc` / `Arc` as the default | Overhead and ownership complexity | Unique ownership + borrows |
 | `std::sync::Mutex` across `.await` | Deadlock | `tokio::sync::Mutex` |
 | `unwrap()` on a runtime path | Dead process | `?`, `unwrap_or`, `expect` |
 | Excessive `clone()` | Allocation spikes | Borrow `&T`, borrow fields |

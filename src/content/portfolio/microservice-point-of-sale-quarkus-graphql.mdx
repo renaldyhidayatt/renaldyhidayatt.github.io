@@ -1,0 +1,606 @@
+---
+title: "Distributed Microservices Point of Sale Quarkus GraphQL"
+excerpt: "Event-driven point of sale backend in Java 21 and Quarkus: independent JVM services over gRPC, Kafka transactional outbox, ClickHouse analytics, and full OpenTelemetry observability on PostgreSQL."
+date: "2026-11-11"
+created_at: "2026-11-11"
+updated_at: "2026-11-11"
+tags: ["java", "quarkus", "grpc", "graphql", "postgresql", "clickhouse", "kafka", "redis", "docker", "kubernetes", "argocd", "prometheus", "grafana", "opentelemetry", "jaeger", "loki", "flyway"]
+status: "completed"
+image: "/portofolio/microservice-quarkus-grpc-pointofsale-graphql.png"
+---
+# Distributed Microservices — Point of Sale Platform (Java Quarkus, PostgreSQL + GraphQL)
+
+A production-grade, highly resilient, and fully observable **microservices point of sale (POS) backend** built in **Java 21** on the **Quarkus** reactive framework (v3.31.3). Designed around domain-driven service boundaries following Clean Architecture and CQRS principles, each service runs as an **independent JVM process** with its own gRPC server, database migrations, and caching layer — true service-level isolation and independent deployability.
+
+Each retail and identity domain — Users, Roles, Cashiers, Merchants, Categories, Products, Orders, Order Items, Transactions — lives in its own self-contained Maven module as a **standalone microservice**. They communicate synchronously over high-performance **gRPC** and asynchronously through **Apache Kafka**, exposing a unified reactive entry point via a **REST API Gateway** powered by Quarkus RESTEasy Reactive + a GraphQL endpoint.
+
+Beyond the business domains the platform ships a **ClickHouse analytics layer** (stats-reader, stats-writer, stats-backfill), a **transactional outbox** for lossless event publishing, and a full observability suite (Prometheus, Grafana, Loki, Jaeger, OpenTelemetry) with Kubernetes manifests delivered through **ArgoCD GitOps**.
+
+---
+
+## Key Features
+
+| Domain | Capabilities |
+| :--- | :--- |
+| **Auth & Users** | Secure registration, multi-factor login, stateless JWT access/refresh token lifecycle, password reset workflows, OTP email verification, and a `/me` profile endpoint. |
+| **Roles & RBAC** | Custom permission configuration, granular access control matrices, and sub-second permission evaluation cached via Redis. |
+| **Merchants** | Merchant onboarding, profile details, and performance/reporting with full soft-delete and restore. |
+| **Cashiers** | Staff management per merchant, activity tracking, sales performance analysis, and daily/monthly volume reporting. |
+| **Categories** | Product taxonomy with soft delete and quick search filters. |
+| **Products** | Inventory management, stock counts, brand details, price structures, and multi-dimensional search filters (merchant, price range, brand, category). |
+| **Orders & Items** | Ledger checkout transactions, multi-item baskets with product price lookups, real-time totals, and monthly/yearly revenue analytics. |
+| **Transactions** | Central audit register, global search, status tracking, and merchant/cashier sales breakdown. |
+| **Email Worker** | Kafka-driven worker dispatching OTPs, login alerts, merchant onboarding notices, and invoice emails over SMTP. |
+| **ClickHouse Analytics** | Columnar BI layer fed asynchronously: stats-writer (Kafka→ClickHouse), stats-reader (gRPC→Redis cache), stats-backfill (PostgreSQL→outbox→Kafka→ClickHouse). |
+| **Transactional Outbox** | Events are written in the same transaction as the business write and relayed to Kafka by `OutboxPublisher`, so a broker outage never loses an event. |
+| **Observability** | Metrics (Prometheus + Grafana), logs (Loki + Logback), distributed traces (Jaeger + OpenTelemetry), and exporters for Node, Kafka, and Postgres. |
+| **Deployment** | Docker Compose for local parity and auto-scaling Kubernetes manifests with HPAs, Kustomize, and ArgoCD App-of-Apps. |
+
+---
+
+## Architecture Overview
+
+Every business service is an independent JVM process with its own gRPC boundary, connection pool, and cache. A **Quarkus REST API Gateway** is the single edge router, translating client REST calls into fast gRPC calls through Quarkus gRPC clients.
+
+### Core Architecture Principles
+
+- **Service-Level Isolation**: Every microservice runs as its own JVM with its own gRPC server, connection pool and Flyway migrations, and cache layer. No shared-memory coupling between services.
+- **Clean Architecture & CQRS**: `Handler (gRPC) → Service (Command/Query) → Repository` keeps business logic clean and framework-agnostic.
+- **Reactive Execution**: Quarkus reactive engine with Mutiny throughout, for high throughput at a minimal resource footprint.
+- **Direct DB Connections**: Each service owns its own Agroal pool against PostgreSQL, with per-service `max-size` and `acquisition-timeout` — no external connection proxy.
+- **Event-Driven Resilience**: Kafka decouples side effects through the transactional outbox, so emails and analytics never block a business write.
+- **CQRS & OLAP Split**: OLTP writes stay in PostgreSQL; heavy aggregations are served from ClickHouse populated asynchronously from Kafka.
+- **OTel Telemetry**: OpenTelemetry middleware injects trace IDs across gRPC boundaries, so a request can be followed from the REST edge down to the database.
+
+The same edge also exposes a **GraphQL endpoint** alongside the REST routes: a single typed query fetches a screen's worth of data in one round trip instead of several REST calls, at the cost of an extra contract to maintain and harder caching — HTTP-level cache keys do not map cleanly onto arbitrary GraphQL queries, so caching happens at the service layer instead.
+
+```mermaid
+graph TB
+    classDef client fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:2px,font-weight:bold
+    classDef gateway fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:2px,font-weight:bold
+    classDef domain fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff,stroke-width:1.5px
+    classDef infra fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+    classDef obs fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px
+    classDef event fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:1.5px
+    classDef olap fill:#1e293b,stroke:#a855f7,color:#f3e8ff,stroke-width:1.5px
+
+    Client["Client Applications<br/>(Web / Mobile / API)"]:::client
+
+    subgraph APIGateway["API Gateway — NGINX + Quarkus REST"]
+        direction LR
+        REST["REST Router<br/>Port :5000"]:::gateway
+        JWT["JWT / API Key<br/>Validation"]:::gateway
+    end
+
+    Client -->|"HTTP REST"| APIGateway
+
+    subgraph BusinessServices["Microservices (Independent JVM Processes)"]
+        direction TB
+        subgraph IdentityAccess["Identity & Access"]
+            AUTH["Auth Service<br/>gRPC :9012"]:::domain
+            USER["User Service<br/>gRPC :9011"]:::domain
+            ROLE["Role Service<br/>gRPC :9006"]:::domain
+        end
+        subgraph MerchantManagement["Merchant Management"]
+            MERCHANT["Merchant Service<br/>gRPC :9005"]:::domain
+        end
+        subgraph RetailSuite["Retail Suite"]
+            CASHIER["Cashier Service<br/>gRPC :9003"]:::domain
+            CATEGORY["Category Service<br/>gRPC :9015"]:::domain
+            PRODUCT["Product Service<br/>gRPC :9016"]:::domain
+        end
+        subgraph CheckoutLedger["Checkout & Ledger"]
+            ORDER["Order Service<br/>gRPC :9017"]:::domain
+            TRANSACTION["Transaction Service<br/>gRPC :9019"]:::domain
+        end
+    end
+
+        REST -->|"gRPC Client"| IdentityAccess
+    REST -->|"gRPC Client"| MerchantManagement
+    REST -->|"gRPC Client"| RetailSuite
+    REST -->|"gRPC Client"| CheckoutLedger
+
+    subgraph OLAPEngine["OLAP & Analytics Layer"]
+        direction TB
+        WRITER["Stats Writer<br/>Kafka → ClickHouse"]:::olap
+        READER["Stats Reader<br/>gRPC :9015 + Redis"]:::olap
+        BACKFILL["Stats Backfill<br/>One-shot Loader"]:::olap
+        CLICKHOUSE[("ClickHouse<br/>:8123")]:::infra
+    end
+
+    REST -->|"gRPC"| READER
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        direction LR
+        PG[("PostgreSQL<br/>DB :5432")]:::infra
+        REDIS[("Redis<br/>Standalone Cache :6379")]:::infra
+        KAFKA[("Kafka (KRaft)<br/>Event Bus :9092")]:::infra
+    end
+
+    AUTH -->|"Reactive SQL (Agroal)"| PG
+    USER -->|"Reactive SQL (Agroal)"| PG
+    ROLE -->|"Reactive SQL (Agroal)"| PG
+    MERCHANT -->|"Reactive SQL (Agroal)"| PG
+    CASHIER -->|"Reactive SQL (Agroal)"| PG
+    CATEGORY -->|"Reactive SQL (Agroal)"| PG
+    PRODUCT -->|"Reactive SQL (Agroal)"| PG
+    ORDER -->|"Reactive SQL (Agroal)"| PG
+    TRANSACTION -->|"Reactive SQL (Agroal)"| PG
+    BusinessServices -->|"Cache"| REDIS
+    AUTH -->|"Invoices / Audit"| KAFKA
+    MERCHANT -->|"Invoices / Audit"| KAFKA
+    CASHIER -->|"Invoices / Audit"| KAFKA
+    ORDER -->|"Invoices / Audit"| KAFKA
+
+    subgraph EventConsumers["Event-Driven Consumers"]
+        EMAIL["Email Service<br/>SMTP Worker"]:::event
+    end
+
+    KAFKA -->|"email-service-topic-*"| EMAIL
+    KAFKA -->|"stats.*.event"| WRITER
+    WRITER -->|"Batch INSERT"| CLICKHOUSE
+    READER -->|"Query"| CLICKHOUSE
+    READER -->|"Cache"| REDIS
+    BACKFILL -->|"OutboxPublisher"| KAFKA
+
+    subgraph Observability["Observability Stack"]
+        direction LR
+        PROM["Prometheus"]:::obs
+        LOKI["Loki"]:::obs
+        JAEGER["Jaeger"]:::obs
+        GRAFANA["Grafana"]:::obs
+        OTEL["OTel Collector"]:::obs
+        NODEX["Node Exporter"]:::obs
+        KAFKAX["Kafka Exporter"]:::obs
+        DBX["Postgres Exporter"]:::obs
+    end
+
+    BusinessServices -.->|"/metrics"| PROM
+    BusinessServices -.->|"OTLP"| OTEL
+    OTEL -.-> JAEGER
+    NODEX -.-> PROM
+    KAFKAX -.-> PROM
+    DBX -.-> PROM
+    PROM -.-> GRAFANA
+    LOKI -.-> GRAFANA
+    JAEGER -.-> GRAFANA
+```
+
+---
+
+## Service Catalog
+
+```mermaid
+graph LR
+    classDef svc fill:#1e1b4b,stroke:#a78bfa,color:#ede9fe,stroke-width:1px,rx:8
+    classDef gw fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:2px,rx:8,font-weight:bold
+    classDef support fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px,rx:8
+    classDef stats fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1px,rx:8
+
+    subgraph Gateway
+        API["gateway<br/>REST → gRPC :5000"]:::gw
+    end
+
+    subgraph IdentityAccess["Identity & Access (3)"]
+        AUTH["auth :9012"]:::svc
+        USER["user :9011"]:::svc
+        ROLE["role :9006"]:::svc
+    end
+    subgraph MerchantManagement["Merchant Management (1)"]
+        MERCHANT["merchant :9005"]:::svc
+    end
+    subgraph RetailSuite["Retail Suite (3)"]
+        CASHIER["cashier :9003"]:::svc
+        CATEGORY["category :9015"]:::svc
+        PRODUCT["product :9016"]:::svc
+    end
+    subgraph CheckoutLedger["Checkout & Ledger (2)"]
+        ORDER["order :9017"]:::svc
+        TRANSACTION["transaction :9019"]:::svc
+    end
+
+    subgraph Analytics["Analytics & Stats (3)"]
+        ST1["stats-reader :9015"]:::stats
+        ST2["stats-writer"]:::stats
+        ST3["stats-backfill"]:::stats
+    end
+
+    subgraph Support["Support (3)"]
+        S1["email-service"]:::support
+        S2["common"]:::support
+        S3["seeder"]:::support
+    end
+
+    API -->|"gRPC Client"| IdentityAccess
+    API -->|"gRPC Client"| MerchantManagement
+    API -->|"gRPC Client"| RetailSuite
+    API -->|"gRPC Client"| CheckoutLedger
+```
+
+The workspace is a root Maven parent POM with **9 business services** plus a REST gateway, a shared `common` library, three analytics workers, an email worker, and a seeder — all running as separate JVM processes.
+
+---
+
+## Internal Service Architecture
+
+Every service follows the same internal layout, so a developer moving from one module to the next reads the same shape.
+
+```mermaid
+graph TB
+    classDef handler fill:#1e3a5f,stroke:#7dd3fc,color:#e0f2fe,stroke-width:1.5px
+    classDef service fill:#1e1b4b,stroke:#a78bfa,color:#ede9fe,stroke-width:1.5px
+    classDef repo fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+    classDef infra fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px
+    classDef shared fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:1.5px
+
+    subgraph Service["Maven Module: &lt;service-name&gt;/"]
+        direction TB
+        subgraph SrcJava["src/main/java/com/sanedge/&lt;service&gt;/"]
+            HANDLER["handler/<br/>gRPC Service Handlers"]:::handler
+            SVC["service/ & service.impl/<br/>CQRS Business Logic"]:::service
+            REPO["repository/<br/>Reactive Repositories"]:::repo
+            MODEL["entity/ / domain/<br/>Entities & Domain Models"]:::repo
+        end
+        HANDLER --> SVC
+        SVC --> REPO
+        REPO --> MODEL
+    end
+
+    subgraph SharedLibs["common/ — Shared Maven Module"]
+        CONFIG["config/<br/>AppConfig / JwtConfig"]:::shared
+        FLYWAY["config/FlywayConfig<br/>Migrations Runner"]:::shared
+        REDIS_SVC["service/RedisService<br/>Cache Actions"]:::shared
+        OBS["observability/<br/>TracingMetrics"]:::shared
+        PB["pb/<br/>gRPC Proto Stubs"]:::shared
+    end
+
+    subgraph Infrastructure["External Infrastructure"]
+        DB[("Database")]:::infra
+        R[("Redis")]:::infra
+        K[("Kafka")]:::infra
+    end
+
+    HANDLER --> PB
+    SVC --> REDIS_SVC
+    SVC --> OBS
+    REPO --> DB
+    REDIS_SVC --> R
+```
+
+---
+
+## Data & Event Flow
+
+### Synchronous Flow (REST proxy, gRPC, cache read-through)
+
+Client requests enter through NGINX, are validated by the gateway, forwarded over gRPC to the owning domain service, checked against Redis, and only fall through to the database on a cache miss.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant GW as API Gateway<br/>(Quarkus REST)
+    participant SVC as Domain Service<br/>(gRPC Server)
+    participant R as Redis
+    participant DB as PostgreSQL
+
+    C->>GW: REST HTTP Request
+    GW->>GW: JWT / API Key Validation
+    GW->>SVC: gRPC Call (Protobuf)
+    SVC->>R: Check Cache
+    alt Cache Hit
+        R-->>SVC: Cached Response
+    else Cache Miss
+        SVC->>DB: Reactive SQL (Agroal Pool)
+        DB-->>SVC: Result Set
+        SVC->>R: Populate Cache
+    end
+    SVC-->>GW: gRPC Response
+    GW-->>C: REST HTTP Response (JSON)
+```
+
+### Asynchronous Flow (outbox → Kafka → consumers)
+
+State-changing operations write an outbox row in the same transaction as the business write. `OutboxPublisher` relays pending records to Kafka, where the email worker and analytics consumers pick them up independently — consumers can lag or restart without blocking a business operation.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant SVC as Domain Service
+    participant OB as Outbox Table (status=PENDING)
+    participant OP as OutboxPublisher
+    participant K as Kafka
+    participant EM as Email Service
+    participant SW as Stats Writer
+    participant CH as ClickHouse
+
+    SVC->>OB: Write event (same transaction)
+    OP->>OB: Poll pending rows
+    OP->>K: Publish topic payload
+    K-->>EM: Deliver (email-service-topic-*)
+    K-->>SW: Deliver batch (stats.*.event)
+    SW->>SW: Deduplicate + batch
+    SW->>CH: FlushScheduler batch INSERT
+```
+
+---
+
+## ClickHouse Analytics Layer
+
+Heavy aggregations — revenue, volume, and per-domain breakdowns — never touch the transactional store. They are served from ClickHouse, populated in near real time.
+
+```mermaid
+flowchart LR
+    classDef pg fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+    classDef kafka fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:1.5px
+    classDef olap fill:#1e293b,stroke:#a855f7,color:#f3e8ff,stroke-width:1.5px
+
+    DB[("PostgreSQL OLTP")]:::pg
+    OB[("Outbox (PENDING)")]:::pg
+    OP["OutboxPublisher"]:::olap
+    K[("Kafka stats.*.event")]:::kafka
+    SW["stats-writer<br/>Dedup + Batch"]:::olap
+    CH[("ClickHouse")]:::pg
+    SR["stats-reader<br/>gRPC :9015"]:::olap
+    RC[("Redis Cache")]:::pg
+    GW["API Gateway"]:::olap
+
+    DB --> OB --> OP --> K
+    K --> SW --> CH
+    GW --> SR --> CH
+    SR --> RC
+    SR --> GW
+```
+
+- **stats-writer** consumes domain event topics, deduplicates by `event_id`, batches, and flushes to ClickHouse via `ClickHouseBatchWriter`.
+- **stats-reader** exposes gRPC analytics queries, caching hot aggregates in Redis.
+- **stats-backfill** is a one-shot loader that replays historical PostgreSQL rows through outbox → Kafka → ClickHouse. Because it goes through the outbox it is **idempotent for free** — a re-run hits the unique `backfill:<domain>:<id>` constraint and inserts nothing.
+
+---
+
+## Observability Architecture
+
+```mermaid
+graph TB
+    classDef source fill:#1e1b4b,stroke:#818cf8,color:#e0e7ff,stroke-width:1.5px
+    classDef collect fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+    classDef store fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px
+    classDef viz fill:#431407,stroke:#fb923c,color:#fed7aa,stroke-width:2px,font-weight:bold
+
+    SVCS["All Domain Services"]:::source
+    KAFKA_SRC["Kafka Broker"]:::source
+    DB_SRC["Database"]:::source
+    HOST["Host / Node"]:::source
+
+    PROM["Prometheus"]:::collect
+    OTEL["OTel Collector"]:::collect
+    PROMTAIL["Promtail"]:::collect
+    NODEX["Node Exporter"]:::collect
+    KAFKAX["Kafka Exporter"]:::collect
+    DBX["DB Exporter"]:::collect
+
+    TSDB[("Prometheus TSDB")]:::store
+    LOKI[("Loki")]:::store
+    JAEGER[("Jaeger")]:::store
+
+    GRAFANA["Grafana"]:::viz
+
+    SVCS -->|"/metrics"| PROM
+    SVCS -->|"OTLP"| OTEL
+    SVCS -->|"stdout"| PROMTAIL
+    HOST --> NODEX
+    KAFKA_SRC --> KAFKAX
+    DB_SRC --> DBX
+    NODEX --> PROM
+    KAFKAX --> PROM
+    DBX --> PROM
+    PROM --> TSDB
+    PROMTAIL --> LOKI
+    OTEL --> JAEGER
+    TSDB --> GRAFANA
+    LOKI --> GRAFANA
+    JAEGER --> GRAFANA
+```
+
+| Pillar | Tool | Purpose |
+| :--- | :--- | :--- |
+| **Metrics** | Prometheus + Grafana | Request error rates, gRPC latencies, pool states, and ClickHouse write latency/batch size/error rate from `StatsWriterMetrics`. |
+| **Logging** | Loki + Logback | Centralized structured logs queryable by service with LogQL. |
+| **Tracing** | OpenTelemetry + Jaeger | End-to-end traces from the REST edge across gRPC boundaries into the database. |
+
+---
+
+## Deployment Architectures
+
+### Docker Compose (Local Development)
+
+Infrastructure runs in containers; the Java services run as **independent JVM processes on the host**, each with its own gRPC server and database connection — closer to a real microservice deployment than stuffing everything into one compose file.
+
+```mermaid
+flowchart TD
+    classDef infra fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1.5px
+    classDef core fill:#1e1b4b,stroke:#a78bfa,color:#ede9fe,stroke-width:1.5px
+    classDef obs fill:#052e16,stroke:#4ade80,color:#dcfce7,stroke-width:1.5px
+    classDef gw fill:#1e293b,stroke:#22d3ee,color:#cffafe,stroke-width:2px,font-weight:bold
+
+    subgraph Host["Host Processes"]
+        subgraph Edge["Edge"]
+            NGINX["NGINX Proxy :80"]:::gw
+            APIGW["gateway :5000"]:::gw
+        end
+        subgraph Services["Business Services (independent JVMs)"]
+            subgraph IdentityAccess["Identity & Access"]
+                AUTH["auth"]:::core
+                USER["user"]:::core
+                ROLE["role"]:::core
+            end
+            subgraph MerchantManagement["Merchant Management"]
+                MERCHANT["merchant"]:::core
+            end
+            subgraph RetailSuite["Retail Suite"]
+                CASHIER["cashier"]:::core
+                CATEGORY["category"]:::core
+                PRODUCT["product"]:::core
+            end
+            subgraph CheckoutLedger["Checkout & Ledger"]
+                ORDER["order"]:::core
+                TRANSACTION["transaction"]:::core
+            end
+        end
+    end
+
+    subgraph Containers["Docker Compose"]
+        PG[("PostgreSQL :5432")]:::infra
+        REDIS[("Redis :6379")]:::infra
+        KAFKA[("Kafka :9092")]:::infra
+        CLICK[("ClickHouse :8123")]:::infra
+        subgraph Obs["Observability"]
+            PROM["Prometheus :9090"]:::obs
+            GRAFANA["Grafana :3000"]:::obs
+            LOKI["Loki"]:::obs
+            JAEGER["Jaeger :16686"]:::obs
+            OTEL["OTel Collector"]:::obs
+        end
+    end
+
+    NGINX --> APIGW
+    APIGW -->|"gRPC"| Services
+    Services --> POSTGRESQL
+    Services --> REDIS
+    Services --> KAFKA
+    KAFKA --> CLICK
+    Services -.-> PROM
+    Services -.-> OTEL
+```
+
+### Kubernetes (Production Clustering)
+
+Manifests live in a project namespace with Kustomize overlays, NGINX pods behind a LoadBalancer, an HPA per scalable service, and ArgoCD **App-of-Apps** GitOps delivery. Sync waves are strictly ordered so database migrations complete before domain applications roll out.
+
+---
+
+## Technical Decisions & Trade-offs
+
+### Technical Decisions & Trade-offs
+
+**Microservices for a retail workload that fits on one box**
+A POS chain has uneven scale: checkout volume is spiky while merchandising is quiet. Independent services let the order path scale on its own and let each team ship without coordinating a monolith release. The cost is operational — a shop-floor deployment that used to be one artifact is now a fleet, and every new service adds manifests, probes, and dashboards.
+
+**Synchronous gRPC for price lookup and checkout**
+A cashier cannot wait for an eventually consistent price, so the order service resolves product prices synchronously. The cost is a hard dependency on the product service during checkout — mitigated by Redis caching price lookups, which introduces the classic staleness question when a price changes mid-shift.
+
+**Transactional outbox for receipts and audit**
+A receipt or ledger row that exists without its event — or the reverse — is the classic retail inconsistency. Writing the outbox record inside the same transaction as the order removes it. The cost is an extra collection/table and a relay loop whose lag must be alerted on, which for a single-shop deployment is real operational weight.
+
+**ClickHouse for cashier and sales reporting**
+Daily and monthly sales volumes, cashier performance, and sold-out product tracking are aggregations that must not compete with checkout for database capacity. ClickHouse handles them. The trade-off is that closing a shift and immediately seeing that shift's totals is inconsistent — the reporting must be explicit about its lag.
+
+---
+
+## Technology Stack
+
+| Category | Selected Technologies | Purpose |
+| :--- | :--- | :--- |
+| **Language** | Java 21 (Quarkus v3.31.3) | Reactive, non-blocking asynchronous execution. |
+| **API Edge Gateway** | Quarkus RESTEasy Reactive + GraphQL | Gateway router and reverse proxy destination. |
+| **RPC Inter-service** | Quarkus gRPC Client & Server | Contract-first synchronous communication. |
+| **Database** | PostgreSQL v17 | Transactional ACID ledger store. |
+| **DB Migrations** | Flyway | Schema evolution. |
+| **Connection Handling** | Agroal per-service pool | Configurable pool sizing per service. |
+| **Caching Tier** | Redis (Standalone) | In-memory cache per service and stats cache. |
+| **Analytics DB** | ClickHouse | Columnar OLAP store for dashboards and reports. |
+| **Messaging Stream** | Apache Kafka (KRaft) | Async event bus with DLQ support. |
+| **Token Manager** | JWT | Stateless request authentication. |
+| **Observability** | OpenTelemetry + Jaeger | Distributed telemetry pipeline and trace UI. |
+| **Docker Engine** | Compose | Local infrastructure orchestration. |
+| **Orchestrator** | Kubernetes + ArgoCD | Auto-scaling cluster and GitOps delivery. |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Git](https://git-scm.com/)
+- [JDK 21](https://adoptium.net/)
+- [Maven](https://maven.apache.org/)
+- [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
+- [Hurl](https://hurl.dev/) (for the validation suites)
+
+### 1. Clone the Workspace
+
+```sh
+git clone https://github.com/MamangRust/microservice-pointofsale-quarkus-graphql.git
+cd microservice-pointofsale-quarkus-graphql
+```
+
+### 2. Prepare Environment Configurations
+
+```sh
+cp .env.example .env
+cp deployments/local/docker.env.example deployments/local/docker.env
+cp deployments/local/host.env.example deployments/local/host.env
+```
+
+### 3. Build the Maven Project
+
+```sh
+mvn -B clean install -DskipTests
+```
+
+### 4. Start Infrastructure & Launch Microservices
+
+```sh
+# Start infrastructure containers (PostgreSQL, Redis, Kafka, ClickHouse, observability)
+docker-compose -f deployments/local/docker-compose.yml up -d
+
+# Launch all Java microservices on the host
+deployments/local/run-host-java.sh start
+```
+
+### 5. Run the Validation Suites
+
+```sh
+deployments/local/tests/checks/smoke.sh
+BASE_URL=http://localhost:5000 deployments/local/tests/run-e2e.sh
+BASE_URL=http://localhost:5000 deployments/local/tests/run-stats.sh
+```
+
+To stop everything:
+
+```sh
+deployments/local/run-host-java.sh stop
+docker-compose -f deployments/local/docker-compose.yml down -v
+```
+
+### Port Map Registry
+
+| Service | gRPC Port | HTTP Port | Description |
+| :--- | :--- | :--- | :--- |
+| **API Gateway** | — | `5000` | REST API entry point, proxies to gRPC |
+| **Auth Service** | `9012` | `8092` | JWT authentication & registration |
+| **User Service** | `9011` | `8091` | User profile management |
+| **Role Service** | `9006` | `8086` | RBAC & permission management |
+| **Merchant Service** | `9005` | `8085` | Merchant onboarding & profiling |
+| **Cashier Service** | `9003` | — | Staff management per merchant |
+| **Category Service** | `9015` | — | Product taxonomy |
+| **Product Service** | `9016` | — | Products & inventory |
+| **Order Service** | `9017` | — | Order & billing |
+| **Transaction Service** | `9019` | — | Central ledger audit |
+| **Stats Reader** | `9015` | `8096` | ClickHouse analytics queries |
+| **Stats Writer** | — | `8095` | ClickHouse event consumer |
+| **Email Service** | — | `8094` | Kafka-driven SMTP notifications |
+| **NGINX / Grafana / Prometheus / Jaeger** | — | `80` / `3000` / `9090` / `16686` | Edge proxy and observability |
+| **PostgreSQL** | — | `5432` | Transactional database |
+| **ClickHouse** | — | `8123` | Analytics OLAP database |
+
+---
+
+## Source Code
+[View on GitHub](https://github.com/MamangRust/microservice-pointofsale-quarkus-graphql)
+
+---
+
+<p align="center">
+  Built with Java 21, Quarkus, gRPC, Apache Kafka, and ClickHouse.
+</p>

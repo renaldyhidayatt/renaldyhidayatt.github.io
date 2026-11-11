@@ -848,6 +848,36 @@
 }
 
 /* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
+
+/* =====================================================
    LEGACY ALIASES
    Old class names kept so untouched pages inherit the
    brutalist look instead of breaking.
@@ -943,6 +973,36 @@
   }
 }
 
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -954,6 +1014,36 @@
     transform: translateY(0);
   }
 }
+
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
 
 @keyframes slideDown {
   from {
@@ -967,6 +1057,36 @@
   }
 }
 
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
+
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -979,6 +1099,36 @@
   }
 }
 
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
+
 @keyframes float {
   0%,
   100% {
@@ -989,6 +1139,36 @@
     transform: translateY(-10px);
   }
 }
+
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
 
 @keyframes stagger-in {
   from {
@@ -1002,11 +1182,71 @@
   }
 }
 
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
+
 @keyframes terminalBlink {
   50% {
     opacity: 0;
   }
 }
+
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
@@ -1137,6 +1377,36 @@ html[data-input="pointer"] :focus:not(:focus-visible) {
 }
 
 /* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
+
+/* =====================================================
    ACCESSIBILITY
    ===================================================== */
 
@@ -1152,3 +1422,62 @@ html[data-input="pointer"] :focus:not(:focus-visible) {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+
+/* =====================================================
+   PELE MERMAID DIAGRAMS
+   ===================================================== */
+
+.pele-diagram-wrapper {
+  --pele-bg: transparent;
+  --pele-fg: hsl(var(--foreground));
+  --pele-muted: hsl(var(--muted-foreground));
+  --pele-line: hsl(var(--border));
+  --pele-surface: hsl(var(--muted));
+  --pele-surface-alt: hsl(var(--accent) / 0.18);
+  --pele-border: hsl(var(--border));
+  --pele-accent: hsl(var(--primary));
+  --pele-font: var(--font-mono);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: 0px;
+}
+
+.pele-diagram-wrapper svg.pele {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pele-diagram-wrapper svg.pele text {
+  font-family: var(--font-mono) !important;
+  font-weight: 600;
+}
+

@@ -1,5 +1,16 @@
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Copy, Check, Terminal } from "lucide-react";
+import MermaidBlock from "./MermaidBlock";
+
+function extractText(node: React.ReactNode): string {
+    if (node == null || typeof node === "boolean") return "";
+    if (typeof node === "string" || typeof node === "number") return String(node);
+    if (Array.isArray(node)) return node.map(extractText).join("");
+    if (React.isValidElement(node)) {
+        return extractText((node.props as any)?.children);
+    }
+    return "";
+}
 
 const CodeBlock = ({ children, className, ...props }: any) => {
     const [copied, setCopied] = useState(false);
@@ -13,6 +24,14 @@ const CodeBlock = ({ children, className, ...props }: any) => {
         language = children.props.className.replace("language-", "");
     } else if (className?.startsWith("language-")) {
         language = className.replace("language-", "");
+    } else if (props["data-language"]) {
+        language = props["data-language"];
+    }
+
+    // Intercept Mermaid code blocks and render via Pele
+    if (language === "mermaid") {
+        const chartText = extractText(children);
+        return <MermaidBlock chart={chartText} rawChildren={children} />;
     }
 
     const handleCopy = async () => {
@@ -99,7 +118,6 @@ const CodeBlock = ({ children, className, ...props }: any) => {
                 </button>
             </div>
 
-            {/* Code body */}
             <pre
                 ref={codeRef}
                 className={`custom-scrollbar ${className || ""}`}

@@ -1,6 +1,7 @@
 import * as runtime from "react/jsx-runtime";
 import React from "react";
 import CodeBlock from "./CodeBlock";
+import MermaidBlock from "./MermaidBlock";
 import Latex from "react-latex";
 import "katex/dist/katex.min.css";
 import { ExternalLink } from "lucide-react";
@@ -8,6 +9,12 @@ import { ExternalLink } from "lucide-react";
 const PreContext = React.createContext(false);
 
 export const sharedComponents = {
+    Mermaid: ({ chart, children }: { chart?: string; children?: any }) => (
+        <MermaidBlock chart={chart || (typeof children === "string" ? children : "")} rawChildren={children} />
+    ),
+    mermaid: ({ chart, children }: { chart?: string; children?: any }) => (
+        <MermaidBlock chart={chart || (typeof children === "string" ? children : "")} rawChildren={children} />
+    ),
     Latex: ({ children }: { children: string }) => (
         <div style={{ overflowX: "auto", margin: "2rem 0" }}>
             <div
