@@ -1,69 +1,13 @@
 import { Link } from "react-router-dom";
 import { useReveal } from "@/hooks/use-reveal";
 import Layout from "@/components/Layout";
-import {
-    ShieldCheck,
-    ShieldAlert,
-    Swords,
-    Award,
-    ExternalLink,
-    Download,
-    FileText,
-} from "lucide-react";
-
-type Certificate = {
-    file: string;
-    title: string;
-    issuer: string;
-    year: string;
-    icon: typeof Award;
-};
-
-const CERTIFICATES: Certificate[] = [
-    {
-        file: "blue-team_renaldyhidayat.pdf",
-        title: "Certified Blue Team Fundamentals (BTF)",
-        issuer: "CyberWarfare Labs",
-        year: "2026",
-        icon: ShieldCheck,
-    },
-    {
-        file: "ethical-hacking.pdf",
-        title: "Certified Cyber Security Analyst (C3SA)",
-        issuer: "CyberWarfare Labs",
-        year: "2026",
-        icon: ShieldAlert,
-    },
-    {
-        file: "redteam.pdf",
-        title: "Certified Cybersecurity Educator Professional (CCEP)",
-        issuer: "Red Team Leaders",
-        year: "2026",
-        icon: Swords,
-    },
-    {
-        file: "RenaldyHidayat-CN2AZY202201-certificate_cisco.pdf",
-        title: "CCNA: Switching, Routing, and Wireless Essentials",
-        issuer: "Cisco Networking Academy",
-        year: "2023",
-        icon: Award,
-    },
-    {
-        file: "RenaldyHidayat-CN1PMA202201-certificate-cisco.pdf",
-        title: "CCNA: Introduction to Networks",
-        issuer: "Cisco Networking Academy",
-        year: "2022",
-        icon: Award,
-    },
-];
+import { CERTIFICATES, certificateUrl, type Certificate } from "@/data/certificates";
+import { Eye, Download, FileText } from "lucide-react";
 
 const CertificateCard = ({ cert, index }: { cert: Certificate; index: number }) => {
     const { ref, isVisible } = useReveal({ threshold: 0.1 });
     const Icon = cert.icon;
-    // Hash routing owns the fragment, so the pathname stays at the origin root.
-    // Building the URL from the current origin guarantees the browser fetches
-    // the static file instead of handing the path to the router.
-    const href = new URL("sertifikat/" + cert.file, window.location.origin + "/").href;
+    const href = certificateUrl(cert);
 
     const cardClass =
         "group h-full transition-[transform,opacity] duration-500 transform-gpu " +
@@ -90,18 +34,16 @@ const CertificateCard = ({ cert, index }: { cert: Certificate; index: number }) 
                     </p>
 
                     <div className="pt-4 mt-4 flex items-center gap-2 border-t-2 border-ink">
-                        <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <Link
+                            to={"/sertifikat/" + cert.slug}
                             className="retro-btn retro-btn-secondary inline-flex flex-1 items-center justify-center gap-2 text-xs"
                         >
-                            <ExternalLink className="size-4" />
+                            <Eye className="size-4" />
                             View
-                        </a>
+                        </Link>
                         <a
                             href={href}
-                            download
+                            download={cert.file}
                             className="retro-btn inline-flex items-center justify-center gap-2 text-xs"
                             aria-label={"Download " + cert.title}
                         >

@@ -10,6 +10,7 @@ import Portfolio from "./pages/Portfolio";
 import PortfolioProject from "./pages/PortfolioProject";
 import About from "./pages/About";
 import Sertifikat from "./pages/Sertifikat";
+import SertifikatDetail from "./pages/SertifikatDetail";
 import NotFound from "./pages/404";
 import { ThemeProvider } from "./hooks/use-theme";
 import Stats from "./pages/Stats";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/portfolio/:slug" element={<PortfolioProject />} />
             <Route path="/about" element={<About />} />
             <Route path="/sertifikat" element={<Sertifikat />} />
+            <Route path="/sertifikat/:slug" element={<SertifikatDetail />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -33,9 +33,7 @@ const pwaOptions: Partial<VitePWAOptions> = {
     ],
   },
   workbox: {
-    // bundle utama memuat seluruh konten MDX (blog + portfolio + cheatsheet),
-    // jadi file JS bisa berukuran > 10MB
-    maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
+    navigateFallbackDenylist: [/^\/sertifikat\//],
   },
 }
 
